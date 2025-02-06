@@ -37,16 +37,9 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen() {
     var phoneNumber by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        delay(3000) // Show splash for 3 seconds
-
-        navController.navigate("exoplayer") {
-            popUpTo("splash_screen") { inclusive = true } // Remove splash from backstack
-        }
-    }
+    var isButtonVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -75,10 +68,26 @@ fun LoginScreen(navController: NavController) {
         ) {
             QRCodeSection()
             ORSeparator()
-            PhoneNumberSection(phoneNumber) { phoneNumber = it }
+            PhoneNumberSection(phoneNumber, onPhoneNumberChange = {
+                phoneNumber = it
+                isButtonVisible = phoneNumber.length == 10
+            }, isButtonVisible)
         }
     }
 }
+
+@Composable
+fun SendOTP(modifier: Modifier = Modifier) {
+    Button(
+        onClick = { /* Implement send OTP action here */ },
+        modifier = Modifier
+            .padding(2.dp)
+            .size(90.dp, 30.dp)
+    ) {
+        Text(text = "Send OTP", fontSize = 8.sp, color = Color.White)
+    }
+}
+
 @Composable
 fun ORSeparator() {
     Column(
@@ -95,7 +104,6 @@ fun ORSeparator() {
                 .width(2.dp)
                 .background(Color.Gray)
         )
-
 
         // OR Text with a clear background
         Box(
@@ -122,9 +130,6 @@ fun ORSeparator() {
     }
 }
 
-
-
-
 @Composable
 fun QRCodeSection() {
     val qrBitmap = generateQRCode("https://your-login-url.com")
@@ -149,25 +154,32 @@ fun QRCodeSection() {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun PhoneNumberSection(phoneNumber: String, onPhoneNumberChange: (String) -> Unit) {
+fun PhoneNumberSection(
+    phoneNumber: String,
+    onPhoneNumberChange: (String) -> Unit,
+    isButtonVisible: Boolean
+) {
     val focusRequester = remember { FocusRequester() }
-    val isFocused = remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         OutlinedTextField(
             value = phoneNumber,
-            onValueChange = { /* Prevent default typing, use numpad */ },
+            onValueChange = onPhoneNumberChange,
             textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
             modifier = Modifier
                 .width(220.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { isFocused.value = it.hasFocus },
+                .focusRequester(focusRequester),
             placeholder = { Text("+91 Enter Number", color = Color.Gray) },
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number) // Prevents TV keyboard from appearing
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
         )
         Spacer(modifier = Modifier.height(12.dp))
         NumberPad(phoneNumber, onPhoneNumberChange)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isButtonVisible) {
+            SendOTP()
+        }
     }
 }
 
@@ -193,7 +205,7 @@ fun NumberPad(phoneNumber: String, onPhoneNumberChange: (String) -> Unit) {
                         },
                         modifier = Modifier
                             .padding(6.dp)
-                            .size(80.dp),
+                            .size(50.dp),
                         colors = ButtonDefaults.buttonColors(Color.DarkGray)
                     ) {
                         Text(text = digit, fontSize = 22.sp, color = Color.White)
@@ -222,17 +234,16 @@ fun generateQRCode(content: String): Bitmap? {
         null
     }
 }
-
-//@Preview(
-//    showBackground = true,
-//    widthDp = 960,
-//    heightDp = 540
-//)
-//@Composable
-//fun PreviewTvLoginScreen() {
-//    MaterialTheme {
-//        Surface(modifier = Modifier.fillMaxSize()) {
-//            LoginScreen(navController = NavCont)
-//        }
-//    }
-//}
+@Preview(
+    showBackground = true,
+    widthDp = 960,
+    heightDp = 540
+)
+@Composable
+fun PreviewTvLoginScreen() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            LoginScreen()
+        }
+    }
+}
