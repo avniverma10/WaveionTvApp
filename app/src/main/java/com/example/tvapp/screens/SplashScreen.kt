@@ -29,7 +29,7 @@ fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltV
 
     // Delay before navigating to Home Screen
     LaunchedEffect(Unit) {
-        delay(3000) // Show splash for 3 seconds
+        delay(2000) // Show splash for 2 seconds
 
         navController.navigate("login_screen") {
             popUpTo("splash_screen") { inclusive = true } // Remove splash from backstack

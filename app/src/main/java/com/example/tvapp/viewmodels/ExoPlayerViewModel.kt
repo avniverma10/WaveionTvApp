@@ -4,22 +4,20 @@ package com.example.tvapp.viewmodels
 import androidx.annotation.OptIn
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import com.example.tvapp.api.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import com.example.tvapp.repository.ExoPlayerRepository
-import com.example.applicationscreens.models.ContentResponse
 import com.example.applicationscreens.models.Data
+import com.example.tvapp.api.ApiService2
 import kotlinx.coroutines.launch
 
 
 @HiltViewModel
-class ExoPlayerViewModel @Inject constructor(private val repository: ExoPlayerRepository,private val apiService: ApiService) : ViewModel() {
+class ExoPlayerViewModel @Inject constructor(private val repository: ExoPlayerRepository,private val apiService: ApiService2) : ViewModel() {
 
     // State to hold the list of videos
     var videoList: MutableState<List<Data>> = mutableStateOf(emptyList())

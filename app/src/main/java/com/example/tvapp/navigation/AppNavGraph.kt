@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.screens.ExoPlayerScreen
 import com.example.tvapp.screens.SplashScreen
+import com.example.tvapp.screens.VideoListScreen
 
 @Composable
 fun AppNavGraph() {
@@ -18,8 +19,12 @@ fun AppNavGraph() {
         composable("login_screen") {
             LoginScreen(navController)
         }
-        composable("exoplayer") {
-            ExoPlayerScreen()  // Your ExoPlayerScreen Composable
+        composable("videoList") {
+            VideoListScreen(navController)
+        }
+        composable("player/{index}") { backStackEntry ->
+            val index = backStackEntry.arguments?.getString("index")?.toInt() ?: 0
+            ExoPlayerScreen(navController, index)
         }
 //        composable("signup") {
 //            SignUpScreen(navController)

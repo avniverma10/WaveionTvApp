@@ -1,12 +1,10 @@
 package com.example.tvapp.repository
 
-import android.util.Log
-import com.example.applicationscreens.models.ContentResponse
-import com.example.tvapp.api.ApiService
+import com.example.tvapp.api.ApiService2
 import com.example.tvapp.models.SplashApiResponse
 import javax.inject.Inject
 
-class SplashRepository @Inject constructor(private val apiService: ApiService) {
+class SplashRepository @Inject constructor(private val apiService: ApiService2) {
     suspend fun getLogo(): SplashApiResponse {
         return apiService.getLogo()
     }

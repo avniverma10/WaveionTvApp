@@ -1,6 +1,7 @@
 package com.example.tvapp.screens
 
 import android.content.Context
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,77 +15,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import com.example.applicationscreens.models.Data
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.util.Log
 import com.example.tvapp.viewmodels.ExoPlayerViewModel
+import com.example.applicationscreens.models.Data
 
+import androidx.activity.compose.BackHandler
+import androidx.navigation.NavController
+
+@OptIn(UnstableApi::class)
 @Composable
-fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
+fun ExoPlayerScreen(navController: NavController, startIndex: Int, viewModel: ExoPlayerViewModel = hiltViewModel()) {
     val context = LocalContext.current
-    val videoUrls by remember { viewModel.videoList }
-    val isLoading by remember { viewModel.isLoading }
+    val videoList by remember { viewModel.videoList }
 
-    Log.d("AVNI", "Video Titles --> ${viewModel.videoList.value.joinToString(", ") { it.title }}")
-
-
-    var selectedVideo by remember { mutableStateOf<String?>(null) }
-
-    if (isLoading) {
-        // Show a loading indicator while the data is being fetched
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else {
-        if (selectedVideo == null) {
-            // Show Video List
-            VideoList(videoItems = videoUrls) { videoUrl ->
-                selectedVideo = videoUrl
-            }
-        } else {
-            // Show ExoPlayer in Full Screen
-            ExoPlayerView(context, selectedVideo!!) {
-                selectedVideo = null // Hide Player when clicked
-            }
-        }
-    }
-}
-
-@Composable
-fun VideoList(videoItems: List<Data>, onVideoSelected: (String) -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        items(videoItems) { videoItem ->
-            Text(
-                text = videoItem.title,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .clickable { onVideoSelected(videoItem.videoUrl)},
-                color = Color.Black
-            )
-        }
-    }
-}
-
-@Composable
-fun ExoPlayerView(context: Context, videoUrl: String, onExitPlayer: () -> Unit) {
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(videoUrl))
+            val mediaItems = videoList.map { MediaItem.fromUri(it.videoUrl) }
+            setMediaItems(mediaItems, startIndex, 0L)
             prepare()
             playWhenReady = true
         }
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .clickable { onExitPlayer() } // Exit full screen on click
-    ) {
+    // Handle back press to go back to list
+    BackHandler {
+        navController.popBackStack()
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
-            factory = { PlayerView(context).apply { player = exoPlayer } },
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = true
+                    setShowNextButton(true)
+                    setShowPreviousButton(true)
+                }
+            },
             modifier = Modifier.fillMaxSize()
         )
     }
