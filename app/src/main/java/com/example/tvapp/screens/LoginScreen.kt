@@ -175,7 +175,7 @@ fun OTPScreen(
                         authToken,
                         onSuccess = {
                         showSuccess = true
-                            navController.navigate("videoList") {
+                            navController.navigate("player") {
                                 popUpTo("login_screen") { inclusive = true } // Remove from backstack
                             }
                     }, onFailure = {

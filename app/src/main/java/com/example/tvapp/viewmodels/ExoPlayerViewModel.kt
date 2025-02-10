@@ -1,6 +1,7 @@
 package com.example.tvapp.viewmodels
 
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -9,10 +10,12 @@ import javax.inject.Inject
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import com.example.tvapp.repository.ExoPlayerRepository
 import com.example.applicationscreens.models.Data
 import com.example.tvapp.api.ApiService2
+//import com.example.tvapp.utils.DeviceInfoHelper
 import kotlinx.coroutines.launch
 
 
@@ -42,5 +45,9 @@ class ExoPlayerViewModel @Inject constructor(private val repository: ExoPlayerRe
     init {
         fetchVideoContent() // Fetch data when ViewModel is initialized
     }
-}
 
+//    fun logDeviceInfo(context: Context) {
+//        val deviceInfo = DeviceInfoHelper.getDeviceInfo(context)
+//        Log.d("DeviceInfoViewModel", deviceInfo.toString())
+//    }
+}

@@ -18,8 +18,7 @@ interface ApiService1 {
         @Query("customerId") customerId: String,
         @Query("flowType") flowType: String = "SMS",
         @Query("mobileNumber") mobileNumber: String
-    ): Response<SendOTPRequest>  // Ensure this returns the correct model
-
+    ): Response<SendOTPRequest>  // Ensure this returns the coOTLop
 
     @GET("verification/v3/validateOtp/")
     suspend fun validateOtp(

@@ -1,5 +1,3 @@
-package com.example.tvapp.screens
-
 import android.content.Context
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -15,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
@@ -24,28 +24,79 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.viewmodels.ExoPlayerViewModel
 import com.example.applicationscreens.models.Data
+//import com.example.tvapp.utils.DeviceInfoHelper
 
-import androidx.activity.compose.BackHandler
-import androidx.navigation.NavController
+@Composable
+fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
+    val context = LocalContext.current
+    val videoList by remember { viewModel.videoList }
+    val isLoading by remember { viewModel.isLoading }
+
+//    val deviceInfo = remember { DeviceInfoHelper.getDeviceInfo(context) }
+
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else {
+        if (selectedIndex == null) {
+            // Show Video List
+            VideoList(videoItems = videoList) { index ->
+                selectedIndex = index
+            }
+        } else {
+            // Show ExoPlayer in Full Screen
+            ExoPlayerView(
+                context = context,
+                videoList = videoList,
+                currentIndex = selectedIndex!!,
+                onIndexChange = { newIndex -> selectedIndex = newIndex },
+                onExitPlayer = { selectedIndex = null }
+            )
+        }
+    }
+}
+
+@Composable
+fun VideoList(videoItems: List<Data>, onVideoSelected: (Int) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        items(videoItems.withIndex().toList()) { (index, videoItem) ->
+            Text(
+                text = videoItem.title,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .clickable { onVideoSelected(index) },
+                color = Color.Black
+            )
+        }
+    }
+}
+
 
 @OptIn(UnstableApi::class)
 @Composable
-fun ExoPlayerScreen(navController: NavController, startIndex: Int, viewModel: ExoPlayerViewModel = hiltViewModel()) {
-    val context = LocalContext.current
-    val videoList by remember { viewModel.videoList }
-
+fun ExoPlayerView(
+    context: Context,
+    videoList: List<Data>,
+    currentIndex: Int,
+    onIndexChange: (Int) -> Unit,
+    onExitPlayer: () -> Unit
+) {
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
             val mediaItems = videoList.map { MediaItem.fromUri(it.videoUrl) }
-            setMediaItems(mediaItems, startIndex, 0L)
+            setMediaItems(mediaItems, currentIndex, 0L)
             prepare()
             playWhenReady = true
         }
     }
 
-    // Handle back press to go back to list
-    BackHandler {
-        navController.popBackStack()
+    // Update ExoPlayer when index changes
+    LaunchedEffect(currentIndex) {
+        exoPlayer.seekTo(currentIndex, 0L)
+        exoPlayer.playWhenReady = true
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -54,11 +105,24 @@ fun ExoPlayerScreen(navController: NavController, startIndex: Int, viewModel: Ex
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = true
-                    setShowNextButton(true)
-                    setShowPreviousButton(true)
+                    setShowNextButton(true)  // Enable Next button
+                    setShowPreviousButton(true) // Enable Previous button
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
     }
+
+    // Handle Next & Previous Button Clicks
+    LaunchedEffect(Unit) {
+        exoPlayer.addListener(object : Player.Listener {
+            override fun onEvents(player: Player, events: Player.Events) {
+                val newIndex = player.currentMediaItemIndex
+                if (newIndex != currentIndex) {
+                    onIndexChange(newIndex)
+                }
+            }
+        })
+    }
+
 }
