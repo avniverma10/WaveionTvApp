@@ -1,12 +1,15 @@
 package com.example.tvapp.di
 
 
+import android.content.Context
+import com.example.tvapp.models.DataStoreManager
 import com.example.tvapp.utils.Constants
-import com.example.tvapp.api.ApiService1
-import com.example.tvapp.api.ApiService2
+import com.example.tvapp.api.ApiServiceForLogin
+import com.example.tvapp.api.ApiServiceForData
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -41,13 +44,19 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideApiService1( @Named("API2")retrofit: Retrofit): ApiService1 {
-        return retrofit.create(ApiService1::class.java)
+    fun provideApiService1( @Named("API2")retrofit: Retrofit): ApiServiceForLogin {
+        return retrofit.create(ApiServiceForLogin::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideApiService2(@Named("API1") retrofit: Retrofit): ApiService2 {
-        return retrofit.create(ApiService2::class.java)
+    fun provideApiService2(@Named("API1") retrofit: Retrofit): ApiServiceForData {
+        return retrofit.create(ApiServiceForData::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDataStoreManager(@ApplicationContext context: Context): DataStoreManager {
+        return DataStoreManager(context)
     }
 }

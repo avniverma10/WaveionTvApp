@@ -8,9 +8,8 @@ import com.example.tvapp.repository.SplashRepository
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.internal.Contexts.getApplication
+import com.example.tvapp.models.DataStoreManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +18,7 @@ import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
 @HiltViewModel
-class SplashViewModel @Inject constructor(private val repository: SplashRepository,application: Application) :  AndroidViewModel(application){
+class SplashViewModel @Inject constructor(private val repository: SplashRepository,application: Application,private val dataStoreManager: DataStoreManager) :  AndroidViewModel(application){
 
     private val _logoUrl = MutableStateFlow<String?>(null)
     val logoUrl: StateFlow<String?> = _logoUrl
@@ -27,14 +26,24 @@ class SplashViewModel @Inject constructor(private val repository: SplashReposito
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    private val _updateUrl = MutableStateFlow<String?>(null)
-    val updateUrl: StateFlow<String?> = _updateUrl
-
+    val authToken = dataStoreManager.authToken
 
     init {
         checkAppConditions()
+        fetchSplashContent()
     }
 
+    fun checkUserLoginStatus(onLoggedIn: () -> Unit, onLoggedOut: () -> Unit) {
+        viewModelScope.launch {
+            authToken.collect { token ->
+                if (token.isNullOrEmpty()) {
+                    onLoggedOut()
+                } else {
+                    onLoggedIn()
+                }
+            }
+        }
+    }
     @RequiresApi(Build.VERSION_CODES.M)
     private fun checkAppConditions() {
         Log.d("AVNI", "is internet available: ${isInternetAvailable()}")

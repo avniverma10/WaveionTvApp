@@ -1,4 +1,3 @@
-import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -9,9 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,29 +22,27 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.tv.material3.Text
-import com.example.tvapp.viewmodels.OtpViewModel
+import com.example.tvapp.utils.Constants
+import com.example.tvapp.viewmodels.LoginViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 
 @Composable
-fun LoginScreen(navController: NavController,viewModel: OtpViewModel = hiltViewModel()) {
+fun LoginScreen(navController: NavController,viewModel: LoginViewModel = hiltViewModel()) {
     var phoneNumber by remember { mutableStateOf("") }
     var isButtonVisible by remember { mutableStateOf(false) }
     var isOTPScreenVisible by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf("") }
-    val authToken = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTRFNDk5QTE3MDcxMzRFMSIsImlhdCI6MTczODgyMDkxMSwiZXhwIjoxODk2NTAwOTExfQ.JL1lWZ8-MfS1x9XWZNxE7KXUn6eLnww6I0JlLEPx9d8CzwpXRQYfA3q571odLNLzQ_kbVUg-71M8TXThp4GEfA"
-
 
     if (isOTPScreenVisible) {
-        OTPScreen(navController,viewModel, phoneNumber, authToken)
+        OTPScreen(navController,viewModel, phoneNumber,Constants.AUTH_TOKEN)
     } else {
         Column(
             modifier = Modifier
@@ -82,7 +77,7 @@ fun LoginScreen(navController: NavController,viewModel: OtpViewModel = hiltViewM
                 }, isButtonVisible = isButtonVisible) {
                     // Call the sendOtp function from ViewModel
                     viewModel.sendOtp(
-                        authToken = authToken,
+                        authToken = Constants.AUTH_TOKEN,
                         phoneNumber = phoneNumber,
                         onSuccess = { isOTPScreenVisible = true },
                         onFailure = { showError = it }
@@ -111,7 +106,7 @@ fun SendOTPButton(onSendOtpClick: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 fun OTPScreen(
     navController: NavController,
-    viewModel: OtpViewModel,
+    viewModel: LoginViewModel,
     phoneNumber: String,
     authToken: String
 ) {
@@ -364,16 +359,4 @@ fun generateQRCode(content: String): Bitmap? {
         null
     }
 }
-//@Preview(
-//    showBackground = true,
-//    widthDp = 960,
-//    heightDp = 540
-//)
-//@Composable
-//fun PreviewTvLoginScreen() {
-//    MaterialTheme {
-//        Surface(modifier = Modifier.fillMaxSize()) {
-//            LoginScreen()
-//        }
-//    }
-//}
+

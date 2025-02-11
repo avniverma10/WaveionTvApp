@@ -1,38 +1,36 @@
-import android.content.Context
+
+import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.tvapp.viewmodels.ExoPlayerViewModel
 import com.example.applicationscreens.models.Data
-//import com.example.tvapp.utils.DeviceInfoHelper
 
 @Composable
 fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val videoList by remember { viewModel.videoList }
     val isLoading by remember { viewModel.isLoading }
-
-//    val deviceInfo = remember { DeviceInfoHelper.getDeviceInfo(context) }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
 
@@ -45,14 +43,13 @@ fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
             // Show Video List
             VideoList(videoItems = videoList) { index ->
                 selectedIndex = index
+                viewModel.initializePlayer(context, videoList, index)
             }
         } else {
             // Show ExoPlayer in Full Screen
             ExoPlayerView(
-                context = context,
-                videoList = videoList,
-                currentIndex = selectedIndex!!,
-                onIndexChange = { newIndex -> selectedIndex = newIndex },
+                viewModel = viewModel,
+               currentIndex = selectedIndex!!,
                 onExitPlayer = { selectedIndex = null }
             )
         }
@@ -61,16 +58,37 @@ fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
 
 @Composable
 fun VideoList(videoItems: List<Data>, onVideoSelected: (Int) -> Unit) {
-    LazyColumn(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    LazyColumn(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         items(videoItems.withIndex().toList()) { (index, videoItem) ->
-            Text(
-                text = videoItem.title,
+            Row(
                 modifier = Modifier
-                    .padding(16.dp)
-                    .clickable { onVideoSelected(index) },
-                color = Color.Black
-            )
+                    .fillMaxWidth()
+                    .clickable { onVideoSelected(index) }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Thumbnail Image
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(videoItem.thumbnailUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Thumbnail",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Video Title
+                Text(
+                    text = videoItem.title,
+                    color = Color.White
+                )
+            }
         }
+
     }
 }
 
@@ -78,19 +96,17 @@ fun VideoList(videoItems: List<Data>, onVideoSelected: (Int) -> Unit) {
 @OptIn(UnstableApi::class)
 @Composable
 fun ExoPlayerView(
-    context: Context,
-    videoList: List<Data>,
+    viewModel: ExoPlayerViewModel,
     currentIndex: Int,
-    onIndexChange: (Int) -> Unit,
     onExitPlayer: () -> Unit
 ) {
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItems = videoList.map { MediaItem.fromUri(it.videoUrl) }
-            setMediaItems(mediaItems, currentIndex, 0L)
-            prepare()
-            playWhenReady = true
-        }
+
+    val exoPlayer = viewModel.exoPlayer ?: return
+
+    // Handle Back Press to Exit Player
+    BackHandler {
+        viewModel.stopPlayback()
+        onExitPlayer()
     }
 
     // Update ExoPlayer when index changes
@@ -111,18 +127,6 @@ fun ExoPlayerView(
             },
             modifier = Modifier.fillMaxSize()
         )
-    }
-
-    // Handle Next & Previous Button Clicks
-    LaunchedEffect(Unit) {
-        exoPlayer.addListener(object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                val newIndex = player.currentMediaItemIndex
-                if (newIndex != currentIndex) {
-                    onIndexChange(newIndex)
-                }
-            }
-        })
     }
 
 }
