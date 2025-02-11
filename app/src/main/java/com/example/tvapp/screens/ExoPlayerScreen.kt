@@ -1,4 +1,5 @@
 
+import android.view.LayoutInflater
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -25,6 +26,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.example.tvapp.viewmodels.ExoPlayerViewModel
 import com.example.applicationscreens.models.Data
+import com.example.tvapp.R
 
 @Composable
 fun ExoPlayerScreen(viewModel: ExoPlayerViewModel = hiltViewModel()) {
@@ -109,6 +111,7 @@ fun ExoPlayerView(
         onExitPlayer()
     }
 
+
     // Update ExoPlayer when index changes
     LaunchedEffect(currentIndex) {
         exoPlayer.seekTo(currentIndex, 0L)
@@ -118,12 +121,17 @@ fun ExoPlayerView(
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = true
-                    setShowNextButton(true)  // Enable Next button
-                    setShowPreviousButton(true) // Enable Previous button
-                }
+                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                val playerView = view.findViewById<androidx.media3.ui.PlayerView>(R.id.player_view)
+                playerView.player = exoPlayer
+                playerView.useController = true
+                view
+//                PlayerView(ctx).apply {
+//                    player = exoPlayer
+//                    useController = true
+//                    setShowNextButton(true)  // Enable Next button
+//                    setShowPreviousButton(true) // Enable Previous button
+//                }
             },
             modifier = Modifier.fillMaxSize()
         )
