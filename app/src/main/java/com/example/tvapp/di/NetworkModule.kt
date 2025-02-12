@@ -1,11 +1,16 @@
 package com.example.tvapp.di
 
 
+import android.app.Application
 import android.content.Context
+import androidx.room.Room
 import com.example.tvapp.models.DataStoreManager
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
+import com.example.tvapp.database.EPGDao
+import com.example.tvapp.database.EPGDatabase
+import com.example.tvapp.database.EPGRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -58,5 +63,35 @@ object NetworkModule {
     @Singleton
     fun provideDataStoreManager(@ApplicationContext context: Context): DataStoreManager {
         return DataStoreManager(context)
+    }
+//    @Provides
+//    fun provideApplication(@ApplicationContext context: Context): Application {
+//        return context as Application
+//    }
+//
+//    @Provides
+//    fun provideEPGRepository(dao: EPGDao): EPGRepository {
+//        return EPGRepository(dao)
+//    }
+
+    @Provides
+    @Singleton
+    fun provideEPGDatabase(@ApplicationContext context: Context): EPGDatabase {
+        return Room.databaseBuilder(
+            context.applicationContext,
+            EPGDatabase::class.java,
+            "epg_database"
+        ).build()
+    }
+
+    @Provides
+    fun provideEPGDao(database: EPGDatabase): EPGDao {
+        return database.epgDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideEPGRepository(dao: EPGDao): EPGRepository {
+        return EPGRepository(dao)
     }
 }
