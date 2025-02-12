@@ -193,17 +193,18 @@ fun EpgGrid(onMenuClick: () -> Unit) {
         }
     }
 }
-@Preview(
-    showBackground = true,
-    widthDp = 960,
-    heightDp = 540
-)
-@Composable
-fun PreviewTvLoginScreen() {
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            EpgScreen()
-        }
-    }
-}
+//
+//@Preview(
+//    showBackground = true,
+//    widthDp = 960,
+//    heightDp = 540
+//)
+//@Composable
+//fun PreviewTvLoginScreen() {
+//    MaterialTheme {
+//        Surface(modifier = Modifier.fillMaxSize()) {
+//            EpgScreen()
+//        }
+//    }
+//}
 
