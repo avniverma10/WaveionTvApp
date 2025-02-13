@@ -8,4 +8,5 @@ import android.content.Context
 @Database(entities = [EPGEntity::class], version = 1)
 abstract class EPGDatabase : RoomDatabase() {
     abstract fun epgDao(): EPGDao
+
 }

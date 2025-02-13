@@ -4,7 +4,7 @@
   <Service id="10306" name="Asianet News">
     <ScheduleDay date="2024/12/18">
       <Event id="10306181220241">
-        <IdentificationName>Kissan Krishideepam</IdentificationName>
+        <IdentificationName>Kissaan Krishideepam</IdentificationName>
         <StartDateTime>2024-12-18T18:30:00</StartDateTime>
         <EndDateTime>2024-12-18T18:55:00</EndDateTime>
         <ShortEventDescription>

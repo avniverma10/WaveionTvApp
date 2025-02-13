@@ -10,4 +10,5 @@ data class EPGProgram(
     val eventName: String,
     val eventDescription: String,
     val rating: Int
+
 )

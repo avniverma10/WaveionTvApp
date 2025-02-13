@@ -5,4 +5,5 @@ data class EPGChannel(
     val name: String,
     val logoUrl: String,
     val programs: List<EPGProgram>
+
 )

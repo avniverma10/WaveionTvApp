@@ -46,6 +46,7 @@ object XMLParser {
                         "EventName" -> eventName = parser.nextText()
                         "EventDescription" -> eventDescription = parser.nextText()
                         "Rating" -> rating = parser.nextText().toIntOrNull() ?: 0
+
                     }
                 }
                 XmlPullParser.END_TAG -> {

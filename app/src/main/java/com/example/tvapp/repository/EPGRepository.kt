@@ -10,7 +10,6 @@ import javax.inject.Inject
 class EPGRepository @Inject constructor(
     private val dao: EPGDao
 ) {
-
     suspend fun insertAll(events: List<EPGProgram>) {
         val entities = events.map { program ->
             EPGEntity(
