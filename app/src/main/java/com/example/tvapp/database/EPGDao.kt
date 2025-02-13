@@ -8,9 +8,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EPGDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(events: List<EPGEntity>)
 
     @Query("SELECT * FROM epg_events WHERE date = :date ORDER BY startTime")
     fun getEventsByDate(date: String): Flow<List<EPGEntity>>
+
 }

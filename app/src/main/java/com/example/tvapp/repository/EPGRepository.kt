@@ -1,13 +1,16 @@
-package com.example.tvapp.database
+package com.example.tvapp.repository
 
+import com.example.tvapp.database.EPGDao
+import com.example.tvapp.database.EPGEntity
 import com.example.tvapp.models.EPGProgram
 
 
 import javax.inject.Inject
 
 class EPGRepository @Inject constructor(
-    private val dao: EPGDao // Ensure EPGDao is correctly injected
+    private val dao: EPGDao
 ) {
+
     suspend fun insertAll(events: List<EPGProgram>) {
         val entities = events.map { program ->
             EPGEntity(

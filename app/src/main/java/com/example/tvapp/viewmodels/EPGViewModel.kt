@@ -1,10 +1,10 @@
-package com.example.tvapp.database
+package com.example.tvapp.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.XMLParser
+import com.example.tvapp.repository.EPGRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject

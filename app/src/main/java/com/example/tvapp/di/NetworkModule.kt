@@ -1,7 +1,6 @@
 package com.example.tvapp.di
 
 
-import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import com.example.tvapp.models.DataStoreManager
@@ -10,7 +9,7 @@ import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
 import com.example.tvapp.database.EPGDao
 import com.example.tvapp.database.EPGDatabase
-import com.example.tvapp.database.EPGRepository
+import com.example.tvapp.repository.EPGRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -64,15 +63,6 @@ object NetworkModule {
     fun provideDataStoreManager(@ApplicationContext context: Context): DataStoreManager {
         return DataStoreManager(context)
     }
-//    @Provides
-//    fun provideApplication(@ApplicationContext context: Context): Application {
-//        return context as Application
-//    }
-//
-//    @Provides
-//    fun provideEPGRepository(dao: EPGDao): EPGRepository {
-//        return EPGRepository(dao)
-//    }
 
     @Provides
     @Singleton
