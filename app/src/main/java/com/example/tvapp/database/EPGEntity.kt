@@ -14,5 +14,4 @@ data class EPGEntity(
     val eventName: String,
     val eventDescription: String,
     val rating: Int
-
 )

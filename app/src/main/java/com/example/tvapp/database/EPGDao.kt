@@ -14,4 +14,7 @@ interface EPGDao {
     @Query("SELECT * FROM epg_events WHERE date = :date ORDER BY startTime")
     fun getEventsByDate(date: String): Flow<List<EPGEntity>>
 
+    @Query("SELECT * FROM epg_events ORDER BY startTime ASC")
+    fun getAllEPG(): Flow<List<EPGEntity>>
+
 }
