@@ -6,12 +6,11 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "epg_events")
 data class EPGEntity(
     @PrimaryKey val id: String,
-    val serviceId: String,
-    val serviceName: String,
+    val channelId: String,
+    val channelName: String,
     val date: String,
-    val startTime: String,
-    val endTime: String,
+    val startTime: Long,
+    val endTime: Long,
     val eventName: String,
-    val eventDescription: String,
-    val rating: Int
+    val eventDescription: String
 )

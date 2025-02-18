@@ -1,13 +1,14 @@
 package com.example.tvapp.di
 
 
+
+import com.example.tvapp.database.EPGDao
 import android.content.Context
 import androidx.room.Room
 import com.example.tvapp.models.DataStoreManager
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
-import com.example.tvapp.database.EPGDao
 import com.example.tvapp.database.EPGDatabase
 import com.example.tvapp.repository.EPGRepository
 import dagger.Module
@@ -71,7 +72,7 @@ object NetworkModule {
             context.applicationContext,
             EPGDatabase::class.java,
             "epg_database"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides

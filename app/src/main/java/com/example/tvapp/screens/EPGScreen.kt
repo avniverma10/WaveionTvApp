@@ -1,25 +1,7 @@
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.tvapp.database.EPGEntity
-import com.example.tvapp.viewmodels.EPGViewModel
-
-//package com.example.tvapp.database
 //
+//package com.example.tvapp.screens
+//
+//import android.util.Log
 //import androidx.compose.animation.animateContentSize
 //import androidx.compose.foundation.Image
 //import androidx.compose.foundation.background
@@ -36,7 +18,9 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //import androidx.compose.foundation.layout.padding
 //import androidx.compose.foundation.layout.size
 //import androidx.compose.foundation.layout.width
+//import androidx.compose.foundation.layout.wrapContentWidth
 //import androidx.compose.foundation.lazy.LazyColumn
+//import androidx.compose.foundation.lazy.LazyRow
 //import androidx.compose.foundation.lazy.items
 //import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material.icons.Icons
@@ -57,8 +41,6 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //import androidx.compose.ui.layout.ContentScale
 //import androidx.compose.ui.res.painterResource
 //import androidx.compose.ui.text.font.FontWeight
-//
-//import androidx.compose.ui.tooling.preview.Preview
 //import androidx.compose.ui.unit.dp
 //import androidx.compose.ui.unit.sp
 //import androidx.hilt.navigation.compose.hiltViewModel
@@ -67,23 +49,56 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //import androidx.tv.material3.Text
 //import coil3.compose.AsyncImage
 //import com.example.tvapp.R
+//import com.example.tvapp.database.EPGEntity
+//import com.example.tvapp.models.EPGChannel
+//import com.example.tvapp.models.EPGProgram
 //import com.example.tvapp.viewmodels.EPGViewModel
 //import com.google.accompanist.pager.ExperimentalPagerApi
 //import com.google.accompanist.pager.HorizontalPager
 //import com.google.accompanist.pager.rememberPagerState
 //import kotlinx.coroutines.delay
 //import kotlinx.coroutines.launch
+//import java.text.SimpleDateFormat
+//import java.util.Date
+//import java.util.Locale
+//import androidx.compose.runtime.getValue
+//import androidx.compose.runtime.setValue
+//import androidx.compose.ui.text.style.TextAlign
+//import com.example.tvapp.models.ChannelWithPrograms
+//import java.util.Calendar
+//
 //
 //@Composable
 //fun HomeScreen(viewModel: EPGViewModel = hiltViewModel()) {
-//    val epgData by viewModel.epgList.collectAsState()
+//    val epgChannels by viewModel.epgChannels.collectAsState()
+//
+//
+//// Assuming you have a list of ChannelWithPrograms which contains channels and their programs
+//    val currentTime = System.currentTimeMillis()
+//    val channelsWithPrograms = epgChannels // Assuming you already have the data
+//
+//// Filter programs that are ongoing based on the current time
+//    val ongoingPrograms = channelsWithPrograms.map { channelWithPrograms ->
+//        val filteredPrograms = channelWithPrograms.programs.filter { program ->
+//            val programStartTime = program.startTime
+//            val programEndTime = program.endTime
+//            // Check if current time is within the program start and end time
+//            programStartTime <= currentTime && programEndTime >= currentTime
+//        }
+//        channelWithPrograms.copy(programs = filteredPrograms)
+//    }
+//
+//
+//
 //
 //
 //    Row(modifier = Modifier.fillMaxSize()) {
 //        // Left Navigation Menu
 //        ExpandableNavigationMenu()
 //
-//        Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+//        Column(modifier = Modifier
+//            .fillMaxSize()
+//            .background(Color.Black)) {
 //            // Top Banner
 //            AdvertisementBanner()
 //
@@ -91,21 +106,58 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //                // Left Navigation Menu
 //                NavigationMenu()
 //
-//                Column(modifier = Modifier.weight(1f)) {
-//                    // Timeline
-//                    TimeHeader()
+//                TimeHeader()
+//                EPGContent(channelsWithPrograms = ongoingPrograms)
 //
-////                // EPG List
-////                LazyColumn {
-////                    items(epgData) { channel ->
-////                        ChannelRow(channel)
-////                    }
-////                }
 //                }
 //            }
 //        }
 //    }
+//
+//@Composable
+//fun EPGContent(channelsWithPrograms: List<ChannelWithPrograms>) {
+//    LazyColumn(
+//        modifier = Modifier.fillMaxSize()
+//    ) {
+//        items(channelsWithPrograms) { channelWithPrograms ->
+//            Column(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(8.dp)
+//            ) {
+//                // Display Channel Name
+//                Text(
+//                    text = channelWithPrograms.channel.name,
+//                    color = Color.White,
+//                    fontSize = 16.sp,
+//                    fontWeight = FontWeight.Bold
+//                )
+//
+//                // Display the current program for the channel
+//                channelWithPrograms.programs.forEach { program ->
+//                    Text(
+//                        text = "Program: ${program.title}",
+//                        color = Color.White,
+//                        fontSize = 14.sp
+//                    )
+//                    Text(
+//                        text = "Start: ${SimpleDateFormat("hh:mm a").format(Date(program.startTime))}",
+//                        color = Color.Gray,
+//                        fontSize = 12.sp
+//                    )
+//                    Text(
+//                        text = "End: ${SimpleDateFormat("hh:mm a").format(Date(program.endTime))}",
+//                        color = Color.Gray,
+//                        fontSize = 12.sp
+//                    )
+//                }
+//                Divider(color = Color.Gray, thickness = 1.dp)
+//            }
+//        }
+//    }
 //}
+//
+//
 //@Composable
 //fun ExpandableNavigationMenu() {
 //    var expanded by remember { mutableStateOf(false) }
@@ -220,7 +272,10 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //        }
 //    }
 //
-//    Box(modifier = Modifier.fillMaxWidth().height(130.dp).width(120.dp)) {
+//    Box(modifier = Modifier
+//        .fillMaxWidth()
+//        .height(130.dp)
+//        .width(120.dp)) {
 //        HorizontalPager(
 //            count = images.size,
 //            state = pagerState,
@@ -242,7 +297,8 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //                    pagerState.animateScrollToPage(prevPage)
 //                }
 //            },
-//            modifier = Modifier.align(Alignment.CenterStart)
+//            modifier = Modifier
+//                .align(Alignment.CenterStart)
 //                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
 //        ) {
 //            Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = "Previous", tint = Color.White)
@@ -256,40 +312,14 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //                    pagerState.animateScrollToPage(nextPage)
 //                }
 //            },
-//            modifier = Modifier.align(Alignment.CenterEnd)
+//            modifier = Modifier
+//                .align(Alignment.CenterEnd)
 //                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
 //        ) {
 //            Icon(imageVector = Icons.Filled.ArrowForward, contentDescription = "Next", tint = Color.White)
 //        }
 //    }
 //}
-//
-//
-//@Composable
-//fun ChannelRow(program: EPGEntity) {
-//    Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-//        // Channel Name
-//        Text(
-//            text = program.serviceName,
-//            color = Color.White,
-//            fontSize = 16.sp,
-//            modifier = Modifier.weight(1f)
-//        )
-//
-//        // Program Details
-//        Box(
-//            modifier = Modifier
-//                .width(120.dp)
-//                .height(50.dp)
-//                .background(Color.DarkGray)
-//                .padding(4.dp),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Text(program.eventName, color = Color.White, fontSize = 14.sp)
-//        }
-//    }
-//}
-//
 //
 //@Composable
 //fun NavigationMenu() {
@@ -339,36 +369,23 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //    }
 //}
 //
-//
-//
-////@Composable
-////fun NavigationMenu() {
-////    val menuItems = listOf("Recently Watched", "News", "Entertainment", "Music", "Kids", "Spiritual", "Movies", "Lifestyle")
-////
-////    Column(
-////        modifier = Modifier
-////            .width(120.dp)
-////            .fillMaxHeight()
-////            .background(Color.DarkGray)
-////            .padding(2.dp)
-////    ) {
-////        menuItems.forEach { item ->
-////            Box(
-////                modifier = Modifier
-////                    .fillMaxWidth()
-////                    .padding(8.dp)
-////                    .clickable { /* Handle Click */ },
-////                contentAlignment = Alignment.Center
-////            ) {
-////                Text(text = item, color = Color.White, fontSize = 14.sp)
-////            }
-////        }
-////    }
-////}
-//
 //@Composable
 //fun TimeHeader() {
-//    val timeSlots = listOf("05:00 PM", "05:30 PM", "06:00 PM", "06:30 PM")
+//    // Get current system time
+//    val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
+//
+//    // Update time every minute
+//    LaunchedEffect(Unit) {
+//        while (true) {
+//            currentTime.value = System.currentTimeMillis()
+//            delay(60 * 1000) // Update every minute
+//        }
+//    }
+//
+//    // Generate 30-minute slots from current time
+//    val timeSlots = remember(currentTime.value) {
+//        generateTimeSlots(currentTime.value)
+//    }
 //
 //    Row(
 //        modifier = Modifier
@@ -379,52 +396,38 @@ import com.example.tvapp.viewmodels.EPGViewModel
 //        horizontalArrangement = Arrangement.SpaceBetween
 //    ) {
 //        timeSlots.forEach { time ->
-//            Text(text = time, color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+//            androidx.compose.material3.Text(
+//                text = time,
+//                color = Color.White,
+//                fontSize = 14.sp,
+//                modifier = Modifier.weight(1f),
+//                textAlign = TextAlign.Center
+//            )
 //        }
 //    }
 //}
-////
-////@Preview(
-////    showBackground = true, widthDp = 960,  // Adjust for your target resolution (e.g., 1920x1080 TV)
-////    heightDp = 540
-////)
-////@Composable
-////fun PreviewExpandableNavigationMenu() {
-////    HomeScreen()
-////}
-////
 //
-
-@Composable
-fun EPGScreen(viewModel: EPGViewModel = hiltViewModel()) {
-    val epgList by viewModel.epgList.collectAsState()
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(text = "EPG Data", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-
-        if (epgList.isEmpty()) {
-            Text(text = "No EPG Data Found", color = Color.Red)
-        } else {
-            LazyColumn {
-                items(epgList) { program ->
-                    EPGItem(program)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun EPGItem(program: EPGEntity) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Channel: ${program.serviceName}", fontWeight = FontWeight.Bold)
-            Text(text = "Program: ${program.eventName}")
-            Text(text = "Time: ${program.startTime} - ${program.endTime}")
-            Text(text = "Description: ${program.eventDescription}")
-        }
-    }
-}
-
+//// Function to generate time slots (30-minute intervals)
+//fun generateTimeSlots(currentMillis: Long): List<String> {
+//    val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+//
+//    // Round current time to the nearest 30-minute slot
+//    val calendar = Calendar.getInstance().apply {
+//        timeInMillis = currentMillis
+//        set(Calendar.SECOND, 0)
+//        set(Calendar.MILLISECOND, 0)
+//        val minute = get(Calendar.MINUTE)
+//        set(Calendar.MINUTE, if (minute < 30) 30 else 0)
+//        if (minute >= 30) add(Calendar.HOUR_OF_DAY, 1) // Move to next hour if past 30 min mark
+//    }
+//
+//    // Generate the next 4 time slots (2-hour window)
+//    return List(5) {
+//        val time = dateFormat.format(calendar.time)
+//        calendar.add(Calendar.MINUTE, 30) // Move to next 30-minute slot
+//        time
+//    }
+//}
+//
+//
+//
