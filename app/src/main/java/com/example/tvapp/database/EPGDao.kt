@@ -22,26 +22,14 @@ interface EPGDao {
     @Query("SELECT * FROM epg_channels")
      fun getAllChannels(): Flow<List<EPGChannel>>
 
-    @Transaction
-    @Query("SELECT * FROM epg_channels WHERE id = :channelId")
-    fun getChannelWithPrograms(channelId: String): Flow<ChannelWithPrograms>
 
     // Synchronous version for filtering
     @Transaction
     @Query("SELECT * FROM epg_channels")
     suspend fun getAllChannelsWithProgramsSync(): List<ChannelWithPrograms>
 
-    @Transaction
-    @Query("SELECT * FROM epg_channels")
-    fun getAllChannelsWithPrograms(): Flow<List<ChannelWithPrograms>>
-
-    @Query("SELECT * FROM epg_programs WHERE channelId = :channelId AND date = :date")
-    fun getProgramsForChannel(channelId: String, date: String): Flow<List<EPGProgram>>
-
-    @Query("SELECT * FROM epg_programs")
-    fun getAllPrograms(): Flow<List<EPGProgram>>
-
-
+    @Query("SELECT * FROM epg_programs WHERE startTime >= :startTime AND startTime <= :endTime")
+    fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>>
 
 }
 

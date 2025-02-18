@@ -1,4 +1,5 @@
 package com.example.tvapp.viewmodels
+
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -9,58 +10,11 @@ import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import com.example.tvapp.repository.EPGRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
-//
-//@HiltViewModel
-//class EPGViewModel @Inject constructor(
-//    private val repository: EPGRepository,
-//    application: Application
-//) : AndroidViewModel(application) {
-//
-//    val epgChannels: StateFlow<List<EPGChannel>> = repository.getAllChannels().stateIn(
-//        viewModelScope,
-//        SharingStarted.Lazily,
-//        emptyList()
-//    )
-//
-//
-//
-//    init {
-//        viewModelScope.launch {
-//            Log.d("AVNI","Inside vm scope")
-//            repository.getAllChannels().collect { channelList ->
-//
-//                    val (channels, programs) = XMLParser.readEPGFromAssets(application.applicationContext)
-//                    Log.d("AVNI", "Parsed ${channels.id} channels and ${programs.size} programs")
-//                    repository.insertAll(channels, programs)
-//
-//            }
-//        }
-//    }
-//
-////    fun getProgramsForChannel(channelId: String): Flow<ChannelWithPrograms> =
-////        repository.getChannelWithPrograms(channelId)
-////fun getProgramsForChannel(channelId: String): Flow<ChannelWithPrograms> =
-////    repository.getChannelWithPrograms(channelId)
-////        .catch { emit(ChannelWithPrograms(EPGChannel("", ""), emptyList())) }  // Emit empty list in case of error
-////        .onStart { emit(ChannelWithPrograms(EPGChannel("", ""), emptyList())) } // Emit default value when flow starts
-//
-//
-//
-//    fun getProgramsForChannel(channelId: String): Flow<ChannelWithPrograms> =
-//        repository.getChannelWithPrograms(channelId)
-//            .distinctUntilChanged()  // ✅ Prevents stale data from Room
-//            .catch { emit(ChannelWithPrograms(EPGChannel(channelId, ""), emptyList())) }
-//
-//}
+
 @HiltViewModel
 class EPGViewModel @Inject constructor(
     private val repository: EPGRepository,
@@ -80,24 +34,70 @@ class EPGViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val (channels, programs) = XMLParser.readEPGFromAssets(application.applicationContext)
-                Log.d("AVNI", "Parsed XML: ${channels.id}, Programs: ${programs.size}")
                 repository.insertAll(channels, programs)
+                //filterProgramsByTime()
+                //filterProgramsBySpecificTime(1738693800000, 1738764000000)
+                filterProgramsByTime_test()
             } catch (e: Exception) {
-                Log.e("AVNI", "Error loading data", e)
+                Log.e("RISHI", "Error loading data", e)
             }
         }
     }
 
-//    fun filterProgramsByChannelAndDate(channelId: String, date: String) {
-//        viewModelScope.launch {
-//            val filteredPrograms = repository.getFilteredProgramsByChannelAndDate(channelId, date)
-//            _filteredPrograms.value = filteredPrograms
-//        }
-//    }
-//
-//    fun getProgramsForChannel(channelId: String): Flow<ChannelWithPrograms> =
-//        repository.getChannelWithPrograms(channelId)
-//            .distinctUntilChanged()
-//            .catch { emit(ChannelWithPrograms(EPGChannel(channelId, ""), emptyList())) }
-}
 
+    private fun filterProgramsBySpecificTime(startTime: Long, endTime: Long) {
+        viewModelScope.launch {
+            repository.getProgramsForNextHours(startTime, endTime).collect { programs ->
+                _filteredPrograms.value = programs
+                Log.d(
+                    "RISHI",
+                    "Fetched ${programs.size} programs for the specified time range."
+                )
+                programs.forEach { program ->
+                    Log.d(
+                        "RISHI",
+                        "Program: ${program.eventName}, Starts at: ${program.startTime}, Ends at: ${program.endTime}"
+                    )
+                }
+            }
+        }
+    }
+
+
+    private fun filterProgramsByTime_test() {
+        // Fixed current time for testing
+        val currentTime = 1738693800000L
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = currentTime
+            add(Calendar.HOUR, 4)  // Calculate time for 4 hours ahead from the fixed current time
+        }
+        val endTime = calendar.timeInMillis
+
+        viewModelScope.launch {
+            repository.getProgramsForNextHours(currentTime, endTime).collect { programs ->
+                _filteredPrograms.value = programs
+                Log.d("RISHI", "Programs fetched from fixed current time to next 4 hours: ${programs.size}")
+                programs.forEach { program ->
+                    Log.d("RISHI", "Program: ${program.eventName}, Start Time: ${program.startTime}, End Time__???: ${program.endTime}")
+                }
+            }
+        }
+    }
+
+
+    private fun filterProgramsByTime() {
+        val currentTime = System.currentTimeMillis()
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = currentTime
+            add(Calendar.HOUR, 4)  // Add 4 hours to the current time
+        }
+        val endTime = calendar.timeInMillis
+
+        viewModelScope.launch {
+            repository.getProgramsForNextHours(currentTime, endTime).collect { programs ->
+                _filteredPrograms.value = programs
+                Log.d("AVNI", "Programs fetched for the next 4 hours: ${programs.size}")
+            }
+        }
+    }
+}

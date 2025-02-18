@@ -55,13 +55,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.material3.android)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.common)
-
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("androidx.room:room-runtime:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")  // If you are using kapt
+    implementation("androidx.room:room-ktx:2.6.1")  // Add this line
+
 
 
     //Dagger Hilt
@@ -106,9 +107,8 @@ dependencies {
 
 
     //Rooms DB
-    implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+
 
 
 }

@@ -2,7 +2,6 @@ package com.example.tvapp
 
 
 import android.content.Context
-import android.util.Log
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import org.xmlpull.v1.XmlPullParser
@@ -13,7 +12,7 @@ import java.util.*
 
 object XMLParser {
 
-    fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
+    private fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
         val factory = XmlPullParserFactory.newInstance()
         val parser = factory.newPullParser()
         parser.setInput(inputStream, "UTF-8")
@@ -65,7 +64,7 @@ object XMLParser {
         return Pair(EPGChannel(id = channelId, name = channelName), programs)
     }
 
-    fun parseTime(timeString: String?): Long {
+    private fun parseTime(timeString: String?): Long {
         return try {
             val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
             format.parse(timeString)?.time ?: 0L

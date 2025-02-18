@@ -51,6 +51,10 @@ class EPGRepository @Inject constructor(
 
     fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()
 
+    fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>> {
+        return dao.getProgramsForNextHours(startTime, endTime)
+    }
+
 //    fun getAllChannelsWithPrograms(): Flow<List<ChannelWithPrograms>> = dao.getAllChannelsWithPrograms()
 //
 //    fun getChannelWithPrograms(channelId: String): Flow<ChannelWithPrograms> =
