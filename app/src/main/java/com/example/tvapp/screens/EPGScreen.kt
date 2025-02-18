@@ -77,9 +77,7 @@ fun HomeScreen(viewModel: EPGViewModel = hiltViewModel()) {
                 // Left Navigation Menu
                 NavigationMenu()
 
-//                //Time slots
-//                TimeHeader()
-                EPGScreen2()
+                EPGContent()
 
 
                 }
@@ -124,7 +122,7 @@ fun ExpandableNavigationMenu() {
                     painter = painterResource(id = item.icon),
                     contentDescription = item.label,
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(28.dp)
                 )
                 if (expanded) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -253,6 +251,7 @@ fun AdvertisementBanner() {
 @Composable
 fun NavigationMenu() {
     val menuItems = listOf(
+        MenuItem(R.drawable.all, "All"),
         MenuItem(R.drawable.recent, "Recently Watched"),
         MenuItem(R.drawable.news, "News"),
         MenuItem(R.drawable.face, "Entertainment"),

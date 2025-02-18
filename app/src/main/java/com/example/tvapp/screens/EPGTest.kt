@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -30,7 +28,7 @@ import java.util.*
 import kotlin.math.max
 
 @Composable
-fun EPGScreen2() {
+fun EPGContent() {
     val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
 
     // Auto-update current time every minute
@@ -53,7 +51,18 @@ fun EPGScreen2() {
         ) {
 
             // Left spacer for channel logos (fixed width)
-            Spacer(modifier = Modifier.width(100.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Text "ALL" just before the time slots
+            Text(
+                text = "All",
+                color = Color.White,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+            )
+
+            Spacer(modifier = Modifier.width(40.dp))
 
             TimeHeader()
         }
@@ -66,13 +75,23 @@ fun EPGScreen2() {
             Box(modifier = Modifier.fillMaxSize()) {
                 // Program grid for each channel
                 LazyColumn {
-                    items(channels) { channelWithPrograms ->
+                    itemsIndexed(channels) { index, channelWithPrograms -> // Use itemsIndexed to get index
                         Row(modifier = Modifier.fillMaxWidth().height(60.dp)) {
+
+                            Text(
+                                text = (index + 1).toString(), // Display channel number starting from 1
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                modifier = Modifier
+                                    .width(30.dp) // Set a fixed width for alignment
+                                    .padding(8.dp) .align(Alignment.CenterVertically), // Align vertically,
+                                textAlign = TextAlign.Center
+                            )
                             // Channel logo
                             Image(
                                 painter = painterResource(id = R.drawable.news8),
                                 contentDescription = channelWithPrograms.channel.name,
-                                modifier = Modifier.size(50.dp).padding(4.dp)
+                                modifier = Modifier.size(90.dp).padding(4.dp) .align(Alignment.CenterVertically) // Align vertically
                             )
                             // Programs grid – constrained to the timeline width
                             LazyRow(modifier = Modifier.width(timelineWidth)) {
