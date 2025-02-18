@@ -1,87 +1,88 @@
 package com.example.tvapp
 
+
+import android.content.Context
+import android.util.Log
+import com.example.tvapp.models.EPGChannel
+import com.example.tvapp.models.EPGProgram
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
-import android.content.Context
-import com.example.tvapp.models.EPGProgram
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 object XMLParser {
 
-    fun parseEPG(inputStream: InputStream): List<EPGProgram> {
-        val programs = mutableListOf<EPGProgram>()
+    fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
         val factory = XmlPullParserFactory.newInstance()
         val parser = factory.newPullParser()
         parser.setInput(inputStream, "UTF-8")
 
-        var serviceId = ""
-        var serviceName = ""
+        var channelId = ""
+        var channelName = ""
+        val programs = mutableListOf<EPGProgram>()
+
         var date = ""
-        var eventId = ""
-        var startTime = ""
-        var endTime = ""
+        var startTime: Long = 0
+        var endTime: Long = 0
+        var eventId = UUID.randomUUID().toString()
         var eventName = ""
         var eventDescription = ""
-        var rating = 0
-
-        var insideEvent = false
 
         while (parser.eventType != XmlPullParser.END_DOCUMENT) {
             when (parser.eventType) {
                 XmlPullParser.START_TAG -> {
                     when (parser.name) {
-                        "Service" -> {
-                            serviceId = parser.getAttributeValue(null, "id") ?: ""
-                            serviceName = parser.getAttributeValue(null, "name") ?: ""
+                        "channel" -> channelId = parser.getAttributeValue(null, "id") ?: ""
+                        "display-name" -> channelName = parser.nextText()
+                        "programme" -> {
+                            startTime = parseTime(parser.getAttributeValue(null, "start"))
+                            endTime = parseTime(parser.getAttributeValue(null, "stop"))
                         }
-                        "ScheduleDay" -> {
-                            date = parser.getAttributeValue(null, "date") ?: ""
-                        }
-                        "Event" -> {
-                            eventId = parser.getAttributeValue(null, "id") ?: ""
-                            insideEvent = true
-                        }
-                        "StartDateTime" -> startTime = parser.nextText()
-                        "EndDateTime" -> endTime = parser.nextText()
-                        "EventName" -> eventName = parser.nextText()
-                        "EventDescription" -> eventDescription = parser.nextText()
-                        "Rating" -> rating = parser.nextText().toIntOrNull() ?: 0
-
+                        "title" -> eventName = parser.nextText()
+                        "desc" -> eventDescription = parser.nextText()
+                        "date" -> date = parser.nextText()
                     }
                 }
                 XmlPullParser.END_TAG -> {
-                    if (parser.name == "Event" && insideEvent) {
+                    if (parser.name == "programme") {
                         programs.add(
                             EPGProgram(
-                                id = eventId,
-                                serviceId = serviceId,
-                                serviceName = serviceName,
+                                id = UUID.randomUUID().toString(),
+                                channelId = channelId,
                                 date = date,
                                 startTime = startTime,
                                 endTime = endTime,
                                 eventName = eventName,
-                                eventDescription = eventDescription,
-                                rating = rating
+                                eventDescription = eventDescription
                             )
                         )
-                        insideEvent = false
                     }
                 }
             }
             parser.next()
         }
-        return programs
+        return Pair(EPGChannel(id = channelId, name = channelName), programs)
     }
 
-    fun readEPGFromAssets(context: Context): List<EPGProgram> {
+    fun parseTime(timeString: String?): Long {
         return try {
-            val inputStream = context.assets.open("Asianet_News_EPG.xml")
-            val programs = parseEPG(inputStream)
+            val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
+            format.parse(timeString)?.time ?: 0L
+        } catch (e: Exception) {
+            0L
+        }
+    }
+
+    fun readEPGFromAssets(context: Context): Pair<EPGChannel, List<EPGProgram>> {
+        return try {
+            val inputStream = context.assets.open("SUNTV.xml")
+            val data = parseEPG(inputStream)
             inputStream.close()
-            programs
+            data
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            Pair(EPGChannel(id = "", name = ""), emptyList())
         }
     }
 }

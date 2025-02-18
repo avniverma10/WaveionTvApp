@@ -1,9 +1,10 @@
 package com.example.tvapp.models
 
-data class EPGChannel(
-    val id: Int,
-    val name: String,
-    val logoUrl: String,
-    val programs: List<EPGProgram>
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "epg_channels")
+data class EPGChannel(
+    @PrimaryKey val id: String,
+    val name: String,
 )

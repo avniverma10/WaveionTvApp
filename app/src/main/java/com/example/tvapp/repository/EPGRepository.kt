@@ -1,35 +1,71 @@
 package com.example.tvapp.repository
-
-import androidx.media3.common.util.Log
+import android.util.Log
 import com.example.tvapp.database.EPGDao
-import com.example.tvapp.database.EPGEntity
+import com.example.tvapp.models.ChannelWithPrograms
+import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import kotlinx.coroutines.flow.Flow
-
-
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
-
+//
+//class EPGRepository @Inject constructor(
+//    private val dao: EPGDao
+//) {
+//
+//
+//    suspend fun insertAll(channels: EPGChannel, programs: List<EPGProgram>) {
+//        Log.d("AVNIV", "insertAll: Inside repository - Inserting ${programs.size} programs for channel ${channels.id}")
+//        dao.insertChannels(channels)
+//        dao.insertPrograms(programs)
+//    }
+//
+//    fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()
+//
+////    fun getChannelWithPrograms(channelId: String): Flow<ChannelWithPrograms> =
+////        dao.getChannelWithPrograms(channelId)
+////            .catch { emit(ChannelWithPrograms(EPGChannel("", ""), emptyList())) }  // Provide fallback if error occurs
+//
+//
+//    fun getChannelWithPrograms(channelId: String): Flow<ChannelWithPrograms> =
+//        dao.getChannelWithPrograms(channelId)
+//            .onStart { Log.d("EPGRepository", "Fetching programs for channel $channelId") }
+//            .catch { e ->
+//                Log.e("EPGRepository", "Error fetching programs", e)
+//                emit(ChannelWithPrograms(EPGChannel("", ""), emptyList()))
+//            }
+//
+//}
 class EPGRepository @Inject constructor(
     private val dao: EPGDao
 ) {
-    suspend fun insertAll(events: List<EPGProgram>) {
-        val entities = events.map { program ->
-            EPGEntity(
-                id = program.id,
-                serviceId = program.serviceId,
-                serviceName = program.serviceName,
-                date = program.date,
-                startTime = program.startTime,
-                endTime = program.endTime,
-                eventName = program.eventName,
-                eventDescription = program.eventDescription,
-                rating = program.rating
-            )
-        }
-        Log.d("AVNIDB","Inserting ${entities.size} records into database...")  // Log data insertion
-        dao.insertAll(entities)
-    }
-    fun getEPGData(): Flow<List<EPGEntity>> = dao.getAllEPG()
 
-    fun getEventsByDate(date: String): Flow<List<EPGEntity>> = dao.getEventsByDate(date)  // Fetch by date
-}
+    suspend fun insertAll(channels: EPGChannel, programs: List<EPGProgram>) {
+        Log.d("AVNI", "insertAll: Inserting ${programs.size} programs for channel ${channels.id}")
+        dao.insertChannels(channels)
+        dao.insertPrograms(programs)
+        val insertedChannels = dao.getAllChannelsWithProgramsSync()
+        Log.d("AVNI", "After insertion, channels with programs: $insertedChannels")
+    }
+
+    fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()
+
+//    fun getAllChannelsWithPrograms(): Flow<List<ChannelWithPrograms>> = dao.getAllChannelsWithPrograms()
+//
+//    fun getChannelWithPrograms(channelId: String): Flow<ChannelWithPrograms> =
+//        dao.getChannelWithPrograms(channelId)
+//
+//    fun getAllPrograms(): Flow<List<EPGProgram>> = dao.getAllPrograms()  // ✅ New function to get all programs
+//
+//    suspend fun getFilteredProgramsByChannelAndDate(channelId: String, date: String): List<EPGProgram> {
+//        val allPrograms = dao.getAllPrograms().first() // Fetch all programs synchronously
+//        val filteredPrograms = allPrograms.filter { it.channelId == channelId && it.date == date }
+//
+//        Log.d("AVNI", "Filtered Programs for $channelId on $date: $filteredPrograms")
+//        return filteredPrograms
+    }
+
+
+
+
