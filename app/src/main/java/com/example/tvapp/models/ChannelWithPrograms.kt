@@ -10,7 +10,5 @@ data class ChannelWithPrograms(
         parentColumn = "id",
         entityColumn = "channelId"
     )
-
-
     val programs: List<EPGProgram>
 )
