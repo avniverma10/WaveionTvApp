@@ -1,9 +1,12 @@
 package com.example.tvapp
 
-
 import android.content.Context
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
@@ -22,8 +25,8 @@ object XMLParser {
         val programs = mutableListOf<EPGProgram>()
 
         var date = ""
-        var startTime: Long = 0
-        var endTime: Long = 0
+        var startTime = ""
+        var endTime = ""
         var eventId = UUID.randomUUID().toString()
         var eventName = ""
         var eventDescription = ""
@@ -35,8 +38,8 @@ object XMLParser {
                         "channel" -> channelId = parser.getAttributeValue(null, "id") ?: ""
                         "display-name" -> channelName = parser.nextText()
                         "programme" -> {
-                            startTime = parseTime(parser.getAttributeValue(null, "start"))
-                            endTime = parseTime(parser.getAttributeValue(null, "stop"))
+                            startTime = parser.getAttributeValue(null, "start")
+                            endTime = parser.getAttributeValue(null, "stop")
                         }
                         "title" -> eventName = parser.nextText()
                         "desc" -> eventDescription = parser.nextText()
@@ -65,23 +68,18 @@ object XMLParser {
     }
 
     private fun parseTime(timeString: String?): Long {
-        return try {
-            val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
-            format.parse(timeString)?.time ?: 0L
-        } catch (e: Exception) {
-            0L
-        }
+        val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
+        return format.parse(timeString)?.time ?: 0L
     }
 
-    fun readEPGFromAssets(context: Context): Pair<EPGChannel, List<EPGProgram>> {
-        return try {
-            val inputStream = context.assets.open("SUNTV.xml")
-            val data = parseEPG(inputStream)
-            inputStream.close()
-            data
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Pair(EPGChannel(id = "", name = ""), emptyList())
-        }
+    suspend fun readEPGsFromAssetsFolder(context: Context): List<Pair<EPGChannel, List<EPGProgram>>> = coroutineScope {
+        val filenames = context.assets.list("epgXml")?.filter { it.lowercase().endsWith(".xml") } ?: listOf()
+        filenames.map { filename ->
+            async(Dispatchers.IO) {
+                context.assets.open("epgXml/$filename").use { inputStream ->
+                    parseEPG(inputStream)
+                }
+            }
+        }.awaitAll()
     }
 }
