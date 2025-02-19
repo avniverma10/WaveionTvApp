@@ -14,11 +14,20 @@ class EPGRepository @Inject constructor(
 ) {
 
     suspend fun insertAll(channels: EPGChannel, programs: List<EPGProgram>) {
-        Log.d("AVNI", "insertAll: Inserting ${programs.size} programs for channel ${channels.id}")
-        dao.insertChannels(channels)
-        dao.insertPrograms(programs)
-        val insertedChannels = dao.getAllChannelsWithProgramsSync()
-        Log.d("AVNI", "After insertion, channels with programs: $insertedChannels")
+        if (!dao.isChannelExists(channels.id)) {
+            Log.d("RISHI", "insertAll: Inserting ${programs.size} programs for channel ${channels.id}")
+            dao.insertChannels(channels)
+            // TODO: RISHI no need to check "isProgramExists" on every insert, it will slow the process.
+            programs.forEach { program ->
+                if (!dao.isProgramExists(program.channelId, program.startTime, program.endTime)) {
+                    dao.insertPrograms(programs)
+                    val insertedChannels = dao.getAllChannelsWithProgramsSync()
+                    Log.d("RISHI", "After insertion, channels with programs: $insertedChannels")
+                }
+            }
+        }else{
+            Log.i("RISHI", "Skip this due to this channel is already present in DB. ${channels.id} ")
+        }
     }
 
     fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()

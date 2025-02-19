@@ -31,5 +31,13 @@ interface EPGDao {
     @Query("SELECT * FROM epg_programs WHERE startTime >= :startTime AND startTime <= :endTime")
     fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>>
 
+    // Check if a channel exists
+    @Query("SELECT EXISTS(SELECT 1 FROM epg_channels WHERE id = :channelId)")
+    suspend fun isChannelExists(channelId: String): Boolean
+
+    // Check if a specific program exists
+    @Query("SELECT EXISTS(SELECT 1 FROM epg_programs WHERE channelId = :channelId AND startTime = :startTime AND endTime = :endTime)")
+    suspend fun isProgramExists(channelId: String, startTime: String, endTime: String): Boolean
+
 }
 
