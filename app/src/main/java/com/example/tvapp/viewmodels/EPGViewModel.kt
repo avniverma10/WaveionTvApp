@@ -28,6 +28,8 @@ class EPGViewModel @Inject constructor(
     )
 
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
+    val filteredPrograms: StateFlow<List<EPGProgram>> = _filteredPrograms.asStateFlow()
+
 
     init {
         viewModelScope.launch {
@@ -63,4 +65,6 @@ class EPGViewModel @Inject constructor(
             }
         }
     }
+
+
 }
