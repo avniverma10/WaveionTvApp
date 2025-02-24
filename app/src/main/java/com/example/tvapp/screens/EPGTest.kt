@@ -1,6 +1,7 @@
 package com.example.tvapp.screens
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,10 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.tvapp.R
 import com.example.tvapp.viewmodels.EPGViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -88,15 +93,17 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 color = Color.White,
                 fontSize = 18.sp
             )
-            Spacer(modifier = Modifier.width(50.dp))
+//            Spacer(modifier = Modifier.width(50.dp))
         }
 
         // Wrap the time header and program listings in one Box so we can overlay the red indicator.
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             // Get full container width.
             val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+
             // Compute the left margin (channel column width) in pixels.
             val channelColumnWidthPx = with(LocalDensity.current) { channelColumnWidth.toPx() }
+
             // The timeline area is the remainder of the width.
             val timelineWidthPx = containerWidthPx - channelColumnWidthPx
 
@@ -125,10 +132,21 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
             // Column containing header and program listings.
             Column(modifier = Modifier.fillMaxSize()) {
                 // Time header: add a left spacer so time slots start from the timeline area.
+
                 TimeHeader(channelColumnWidth)
                 // Program listings.
+
+                // Horizontal divider under the row to give a column feel.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.Gray)
+                )
+
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(filteredPrograms.groupBy { it.channelId }.entries.toList()) { (channelId, programs) ->
+                    itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { index, channelGroup ->
+                        val (channelId, programs) = channelGroup
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -136,6 +154,35 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Display channel number starting from 1.
+                            Text(
+                                text = "${index + 1}",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            // Vertical divider
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(1.dp)
+                                    .background(Color.Gray)
+                            )
+
+                            Image(
+                                painter = painterResource(id = R.drawable.aajtak),
+                                contentDescription = "Channel Logo",
+                                modifier = Modifier.size(40.dp)
+                            )
+                            // Vertical divider
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(1.dp)
+                                    .background(Color.Gray)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             // Channel names column.
                             Column(
                                 modifier = Modifier
@@ -143,9 +190,15 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     .padding(8.dp),
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                Text(text = "ID: $channelId", color = Color.White, fontSize = 14.sp)
-                                Text(text = "Channel $channelId", color = Color.Gray, fontSize = 12.sp)
+                                Text(text = "${channelId}", color = Color.White, fontSize = 12.sp)
                             }
+                            // Vertical divider after channel name
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(1.dp)
+                                    .background(Color.Gray)
+                            )
                             // Program timeline.
                             LazyRow(
                                 modifier = Modifier
@@ -195,8 +248,16 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                 }
                             }
                         }
+                        // Horizontal divider under the row to give a column feel.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color.Gray)
+                        )
                     }
                 }
+
             }
             // Overlay the vertical red indicator spanning the full height.
             Box(
@@ -213,7 +274,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 @Composable
 fun TimeHeader(channelOffset: androidx.compose.ui.unit.Dp) {
     // Use a fixed current time for initialization; update every minute.
-    val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250208104600")) }
+    val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250205010000")) }
     LaunchedEffect(Unit) {
         while (true) {
             delay(60_000) // Update every minute.

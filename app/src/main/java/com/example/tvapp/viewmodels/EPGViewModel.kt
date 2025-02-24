@@ -48,7 +48,7 @@ class EPGViewModel @Inject constructor(
 
     private fun filterProgramsByTime_test() {
         // TODO: RISHI Fixed current time for testing
-        val currentTime = 20250212070000L
+        val currentTime = 20250205010000L
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
             add(Calendar.HOUR, 4)

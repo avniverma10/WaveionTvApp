@@ -1,0 +1,701 @@
+<?xml version="1.0" encoding="utf-8"?>
+<tv>
+  <channel id="61.ETVPLUS.in">
+    <display-name>ETV PLUS</display-name>
+  </channel>
+  <programme start="20250205000000 +0530" stop="20250205003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205003000 +0530" stop="20250205010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205010000 +0530" stop="20250205020000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Paduta Teeyaga</title>
+    <desc>Padutha Theeyaga is a Telugu-language singing reality show on ETV Telugu, seeking to discover the best singing talent in the region.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205020000 +0530" stop="20250205040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205040000 +0530" stop="20250205060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205060000 +0530" stop="20250205063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205063000 +0530" stop="20250205070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Shani Mahimalu</title>
+    <desc>A religious scholar shares insightful discourses on spiritual teachings, guiding viewers on their spiritual journey.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205070000 +0530" stop="20250205080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205080000 +0530" stop="20250205090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Paduta Teeyaga</title>
+    <desc>Padutha Theeyaga is a Telugu-language singing reality show on ETV Telugu, seeking to discover the best singing talent in the region.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205090000 +0530" stop="20250205120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sudheer Gaadi Pelli Gola Event</title>
+    <desc>An entertainment-based program.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205120000 +0530" stop="20250205123000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogalirekulu</title>
+    <desc>Dharma, the eldest of five orphans, takes care of his four younger siblings Satya, Daya, Santhi and Keerthana, who wish to avenge their parents' deaths.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205123000 +0530" stop="20250205130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205130000 +0530" stop="20250205133000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205133000 +0530" stop="20250205140000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Attharintiki Daaredi</title>
+    <desc>The grandson of a rich businessman vows to bring back Sunanda, disowned years ago for marrying Rajasekhar.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205140000 +0530" stop="20250205143000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitara</title>
+    <desc>Devdas aids homeless Sitaara's rise to stardom, though he loves her, he reunites her with her true love.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205143000 +0530" stop="20250205150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205150000 +0530" stop="20250205180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Ghatotkachudu</title>
+    <desc>A girl faces murder from greedy relatives, but a lesser Hindu God protects her!</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205180000 +0530" stop="20250205200000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205200000 +0530" stop="20250205203000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205203000 +0530" stop="20250205213000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Alitho Saradaga</title>
+    <desc>Alitho Saradaga</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250205213000 +0530" stop="20250206000000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Ma Aavida Collector</title>
+    <desc>Ma Aavida Collector</desc>
+    <date>20250205</date>
+  </programme>
+  <programme start="20250206000000 +0530" stop="20250206003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206003000 +0530" stop="20250206010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206010000 +0530" stop="20250206020000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Alitho Saradaga</title>
+    <desc>Alitho Saradaga</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206020000 +0530" stop="20250206040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206040000 +0530" stop="20250206060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206060000 +0530" stop="20250206063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206063000 +0530" stop="20250206070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Shani Mahimalu</title>
+    <desc>A religious scholar shares insightful discourses on spiritual teachings, guiding viewers on their spiritual journey.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206070000 +0530" stop="20250206080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206080000 +0530" stop="20250206090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Alitho Saradaga</title>
+    <desc>Alitho Saradaga</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206090000 +0530" stop="20250206120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Anukunnadi Okati Ainadi Okati Event</title>
+    <desc>A special entertainment-based show on the occasion of Vinayaka Chavithi festival.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206120000 +0530" stop="20250206123000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogalirekulu</title>
+    <desc>Dharma, the eldest of five orphans, takes care of his four younger siblings Satya, Daya, Santhi and Keerthana, who wish to avenge their parents' deaths.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206123000 +0530" stop="20250206130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206130000 +0530" stop="20250206133000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206133000 +0530" stop="20250206140000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Attharintiki Daaredi</title>
+    <desc>The grandson of a rich businessman vows to bring back Sunanda, disowned years ago for marrying Rajasekhar.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206140000 +0530" stop="20250206143000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitara</title>
+    <desc>Devdas aids homeless Sitaara's rise to stardom, though he loves her, he reunites her with her true love.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206143000 +0530" stop="20250206150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206150000 +0530" stop="20250206180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Chattaniki Kallu Levu</title>
+    <desc>Chattaniki Kallu Levu</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206180000 +0530" stop="20250206200000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206200000 +0530" stop="20250206203000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206203000 +0530" stop="20250206213000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Wow</title>
+    <desc>Wow</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250206213000 +0530" stop="20250207000000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mahanagaram Lo Mayagadu</title>
+    <desc>Mahanagaram Lo Mayagadu</desc>
+    <date>20250206</date>
+  </programme>
+  <programme start="20250207000000 +0530" stop="20250207003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207003000 +0530" stop="20250207010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207010000 +0530" stop="20250207020000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Wow</title>
+    <desc>Wow</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207020000 +0530" stop="20250207040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207040000 +0530" stop="20250207060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207060000 +0530" stop="20250207063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207063000 +0530" stop="20250207070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Shani Mahimalu</title>
+    <desc>A religious scholar shares insightful discourses on spiritual teachings, guiding viewers on their spiritual journey.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207070000 +0530" stop="20250207080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207080000 +0530" stop="20250207090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Wow</title>
+    <desc>Wow</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207090000 +0530" stop="20250207120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Ugadi Jaatiratnalu Event</title>
+    <desc>Ugadi Jaatiratnalu Event celebrates Telugu New Year with festivities.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207120000 +0530" stop="20250207123000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogalirekulu</title>
+    <desc>Dharma, the eldest of five orphans, takes care of his four younger siblings Satya, Daya, Santhi and Keerthana, who wish to avenge their parents' deaths.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207123000 +0530" stop="20250207130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207130000 +0530" stop="20250207133000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207133000 +0530" stop="20250207140000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Attharintiki Daaredi</title>
+    <desc>The grandson of a rich businessman vows to bring back Sunanda, disowned years ago for marrying Rajasekhar.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207140000 +0530" stop="20250207143000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitara</title>
+    <desc>Devdas aids homeless Sitaara's rise to stardom, though he loves her, he reunites her with her true love.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207143000 +0530" stop="20250207150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207150000 +0530" stop="20250207180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Varasudochadu</title>
+    <desc>Bose meets Raghu, who is going to die soon, at a hospital and agrees to take up his disguise and go to his village. Upon reaching there, he realises that Raghu's family is after Raghu's property.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207180000 +0530" stop="20250207200000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207200000 +0530" stop="20250207203000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207203000 +0530" stop="20250207213000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Soundarya Lahari</title>
+    <desc>Soundarya Lahari</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250207213000 +0530" stop="20250208000000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Kodanda Ramudu</title>
+    <desc>Kodanda Ramudu</desc>
+    <date>20250207</date>
+  </programme>
+  <programme start="20250208000000 +0530" stop="20250208003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208003000 +0530" stop="20250208010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Peru Meenakshi</title>
+    <desc>Meenakshi, from a middle-class family, falls in love with wealthy businessman Radha Krishna.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208010000 +0530" stop="20250208020000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Soundarya Lahari</title>
+    <desc>Soundarya Lahari</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208020000 +0530" stop="20250208040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208040000 +0530" stop="20250208060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208060000 +0530" stop="20250208063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208063000 +0530" stop="20250208070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Shani Mahimalu</title>
+    <desc>A religious scholar shares insightful discourses on spiritual teachings, guiding viewers on their spiritual journey.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208070000 +0530" stop="20250208080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208080000 +0530" stop="20250208090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Cash 2</title>
+    <desc>Dude, this broke kid tries to launder a ton of cash before the government shuts down the old money.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208090000 +0530" stop="20250208100000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Anubavinchu Raja</title>
+    <desc>A young man lives a lavish lifestyle after inheriting his grandfather's immense wealth. However, he becomes a laughing stock of his village and subsequently tries to prove himself worthy of respect.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208100000 +0530" stop="20250208130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Raadaha Manoharam Bubble Episode</title>
+    <desc>Bubble episode with Raadaha, exploring love and relationships.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208130000 +0530" stop="20250208150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208150000 +0530" stop="20250208180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Raaja Vaaru Raani Gaaru</title>
+    <desc>Raaja Vaaru Raani Gaaru</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208180000 +0530" stop="20250208183000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>The Sisters</title>
+    <desc>Three adopted sisters reconnect after their mom's passing, exploring cherished memories filled with stunning locations and quirky characters, rediscovering their bond.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208183000 +0530" stop="20250208213000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Idhi Kada Pandaga Ante Event</title>
+    <desc>Idhi Kada Pandaga Ante Event</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208213000 +0530" stop="20250208220000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Naa Uchvasam Kavanam</title>
+    <desc>Explores Sirivennala Seetarama Shastri's essence through love songs and emotions.</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250208220000 +0530" stop="20250209003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Bro</title>
+    <desc>Bro</desc>
+    <date>20250208</date>
+  </programme>
+  <programme start="20250209003000 +0530" stop="20250209010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>The Sisters</title>
+    <desc>Three adopted sisters reconnect after their mom's passing, exploring cherished memories filled with stunning locations and quirky characters, rediscovering their bond.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209010000 +0530" stop="20250209030000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sri Devi Drama Company</title>
+    <desc>Artists entertain with skits, stunts, and dance to engage viewers.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209030000 +0530" stop="20250209040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Anubavinchu Raja</title>
+    <desc>A young man lives a lavish lifestyle after inheriting his grandfather's immense wealth. However, he becomes a laughing stock of his village and subsequently tries to prove himself worthy of respect.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209040000 +0530" stop="20250209060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209060000 +0530" stop="20250209063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209063000 +0530" stop="20250209070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Shani Mahimalu</title>
+    <desc>A religious scholar shares insightful discourses on spiritual teachings, guiding viewers on their spiritual journey.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209070000 +0530" stop="20250209080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209080000 +0530" stop="20250209083000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Jaati Ratnalu Remix</title>
+    <desc>A hilarious TV series packed with laughter-inducing skits, witty banter, and comedic performances.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209083000 +0530" stop="20250209090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Jeevana Jyothy</title>
+    <desc>A woman is attached to her brother-in-law's son and is unable to cope with his death. She becomes mentally unstable and is kept in a medical facility, while her own child is raised by her relatives.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209090000 +0530" stop="20250209120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Pilla Nachindi</title>
+    <desc>Pilla Nachindi</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209120000 +0530" stop="20250209150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Allari Ramudu</title>
+    <desc>Chamundeswari, a headstrong lady, loves money, ignores human relationships and even dominates her family. When her daughter falls in love with a house helper, she tries everything to separate them.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209150000 +0530" stop="20250209180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Kalisundam Randi Event</title>
+    <desc>Join us for the fun Ugadi Special Event on Mallemalatv!</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209180000 +0530" stop="20250209183000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>The Sisters</title>
+    <desc>Three adopted sisters reconnect after their mom's passing, exploring cherished memories filled with stunning locations and quirky characters, rediscovering their bond.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209183000 +0530" stop="20250209213000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mosagallaku Mosagadu</title>
+    <desc>Mosagallaku Mosagadu</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209213000 +0530" stop="20250209223000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Cash 2</title>
+    <desc>Dude, this broke kid tries to launder a ton of cash before the government shuts down the old money.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250209223000 +0530" stop="20250210010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sr Kalyanamandapam</title>
+    <desc>A young guy navigates the ups and downs of love while working to mend his rocky relationship with his dad, blending romance and family struggles along the way.</desc>
+    <date>20250209</date>
+  </programme>
+  <programme start="20250210010000 +0530" stop="20250210040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Radha Manoharam Bubble Episode</title>
+    <desc>Radha Manoharam Bubble Episode: A lively look at Radha and Manoharam's latest adventures.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210040000 +0530" stop="20250210060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210060000 +0530" stop="20250210063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210063000 +0530" stop="20250210070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Josh</title>
+    <desc>Satya confronts corrupt students influenced by a local political mafia leader, and joins the college to reform them.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210070000 +0530" stop="20250210080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210080000 +0530" stop="20250210090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Jabardhast</title>
+    <desc>Six teams compete with hilarious skits for cash and bragging rights.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210090000 +0530" stop="20250210120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Evadi Gola Vaadidi Event</title>
+    <desc>Evadi Gola Vaadidi is a New Year event with skits, dances, and games.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210120000 +0530" stop="20250210123000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogalirekulu</title>
+    <desc>Dharma, the eldest of five orphans, takes care of his four younger siblings Satya, Daya, Santhi and Keerthana, who wish to avenge their parents' deaths.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210123000 +0530" stop="20250210130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210130000 +0530" stop="20250210133000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Movie</title>
+    <desc>Dasaramahotshavam 2017</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210133000 +0530" stop="20250210140000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Ye Maya Chesave</title>
+    <desc>Engineering grad Karthik aspires to filmmaking, loves Jessie, but faces opposition from her father due to religion.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210140000 +0530" stop="20250210143000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitara</title>
+    <desc>Devdas aids homeless Sitaara's rise to stardom, though he loves her, he reunites her with her true love.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210143000 +0530" stop="20250210150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Anandi</title>
+    <desc>Viewers can tune in to spiritual talks by respected leaders and scholars.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210150000 +0530" stop="20250210180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Agni</title>
+    <desc>Shekawat plots to keep his family estate after his parents' will.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210180000 +0530" stop="20250210183000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Josh</title>
+    <desc>Satya confronts corrupt students influenced by a local political mafia leader, and joins the college to reform them.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210183000 +0530" stop="20250210200000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210200000 +0530" stop="20250210203000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210203000 +0530" stop="20250210210000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sirivennela</title>
+    <desc>Tour guide aids blind flautist's rise. When he proposes, her past fears taint, leading her to sacrifice love.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210210000 +0530" stop="20250210220000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Crime Patrol</title>
+    <desc>Crime Patrol mixes real crime stories with dramatic storytelling to engage viewers.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250210220000 +0530" stop="20250211003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Police</title>
+    <desc>Krack follows a police sergeant's rivalry with a notorious crime figure.</desc>
+    <date>20250210</date>
+  </programme>
+  <programme start="20250211003000 +0530" stop="20250211010000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitaara</title>
+    <desc>Sitaara's film success and love story intertwine with surprising twists and reunions.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211010000 +0530" stop="20250211013000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sirivennela</title>
+    <desc>Tour guide aids blind flautist's rise. When he proposes, her past fears taint, leading her to sacrifice love.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211013000 +0530" stop="20250211023000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Crime Patrol</title>
+    <desc>Crime Patrol mixes real crime stories with dramatic storytelling to engage viewers.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211023000 +0530" stop="20250211040000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211040000 +0530" stop="20250211060000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Saragala Pallaki</title>
+    <desc>A comprehensive compilation of popular musical numbers from hit Tollywood movies by famous artists from around the world.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211060000 +0530" stop="20250211063000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Yoga Sutra</title>
+    <desc>A certified yoga expert, deconstructs the technique of practising various yoga positions and their uses for the viewers.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211063000 +0530" stop="20250211070000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Josh</title>
+    <desc>Satya confronts corrupt students influenced by a local political mafia leader, and joins the college to reform them.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211070000 +0530" stop="20250211080000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sadguru Sai</title>
+    <desc>A religious leader delivers a discourse on the teachings and values of Shirdi Sai Baba, singing songs in praise.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211080000 +0530" stop="20250211090000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Jabardhast</title>
+    <desc>Six teams compete with hilarious skits for cash and bragging rights.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211090000 +0530" stop="20250211120000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sudheer Gaadi Pelli Gola Event</title>
+    <desc>An entertainment-based program.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211120000 +0530" stop="20250211123000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogalirekulu</title>
+    <desc>Dharma, the eldest of five orphans, takes care of his four younger siblings Satya, Daya, Santhi and Keerthana, who wish to avenge their parents' deaths.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211123000 +0530" stop="20250211130000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Swathi Chinukulu</title>
+    <desc>Two women, different worlds, face struggles and love in their journeys.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211130000 +0530" stop="20250211133000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Movie</title>
+    <desc>Dasaramahotshavam 2017</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211133000 +0530" stop="20250211140000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Ye Maya Chesave</title>
+    <desc>Engineering grad Karthik aspires to filmmaking, loves Jessie, but faces opposition from her father due to religion.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211140000 +0530" stop="20250211143000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sitara</title>
+    <desc>Devdas aids homeless Sitaara's rise to stardom, though he loves her, he reunites her with her true love.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211143000 +0530" stop="20250211150000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Anandi</title>
+    <desc>Viewers can tune in to spiritual talks by respected leaders and scholars.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211150000 +0530" stop="20250211180000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Movie</title>
+    <desc>Dasaramahotshavam 2017</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211180000 +0530" stop="20250211183000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Josh</title>
+    <desc>Satya confronts corrupt students influenced by a local political mafia leader, and joins the college to reform them.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211183000 +0530" stop="20250211200000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sridevi Drama Company</title>
+    <desc>Talented artists perform funny skits, showcase dangerous stunts and dance on popular tracks in order to entertain the viewers.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211200000 +0530" stop="20250211203000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Thulasi</title>
+    <desc>Tulasi struggles to contain violence for family but confronts new threat, betraying their trust.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211203000 +0530" stop="20250211210000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Sirivennela</title>
+    <desc>Tour guide aids blind flautist's rise. When he proposes, her past fears taint, leading her to sacrifice love.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211210000 +0530" stop="20250211220000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Crime Patrol</title>
+    <desc>Crime Patrol mixes real crime stories with dramatic storytelling to engage viewers.</desc>
+    <date>20250211</date>
+  </programme>
+  <programme start="20250211220000 +0530" stop="20250212003000 +0530" channel="61.ETVPLUS.in" clumpidx="0/1">
+    <title>Mogudu Pellalu</title>
+    <desc>Chitti marries Saroja, but their expectations differ; Vallabh Rao tries to help.</desc>
+    <date>20250211</date>
+  </programme>
+</tv>

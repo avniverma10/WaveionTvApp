@@ -50,23 +50,13 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
-import com.example.tvapp.database.EPGEntity
-import com.example.tvapp.models.EPGChannel
-import com.example.tvapp.models.EPGProgram
 import com.example.tvapp.viewmodels.EPGViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.style.TextAlign
-import com.example.tvapp.models.ChannelWithPrograms
-import java.util.Calendar
+
 
 
 @Composable
