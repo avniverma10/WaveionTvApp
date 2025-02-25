@@ -1,5 +1,6 @@
 package com.example.tvapp.repository
 import android.util.Log
+import com.example.tvapp.api.ApiServiceForData
 import com.example.tvapp.database.EPGDao
 import com.example.tvapp.models.ChannelWithPrograms
 import com.example.tvapp.models.EPGChannel
@@ -9,9 +10,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
-class EPGRepository @Inject constructor(
-    private val dao: EPGDao
-) {
+class EPGRepository @Inject constructor(private val dao: EPGDao, private val apiService: ApiServiceForData) {
 
     suspend fun insertAll(channels: EPGChannel, programs: List<EPGProgram>) {
         if (!dao.isChannelExists(channels.id)) {
@@ -35,6 +34,18 @@ class EPGRepository @Inject constructor(
     fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>> {
         return dao.getProgramsForNextHours(startTime, endTime)
     }
+
+    //Function to fetch the logo URL from the API.
+    suspend fun fetchLogoUrl(): String? {
+        return try {
+            val epgFiles = apiService.getEpgFiles()
+            epgFiles.firstOrNull()?.thumbnailUrl
+        } catch (e: Exception) {
+            Log.e("logo", "Error fetching logo URL", e)
+            null
+        }
+    }
+
 
 }
 

@@ -1,9 +1,12 @@
 package com.example.tvapp.viewmodels
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import com.example.tvapp.XMLParser
 import com.example.tvapp.models.ChannelWithPrograms
 import com.example.tvapp.models.EPGChannel
@@ -30,6 +33,10 @@ class EPGViewModel @Inject constructor(
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
     val filteredPrograms: StateFlow<List<EPGProgram>> = _filteredPrograms.asStateFlow()
 
+    // State flow for the logo URL.
+    private val _logoUrl = MutableStateFlow<String?>(null)
+    val logoUrl: StateFlow<String?> = _logoUrl.asStateFlow()
+
 
     init {
         viewModelScope.launch {
@@ -43,6 +50,12 @@ class EPGViewModel @Inject constructor(
                 Log.e("RISHI", "Error loading data", e)
             }
         }
+        //Launch a coroutine to fetch the logo URL from the API.
+        viewModelScope.launch {
+            val url = repository.fetchLogoUrl()
+            _logoUrl.value = url
+        }
+
     }
 
 
@@ -65,6 +78,10 @@ class EPGViewModel @Inject constructor(
             }
         }
     }
+
+
+
+
 
 
 }

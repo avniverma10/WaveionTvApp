@@ -54,12 +54,16 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import androidx.compose.ui.input.key.Key
+import coil3.compose.AsyncImage
 
 
 import java.util.Locale
 @Composable
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
+
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
+    val logoUrl by viewModel.logoUrl.collectAsState()
+
     val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
 
     // Define a fixed width for the left panel that contains channel info.
@@ -139,7 +143,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Left Panel: Channel info.
-                            ChannelInfo(leftPanelWidth, channelIndex, channelId)
+                            ChannelInfo(leftPanelWidth, channelIndex, channelId, logoUrl)
 
                             // Timeline area for program listings.
                             LazyRow(
@@ -242,7 +246,7 @@ fun LeftPanelHeader(width: Dp) {
 }
 
 @Composable
-fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String) {
+fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUrl: String?) {
     // This composable consolidates all channel info into a fixed-width container.
     Row(modifier = Modifier.width(leftPanelWidth), verticalAlignment = Alignment.CenterVertically) {
         Spacer(modifier = Modifier.width(8.dp))
@@ -258,8 +262,8 @@ fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String) {
                 .width(1.dp)
                 .background(Color.Gray)
         )
-        Image(
-            painter = painterResource(id = R.drawable.aajtak),
+        AsyncImage(
+            model = logoUrl,
             contentDescription = "Channel Logo",
             modifier = Modifier.size(40.dp)
         )

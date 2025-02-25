@@ -82,8 +82,8 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideEPGRepository(dao: EPGDao): EPGRepository {
-        return EPGRepository(dao)
+    fun provideEPGRepository(dao: EPGDao,apiServiceForData: ApiServiceForData): EPGRepository {
+        return EPGRepository(dao,apiServiceForData)
 
     }
 }
