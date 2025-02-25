@@ -34,11 +34,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,16 +57,20 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Locale
+import androidx.compose.ui.input.key.Key
 
-@SuppressLint("UnusedBoxWithConstraintsScope")
+
+import java.util.Locale
 @Composable
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
-    // Use a fixed timestamp for initialization; will update with system time.
     val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
 
-    // Update current time every second for smooth movement.
+    // Define a fixed width for the left panel that contains channel info.
+    // Adjust this value to the total width of all elements in your left panel.
+    val leftPanelWidth = 205.dp
+
+    // Update current time every second.
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
@@ -67,47 +78,29 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
         }
     }
 
-    // minutesPerPixel for program scrolling (adjust as needed).
+    // minutesPerPixel for program scrolling.
     val minutesPerPixel = 2
 
-    // Define a fixed left margin equal to the channel names column width.
-    val channelColumnWidth = 120.dp
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        // Top row with "All" text.
+    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        // Top row with "All" text and TimeHeader.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
                 .background(Color.Black),
-            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "All",
-                color = Color.White,
-                fontSize = 18.sp
-            )
-//            Spacer(modifier = Modifier.width(50.dp))
+            LeftPanelHeader(leftPanelWidth)
+            TimeHeader(0.dp)
         }
 
-        // Wrap the time header and program listings in one Box so we can overlay the red indicator.
+        // The BoxWithConstraints now uses the same leftPanelWidth.
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            // Get full container width.
             val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+            val leftPanelWidthPx = with(LocalDensity.current) { leftPanelWidth.toPx() }
+            val timelineWidthPx = containerWidthPx - leftPanelWidthPx
 
-            // Compute the left margin (channel column width) in pixels.
-            val channelColumnWidthPx = with(LocalDensity.current) { channelColumnWidth.toPx() }
-
-            // The timeline area is the remainder of the width.
-            val timelineWidthPx = containerWidthPx - channelColumnWidthPx
-
-            // Compute the start of the current 30-minute block by flooring minutes.
+            // Compute the start of the current 30-minute block.
             val blockStartMillis = run {
                 val calendar = Calendar.getInstance().apply {
                     timeInMillis = currentTimeMillis.value
@@ -118,25 +111,19 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 }
                 calendar.timeInMillis
             }
-            // Calculate the fraction (0.0 to 1.0) of the current half‑hour that has elapsed.
+            // Fraction of the half‑hour that has elapsed.
             val fraction = ((currentTimeMillis.value - blockStartMillis)
                 .coerceAtLeast(0)
                 .toFloat()) / (30 * 60 * 1000).toFloat()
-            // Assume the TimeHeader displays 5 slots (each 30 minutes) over the timeline area.
+
+            // Assuming 5 time slots, calculate width per slot.
             val oneSlotWidthPx = timelineWidthPx / 5f
-            // The red indicator should start at the beginning of the timeline (i.e. after the channel column)
-            // and then move within the first slot.
-            val indicatorOffsetPx = channelColumnWidthPx + fraction * oneSlotWidthPx
+            val indicatorOffsetPx = leftPanelWidthPx + fraction * oneSlotWidthPx
             val indicatorOffsetDp = with(LocalDensity.current) { indicatorOffsetPx.toDp() }
 
-            // Column containing header and program listings.
             Column(modifier = Modifier.fillMaxSize()) {
-                // Time header: add a left spacer so time slots start from the timeline area.
 
-                TimeHeader(channelColumnWidth)
-                // Program listings.
-
-                // Horizontal divider under the row to give a column feel.
+                // Horizontal divider under the header row.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -144,8 +131,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                         .background(Color.Gray)
                 )
 
+                // Channel list.
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { index, channelGroup ->
+                    itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
                         Row(
                             modifier = Modifier
@@ -154,81 +142,60 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            // Display channel number starting from 1.
-                            Text(
-                                text = "${index + 1}",
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Vertical divider
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(Color.Gray)
-                            )
+                            // Left Panel: Channel info.
+                            ChannelInfo(leftPanelWidth, channelIndex, channelId)
 
-                            Image(
-                                painter = painterResource(id = R.drawable.aajtak),
-                                contentDescription = "Channel Logo",
-                                modifier = Modifier.size(40.dp)
-                            )
-                            // Vertical divider
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(Color.Gray)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            // Channel names column.
-                            Column(
-                                modifier = Modifier
-                                    .width(channelColumnWidth)
-                                    .padding(8.dp),
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = "${channelId}", color = Color.White, fontSize = 12.sp)
-                            }
-                            // Vertical divider after channel name
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(1.dp)
-                                    .background(Color.Gray)
-                            )
-                            // Program timeline.
+                            // Timeline area for program listings.
                             LazyRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    // Adjust scrolling of the program timeline as needed.
                                     .padding(start = maxOf(0, -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()).dp)
                             ) {
-                                items(programs) { program ->
-                                    // Use a formatter that includes the timezone offset.
+                                itemsIndexed(programs) { programIndex, program ->
                                     val timeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z", Locale.getDefault())
-                                    // Parse the program’s start and end times.
                                     val startTime = OffsetDateTime.parse(program.startTime, timeFormatter).toLocalTime()
                                     val endTime = OffsetDateTime.parse(program.endTime, timeFormatter).toLocalTime()
                                     val programDuration = Duration.between(startTime, endTime).toMinutes()
                                     val programWidth = maxOf((programDuration.toInt() / minutesPerPixel).dp, 50.dp)
 
-                                    // Each program is focusable and shows a white border when focused.
+                                    val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
+
+                                    if (channelIndex == 0 && programIndex == 0) {
+                                        LaunchedEffect(Unit) {
+                                            focusRequester.requestFocus()
+                                        }
+                                    }
+
+                                    val isLastProgram = (programIndex == programs.lastIndex)
                                     Box(
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(60.dp)
-                                            .background(Color.DarkGray)
+                                            .background(Color.Black)
                                             .then(
                                                 if (isFocused.value)
                                                     Modifier.border(2.dp, Color.White)
                                                 else Modifier
                                             )
                                             .onFocusChanged { isFocused.value = it.isFocused }
-                                            .focusable(),
+                                            .focusRequester(focusRequester)
+                                            .focusable()
+                                        // Intercept DPAD Right if it’s the last item and currently focused
+                                        .onPreviewKeyEvent { keyEvent ->
+                                        if (
+                                            keyEvent.type == KeyEventType.KeyDown &&
+                                            keyEvent.key == Key.DirectionRight &&
+                                            isFocused.value &&
+                                            isLastProgram
+                                        ) {
+                                            // Consume the event; don't move focus
+                                            true
+                                        } else {
+                                            // Otherwise, let the event pass
+                                            false
+                                        }
+                                    },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -238,28 +205,27 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                             textAlign = TextAlign.Center
                                         )
                                     }
-                                    // Divider between program items.
+                                    // Vertical divider between programs.
                                     Box(
                                         modifier = Modifier
-                                            .width(2.dp)
-                                            .height(50.dp)
-                                            .background(Color.White)
+                                            .fillMaxHeight()
+                                            .width(1.dp)
+                                            .background(Color.Gray)
                                     )
                                 }
                             }
                         }
-                        // Horizontal divider under the row to give a column feel.
+                        // Horizontal divider between channels.
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(1.dp)
+                                .height(3.dp)
                                 .background(Color.Gray)
                         )
                     }
                 }
-
             }
-            // Overlay the vertical red indicator spanning the full height.
+            // Red progress indicator overlay.
             Box(
                 modifier = Modifier
                     .offset(x = indicatorOffsetDp)
@@ -270,30 +236,80 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
         }
     }
 }
+@Composable
+fun LeftPanelHeader(width: Dp) {
+    // A Box or Row that is exactly `width` wide
+    Row(modifier = Modifier.width(width), verticalAlignment = Alignment.CenterVertically) {
+        Spacer(modifier = Modifier.width(14.dp))
+        Text(text = "All", color = Color.White, fontSize = 18.sp)
+    }
+}
 
 @Composable
-fun TimeHeader(channelOffset: androidx.compose.ui.unit.Dp) {
+fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String) {
+    // This composable consolidates all channel info into a fixed-width container.
+    Row(modifier = Modifier.width(leftPanelWidth), verticalAlignment = Alignment.CenterVertically) {
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "${channelIndex + 1}",
+            color = Color.White,
+            fontSize = 14.sp
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(Color.Gray)
+        )
+        Image(
+            painter = painterResource(id = R.drawable.aajtak),
+            contentDescription = "Channel Logo",
+            modifier = Modifier.size(40.dp)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(Color.Gray)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        // Channel name column (using a portion of the left panel).
+        Column(
+            modifier = Modifier.width(120.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = channelId, color = Color.White, fontSize = 12.sp)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(1.dp)
+                .background(Color.Gray)
+        )
+    }
+}
+
+@Composable
+fun TimeHeader(leftPanelWidth: Dp) {
     // Use a fixed current time for initialization; update every minute.
     val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250205010000")) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(60_000) // Update every minute.
+            delay(60_000)
             fixedCurrentTime.value = System.currentTimeMillis()
         }
     }
-    // Generate 30-minute time slots (by flooring the current time) for the timeline area.
     val timeSlots = remember(fixedCurrentTime.value) { generateTimeSlots(fixedCurrentTime.value) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp)
-            .background(Color.Black)
-            .padding(8.dp),
+            .background(Color.Black),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Add a left spacer equal to the channel column width so the time slots align with the programs.
-        Spacer(modifier = Modifier.width(channelOffset))
-        // The remaining width is used for time slots.
+        // Use the leftPanelWidth so the time slots align with the timeline below.
+        Spacer(modifier = Modifier.width(leftPanelWidth))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -311,13 +327,11 @@ fun TimeHeader(channelOffset: androidx.compose.ui.unit.Dp) {
     }
 }
 
-// Parse the custom timestamp format (yyyyMMddHHmmss) into milliseconds.
 fun parseFixedTime(timestamp: String): Long {
     val format = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
     return format.parse(timestamp)?.time ?: System.currentTimeMillis()
 }
 
-// Generate 30-minute time slots by flooring the current time to the nearest half‑hour.
 fun generateTimeSlots(currentMillis: Long): List<String> {
     val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
     val calendar = Calendar.getInstance().apply {
@@ -325,10 +339,8 @@ fun generateTimeSlots(currentMillis: Long): List<String> {
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
         val minute = get(Calendar.MINUTE)
-        // Floor minutes to 0 or 30.
         set(Calendar.MINUTE, if (minute < 30) 0 else 30)
     }
-    // Generate 5 slots (covering a 150‑minute window).
     return List(5) {
         val time = dateFormat.format(calendar.time)
         calendar.add(Calendar.MINUTE, 30)
