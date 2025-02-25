@@ -36,6 +36,10 @@ class EPGRepository @Inject constructor(
         return dao.getProgramsForNextHours(startTime, endTime)
     }
 
+    suspend fun getProgramsByName(query: String): List<EPGProgram> {
+        return dao.searchProgramsByName("%$query%").first()
+    }
+
 }
 
 

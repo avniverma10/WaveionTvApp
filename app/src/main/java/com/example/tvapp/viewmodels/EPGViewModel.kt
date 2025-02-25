@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 @HiltViewModel
 class EPGViewModel @Inject constructor(
@@ -28,6 +29,8 @@ class EPGViewModel @Inject constructor(
     )
 
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
+    private val _searchResults = MutableStateFlow<List<EPGProgram>>(emptyList())
+    val searchResults: StateFlow<List<EPGProgram>> = _searchResults
 
     init {
         viewModelScope.launch {
@@ -54,13 +57,23 @@ class EPGViewModel @Inject constructor(
         val endTime = calendar.timeInMillis
 
         viewModelScope.launch {
-            repository.getProgramsForNextHours(currentTime, endTime).collect { programs ->
-                _filteredPrograms.value = programs
-                Log.d("RISHI", "Programs fetched from fixed current time to next 4 hours: ${programs.size}")
-                programs.forEach { program ->
-                    Log.d("RISHI", "Channel: ${program.channelId} Program: ${program.eventName}, Start Time: ${program.startTime}, End Time__???: ${program.endTime}")
+            val duration = measureTimeMillis {
+                repository.getProgramsForNextHours(currentTime, endTime).collect { programs ->
+                    _filteredPrograms.value = programs
+                    Log.d("RISHI", "Programs fetched from fixed current time to next 4 hours: ${programs.size}")
+                    programs.forEach { program ->
+                        Log.d("RISHI", "Channel: ${program.channelId} Program: ${program.eventName}, Start Time: ${program.startTime}, End Time: ${program.endTime}")
+                    }
                 }
             }
+            Log.d("RISHI", "Fetching and filtering programs took $duration ms")
         }
     }
+
+    fun searchPrograms(query: String) {
+        viewModelScope.launch {
+            _searchResults.value = repository.getProgramsByName(query)
+        }
+    }
+
 }
