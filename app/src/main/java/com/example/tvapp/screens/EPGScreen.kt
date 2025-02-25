@@ -2,12 +2,10 @@
 package com.example.tvapp.screens
 
 
-import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,10 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -48,7 +42,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.viewmodels.EPGViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -60,7 +53,7 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun HomeScreen(viewModel: EPGViewModel = hiltViewModel()) {
+fun EPGScreen(viewModel: EPGViewModel = hiltViewModel()) {
     val epgChannels by viewModel.epgChannels.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
@@ -76,9 +69,6 @@ fun HomeScreen(viewModel: EPGViewModel = hiltViewModel()) {
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left Navigation Menu
                 NavigationMenu()
-
-//                //Time slots
-//                TimeHeader()
                 EPGContent()
 
                 }
@@ -296,130 +286,3 @@ fun NavigationMenu() {
         }
     }
 }
-
-//@Composable
-//fun TimeHeader() {
-//    // Get current system time
-//    val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
-//
-//    // Update time every minute
-//    LaunchedEffect(Unit) {
-//        while (true) {
-//            currentTime.value = System.currentTimeMillis()
-//            delay(60 * 1000) // Update every minute
-//        }
-//    }
-//
-//    // Generate 30-minute slots from current time
-//    val timeSlots = remember(currentTime.value) {
-//        generateTimeSlots(currentTime.value)
-//    }
-//
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .height(40.dp)
-//            .background(Color.Black)
-//            .padding(8.dp),
-//        horizontalArrangement = Arrangement.SpaceBetween
-//    ) {
-//        timeSlots.forEach { time ->
-//            androidx.compose.material3.Text(
-//                text = time,
-//                color = Color.White,
-//                fontSize = 14.sp,
-//                modifier = Modifier.weight(1f),
-//                textAlign = TextAlign.Center
-//            )
-//        }
-//    }
-//}
-//
-//// Function to generate time slots (30-minute intervals)
-//fun generateTimeSlots(currentMillis: Long): List<String> {
-//    val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-//
-//    // Round current time to the nearest 30-minute slot
-//    val calendar = Calendar.getInstance().apply {
-//        timeInMillis = currentMillis
-//        set(Calendar.SECOND, 0)
-//        set(Calendar.MILLISECOND, 0)
-//        val minute = get(Calendar.MINUTE)
-//        set(Calendar.MINUTE, if (minute < 30) 30 else 0)
-//        if (minute >= 30) add(Calendar.HOUR_OF_DAY, 1) // Move to next hour if past 30 min mark
-//    }
-//
-//    // Generate the next 5 time slots (2-hour window)
-//    return List(5) {
-//        val time = dateFormat.format(calendar.time)
-//        calendar.add(Calendar.MINUTE, 30) // Move to next 30-minute slot
-//        time
-//    }
-//}
-//@Composable
-//fun TimeHeader() {
-//    // Define the fixed current time from your given timestamp
-//    val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250208104600")) }
-//
-//    LaunchedEffect(Unit) {
-//        while (true) {
-//            delay(60_000) // Update every minute
-//            fixedCurrentTime.value = System.currentTimeMillis()
-//        }
-//    }
-//
-//    // Generate 30-minute slots from the fixed current time
-//    val timeSlots = remember(fixedCurrentTime.value) {
-//        generateTimeSlots(fixedCurrentTime.value)
-//    }
-//
-//    Row(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .height(40.dp)
-//            .background(Color.Black)
-//            .padding(8.dp),
-//        horizontalArrangement = Arrangement.SpaceBetween
-//    ) {
-//        timeSlots.forEach { time ->
-//            androidx.compose.material3.Text(
-//                text = time,
-//                color = Color.White,
-//                fontSize = 14.sp,
-//                modifier = Modifier.weight(1f),
-//                textAlign = TextAlign.Center
-//            )
-//        }
-//    }
-//}
-//
-//// Function to parse your custom timestamp format (yyyyMMddHHmmss) into milliseconds
-//fun parseFixedTime(timestamp: String): Long {
-//    val format = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
-//    return format.parse(timestamp)?.time ?: System.currentTimeMillis()
-//}
-//
-//// Function to generate time slots (30-minute intervals)
-//fun generateTimeSlots(currentMillis: Long): List<String> {
-//    val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-//
-//    // Round current time to the nearest 30-minute slot
-//    val calendar = Calendar.getInstance().apply {
-//        timeInMillis = currentMillis
-//        set(Calendar.SECOND, 0)
-//        set(Calendar.MILLISECOND, 0)
-//        val minute = get(Calendar.MINUTE)
-//        set(Calendar.MINUTE, if (minute < 30) 30 else 0)
-//        if (minute >= 30) add(Calendar.HOUR_OF_DAY, 1) // Move to next hour if past 30 min mark
-//    }
-//
-//    // Generate the next 5 time slots (2-hour window)
-//    return List(5) {
-//        val time = dateFormat.format(calendar.time)
-//        calendar.add(Calendar.MINUTE, 30) // Move to next 30-minute slot
-//        time
-//    }
-//}
-//
-//
-//

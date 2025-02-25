@@ -10,13 +10,11 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.tv.material3.Surface
-import com.example.tvapp.screens.HomeScreen
+import com.example.tvapp.screens.EPGScreen
 
 
 import com.example.tvapp.ui.theme.TVAppTheme
-import com.example.tvapp.viewmodels.EPGViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -30,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                  HomeScreen()
+                  EPGScreen()
                 }
             }
         }
