@@ -1,5 +1,6 @@
 package com.example.tvapp.screens
 
+import android.view.KeyEvent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,6 +29,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -54,7 +56,10 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
+import com.example.tvapp.components.TimeHeader
+import com.example.tvapp.components.parseFixedTime
 
 
 import java.util.Locale
@@ -64,7 +69,15 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
     val logoUrl by viewModel.logoUrl.collectAsState()
 
+    val epgFileVideoUrl by viewModel.epgFileVideoUrl.collectAsState()
+
+    val title by viewModel.title.collectAsState()
+
+    var selectedVideoUrl by remember { mutableStateOf<String?>(null) } // state to trigger video playback
+
+    // Update current time every second.
     val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
+
 
     // Define a fixed width for the left panel that contains channel info.
     // Adjust this value to the total width of all elements in your left panel.
@@ -143,7 +156,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Left Panel: Channel info.
-                            ChannelInfo(leftPanelWidth, channelIndex, channelId, logoUrl)
+                            ChannelInfo(leftPanelWidth, channelIndex, channelId, logoUrl,title)
 
                             // Timeline area for program listings.
                             LazyRow(
@@ -182,20 +195,23 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                             .focusRequester(focusRequester)
                                             .focusable()
                                         // Intercept DPAD Right if it’s the last item and currently focused
-                                        .onPreviewKeyEvent { keyEvent ->
-                                        if (
-                                            keyEvent.type == KeyEventType.KeyDown &&
-                                            keyEvent.key == Key.DirectionRight &&
-                                            isFocused.value &&
-                                            isLastProgram
-                                        ) {
-                                            // Consume the event; don't move focus
-                                            true
-                                        } else {
-                                            // Otherwise, let the event pass
-                                            false
-                                        }
-                                    },
+                                            .onPreviewKeyEvent { keyEvent ->
+                                                if (keyEvent.type == KeyEventType.KeyDown) {
+                                                    when (keyEvent.nativeKeyEvent.keyCode) {
+                                                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                                            // When DPAD center is pressed, use the video URL fetched from your API.
+                                                            selectedVideoUrl = epgFileVideoUrl
+                                                            true
+                                                        }
+
+                                                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                                            if (isFocused.value && isLastProgram) true else false
+                                                        }
+
+                                                        else -> false
+                                                    }
+                                                } else false
+                                            },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -235,6 +251,24 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
             )
         }
     }
+    if (selectedVideoUrl != null) {
+        Dialog(
+            onDismissRequest = { selectedVideoUrl = null },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                VideoPlayer(
+                    videoUrl = selectedVideoUrl!!,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+
 }
 @Composable
 fun LeftPanelHeader(width: Dp) {
@@ -246,7 +280,7 @@ fun LeftPanelHeader(width: Dp) {
 }
 
 @Composable
-fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUrl: String?) {
+fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUrl: String?,title: String?) {
     // This composable consolidates all channel info into a fixed-width container.
     Row(modifier = Modifier.width(leftPanelWidth), verticalAlignment = Alignment.CenterVertically) {
         Spacer(modifier = Modifier.width(8.dp))
@@ -279,7 +313,7 @@ fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUr
             modifier = Modifier.width(120.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = channelId, color = Color.White, fontSize = 12.sp)
+            title?.let { Text(text = it, color = Color.White, fontSize = 12.sp) }
         }
         Box(
             modifier = Modifier
@@ -290,60 +324,4 @@ fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUr
     }
 }
 
-@Composable
-fun TimeHeader(leftPanelWidth: Dp) {
-    // Use a fixed current time for initialization; update every minute.
-    val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250205010000")) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(60_000)
-            fixedCurrentTime.value = System.currentTimeMillis()
-        }
-    }
-    val timeSlots = remember(fixedCurrentTime.value) { generateTimeSlots(fixedCurrentTime.value) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(40.dp)
-            .background(Color.Black),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Use the leftPanelWidth so the time slots align with the timeline below.
-        Spacer(modifier = Modifier.width(leftPanelWidth))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            timeSlots.forEach { time ->
-                Text(
-                    text = time,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
 
-fun parseFixedTime(timestamp: String): Long {
-    val format = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
-    return format.parse(timestamp)?.time ?: System.currentTimeMillis()
-}
-
-fun generateTimeSlots(currentMillis: Long): List<String> {
-    val dateFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = currentMillis
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-        val minute = get(Calendar.MINUTE)
-        set(Calendar.MINUTE, if (minute < 30) 0 else 30)
-    }
-    return List(5) {
-        val time = dateFormat.format(calendar.time)
-        calendar.add(Calendar.MINUTE, 30)
-        time
-    }
-}

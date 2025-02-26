@@ -1,14 +1,10 @@
 package com.example.tvapp.viewmodels
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
 import com.example.tvapp.XMLParser
-import com.example.tvapp.models.ChannelWithPrograms
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import com.example.tvapp.repository.EPGRepository
@@ -37,6 +33,12 @@ class EPGViewModel @Inject constructor(
     private val _logoUrl = MutableStateFlow<String?>(null)
     val logoUrl: StateFlow<String?> = _logoUrl.asStateFlow()
 
+    private val _epgFileVideoUrl = MutableStateFlow<String?>(null)
+    val epgFileVideoUrl: StateFlow<String?> = _epgFileVideoUrl
+
+    private val _title = MutableStateFlow<String?>(null)
+    val title: StateFlow<String?> = _title
+
 
     init {
         viewModelScope.launch {
@@ -54,6 +56,14 @@ class EPGViewModel @Inject constructor(
         viewModelScope.launch {
             val url = repository.fetchLogoUrl()
             _logoUrl.value = url
+        }
+        viewModelScope.launch {
+            val videoUrl = repository.fetchVideoUrl()
+            _epgFileVideoUrl.value = videoUrl
+        }
+        viewModelScope.launch {
+            val title = repository.fetchTitle()
+            _title.value = title
         }
 
     }

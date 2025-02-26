@@ -2,13 +2,9 @@ package com.example.tvapp.repository
 import android.util.Log
 import com.example.tvapp.api.ApiServiceForData
 import com.example.tvapp.database.EPGDao
-import com.example.tvapp.models.ChannelWithPrograms
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 class EPGRepository @Inject constructor(private val dao: EPGDao, private val apiService: ApiServiceForData) {
 
@@ -45,6 +41,26 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
             null
         }
     }
+    suspend fun fetchVideoUrl(): String? {
+        return try {
+            val epgFiles = apiService.getEpgFiles()
+            epgFiles.firstOrNull()?.videoUrl
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    suspend fun fetchTitle(): String? {
+        return try {
+            val epgFiles = apiService.getEpgFiles()
+            epgFiles.firstOrNull()?.title
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
 
 
 }
