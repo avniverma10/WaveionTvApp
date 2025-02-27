@@ -14,7 +14,7 @@ interface ApiServiceForData {
     @GET("android/logo_path")
     suspend fun getLogo(): SplashApiResponse
 
-    @GET("epg-files/match-epg-content")
+    @GET("epg-files/join-epg-content")
     suspend fun getEpgFiles(): List<EpgFile>
 
     @GET("tabs")

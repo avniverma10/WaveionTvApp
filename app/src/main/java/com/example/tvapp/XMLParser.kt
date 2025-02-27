@@ -1,12 +1,7 @@
 package com.example.tvapp
 
-import android.content.Context
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
@@ -15,7 +10,7 @@ import java.util.*
 
 object XMLParser {
 
-    private fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
+    fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
         val factory = XmlPullParserFactory.newInstance()
         val parser = factory.newPullParser()
         parser.setInput(inputStream, "UTF-8")
@@ -65,21 +60,5 @@ object XMLParser {
             parser.next()
         }
         return Pair(EPGChannel(id = channelId, name = channelName), programs)
-    }
-
-    private fun parseTime(timeString: String?): Long {
-        val format = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.getDefault())
-        return format.parse(timeString)?.time ?: 0L
-    }
-
-    suspend fun readEPGsFromAssetsFolder(context: Context): List<Pair<EPGChannel, List<EPGProgram>>> = coroutineScope {
-        val filenames = context.assets.list("epgXml")?.filter { it.lowercase().endsWith(".xml") } ?: listOf()
-        filenames.map { filename ->
-            async(Dispatchers.IO) {
-                context.assets.open("epgXml/$filename").use { inputStream ->
-                    parseEPG(inputStream)
-                }
-            }
-        }.awaitAll()
     }
 }

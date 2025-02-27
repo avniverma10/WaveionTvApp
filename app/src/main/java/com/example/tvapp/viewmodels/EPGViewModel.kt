@@ -29,41 +29,24 @@ class EPGViewModel @Inject constructor(
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
     val filteredPrograms: StateFlow<List<EPGProgram>> = _filteredPrograms.asStateFlow()
 
-    // State flow for the logo URL.
-    private val _logoUrl = MutableStateFlow<String?>(null)
-    val logoUrl: StateFlow<String?> = _logoUrl.asStateFlow()
 
-    private val _epgFileVideoUrl = MutableStateFlow<String?>(null)
-    val epgFileVideoUrl: StateFlow<String?> = _epgFileVideoUrl
+    // State to trigger video playback for a particular channel.
+    private val _selectedVideoUrl = MutableStateFlow<String?>(null)
+    val selectedVideoUrl: StateFlow<String?> = _selectedVideoUrl.asStateFlow()
 
-    private val _title = MutableStateFlow<String?>(null)
-    val title: StateFlow<String?> = _title
+    fun onChannelVideoSelected(videoUrl: String?) {
+        _selectedVideoUrl.value = videoUrl
+    }
 
 
     init {
         viewModelScope.launch {
             try {
-                val channelProgramPairs = XMLParser.readEPGsFromAssetsFolder(application.applicationContext)
-                channelProgramPairs.forEach { (channel, programs) ->
-                    repository.insertAll(channel, programs)
-                }
+                repository.fetchAndStoreEPGsFromApi()
                 filterProgramsByTime_test()
             } catch (e: Exception) {
                 Log.e("RISHI", "Error loading data", e)
             }
-        }
-        //Launch a coroutine to fetch the logo URL from the API.
-        viewModelScope.launch {
-            val url = repository.fetchLogoUrl()
-            _logoUrl.value = url
-        }
-        viewModelScope.launch {
-            val videoUrl = repository.fetchVideoUrl()
-            _epgFileVideoUrl.value = videoUrl
-        }
-        viewModelScope.launch {
-            val title = repository.fetchTitle()
-            _title.value = title
         }
 
     }
@@ -71,7 +54,7 @@ class EPGViewModel @Inject constructor(
 
     private fun filterProgramsByTime_test() {
         // TODO: RISHI Fixed current time for testing
-        val currentTime = 20250205010000L
+        val currentTime = 20250212013600L
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
             add(Calendar.HOUR, 4)
@@ -88,10 +71,5 @@ class EPGViewModel @Inject constructor(
             }
         }
     }
-
-
-
-
-
 
 }

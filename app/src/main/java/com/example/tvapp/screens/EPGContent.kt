@@ -4,6 +4,7 @@ import android.view.KeyEvent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +61,7 @@ import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
 import com.example.tvapp.components.TimeHeader
 import com.example.tvapp.components.parseFixedTime
+import com.example.tvapp.models.EPGChannel
 
 
 import java.util.Locale
@@ -67,13 +69,12 @@ import java.util.Locale
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
-    val logoUrl by viewModel.logoUrl.collectAsState()
+    val epgChannels by viewModel.epgChannels.collectAsState()
 
-    val epgFileVideoUrl by viewModel.epgFileVideoUrl.collectAsState()
+    val channelMap = epgChannels.associateBy { it.id }
 
-    val title by viewModel.title.collectAsState()
 
-    var selectedVideoUrl by remember { mutableStateOf<String?>(null) } // state to trigger video playback
+    val selectedVideoUrl by viewModel.selectedVideoUrl.collectAsState()
 
     // Update current time every second.
     val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
@@ -148,6 +149,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
+                        // Get the channel data from the map.
+                        val channelData = channelMap[channelId]
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -156,7 +159,16 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Left Panel: Channel info.
-                            ChannelInfo(leftPanelWidth, channelIndex, channelId, logoUrl,title)
+                            // Pass channelData and a callback for video click.
+                            channelData?.let { channel ->
+                                ChannelInfo(
+                                    leftPanelWidth = 205.dp,
+                                    channel = channel,
+                                    onPlayClicked = { videoUrl ->
+                                        viewModel.onChannelVideoSelected(videoUrl)
+                                    }
+                                )
+                            }
 
                             // Timeline area for program listings.
                             LazyRow(
@@ -200,7 +212,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                                                             // When DPAD center is pressed, use the video URL fetched from your API.
-                                                            selectedVideoUrl = epgFileVideoUrl
+                                                            viewModel.onChannelVideoSelected(channelData?.videoUrl)
                                                             true
                                                         }
 
@@ -253,7 +265,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     }
     if (selectedVideoUrl != null) {
         Dialog(
-            onDismissRequest = { selectedVideoUrl = null },
+            onDismissRequest = { viewModel.onChannelVideoSelected(null)  },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
@@ -278,17 +290,15 @@ fun LeftPanelHeader(width: Dp) {
         Text(text = "All", color = Color.White, fontSize = 18.sp)
     }
 }
-
 @Composable
-fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUrl: String?,title: String?) {
-    // This composable consolidates all channel info into a fixed-width container.
-    Row(modifier = Modifier.width(leftPanelWidth), verticalAlignment = Alignment.CenterVertically) {
+fun ChannelInfo(leftPanelWidth: Dp, channel: EPGChannel,onPlayClicked: (String?) -> Unit) {
+    Row(
+        modifier = Modifier.width(leftPanelWidth)
+            .clickable { onPlayClicked(channel.videoUrl) },
+        verticalAlignment = Alignment.CenterVertically) {
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = "${channelIndex + 1}",
-            color = Color.White,
-            fontSize = 14.sp
-        )
+        // Optionally, display the channel index or remove it.
+        // Text(text = "Channel", color = Color.White, fontSize = 14.sp)
         Spacer(modifier = Modifier.width(6.dp))
         Box(
             modifier = Modifier
@@ -296,8 +306,9 @@ fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUr
                 .width(1.dp)
                 .background(Color.Gray)
         )
+        // Display the channel logo.
         AsyncImage(
-            model = logoUrl,
+            model = channel.logoUrl,
             contentDescription = "Channel Logo",
             modifier = Modifier.size(40.dp)
         )
@@ -308,12 +319,12 @@ fun ChannelInfo(leftPanelWidth: Dp, channelIndex: Int, channelId: String, logoUr
                 .background(Color.Gray)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        // Channel name column (using a portion of the left panel).
+        // Display the channel title.
         Column(
             modifier = Modifier.width(120.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            title?.let { Text(text = it, color = Color.White, fontSize = 12.sp) }
+            Text(text = channel.name, color = Color.White, fontSize = 12.sp)
         }
         Box(
             modifier = Modifier
