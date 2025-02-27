@@ -31,7 +31,7 @@ class EPGViewModel @Inject constructor(
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
     private val _searchResults = MutableStateFlow<List<EPGProgram>>(emptyList())
     val searchResults: StateFlow<List<EPGProgram>> = _searchResults
-
+    val filteredPrograms: StateFlow<List<EPGProgram>> = _filteredPrograms.asStateFlow()
     init {
         viewModelScope.launch {
             try {
@@ -49,7 +49,7 @@ class EPGViewModel @Inject constructor(
 
     private fun filterProgramsByTime_test() {
         // TODO: RISHI Fixed current time for testing
-        val currentTime = 20250212070000L
+        val currentTime = 20250205010000L
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
             add(Calendar.HOUR, 4)
@@ -69,7 +69,6 @@ class EPGViewModel @Inject constructor(
             Log.d("RISHI", "Fetching and filtering programs took $duration ms")
         }
     }
-
     fun searchPrograms(query: String) {
         viewModelScope.launch {
             _searchResults.value = repository.getProgramsByName(query)

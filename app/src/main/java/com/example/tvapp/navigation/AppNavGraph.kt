@@ -7,7 +7,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.tvapp.screens.EpgScreen
+import com.example.tvapp.screens.EPGScreen
 import com.example.tvapp.screens.SplashScreen
 import com.example.tvapp.viewmodels.SplashViewModel
 
@@ -28,7 +28,7 @@ fun AppNavGraph() {
             ExoPlayerScreen()
         }
         composable("epg") {
-            EpgScreen()
+            EPGScreen()
         }
     }
 }
