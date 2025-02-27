@@ -7,4 +7,6 @@ import androidx.room.PrimaryKey
 data class EPGChannel(
     @PrimaryKey val id: String,
     val name: String,
+    val logoUrl: String? = null,
+    val videoUrl: String? = null
 )

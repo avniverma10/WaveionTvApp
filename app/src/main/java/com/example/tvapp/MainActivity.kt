@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.tv.material3.Surface
-import com.example.tvapp.screens.SearchScreen
+import com.example.tvapp.navigation.AppNavGraph
 import com.example.tvapp.screens.EPGScreen
 import com.example.tvapp.ui.theme.TVAppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                  EPGScreen()
+                  AppNavGraph()
                 }
             }
         }

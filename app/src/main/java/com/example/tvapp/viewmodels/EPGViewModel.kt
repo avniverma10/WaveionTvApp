@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.XMLParser
-import com.example.tvapp.models.ChannelWithPrograms
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import com.example.tvapp.repository.EPGRepository
@@ -32,24 +31,33 @@ class EPGViewModel @Inject constructor(
     private val _searchResults = MutableStateFlow<List<EPGProgram>>(emptyList())
     val searchResults: StateFlow<List<EPGProgram>> = _searchResults
     val filteredPrograms: StateFlow<List<EPGProgram>> = _filteredPrograms.asStateFlow()
+
+
+    // State to trigger video playback for a particular channel.
+    private val _selectedVideoUrl = MutableStateFlow<String?>(null)
+    val selectedVideoUrl: StateFlow<String?> = _selectedVideoUrl.asStateFlow()
+
+    fun onChannelVideoSelected(videoUrl: String?) {
+        _selectedVideoUrl.value = videoUrl
+    }
+
+
     init {
         viewModelScope.launch {
             try {
-                val channelProgramPairs = XMLParser.readEPGsFromAssetsFolder(application.applicationContext)
-                channelProgramPairs.forEach { (channel, programs) ->
-                    repository.insertAll(channel, programs)
-                }
+                repository.fetchAndStoreEPGsFromApi()
                 filterProgramsByTime_test()
             } catch (e: Exception) {
                 Log.e("RISHI", "Error loading data", e)
             }
         }
+
     }
 
 
     private fun filterProgramsByTime_test() {
         // TODO: RISHI Fixed current time for testing
-        val currentTime = 20250205010000L
+        val currentTime = 20250212013600L
         val calendar = Calendar.getInstance().apply {
             timeInMillis = currentTime
             add(Calendar.HOUR, 4)

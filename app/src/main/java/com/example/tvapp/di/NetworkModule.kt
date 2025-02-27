@@ -11,6 +11,7 @@ import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
 import com.example.tvapp.database.EPGDatabase
 import com.example.tvapp.repository.EPGRepository
+import com.example.tvapp.repository.TabsRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -82,8 +83,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideEPGRepository(dao: EPGDao): EPGRepository {
-        return EPGRepository(dao)
+    fun provideEPGRepository(dao: EPGDao,apiServiceForData: ApiServiceForData): EPGRepository {
+        return EPGRepository(dao,apiServiceForData)
+
+    }
+
+    @Provides
+    @Singleton
+    fun provideTabRepository(apiServiceForData: ApiServiceForData):TabsRepository{
+        return TabsRepository(apiServiceForData)
 
     }
 }
