@@ -1,7 +1,5 @@
 package com.example.tvapp
 
-
-
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -13,8 +11,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.tv.material3.Surface
 import com.example.tvapp.navigation.AppNavGraph
 import com.example.tvapp.screens.EPGScreen
-
-
 import com.example.tvapp.ui.theme.TVAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -29,7 +25,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                  AppNavGraph()
+                 EPGScreen()
                 }
             }
         }

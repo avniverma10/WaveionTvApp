@@ -7,6 +7,7 @@ import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
@@ -37,7 +38,6 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
     fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>> {
         return dao.getProgramsForNextHours(startTime, endTime)
     }
-
 
     suspend fun fetchAndStoreEPGsFromApi() {
         withContext(Dispatchers.IO) {
@@ -108,8 +108,9 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
         }
     }
 
-
-
+    suspend fun getProgramsByName(query: String): List<EPGProgram> {
+        return dao.searchProgramsByName("%$query%").first()
+    }
 
 }
 

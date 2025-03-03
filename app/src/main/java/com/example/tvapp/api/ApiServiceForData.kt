@@ -2,6 +2,7 @@ package com.example.tvapp.api
 
 import com.example.applicationscreens.models.ContentResponse
 import com.example.tvapp.models.EpgFile
+import com.example.tvapp.models.Banner
 import com.example.tvapp.models.SplashApiResponse
 import com.example.tvapp.models.Tab
 import retrofit2.http.GET
@@ -19,5 +20,8 @@ interface ApiServiceForData {
 
     @GET("tabs")
     suspend fun getTabs(): List<Tab>
+
+    @GET("banners")
+    suspend fun getBanners(): List<Banner>
 
 }
