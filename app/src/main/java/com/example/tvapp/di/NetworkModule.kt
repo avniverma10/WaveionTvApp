@@ -1,7 +1,5 @@
 package com.example.tvapp.di
 
-
-
 import com.example.tvapp.database.EPGDao
 import android.content.Context
 import androidx.room.Room
@@ -91,7 +89,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideTabRepository(apiServiceForData: ApiServiceForData):TabsRepository{
-        return TabsRepository(apiServiceForData)
+        return TabsRepository()
 
     }
 }

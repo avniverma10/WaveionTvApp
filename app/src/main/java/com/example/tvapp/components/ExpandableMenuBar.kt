@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,7 +39,7 @@ import com.example.tvapp.viewmodels.TabsViewModel
 
 @Composable
 fun ExpandableNavigationMenu(viewModel: TabsViewModel = hiltViewModel()) {
-    val tabs by viewModel.tabs
+    val tabs = viewModel.tabs.collectAsState(initial = emptyList()).value
     var expanded by remember { mutableStateOf(false) }
 
     // When expanded, pressing the back button collapses the menu.
