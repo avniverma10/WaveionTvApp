@@ -2,8 +2,7 @@
 package com.example.tvapp.screens
 
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.Image
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -21,15 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,19 +40,20 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.components.ExpandableNavigationMenu
+import com.example.tvapp.models.Tab
 import com.example.tvapp.viewmodels.EPGViewModel
-import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-
 @Composable
 fun EPGScreen(viewModel: EPGViewModel = hiltViewModel()) {
     val epgChannels by viewModel.epgChannels.collectAsState()
     val bannerList by viewModel.bannerList.collectAsState(initial = emptyList())
+    val tabsList by viewModel.tabs.collectAsState(initial = emptyList())
+    val showBanner = isBannerVisible(tabsList)
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Navigation Menu
@@ -67,17 +63,44 @@ fun EPGScreen(viewModel: EPGViewModel = hiltViewModel()) {
             .fillMaxSize()
             .background(Color.Black)) {
             // Top Banner
-            AdvertisementBanner(bannerList = bannerList)
+            if (showBanner) {
+                AdvertisementBanner(bannerList = bannerList)
+            } else {
+                Log.i("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
+            }
 
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left Navigation Menu
                 NavigationMenu()
                 EPGContent()
 
+                // Log tabs data for debugging purposes
+                LaunchedEffect(tabsList) {
+                    Log.i("RISHI", "Tab list updated: $tabsList")
                 }
             }
         }
     }
+}
+
+fun isBannerVisible(tabsList: List<Tab>?): Boolean {
+    if (tabsList.isNullOrEmpty()) {
+        Log.i("EPGScreen", "No tabs data available or tabs list is empty.")
+        return false
+    }
+    val bannerVisible = tabsList.any { tab ->
+        tab.components.any { component ->
+            component.name == "Banner" && component.isVisible
+        }
+    }
+    if (!bannerVisible) {
+        Log.i("EPGScreen", "Banner component not visible or not found in any tab.")
+    }
+    return bannerVisible
+}
+
+
+
 
 
 

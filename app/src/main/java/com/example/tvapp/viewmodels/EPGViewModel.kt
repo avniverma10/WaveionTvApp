@@ -4,16 +4,17 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.tvapp.XMLParser
 import com.example.tvapp.models.Banner
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.models.EPGProgram
 import com.example.tvapp.repository.EPGRepository
 import com.example.tvapp.api.ApiServiceForData
+import com.example.tvapp.models.Tab
+import com.example.tvapp.repository.TabsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Calendar
 import javax.inject.Inject
 import kotlin.system.measureTimeMillis
 
@@ -21,6 +22,7 @@ import kotlin.system.measureTimeMillis
 class EPGViewModel @Inject constructor(
     private val repository: EPGRepository,
     private val apiService: ApiServiceForData,
+    tab : TabsRepository,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -28,6 +30,12 @@ class EPGViewModel @Inject constructor(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()
+    )
+
+    val tabs: StateFlow<List<Tab>> = tab.streamTabs().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(),
+        initialValue = emptyList()
     )
 
     private val _filteredPrograms = MutableStateFlow<List<EPGProgram>>(emptyList())
