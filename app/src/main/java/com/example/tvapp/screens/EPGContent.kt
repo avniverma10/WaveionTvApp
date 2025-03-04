@@ -1,5 +1,6 @@
 package com.example.tvapp.screens
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -265,7 +266,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     }
     if (selectedVideoUrl != null) {
         Dialog(
-            onDismissRequest = { viewModel.onChannelVideoSelected(null)  },
+            onDismissRequest = { viewModel.onChannelVideoSelected(null) },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
@@ -273,8 +274,15 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     .fillMaxSize()
                     .background(Color.Black)
             ) {
+                Log.d("AVNI99", "Opening VideoPlayer for URL: $selectedVideoUrl") // Debugging Log
                 VideoPlayer(
-                    videoUrl = selectedVideoUrl!!,
+                    initialVideoUrl = selectedVideoUrl!!, // Make sure this updates!
+                    allChannels = epgChannels,
+                    epgViewModel = viewModel,
+                    onVideoChange = { newVideoUrl ->
+                        Log.d("AVNI99", "Updating selectedVideoUrl to: $newVideoUrl") // Debugging Log
+                        viewModel.onChannelVideoSelected(newVideoUrl)
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }

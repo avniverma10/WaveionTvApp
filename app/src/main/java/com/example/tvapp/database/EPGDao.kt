@@ -42,5 +42,15 @@ interface EPGDao {
     @Query("SELECT * FROM epg_programs WHERE eventName LIKE :query")
     fun searchProgramsByName(query: String): Flow<List<EPGProgram>>
 
+    @Query("""
+    SELECT * FROM epg_programs 
+    WHERE channelId = :channelId 
+    AND startTime > :currentTime 
+    ORDER BY startTime ASC 
+    LIMIT 1
+""")
+    suspend fun getNextProgramForChannel(channelId: String, currentTime: String): EPGProgram?
+
+
 }
 

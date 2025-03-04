@@ -43,6 +43,10 @@ class EPGViewModel @Inject constructor(
     private val _selectedVideoUrl = MutableStateFlow<String?>(null)
     val selectedVideoUrl: StateFlow<String?> = _selectedVideoUrl.asStateFlow()
 
+    //state for next program in the overlay of the player
+    private val _nextProgram = MutableStateFlow<EPGProgram?>(null)
+    val nextProgram: StateFlow<EPGProgram?> = _nextProgram
+
     fun onChannelVideoSelected(videoUrl: String?) {
         _selectedVideoUrl.value = videoUrl
     }
@@ -99,6 +103,12 @@ class EPGViewModel @Inject constructor(
             _bannerList.value = banners
         } catch (e: Exception) {
             Log.e("RISHI - Banners", "Error fetching banners", e)
+        }
+    }
+
+    fun fetchNextProgram(channelId: String, currentTime: String) {
+        viewModelScope.launch {
+            _nextProgram.value = repository.getNextProgram(channelId, currentTime)
         }
     }
 }
