@@ -55,6 +55,57 @@ class EPGViewModel @Inject constructor(
         _selectedVideoUrl.value = videoUrl
     }
 
+    // ================= Wishlist Integration =================
+
+    // Wishlist state flows for popup and alert.
+    private val _wishlistPopupProgram = MutableStateFlow<EPGProgram?>(null)
+    val wishlistPopupProgram: StateFlow<EPGProgram?> = _wishlistPopupProgram.asStateFlow()
+
+    private val _wishlistAlertProgram = MutableStateFlow<EPGProgram?>(null)
+    val wishlistAlertProgram: StateFlow<EPGProgram?> = _wishlistAlertProgram.asStateFlow()
+
+    // Internal wishlist list.
+    private val _wishlist = MutableStateFlow<List<EPGProgram>>(emptyList())
+    val wishlist: StateFlow<List<EPGProgram>> = _wishlist.asStateFlow()
+
+    // Called when a future event is clicked to show the popup.
+    fun onShowWishlistPopup(program: EPGProgram) {
+        _wishlistPopupProgram.value = program
+    }
+
+    // Clear the wishlist popup.
+    fun clearWishlistPopup() {
+        _wishlistPopupProgram.value = null
+    }
+
+    // Add an event to the wishlist and clear the popup.
+    fun addToWishlist(program: EPGProgram) {
+        _wishlist.value = _wishlist.value + program
+        clearWishlistPopup()
+    }
+
+    // Clear the wishlist alert popup.
+    fun clearWishlistAlert() {
+        _wishlistAlertProgram.value = null
+    }
+
+    // Helper function to convert program time string to milliseconds.
+    private fun getTimeInMillis(timeStr: String): Long {
+        return try {
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+            val zdt = java.time.ZonedDateTime.parse(timeStr, formatter)
+            zdt.toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            try {
+                val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                val zdt = java.time.ZonedDateTime.parse("$timeStr +0000", java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z"))
+                zdt.toInstant().toEpochMilli()
+            } catch (ex: Exception) {
+                System.currentTimeMillis()
+            }
+        }
+    }
+    // ========================================================
 
     init {
         viewModelScope.launch {
@@ -69,6 +120,23 @@ class EPGViewModel @Inject constructor(
         // Fetch banners from API
         viewModelScope.launch {
             fetchBanners()
+        }
+
+        // Wishlist check: Periodically check if any wishlist event is due.
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                val currentTime = System.currentTimeMillis()
+                _wishlist.value.forEach { program ->
+                    val programStartMillis = getTimeInMillis(program.startTime)
+                    // If current time is within 1 minute of the program start, trigger the alert.
+                    if (currentTime in programStartMillis until (programStartMillis + 60 * 1000)) {
+                        _wishlistAlertProgram.value = program
+                        // Remove the program from wishlist once alerted.
+                        _wishlist.value = _wishlist.value.filter { it != program }
+                    }
+                }
+            }
         }
     }
 
