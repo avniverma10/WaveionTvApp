@@ -31,6 +31,8 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
 
     fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()
 
+    fun getAllEPGPrograms(): Flow<List<EPGProgram>> = dao.getAllPrograms()
+
     fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>> {
         return dao.getProgramsForNextHours(startTime, endTime)
     }
@@ -73,7 +75,7 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                         connection.inputStream.use { inputStream ->
                             try {
                                 // Parse the XML file to get channel and programs.
-                                val (channel, programs) = XMLParser.parseEPG(inputStream)
+                                val (channel, programs) = XMLParser.parseEPG(inputStream,epgFile.content.genreId)
                                 Log.d("DEBUG1", "Parsed channel: ${channel.id}, name: ${channel.name}")
                                 Log.d("DEBUG1", "Parsed ${programs.size} programs")
 
@@ -84,7 +86,8 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                                     name = epgFile.content.title,
                                     // Set the channel logo from the API.
                                     logoUrl = epgFile.content.thumbnailUrl,
-                                    videoUrl = epgFile.content.videoUrl
+                                    videoUrl = epgFile.content.videoUrl,
+                                    genreId = epgFile.content.genreId
 
                                 )
                                 Log.d("AVNI1","video url is -->${epgFile.content.videoUrl}")
@@ -103,6 +106,13 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
             }
         }
     }
+
+//
+//    suspend fun markProgramAsWatched(programId: String) {
+////        dao.updateWatchedProgram(programId, System.currentTimeMillis()) // Save timestamp
+//    }
+
+//    fun getRecentlyWatched(): Flow<List<EPGProgram>> = dao.getRecentlyWatchedPrograms() // Get last 10 watched
 
     suspend fun getProgramsByName(query: String): List<EPGProgram> {
         return dao.searchProgramsByName("%$query%").first()

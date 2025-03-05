@@ -33,7 +33,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
+//        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -68,8 +68,8 @@ dependencies {
 
 
 
-    //for t96 mini
-    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.3")
+//    //for t96 mini
+//    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.3")
 
     implementation ("com.jakewharton.threetenabp:threetenabp:1.4.8")
     //Dagger Hilt

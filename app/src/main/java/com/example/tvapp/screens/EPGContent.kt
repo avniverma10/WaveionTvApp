@@ -70,6 +70,12 @@ import java.util.Locale
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
+    val filteredChannels by viewModel.filteredChannels.collectAsState()
+
+////    val isRecentlyWatchedSelected by viewModel.isRecentlyWatchedSelected.collectAsState()
+////    val recentlyWatched by viewModel.recentlyWatched.collectAsState()
+//    val programsToDisplay = if (isRecentlyWatchedSelected) recentlyWatched else filteredPrograms // Correct data selection
+
     val epgChannels by viewModel.epgChannels.collectAsState()
 
     val channelMap = epgChannels.associateBy { it.id }
@@ -150,8 +156,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
-                        // Get the channel data from the map.
-                        val channelData = channelMap[channelId]
+                        val channelData = filteredChannels.find { it.id == channelId }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -198,6 +203,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(60.dp)
+//                                            .clickable {
+//                                                viewModel.markProgramAsWatched(program.id) // Store program in Recently Watched
+//                                            }
                                             .background(Color.Black)
                                             .then(
                                                 if (isFocused.value)

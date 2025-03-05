@@ -10,7 +10,7 @@ import java.util.*
 
 object XMLParser {
 
-    fun parseEPG(inputStream: InputStream): Pair<EPGChannel, List<EPGProgram>> {
+    fun parseEPG(inputStream: InputStream, genreId: String): Pair<EPGChannel, List<EPGProgram>> {
         val factory = XmlPullParserFactory.newInstance()
         val parser = factory.newPullParser()
         parser.setInput(inputStream, "UTF-8")
@@ -59,6 +59,6 @@ object XMLParser {
             }
             parser.next()
         }
-        return Pair(EPGChannel(id = channelId, name = channelName), programs)
+        return Pair(EPGChannel(id = channelId, name = channelName,genreId = genreId), programs)
     }
 }
