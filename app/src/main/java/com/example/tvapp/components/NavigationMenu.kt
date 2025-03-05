@@ -52,7 +52,11 @@ fun NavigationMenu(viewModel: EPGViewModel = hiltViewModel()) {
                     .fillMaxWidth()
                     .padding(vertical = 12.dp, horizontal = 16.dp)
                     .clickable {
-                            viewModel.filterChannelsByGenre(item.label) // ✅ Filter Channels
+                        if (item.label == "Recently Watched") {
+                            viewModel.showRecentlyWatched() // Show only recently watched
+                        } else {
+                            viewModel.filterChannelsByGenre(item.label)
+                        }
                     },
                 verticalAlignment = Alignment.CenterVertically // Align icon and text
             ) {

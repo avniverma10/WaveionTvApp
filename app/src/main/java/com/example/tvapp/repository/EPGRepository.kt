@@ -107,12 +107,6 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
         }
     }
 
-//
-//    suspend fun markProgramAsWatched(programId: String) {
-////        dao.updateWatchedProgram(programId, System.currentTimeMillis()) // Save timestamp
-//    }
-
-//    fun getRecentlyWatched(): Flow<List<EPGProgram>> = dao.getRecentlyWatchedPrograms() // Get last 10 watched
 
     suspend fun getProgramsByName(query: String): List<EPGProgram> {
         return dao.searchProgramsByName("%$query%").first()

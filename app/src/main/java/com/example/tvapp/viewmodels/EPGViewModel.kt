@@ -58,15 +58,24 @@ class EPGViewModel @Inject constructor(
     private val _nextProgram = MutableStateFlow<EPGProgram?>(null)
     val nextProgram: StateFlow<EPGProgram?> = _nextProgram
 
-//    private val _recentlyWatched = MutableStateFlow<List<EPGProgram>>(emptyList())
-//    val recentlyWatched: StateFlow<List<EPGProgram>> = _recentlyWatched.asStateFlow()
-
-//
-//
-//    private val _isRecentlyWatchedSelected = MutableStateFlow(false)
-//    val isRecentlyWatchedSelected: StateFlow<Boolean> = _isRecentlyWatchedSelected.asStateFlow()
+    private val _recentlyWatched = MutableStateFlow<List<EPGProgram>>(emptyList())
+    val recentlyWatched: StateFlow<List<EPGProgram>> = _recentlyWatched.asStateFlow()
 
 
+    fun addToRecentlyWatched(program: EPGProgram) {
+        viewModelScope.launch {
+            val currentList = _recentlyWatched.value.toMutableList()
+
+            // Remove duplicates (only keep the latest entry for the same program)
+            currentList.removeAll { it.channelId == program.channelId && it.eventName == program.eventName }
+
+            // Add the new program to the front
+            currentList.add(0, program)
+
+            // Limit list to 10 most recent
+            _recentlyWatched.value = currentList.take(10)
+        }
+    }
 
     init {
         viewModelScope.launch {
@@ -83,30 +92,12 @@ class EPGViewModel @Inject constructor(
         viewModelScope.launch {
             fetchBanners()
         }
-//        viewModelScope.launch {
-//            repository.getRecentlyWatched().collect { programs ->
-//                _recentlyWatched.value = programs
-//            }
-//        }
+
     }
-
-//    fun markProgramAsWatched(programId: String) {
-//        viewModelScope.launch {
-//            repository.markProgramAsWatched(programId)
-//            _recentlyWatched.value = repository.getRecentlyWatched().first() // ✅ Store watched program
-//        }
-//    }
-
-//    fun toggleRecentlyWatched(selected: Boolean) {
-//        _isRecentlyWatchedSelected.value = selected
-//        if (selected) {
-//            _filteredPrograms.value = _recentlyWatched.value // Show recently watched programs
-//        }
-//    }
 
     private fun loadEPGData() {
         viewModelScope.launch {
-//            _isRecentlyWatchedSelected.value = false // Reset Recently Watched mode when filtering channels
+
             val channels = repository.getAllChannels().first()
             val programs = repository.getAllEPGPrograms().first()
 
@@ -184,7 +175,16 @@ class EPGViewModel @Inject constructor(
             _nextProgram.value = repository.getNextProgram(channelId, currentTime)
         }
     }
-    fun onChannelVideoSelected(videoUrl: String?) {
+    fun onChannelVideoSelected(videoUrl: String?,program: EPGProgram?) {
         _selectedVideoUrl.value = videoUrl
+        program?.let { addToRecentlyWatched(it) }
     }
+    fun showRecentlyWatched() {
+        viewModelScope.launch {
+            _filteredPrograms.value = _recentlyWatched.value // ✅ Show only recently watched
+            val recentChannelIds = _recentlyWatched.value.map { it.channelId }.distinct()
+            _filteredChannels.value = _epgChannels.value.filter { recentChannelIds.contains(it.id) }
+        }
+    }
+
 }
