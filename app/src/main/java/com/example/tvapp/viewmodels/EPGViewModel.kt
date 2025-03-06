@@ -24,12 +24,6 @@ class EPGViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
-//    val epgChannels: StateFlow<List<EPGChannel>> = repository.getAllChannels().stateIn(
-//        viewModelScope,
-//        SharingStarted.Lazily,
-//        emptyList()
-//    )
-
     private val _epgChannels = MutableStateFlow<List<EPGChannel>>(emptyList())
     val epgChannels: StateFlow<List<EPGChannel>> = _epgChannels.asStateFlow()
 
@@ -181,7 +175,7 @@ class EPGViewModel @Inject constructor(
     }
     fun showRecentlyWatched() {
         viewModelScope.launch {
-            _filteredPrograms.value = _recentlyWatched.value // ✅ Show only recently watched
+            _filteredPrograms.value = _recentlyWatched.value // Show only recently watched
             val recentChannelIds = _recentlyWatched.value.map { it.channelId }.distinct()
             _filteredChannels.value = _epgChannels.value.filter { recentChannelIds.contains(it.id) }
         }

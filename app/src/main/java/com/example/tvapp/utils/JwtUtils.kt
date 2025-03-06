@@ -13,15 +13,13 @@ object JwtUtils {
             val payload = String(Base64.decode(parts[1], Base64.URL_SAFE)) // Decode payload
             val jsonObject = JSONObject(payload)
 
-            // ✅ Log full JWT payload for debugging
+            // Log full JWT payload for debugging
             Log.d("HASH", "Decoded Payload: $payload")
 
 
-            // ✅ Extract phone number (fallback to `sub` if no phone field exists)
+            // Extract phone number (fallback to `sub` if no phone field exists)
             jsonObject.optString("phone", jsonObject.optString("sub", null)) //  Now extracts `sub`
 
-//            // Extract phone number (Check if the correct field exists)
-//            jsonObject.optString("phone", null) // Change "phone" to your actual field name in JWT
         } catch (e: Exception) {
             e.printStackTrace()
             null

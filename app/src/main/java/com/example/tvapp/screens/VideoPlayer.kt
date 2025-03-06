@@ -54,7 +54,7 @@ fun VideoPlayer(
     // Collect logged-in phone number from DataStore
     val phoneNumberRaw by dataStoreManager.authToken.collectAsState(initial = null)
 
-    // ✅ Only extract phone number if token is not null
+    //  Only extract phone number if token is not null
     val phoneNumber = phoneNumberRaw?.let { JwtUtils.decodeJwtToken(it) }
 
     Log.d("HASH","User phone number is --> $phoneNumber")
@@ -93,7 +93,7 @@ fun VideoPlayer(
         }
     }
 
-    // ✅ Auto-hide overlay after 5 seconds
+    // Auto-hide overlay after 5 seconds
     LaunchedEffect(isOverlayVisible) {
         if (isOverlayVisible) {
             kotlinx.coroutines.delay(5000)
@@ -101,7 +101,7 @@ fun VideoPlayer(
         }
     }
 
-    // ✅ Update video when channel changes
+    // Update video when channel changes
     LaunchedEffect(currentIndex) {
         if (currentIndex in allChannels.indices) {
             val newVideoUrl = allChannels[currentIndex].videoUrl ?: ""
@@ -111,7 +111,7 @@ fun VideoPlayer(
         }
     }
 
-    // ✅ Fetch next program info
+    // Fetch next program info
     LaunchedEffect(currentChannel) {
         currentChannel?.id?.let { channelId ->
             val currentTime = System.currentTimeMillis().toString()
@@ -247,10 +247,6 @@ fun VideoPlayer(
     }
 }
 
-
-
-
-
 fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
     val context = playerView.context
     val textView = TextView(context).apply {
@@ -287,29 +283,29 @@ fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
                         val randomX = Random.nextInt(0, maxX)
                         val randomY = Random.nextInt(0, maxY)
 
-                        // ✅ Correctly update layout parameters
+                        //  Correctly update layout parameters
                         val layoutParams = overlayLayout.layoutParams as FrameLayout.LayoutParams
                         layoutParams.leftMargin = randomX
                         layoutParams.topMargin = randomY
                         overlayLayout.layoutParams = layoutParams
 
-                        // ✅ Force layout refresh
+                        // Force layout refresh
                         overlayLayout.requestLayout()
                         overlayLayout.invalidate()
                     }
                 }
             }
-            handler.postDelayed(this, 50_00) // ✅ Move every 10 seconds
+            handler.postDelayed(this, 50_00) //  Move every 10 seconds
         }
     }
 
-    // ✅ Only start moving the watermark once the layout is measured
+    //  Only start moving the watermark once the layout is measured
     playerView.post {
         textView.measure(0, 0) // Ensure TextView gets measured before first position update
         handler.post(updatePositionRunnable) // Only start once
     }
 
-    // ✅ Ensure the handler stops when the player is destroyed
+    // Ensure the handler stops when the player is destroyed
     playerView.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(v: android.view.View) {}
         override fun onViewDetachedFromWindow(v: android.view.View) {
@@ -318,33 +314,3 @@ fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
     })
 }
 
-
-
-
-
-
-
-//// ✅ Function to add watermark overlay to ExoPlayer
-//fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
-//    val context = playerView.context
-//    val textView = TextView(context).apply {
-//        text = watermarkText
-//        setTextColor(AndroidColor.WHITE)
-//        textSize = 14f
-//        alpha = 0.2f // 20% opacity
-//        setPadding(16, 16, 16, 16)
-//    }
-//
-//    val overlayLayout = FrameLayout(context).apply {
-//        addView(textView)
-//        layoutParams = FrameLayout.LayoutParams(
-//            FrameLayout.LayoutParams.WRAP_CONTENT,
-//            FrameLayout.LayoutParams.WRAP_CONTENT
-//        ).apply {
-//            marginStart = 20 // Left position
-//            bottomMargin = 20 // Bottom position
-//        }
-//    }
-//
-//    playerView.addView(overlayLayout)
-//}
