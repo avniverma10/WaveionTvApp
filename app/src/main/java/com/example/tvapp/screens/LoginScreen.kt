@@ -1,4 +1,5 @@
 import android.graphics.Bitmap
+
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +42,9 @@ fun LoginScreen(navController: NavController,viewModel: LoginViewModel = hiltVie
     var isButtonVisible by remember { mutableStateOf(false) }
     var isOTPScreenVisible by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf("") }
+
+
+
 
     if (isOTPScreenVisible) {
         OTPScreen(navController,viewModel, phoneNumber,Constants.AUTH_TOKEN)

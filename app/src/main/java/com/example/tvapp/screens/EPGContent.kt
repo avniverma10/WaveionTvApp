@@ -1,5 +1,6 @@
 package com.example.tvapp.screens
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -69,6 +70,9 @@ import java.util.Locale
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 
     val filteredPrograms by viewModel.filteredPrograms.collectAsState()
+    val filteredChannels by viewModel.filteredChannels.collectAsState()
+
+
     val epgChannels by viewModel.epgChannels.collectAsState()
 
     val channelMap = epgChannels.associateBy { it.id }
@@ -149,8 +153,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
-                        // Get the channel data from the map.
-                        val channelData = channelMap[channelId]
+                        val channelData = filteredChannels.find { it.id == channelId }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -165,7 +168,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     leftPanelWidth = 205.dp,
                                     channel = channel,
                                     onPlayClicked = { videoUrl ->
-                                        viewModel.onChannelVideoSelected(videoUrl)
+                                        val firstProgram = programs.firstOrNull()
+                                        viewModel.onChannelVideoSelected(videoUrl,firstProgram)
                                     }
                                 )
                             }
@@ -212,7 +216,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                                                             // When DPAD center is pressed, use the video URL fetched from your API.
-                                                            viewModel.onChannelVideoSelected(channelData?.videoUrl)
+                                                            viewModel.onChannelVideoSelected(channelData?.videoUrl, program)
                                                             true
                                                         }
 
@@ -265,7 +269,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     }
     if (selectedVideoUrl != null) {
         Dialog(
-            onDismissRequest = { viewModel.onChannelVideoSelected(null)  },
+            onDismissRequest = { viewModel.onChannelVideoSelected(null,null) },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Box(
@@ -273,8 +277,20 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     .fillMaxSize()
                     .background(Color.Black)
             ) {
+                Log.d("AVNI99", "Opening VideoPlayer for URL: $selectedVideoUrl") // Debugging Log
                 VideoPlayer(
-                    videoUrl = selectedVideoUrl!!,
+                    initialVideoUrl = selectedVideoUrl!!, // Make sure this updates!
+                    allChannels = epgChannels,
+                    epgViewModel = viewModel,
+                    onVideoChange = { newVideoUrl ->
+                        Log.d("AVNI99", "Updating selectedVideoUrl to: $newVideoUrl") // Debugging Log
+
+                        // Find the currently playing program based on the video URL
+                        val currentProgram = epgChannels
+                            .flatMap { channel -> filteredPrograms.filter { it.channelId == channel.id && channel.videoUrl == newVideoUrl } }
+                            .firstOrNull()
+                        viewModel.onChannelVideoSelected(newVideoUrl,currentProgram)
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -297,8 +313,6 @@ fun ChannelInfo(leftPanelWidth: Dp, channel: EPGChannel,onPlayClicked: (String?)
             .clickable { onPlayClicked(channel.videoUrl) },
         verticalAlignment = Alignment.CenterVertically) {
         Spacer(modifier = Modifier.width(8.dp))
-        // Optionally, display the channel index or remove it.
-        // Text(text = "Channel", color = Color.White, fontSize = 14.sp)
         Spacer(modifier = Modifier.width(6.dp))
         Box(
             modifier = Modifier

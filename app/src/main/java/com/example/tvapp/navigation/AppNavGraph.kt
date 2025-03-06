@@ -1,6 +1,5 @@
 package com.example.tvapp.navigation
 
-import ExoPlayerScreen
 import LoginScreen
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,9 +23,9 @@ fun AppNavGraph() {
         composable("login_screen") {
             LoginScreen(navController)
         }
-        composable("player") {
-            ExoPlayerScreen()
-        }
+//        composable("player") {
+//            ExoPlayerScreen()
+//        }
         composable("epg") {
             EPGScreen()
         }

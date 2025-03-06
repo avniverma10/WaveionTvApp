@@ -39,7 +39,7 @@
 //    }
 //
 //
-//    /** ✅ Get IP Address */
+//    /** Get IP Address */
 //    fun getIPAddress(): String? {
 //        return try {
 //            val interfaces = NetworkInterface.getNetworkInterfaces()
@@ -73,7 +73,7 @@
 //            null
 //        }
 //    }
-//    /** ✅ Get Serial Number (Requires Android 9 and below) */
+//    /** Get Serial Number (Requires Android 9 and below) */
 //    @SuppressLint("HardwareIds")
 //    fun getSerialNumber(): String {
 //        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

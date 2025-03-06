@@ -8,5 +8,6 @@ data class EPGChannel(
     @PrimaryKey val id: String,
     val name: String,
     val logoUrl: String? = null,
-    val videoUrl: String? = null
+    val videoUrl: String? = null,
+    val genreId: String //  genreId for filtering
 )

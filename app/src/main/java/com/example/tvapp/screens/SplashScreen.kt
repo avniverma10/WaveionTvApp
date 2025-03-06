@@ -53,7 +53,7 @@ fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltV
                 popUpTo("splash_screen") { inclusive = true }
             }
         } else {
-            navController.navigate("player") { // Navigate to EPG or Player Screen
+            navController.navigate("epg") { // Navigate to EPG or Player Screen
                 popUpTo("splash_screen") { inclusive = true }
             }
         }

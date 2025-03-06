@@ -11,5 +11,6 @@ data class EPGProgram(
     val startTime: String,
     val endTime: String,
     val eventName: String,
-    val eventDescription: String
+    val eventDescription: String,
+    var watchedAt: Long? = null // Add timestamp to track when watched
 )

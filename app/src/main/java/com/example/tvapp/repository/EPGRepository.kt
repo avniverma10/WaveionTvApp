@@ -17,7 +17,6 @@ import javax.inject.Inject
 class EPGRepository @Inject constructor(private val dao: EPGDao, private val apiService: ApiServiceForData) {
 
     suspend fun insertAll(channels: EPGChannel, programs: List<EPGProgram>) {
-        if (!dao.isChannelExists(channels.id)) {
             Log.d("RISHI", "insertAll: Inserting ${programs.size} programs for channel ${channels.id}")
             dao.insertChannels(channels)
             // TODO: RISHI no need to check "isProgramExists" on every insert, it will slow the process.
@@ -28,22 +27,19 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                     Log.d("RISHI", "After insertion, channels with programs: $insertedChannels")
                 }
             }
-        }else{
-            Log.i("RISHI", "Skip this due to this channel is already present in DB. ${channels.id} ")
-        }
     }
 
     fun getAllChannels(): Flow<List<EPGChannel>> = dao.getAllChannels()
+
+    fun getAllEPGPrograms(): Flow<List<EPGProgram>> = dao.getAllPrograms()
 
     fun getProgramsForNextHours(startTime: Long, endTime: Long): Flow<List<EPGProgram>> {
         return dao.getProgramsForNextHours(startTime, endTime)
     }
 
-
     suspend fun getProgramsByName(query: String): List<EPGProgram> {
         return dao.searchProgramsByName("%$query%").first()
     }
-
 
     suspend fun fetchAndStoreEPGsFromApi() {
         withContext(Dispatchers.IO) {
@@ -83,7 +79,7 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                         connection.inputStream.use { inputStream ->
                             try {
                                 // Parse the XML file to get channel and programs.
-                                val (channel, programs) = XMLParser.parseEPG(inputStream)
+                                val (channel, programs) = XMLParser.parseEPG(inputStream,epgFile.content.genreId)
                                 Log.d("DEBUG1", "Parsed channel: ${channel.id}, name: ${channel.name}")
                                 Log.d("DEBUG1", "Parsed ${programs.size} programs")
 
@@ -94,7 +90,8 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                                     name = epgFile.content.title,
                                     // Set the channel logo from the API.
                                     logoUrl = epgFile.content.thumbnailUrl,
-                                    videoUrl = epgFile.content.videoUrl
+                                    videoUrl = epgFile.content.videoUrl,
+                                    genreId = epgFile.content.genreId
 
                                 )
                                 Log.d("AVNI1","video url is -->${epgFile.content.videoUrl}")
@@ -112,6 +109,10 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
                 Log.e("EPG", "Error fetching EPG from API", e)
             }
         }
+    }
+
+    suspend fun getNextProgram(channelId: String, currentTime: String): EPGProgram? {
+        return dao.getNextProgramForChannel(channelId, currentTime)
     }
 
 }

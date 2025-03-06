@@ -33,7 +33,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
+//        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -64,11 +64,12 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")  // If you are using kapt
     implementation("androidx.room:room-ktx:2.6.1")  // Add this line
+    implementation ("io.coil-kt:coil-compose:2.4.0")
 
 
 
-    //for t96 mini
-    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.3")
+//    //for t96 mini
+//    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.0.3")
 
     implementation ("com.jakewharton.threetenabp:threetenabp:1.4.8")
     //Dagger Hilt
