@@ -1,6 +1,5 @@
 package com.example.tvapp.navigation
 
-import ExoPlayerScreen
 import LoginScreen
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
