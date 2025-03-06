@@ -1,5 +1,7 @@
 package com.example.tvapp.viewmodels
 
+import android.annotation.SuppressLint
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.Log
@@ -8,13 +10,21 @@ import com.example.tvapp.api.ApiServiceForLogin
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.provider.Settings
+import android.provider.Settings.Secure.getString
+import android.util.Base64
+import org.json.JSONObject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(private val apiService: ApiServiceForLogin, private val dataStoreManager: DataStoreManager) : ViewModel() {
 
     var verificationId: String? = null
 
-    // Send OTP
+
+
+
+
+   // Send OTP
     fun sendOtp( authToken: String,phoneNumber: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         viewModelScope.launch {
             try {

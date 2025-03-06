@@ -10,6 +10,8 @@ import com.example.tvapp.utils.Constants
 import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
 import com.example.tvapp.database.EPGDatabase
+import com.example.tvapp.database.UserHashDao
+import com.example.tvapp.database.UserHashDatabase
 import com.example.tvapp.repository.EPGRepository
 import com.example.tvapp.repository.TabsRepository
 import dagger.Module

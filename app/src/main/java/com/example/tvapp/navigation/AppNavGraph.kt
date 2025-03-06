@@ -24,9 +24,9 @@ fun AppNavGraph() {
         composable("login_screen") {
             LoginScreen(navController)
         }
-        composable("player") {
-            ExoPlayerScreen()
-        }
+//        composable("player") {
+//            ExoPlayerScreen()
+//        }
         composable("epg") {
             EPGScreen()
         }

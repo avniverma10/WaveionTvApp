@@ -46,6 +46,7 @@ import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.components.ExpandableNavigationMenu
 import com.example.tvapp.components.NavigationMenu
+import com.example.tvapp.database.UserHashDao
 import com.example.tvapp.viewmodels.EPGViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager

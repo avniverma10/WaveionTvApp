@@ -1,26 +1,16 @@
 package com.example.tvapp.screens
 
+import android.content.Context
+import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
-import android.view.LayoutInflater
+import android.widget.TextView
+import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,9 +25,20 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
-import com.example.tvapp.R
+import com.example.tvapp.models.DataStoreManager
 import com.example.tvapp.models.EPGChannel
+import com.example.tvapp.utils.JwtUtils
+import com.example.tvapp.utils.JwtUtils.decodeJwtToken
+import com.example.tvapp.utils.saveHashToDatabase
 import com.example.tvapp.viewmodels.EPGViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.security.MessageDigest
+import android.graphics.Color as AndroidColor
+import android.os.Handler
+import android.os.Looper
+import kotlin.random.Random
 
 @Composable
 fun VideoPlayer(
@@ -48,6 +49,38 @@ fun VideoPlayer(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+
+    // Collect logged-in phone number from DataStore
+    val phoneNumberRaw by dataStoreManager.authToken.collectAsState(initial = null)
+
+    // ✅ Only extract phone number if token is not null
+    val phoneNumber = phoneNumberRaw?.let { JwtUtils.decodeJwtToken(it) }
+
+    Log.d("HASH","User phone number is --> $phoneNumber")
+    // Get Android device ID
+    fun getDeviceId(context: Context): String {
+        Log.d("HASH","Getting DEVICE ID --> ${Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)}")
+        return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+    }
+    val deviceId = getDeviceId(context)
+
+    // Generate Watermark Hash
+    fun generateWatermark(userPhone: String?, deviceId: String): String {
+        val input = "$userPhone-$deviceId"
+        Log.d("HASH","Input is --> $input")
+        val digest = MessageDigest.getInstance("SHA-1")
+        Log.d("HASH","digest is --> $digest")
+        val hashBytes = digest.digest(input.toByteArray())
+        Log.d("HASH","hashBytes is --> $hashBytes")
+        val hashString = hashBytes.joinToString("") { "%02x".format(it) }
+        Log.d("HASH", "Generated Hash: $hashString")
+
+        return hashString.take(8) // Use the first 12 characters for brevity
+    }
+    val watermarkHash = generateWatermark(phoneNumber, deviceId)
+
+
     var currentIndex by remember { mutableStateOf(allChannels.indexOfFirst { it.videoUrl == initialVideoUrl }) }
     val currentChannel = allChannels.getOrNull(currentIndex)
 
@@ -60,15 +93,15 @@ fun VideoPlayer(
         }
     }
 
-    // Auto-hide overlay after 5 seconds when it appears
+    // ✅ Auto-hide overlay after 5 seconds
     LaunchedEffect(isOverlayVisible) {
         if (isOverlayVisible) {
-            kotlinx.coroutines.delay(5000) // 5 seconds delay
+            kotlinx.coroutines.delay(5000)
             isOverlayVisible = false
         }
     }
 
-    // Whenever `currentIndex` changes, update the video URL and start playback
+    // ✅ Update video when channel changes
     LaunchedEffect(currentIndex) {
         if (currentIndex in allChannels.indices) {
             val newVideoUrl = allChannels[currentIndex].videoUrl ?: ""
@@ -78,22 +111,19 @@ fun VideoPlayer(
         }
     }
 
-    // Fetch Next Program when Channel Changes
+    // ✅ Fetch next program info
     LaunchedEffect(currentChannel) {
         currentChannel?.id?.let { channelId ->
             val currentTime = System.currentTimeMillis().toString()
             epgViewModel.fetchNextProgram(channelId, currentTime)
         }
     }
+
     fun playNextChannel() {
         if (currentIndex < allChannels.lastIndex) {
             currentIndex++
             onVideoChange(allChannels[currentIndex].videoUrl ?: "")
         }
-    }
-
-    fun showOverlay() {
-        isOverlayVisible = true
     }
 
     fun playPreviousChannel() {
@@ -102,6 +132,12 @@ fun VideoPlayer(
             onVideoChange(allChannels[currentIndex].videoUrl ?: "")
         }
     }
+
+    fun showOverlay() {
+        isOverlayVisible = true
+    }
+
+
 
     DisposableEffect(Unit) {
         onDispose {
@@ -117,22 +153,12 @@ fun VideoPlayer(
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
-                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
                             playNextChannel()
                             showOverlay()
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_LEFT -> {
-                            playPreviousChannel()
-                            showOverlay()
-                            true
-                        }
-                        KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            playNextChannel()
-                            showOverlay()
-                            true
-                        }
-                        KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                        KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
                             playPreviousChannel()
                             showOverlay()
                             true
@@ -156,6 +182,9 @@ fun VideoPlayer(
                     player = exoPlayer
                     useController = true
                     keepScreenOn = true
+
+                    // Add watermark to player
+                    addWatermarkToPlayer(this, watermarkHash)
                 }
             },
             modifier = Modifier.fillMaxSize()
@@ -165,21 +194,19 @@ fun VideoPlayer(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f)) // Semi-transparent background
+                    .background(Color.Black.copy(alpha = 0.7f))
             ) {
-                // Channel Info at Bottom Left
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.Black.copy(alpha = 0.8f))
                         .padding(16.dp)
-                        .align(Alignment.BottomStart) // Stick to bottom-left
+                        .align(Alignment.BottomStart)
                 ) {
-                    androidx.compose.foundation.layout.Row(
+                    Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Channel Logo
                         AsyncImage(
                             model = currentChannel?.logoUrl,
                             contentDescription = "Channel Logo",
@@ -188,46 +215,136 @@ fun VideoPlayer(
                                 .background(Color.Gray)
                         )
 
-                        // Channel Name
                         Text(
                             text = currentChannel?.name ?: "Unknown Channel",
                             color = Color.White,
                             fontSize = 20.sp,
                             modifier = Modifier
                                 .padding(start = 16.dp)
-                                .weight(1f) // Ensures text takes remaining space
+                                .weight(1f)
                         )
                     }
                 }
 
-                // Next Program Info at Bottom Right
                 nextProgram?.let {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomEnd) // Correct alignment
+                            .align(Alignment.BottomEnd)
                             .background(Color.Black.copy(alpha = 0.9f))
                             .padding(16.dp)
                     ) {
-                        androidx.compose.foundation.layout.Column(
-                            modifier = Modifier.padding(12.dp)
-                        ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = "Next: ${it.eventName}",
                                 color = Color.White,
                                 fontSize = 18.sp
                             )
-//                            Text(
-//                                text = "${it.startTime} - ${it.endTime}",
-//                                color = Color.Gray,
-//                                fontSize = 14.sp,
-//                                modifier = Modifier.padding(top = 4.dp)
-//                            )
                         }
                     }
                 }
             }
         }
-
-
     }
 }
+
+
+
+
+
+fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
+    val context = playerView.context
+    val textView = TextView(context).apply {
+        text = watermarkText
+        setTextColor(AndroidColor.WHITE)
+        textSize = 14f
+        alpha = 0.3f // Visible but subtle
+        setPadding(16, 16, 16, 16)
+    }
+
+    val overlayLayout = FrameLayout(context).apply {
+        addView(textView)
+    }
+
+    playerView.addView(overlayLayout)
+
+    val handler = Handler(Looper.getMainLooper())
+
+    val updatePositionRunnable = object : Runnable {
+        override fun run() {
+            playerView.post {
+                val parentWidth = playerView.width
+                val parentHeight = playerView.height
+
+                textView.measure(0, 0) // Ensure TextView is measured
+                val textWidth = textView.measuredWidth
+                val textHeight = textView.measuredHeight
+
+                if (parentWidth > textWidth && parentHeight > textHeight) {
+                    val maxX = parentWidth - textWidth
+                    val maxY = parentHeight - textHeight
+
+                    if (maxX > 0 && maxY > 0) {
+                        val randomX = Random.nextInt(0, maxX)
+                        val randomY = Random.nextInt(0, maxY)
+
+                        // ✅ Correctly update layout parameters
+                        val layoutParams = overlayLayout.layoutParams as FrameLayout.LayoutParams
+                        layoutParams.leftMargin = randomX
+                        layoutParams.topMargin = randomY
+                        overlayLayout.layoutParams = layoutParams
+
+                        // ✅ Force layout refresh
+                        overlayLayout.requestLayout()
+                        overlayLayout.invalidate()
+                    }
+                }
+            }
+            handler.postDelayed(this, 50_00) // ✅ Move every 10 seconds
+        }
+    }
+
+    // ✅ Only start moving the watermark once the layout is measured
+    playerView.post {
+        textView.measure(0, 0) // Ensure TextView gets measured before first position update
+        handler.post(updatePositionRunnable) // Only start once
+    }
+
+    // ✅ Ensure the handler stops when the player is destroyed
+    playerView.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: android.view.View) {}
+        override fun onViewDetachedFromWindow(v: android.view.View) {
+            handler.removeCallbacks(updatePositionRunnable) // Stop movement when view is removed
+        }
+    })
+}
+
+
+
+
+
+
+
+//// ✅ Function to add watermark overlay to ExoPlayer
+//fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
+//    val context = playerView.context
+//    val textView = TextView(context).apply {
+//        text = watermarkText
+//        setTextColor(AndroidColor.WHITE)
+//        textSize = 14f
+//        alpha = 0.2f // 20% opacity
+//        setPadding(16, 16, 16, 16)
+//    }
+//
+//    val overlayLayout = FrameLayout(context).apply {
+//        addView(textView)
+//        layoutParams = FrameLayout.LayoutParams(
+//            FrameLayout.LayoutParams.WRAP_CONTENT,
+//            FrameLayout.LayoutParams.WRAP_CONTENT
+//        ).apply {
+//            marginStart = 20 // Left position
+//            bottomMargin = 20 // Bottom position
+//        }
+//    }
+//
+//    playerView.addView(overlayLayout)
+//}
