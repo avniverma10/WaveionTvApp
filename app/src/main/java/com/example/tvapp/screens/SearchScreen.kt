@@ -23,7 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.tvapp.viewmodels.EPGViewModel
 import com.example.tvapp.models.EPGProgram
 import kotlinx.coroutines.Job
@@ -31,7 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun SearchScreen(viewModel: EPGViewModel = viewModel()) {
+fun SearchScreen(navController: NavController,viewModel: EPGViewModel = hiltViewModel()) {
     var searchText by remember { mutableStateOf("") }
     val searchResults = viewModel.searchResults.collectAsState().value
     val coroutineScope = rememberCoroutineScope()

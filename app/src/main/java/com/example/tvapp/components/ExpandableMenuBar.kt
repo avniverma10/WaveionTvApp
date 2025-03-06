@@ -32,16 +32,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.viewmodels.TabsViewModel
 
 @Composable
-fun ExpandableNavigationMenu(viewModel: TabsViewModel = hiltViewModel()) {
+fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewModel = hiltViewModel()) {
     val tabs by viewModel.tabs
     var expanded by remember { mutableStateOf(false) }
 
-    // When expanded, pressing the back button collapses the menu.
+    // Handle back button press to collapse the menu
     if (expanded) {
         BackHandler { expanded = false }
     }
@@ -64,13 +65,12 @@ fun ExpandableNavigationMenu(viewModel: TabsViewModel = hiltViewModel()) {
             .animateContentSize()
             .padding(8.dp)
     ) {
-        // Profile row with focus handling.
+        // Profile row with focus handling
         FocusableRow(
             onClick = {
                 if (!expanded) {
                     expanded = true
                 } else {
-                    // Perform profile action here.
                     expanded = false
                 }
             }
@@ -100,14 +100,20 @@ fun ExpandableNavigationMenu(viewModel: TabsViewModel = hiltViewModel()) {
 
         Spacer(modifier = Modifier.height(60.dp))
 
-        // Other menu items with focus handling.
+        // Loop through tabs and handle navigation when "Home" is clicked
         otherTabs.forEach { tab ->
             FocusableRow(
                 onClick = {
                     if (!expanded) {
                         expanded = true
                     } else {
-                        // Perform tab click action here.
+                        if (tab.displayName == "Home") {
+                            navController.navigate("home_screen")
+                        }
+                        if (tab.displayName == "Search") {
+                            navController.navigate("search_screen")
+                        }
+
                         expanded = false
                     }
                 }
@@ -124,14 +130,14 @@ fun ExpandableNavigationMenu(viewModel: TabsViewModel = hiltViewModel()) {
                     Text(
                         text = tab.displayName,
                         color = Color.White,
-                        fontSize = 14.sp,
-
+                        fontSize = 14.sp
                     )
                 }
             }
         }
     }
 }
+
 @Composable
 fun FocusableRow(
     onClick: () -> Unit,

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
@@ -57,13 +58,13 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun EPGScreen(viewModel: EPGViewModel = hiltViewModel()) {
+fun EPGScreen(navController:NavController,viewModel: EPGViewModel = hiltViewModel()) {
     val epgChannels by viewModel.epgChannels.collectAsState()
     val bannerList by viewModel.bannerList.collectAsState(initial = emptyList())
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Navigation Menu
-        ExpandableNavigationMenu()
+        ExpandableNavigationMenu(navController)
 
         Column(modifier = Modifier
             .fillMaxSize()

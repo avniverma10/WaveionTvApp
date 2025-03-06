@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.models.DataStoreManager
+import com.example.tvapp.repository.EPGRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,12 @@ import javax.inject.Inject
 
 @RequiresApi(Build.VERSION_CODES.M)
 @HiltViewModel
-class SplashViewModel @Inject constructor(private val repository: SplashRepository,application: Application,private val dataStoreManager: DataStoreManager) :  AndroidViewModel(application){
+class SplashViewModel @Inject constructor(
+    private val repository: SplashRepository,
+    application: Application,
+    private val dataStoreManager: DataStoreManager,
+    private val epgRepository: EPGRepository
+) :  AndroidViewModel(application){
 
     private val _logoUrl = MutableStateFlow<String?>(null)
     val logoUrl: StateFlow<String?> = _logoUrl
@@ -26,11 +32,28 @@ class SplashViewModel @Inject constructor(private val repository: SplashReposito
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _isDataLoaded = MutableStateFlow(false)
+    val isDataLoaded: StateFlow<Boolean> = _isDataLoaded
+
+
     val authToken = dataStoreManager.authToken
 
     init {
         checkAppConditions()
         fetchSplashContent()
+        preloadDatabase()
+    }
+
+    private fun preloadDatabase() {
+        viewModelScope.launch {
+            try {
+                epgRepository.fetchAndStoreEPGsFromApi()  // Fetch API data and save it in Room
+                _isDataLoaded.value = true // Mark data as loaded
+            } catch (e: Exception) {
+                Log.e("AVNI", "Error loading EPG data", e)
+                _errorMessage.value = "Failed to load data"
+            }
+        }
     }
 
     fun checkUserLoginStatus(onLoggedIn: () -> Unit, onLoggedOut: () -> Unit) {

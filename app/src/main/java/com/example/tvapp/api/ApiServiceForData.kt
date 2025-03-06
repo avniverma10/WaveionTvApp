@@ -1,6 +1,6 @@
 package com.example.tvapp.api
 
-import com.example.applicationscreens.models.ContentResponse
+import com.example.tvapp.models.ContentResponse
 import com.example.tvapp.models.EpgFile
 import com.example.tvapp.models.Banner
 import com.example.tvapp.models.SplashApiResponse

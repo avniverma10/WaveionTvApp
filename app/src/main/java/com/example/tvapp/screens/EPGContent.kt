@@ -210,7 +210,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                             .onFocusChanged { isFocused.value = it.isFocused }
                                             .focusRequester(focusRequester)
                                             .focusable()
-                                        // Intercept DPAD Right if it’s the last item and currently focused
+                                            // Intercept DPAD Right if it’s the last item and currently focused
                                             .onPreviewKeyEvent { keyEvent ->
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {

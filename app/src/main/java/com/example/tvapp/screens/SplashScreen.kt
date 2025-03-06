@@ -29,14 +29,27 @@ import com.example.tvapp.viewmodels.SplashViewModel
 fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltViewModel()) {
     val logoUrl by viewModel.logoUrl.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
     Log.d("AVNI", "SplashScreen: ERROr  is ${errorMessage}")
+
     val authToken by viewModel.authToken.collectAsState(initial = null)
+
+    val isDataLoaded by viewModel.isDataLoaded.collectAsState()
+
+    Log.d("Splash","Is data loaded --> $isDataLoaded")
 
 
     val context = LocalContext.current
 
     Log.d("AVNI", "Logo URL: $logoUrl")
 
+
+
+    LaunchedEffect(isDataLoaded) {
+        if (isDataLoaded) {
+            navController.navigate("epg")  // Navigate only after data is fully loaded
+        }
+    }
 
     LaunchedEffect(errorMessage,authToken) {
         if (errorMessage != null) {
@@ -47,14 +60,18 @@ fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltV
             return@LaunchedEffect
         }
 
-        delay(2000)
-        if (authToken.isNullOrEmpty()) {
-            navController.navigate("login_screen") {
-                popUpTo("splash_screen") { inclusive = true }
-            }
-        } else {
-            navController.navigate("epg") { // Navigate to EPG or Player Screen
-                popUpTo("splash_screen") { inclusive = true }
+        delay(4000) // Optional: Keep splash visible for UX purposes
+        if (isDataLoaded) {
+
+
+            if (authToken.isNullOrEmpty()) {
+                navController.navigate("login_screen") {
+                    popUpTo("splash_screen") { inclusive = true }
+                }
+            } else {
+                navController.navigate("epg") { // Navigate to EPG or Player Screen
+                    popUpTo("splash_screen") { inclusive = true }
+                }
             }
         }
 
@@ -75,13 +92,13 @@ fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltV
                     .size(250.dp)
             )
         } else {
-                AsyncImage(
-                    model = "https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
-                    contentDescription = "Fallback Logo",
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(250.dp)
-                )
+            AsyncImage(
+                model = "https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
+                contentDescription = "Fallback Logo",
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(250.dp)
+            )
         }
     }
 }
