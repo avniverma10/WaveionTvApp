@@ -48,15 +48,15 @@ fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltV
         }
 
         delay(2000)
-        if (authToken.isNullOrEmpty()) {
-            navController.navigate("login_screen") {
-                popUpTo("splash_screen") { inclusive = true }
-            }
-        } else {
+//        if (authToken.isNullOrEmpty()) {
+//            navController.navigate("login_screen") {
+//                popUpTo("splash_screen") { inclusive = true }
+//            }
+//        } else {
             navController.navigate("epg") { // Navigate to EPG or Player Screen
                 popUpTo("splash_screen") { inclusive = true }
             }
-        }
+//        }
 
     }
 

@@ -1,19 +1,15 @@
 package com.example.tvapp.di
 
-
-
-import com.example.tvapp.database.EPGDao
 import android.content.Context
 import androidx.room.Room
-import com.example.tvapp.models.DataStoreManager
-import com.example.tvapp.utils.Constants
-import com.example.tvapp.api.ApiServiceForLogin
 import com.example.tvapp.api.ApiServiceForData
+import com.example.tvapp.api.ApiServiceForLogin
+import com.example.tvapp.database.EPGDao
 import com.example.tvapp.database.EPGDatabase
-import com.example.tvapp.database.UserHashDao
-import com.example.tvapp.database.UserHashDatabase
+import com.example.tvapp.models.DataStoreManager
 import com.example.tvapp.repository.EPGRepository
 import com.example.tvapp.repository.TabsRepository
+import com.example.tvapp.utils.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -93,7 +89,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideTabRepository(apiServiceForData: ApiServiceForData):TabsRepository{
-        return TabsRepository(apiServiceForData)
+        return TabsRepository()
 
     }
 }

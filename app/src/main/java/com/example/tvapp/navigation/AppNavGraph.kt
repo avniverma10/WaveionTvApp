@@ -1,6 +1,8 @@
 package com.example.tvapp.navigation
 
 import LoginScreen
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -11,6 +13,7 @@ import com.example.tvapp.screens.SplashScreen
 import com.example.tvapp.viewmodels.SplashViewModel
 
 
+@RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
@@ -20,9 +23,9 @@ fun AppNavGraph() {
             val splashViewModel: SplashViewModel = hiltViewModel() // Get the ViewModel using Hilt
             SplashScreen(navController, splashViewModel)
         }
-        composable("login_screen") {
-            LoginScreen(navController)
-        }
+//        composable("login_screen") {
+//            LoginScreen(navController)
+//        }
 //        composable("player") {
 //            ExoPlayerScreen()
 //        }
