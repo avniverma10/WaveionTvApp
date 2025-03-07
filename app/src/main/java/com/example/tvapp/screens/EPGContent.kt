@@ -154,6 +154,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
                         val channelData = filteredChannels.find { it.id == channelId }
+                        val isFirstChannel = (channelIndex == 0)
+                        val isLastChannel = (channelIndex == filteredChannels.lastIndex)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -167,6 +169,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                 ChannelInfo(
                                     leftPanelWidth = 205.dp,
                                     channel = channel,
+                                    isFirstChannel = isFirstChannel,
+                                    isLastChannel = isLastChannel,
                                     onPlayClicked = { videoUrl ->
                                         val firstProgram = programs.firstOrNull()
                                         viewModel.onChannelVideoSelected(videoUrl,firstProgram)
@@ -307,11 +311,54 @@ fun LeftPanelHeader(width: Dp) {
     }
 }
 @Composable
-fun ChannelInfo(leftPanelWidth: Dp, channel: EPGChannel,onPlayClicked: (String?) -> Unit) {
+fun ChannelInfo(
+    leftPanelWidth: Dp,
+    channel: EPGChannel,
+    isFirstChannel: Boolean,
+    isLastChannel: Boolean,
+    onPlayClicked: (String?) -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+    val isFocused = remember { mutableStateOf(false) }
+
     Row(
-        modifier = Modifier.width(leftPanelWidth)
-            .clickable { onPlayClicked(channel.videoUrl) },
-        verticalAlignment = Alignment.CenterVertically) {
+        modifier = Modifier
+            .width(leftPanelWidth)
+            .then(
+                if (isFocused.value)
+                    Modifier.border(2.dp, Color.White)
+                else Modifier
+            )
+            .onFocusChanged { isFocused.value = it.isFocused }
+            .focusRequester(focusRequester)
+            .focusable()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            onPlayClicked(channel.videoUrl)
+                            true
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (isFirstChannel) {
+                                true // Consume event to prevent moving out
+                            } else {
+                                false
+                            }
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (isLastChannel) {
+                                true // Consume event to prevent moving out
+                            } else {
+                                false
+                            }
+                        }
+                        else -> false
+                    }
+                } else false
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Spacer(modifier = Modifier.width(8.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Box(

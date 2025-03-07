@@ -70,7 +70,7 @@ fun EPGScreen(navController:NavController,viewModel: EPGViewModel = hiltViewMode
             .fillMaxSize()
             .background(Color.Black)) {
             // Top Banner
-            AdvertisementBanner(bannerList = bannerList)
+//            AdvertisementBanner(bannerList = bannerList)
 
             Row(modifier = Modifier.fillMaxSize()) {
                 // Left Navigation Menu

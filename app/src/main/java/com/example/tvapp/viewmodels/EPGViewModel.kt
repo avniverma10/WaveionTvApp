@@ -155,7 +155,7 @@ class EPGViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchBanners() {
+    suspend fun fetchBanners() {
         try {
             val banners = apiService.getBanners()
             _bannerList.value = banners

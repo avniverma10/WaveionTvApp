@@ -24,23 +24,30 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.tvapp.components.ExpandableNavigationMenu
+import com.example.tvapp.models.Banner
 import com.example.tvapp.models.HomeContent
+import com.example.tvapp.viewmodels.EPGViewModel
 import com.example.tvapp.viewmodels.HomeViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @Composable
-fun HomeScreen(navController: NavController,viewModel: HomeViewModel = hiltViewModel()) {
-    val homeContent by viewModel.homeContent.collectAsState()
+fun HomeScreen(navController: NavController,
+               homeViewModel: HomeViewModel = hiltViewModel(),
+               epgViewModel: EPGViewModel = hiltViewModel()) {
+
+    val homeContent by homeViewModel.homeContent.collectAsState()
+    val bannerList by epgViewModel.bannerList.collectAsState() // ✅ Get banners from EPGViewModel
 
     Log.d("HOME", "Home content -->$homeContent")
+    Log.d("EPG", "Banner content -->$bannerList")
 
-
-
+    // Load banners from API
     LaunchedEffect(Unit) {
-        viewModel.loadHomeContent()
+        epgViewModel.fetchBanners()
     }
+
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Side: Expandable Navigation Menu
         ExpandableNavigationMenu(navController)
@@ -52,8 +59,8 @@ fun HomeScreen(navController: NavController,viewModel: HomeViewModel = hiltViewM
                 .fillMaxSize()
         ) {
             item {
-                if (homeContent.isNotEmpty()) {
-                    HeroCarousel(homeContent, navController)
+                if (bannerList.isNotEmpty()) {
+                    HeroCarousel(bannerList, navController) // ✅ Use banners instead of `homeContent`
                 } else {
                     Box(
                         modifier = Modifier
@@ -61,12 +68,10 @@ fun HomeScreen(navController: NavController,viewModel: HomeViewModel = hiltViewM
                             .height(300.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Loading...", color = Color.White)
+                        Text("Loading Banners...", color = Color.White)
                     }
                 }
             }
-
-
 
             if (homeContent.isNotEmpty()) {
                 item { CategorySection("Continue Watching", homeContent, navController) }
@@ -78,30 +83,31 @@ fun HomeScreen(navController: NavController,viewModel: HomeViewModel = hiltViewM
     }
 }
 
+
 @Composable
-fun HeroCarousel(homeContent: List<HomeContent>, navController: NavController) {
-    if (homeContent.isNotEmpty()) {
+fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
+    if (bannerList.isNotEmpty()) {
         var selectedIndex by remember { mutableStateOf(0) }
 
-        // Auto-scroll logic
-        LaunchedEffect(homeContent) {
+        // Auto-scroll logic for Hero Carousel
+        LaunchedEffect(bannerList) {
             while (true) {
-                delay(5000) // Change slide every 3 seconds
-                selectedIndex = (selectedIndex + 1) % homeContent.size
+                delay(5000) // Auto-scroll every 5 seconds
+                selectedIndex = (selectedIndex + 1) % bannerList.size
             }
         }
 
-        val selectedContent = homeContent[selectedIndex]
-        val encodedUrl = URLEncoder.encode(selectedContent.videoUrl, StandardCharsets.UTF_8.toString())
+        val selectedBanner = bannerList[selectedIndex]
+//        val encodedUrl = URLEncoder.encode(selectedBanner.videoUrl, StandardCharsets.UTF_8.toString())
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Image(
-                painter = rememberAsyncImagePainter(selectedContent.thumbnailUrl),
-                contentDescription = selectedContent.title,
+                painter = rememberAsyncImagePainter(selectedBanner.bannerUrl), // ✅ Use Banner Image
+                contentDescription = "",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
-                    .clickable {navController.navigate("homeplayer/$encodedUrl")},
+                    .height(300.dp),
+//                    .clickable { navController.navigate("homeplayer/$encodedUrl") }
                 contentScale = ContentScale.Crop
             )
 
@@ -110,27 +116,22 @@ fun HeroCarousel(homeContent: List<HomeContent>, navController: NavController) {
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
             ) {
-                Text(
-                    text = selectedContent.title,
-                    modifier = Modifier.padding(8.dp),
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineSmall
-                )
 
                 Button(
-                    onClick = { navController.navigate("homeplayer/$encodedUrl") },
+                    onClick = {  },
                     modifier = Modifier
-                        .padding(8.dp)  .clip(RoundedCornerShape(4.dp)),
-                    shape = RectangleShape, // Ensures sharp corners
-
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black) // Black Button
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    shape = RectangleShape, // Sharp corners
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                 ) {
-                    Text(text = "Watch Now",color = Color.White)
+                    Text(text = "Watch Now", color = Color.White)
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun CategorySection(title: String, contentList: List<HomeContent>,  navController: NavController) {

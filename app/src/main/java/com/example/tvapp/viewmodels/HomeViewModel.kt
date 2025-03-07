@@ -17,6 +17,10 @@ class HomeViewModel @Inject constructor(private val repository: HomeRepository) 
     private val _homeContent = MutableStateFlow<List<HomeContent>>(emptyList())
     val homeContent: StateFlow<List<HomeContent>> get() = _homeContent
 
+    init {
+        loadHomeContent()
+    }
+
     fun loadHomeContent() {
         viewModelScope.launch {
             repository.fetchHomeContent().collect { contentList ->
