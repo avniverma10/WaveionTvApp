@@ -86,7 +86,7 @@ fun HeroCarousel(homeContent: List<HomeContent>, navController: NavController) {
         // Auto-scroll logic
         LaunchedEffect(homeContent) {
             while (true) {
-                delay(3000) // Change slide every 3 seconds
+                delay(5000) // Change slide every 3 seconds
                 selectedIndex = (selectedIndex + 1) % homeContent.size
             }
         }
@@ -183,9 +183,3 @@ fun VideoThumbnail(content: HomeContent, onVideoClick: (String) -> Unit) {
         )
     }
 }
-//
-//@Preview
-//@Composable
-//fun PreviewHomeScreen() {
-//    HomeScreen {}
-//}

@@ -74,7 +74,7 @@ class EPGViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             try {
-                repository.fetchAndStoreEPGsFromApi()
+//                repository.fetchAndStoreEPGsFromApi()
                 loadEPGData()
                 filterProgramsByTime_test()
             } catch (e: Exception) {

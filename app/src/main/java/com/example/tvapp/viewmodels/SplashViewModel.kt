@@ -10,12 +10,17 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.models.DataStoreManager
+import com.example.tvapp.models.Tab
 import com.example.tvapp.repository.EPGRepository
+import com.example.tvapp.repository.TabsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 @RequiresApi(Build.VERSION_CODES.M)
 @HiltViewModel
@@ -23,8 +28,9 @@ class SplashViewModel @Inject constructor(
     private val repository: SplashRepository,
     application: Application,
     private val dataStoreManager: DataStoreManager,
-    private val epgRepository: EPGRepository
-) :  AndroidViewModel(application){
+    private val epgRepository: EPGRepository,
+    private val tabsRepository: TabsRepository
+) : AndroidViewModel(application) {
 
     private val _logoUrl = MutableStateFlow<String?>(null)
     val logoUrl: StateFlow<String?> = _logoUrl
@@ -35,24 +41,73 @@ class SplashViewModel @Inject constructor(
     private val _isDataLoaded = MutableStateFlow(false)
     val isDataLoaded: StateFlow<Boolean> = _isDataLoaded
 
+    private val _tabs = MutableStateFlow<List<Tab>>(emptyList())
+    val tabs: StateFlow<List<Tab>> = _tabs.asStateFlow()
 
     val authToken = dataStoreManager.authToken
 
     init {
-        checkAppConditions()
-        fetchSplashContent()
-        preloadDatabase()
+        loadAllData() // Start fetching data immediately when SplashViewModel is created
     }
 
-    private fun preloadDatabase() {
+    private fun loadAllData() {
         viewModelScope.launch {
-            try {
-                epgRepository.fetchAndStoreEPGsFromApi()  // Fetch API data and save it in Room
-                _isDataLoaded.value = true // Mark data as loaded
-            } catch (e: Exception) {
-                Log.e("AVNI", "Error loading EPG data", e)
-                _errorMessage.value = "Failed to load data"
+            if (!isInternetAvailable()) {
+                _errorMessage.value = "No internet connection"
+                return@launch
             }
+
+            try {
+                val timeTaken = measureTimeMillis {
+                    // Fetch all required data in parallel
+                    val fetchTabs = async { fetchTabs() }
+                    val fetchEPGData = async { preloadDatabase() }
+                    val fetchSplashContent = async { fetchSplashContent() }
+
+                    // Wait for all tasks to complete
+                    fetchTabs.await()
+                    fetchEPGData.await()
+                    fetchSplashContent.await()
+                }
+                Log.d("AVNI", "All data loaded in $timeTaken ms")
+
+                // Mark data as fully loaded
+                _isDataLoaded.value = true
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to load data"
+                Log.e("AVNI", "Error loading data", e)
+            }
+        }
+    }
+
+    private suspend fun fetchTabs() {
+        try {
+            val fetchedTabs = tabsRepository.fetchTabs().filter { it.isVisible }
+            _tabs.value = fetchedTabs
+        } catch (e: Exception) {
+            Log.e("SplashViewModel", "Failed to fetch tabs", e)
+        }
+    }
+
+    private suspend fun preloadDatabase() {
+        try {
+            epgRepository.fetchAndStoreEPGsFromApi()  // Fetch API data and save in Room
+        } catch (e: Exception) {
+            Log.e("SplashViewModel", "Error loading EPG data", e)
+            _errorMessage.value = "Failed to load EPG data"
+        }
+    }
+
+    private suspend fun fetchSplashContent() {
+        try {
+            val splashApiResponse = repository.getLogo()
+            if (splashApiResponse.success) {
+                _logoUrl.value = splashApiResponse.logo
+            } else {
+                Log.e("AVNI", "Failed to fetch logo: Response not successful")
+            }
+        } catch (e: Exception) {
+            Log.e("AVNI", "Failed to fetch splash content", e)
         }
     }
 
@@ -67,55 +122,6 @@ class SplashViewModel @Inject constructor(
             }
         }
     }
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun checkAppConditions() {
-        Log.d("AVNI", "is internet available: ${isInternetAvailable()}")
-        viewModelScope.launch {
-            if (!isInternetAvailable()) {
-                Log.d("AVNI","Inside network not available")
-                _errorMessage.value = "Connect to the internet"
-                return@launch
-            }
-
-//            try {
-//                // Check if the server is accessible
-//                val splashApiResponse = repository.getLogo()
-//                if (splashApiResponse.success) {
-//                    _logoUrl.value = splashApiResponse.logo
-//                } else {
-//                    _errorMessage.value = "Server Error: 404 not found"
-//                    return@launch
-//                }
-//
-////                // Check for updates
-////                val updateResponse = repository.checkForUpdates()
-////                if (updateResponse.isUpdateAvailable) {
-////                    _updateUrl.value = updateResponse.updateLink
-////                }
-//            } catch (e: Exception) {
-//                _errorMessage.value = "Failed to reach server"
-//                Log.e("SplashViewModel", "Error: 404 ", e)
-//            }
-        }
-    }
-
-    private fun fetchSplashContent() {
-        viewModelScope.launch {
-            try {
-
-                val splashApiResponse = repository.getLogo()
-                if (splashApiResponse.success) {
-                    _logoUrl.value = splashApiResponse.logo
-                } else {
-                    Log.e("AVNI", "Failed to fetch logo: Response not successful")
-                }
-            } catch (e: Exception) {
-                Log.e("AVNI", "Failed to fetch splash content", e)
-            }
-        }
-    }
-
-
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun isInternetAvailable(): Boolean {
