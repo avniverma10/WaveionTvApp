@@ -2,7 +2,6 @@ package com.example.tvapp.screens
 
 import android.util.Log
 import android.view.KeyEvent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,7 +31,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -39,33 +38,26 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.tvapp.R
-import com.example.tvapp.viewmodels.EPGViewModel
-import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.time.Duration
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.example.tvapp.components.TimeHeader
 import com.example.tvapp.components.parseFixedTime
 import com.example.tvapp.models.EPGChannel
+import com.example.tvapp.viewmodels.EPGViewModel
+import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
-
-import java.util.Locale
 @Composable
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 
@@ -83,6 +75,10 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     // Update current time every second.
     val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
 
+    val wishlistPopupProgram by viewModel.wishlistPopupProgram.collectAsState()
+    val wishlistAlertProgram by viewModel.wishlistAlertProgram.collectAsState()
+
+
 
     // Define a fixed width for the left panel that contains channel info.
     // Adjust this value to the total width of all elements in your left panel.
@@ -99,7 +95,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
     // minutesPerPixel for program scrolling.
     val minutesPerPixel = 2
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)) {
         // Top row with "All" text and TimeHeader.
         Row(
             modifier = Modifier
@@ -173,6 +171,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     isLastChannel = isLastChannel,
                                     onPlayClicked = { videoUrl ->
                                         val firstProgram = programs.firstOrNull()
+                                        //viewModel.onShowWishlistPopup()
                                         viewModel.onChannelVideoSelected(videoUrl,firstProgram)
                                     }
                                 )
@@ -182,14 +181,18 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             LazyRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = maxOf(0, -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()).dp)
+                                    .padding(
+                                        start = maxOf(
+                                            0,
+                                            -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()
+                                        ).dp
+                                    )
                             ) {
                                 itemsIndexed(programs) { programIndex, program ->
-                                    val timeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z", Locale.getDefault())
-                                    val startTime = OffsetDateTime.parse(program.startTime, timeFormatter).toLocalTime()
-                                    val endTime = OffsetDateTime.parse(program.endTime, timeFormatter).toLocalTime()
-                                    val programDuration = Duration.between(startTime, endTime).toMinutes()
-                                    val programWidth = maxOf((programDuration.toInt() / minutesPerPixel).dp, 50.dp)
+                                    val programWidth = calculateProgramWidth(
+                                        program.startTime,
+                                        program.endTime
+                                    )
 
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
@@ -221,13 +224,27 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                                                             // When DPAD center is pressed, use the video URL fetched from your API.
                                                             viewModel.onChannelVideoSelected(channelData?.videoUrl, program)
+                                                            Log.i("RISHI", "EPGContent: dpad center")
+                                                            val currentTime = currentTimeMillis.value
+                                                            val programStartMillis = getTimeInMillis(program.startTime)
+                                                            val programEndMillis = getTimeInMillis(program.endTime)
+
+                                                            // Debug logging to verify values:
+                                                            Log.i("DEBUG_TIME", "Current: $currentTime, Start: $programStartMillis, End: $programEndMillis")
+
+                                                            // For testing, force one branch:
+                                                            if (currentTime in programStartMillis..programEndMillis || true /*temporary override*/) {
+                                                                Log.i("RISHIRAJ", "EPGContent: video should play")
+                                                                viewModel.onChannelVideoSelected(channelData?.videoUrl, program)
+                                                            } else if (currentTime < programStartMillis) {
+                                                                Log.i("RISHIRAJ", "EPGContent: pop should show")
+                                                                viewModel.onShowWishlistPopup(program)
+                                                            }
                                                             true
                                                         }
-
                                                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                                             if (isFocused.value && isLastProgram) true else false
                                                         }
-
                                                         else -> false
                                                     }
                                                 } else false
@@ -301,7 +318,67 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
         }
     }
 
+    if (wishlistPopupProgram != null) {
+        Dialog(onDismissRequest = { viewModel.clearWishlistPopup() }) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)) {
+                // Retrieve channel name using channelMap if available
+                val channelName = channelMap[wishlistPopupProgram!!.channelId]?.name ?: "Unknown Channel"
+                Column(modifier = Modifier.align(Alignment.Center)) {
+                    Text(text = "Channel: $channelName", color = Color.White)
+                    Text(text = "Start: ${wishlistPopupProgram!!.startTime}", color = Color.White)
+                    Text(text = "End: ${wishlistPopupProgram!!.endTime}", color = Color.White)
+                    // Button to add to wishlist:
+                    Button(onClick = { viewModel.addToWishlist(wishlistPopupProgram!!) }) {
+                        Text("Add to Wishlist")
+                    }
+                    Button(onClick = { viewModel.clearWishlistPopup() }) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        }
+    }
+    if (wishlistAlertProgram != null) {
+        Dialog(onDismissRequest = { viewModel.clearWishlistAlert() }) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)) {
+                val channelName = channelMap[wishlistAlertProgram!!.channelId]?.name ?: "Unknown Channel"
+                Column(modifier = Modifier.align(Alignment.Center)) {
+                    Text(text = "Your wishlist event is starting", color = Color.White)
+                    Text(text = "Channel: $channelName", color = Color.White)
+                    Text(text = "Start: ${wishlistAlertProgram!!.startTime}", color = Color.White)
+                    Text(text = "End: ${wishlistAlertProgram!!.endTime}", color = Color.White)
+                    // Button to play:
+                    Button(onClick = {
+                        viewModel.onChannelVideoSelected(channelMap[wishlistAlertProgram!!.channelId]?.videoUrl, program = null)
+                        viewModel.clearWishlistAlert()
+                    }) {
+                        Text("Play")
+                    }
+                    Button(onClick = { viewModel.clearWishlistAlert() }) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        }
+    }
+
+
 }
+
+fun calculateProgramWidth(startTime: String, endTime: String): Dp {
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    val startDateTime = ZonedDateTime.parse(startTime, formatter)
+    val endDateTime = ZonedDateTime.parse(endTime, formatter)
+    val duration = Duration.between(startDateTime, endDateTime).toMinutes()
+    val blocks = duration / 30.0
+    val widthPerBlock = 50.dp
+    return (blocks.toFloat() * widthPerBlock.value).dp
+}
+
 @Composable
 fun LeftPanelHeader(width: Dp) {
     // A Box or Row that is exactly `width` wide
@@ -396,4 +473,17 @@ fun ChannelInfo(
     }
 }
 
+fun getTimeInMillis(timeStr: String): Long {
+    return try {
+        // Assuming your program time strings follow "yyyyMMddHHmmss Z"
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+        val zdt = ZonedDateTime.parse(timeStr, formatter)
+        zdt.toInstant().toEpochMilli()
+    } catch (e: Exception) {
+        // Fallback to no timezone format if necessary
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+        val zdt = ZonedDateTime.parse("$timeStr +0000", DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z"))
+        zdt.toInstant().toEpochMilli()
+    }
+}
 

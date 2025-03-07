@@ -65,6 +65,10 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")  // If you are using kapt
     implementation("androidx.room:room-ktx:2.6.1")  // Add this line
     implementation ("io.coil-kt:coil-compose:2.4.0")
+// Add to your app's build.gradle file under dependencies
+    implementation ("com.squareup.okhttp3:okhttp:4.9.0")  // Check for the latest version
+    implementation ("com.squareup.okhttp3:okhttp-sse:4.9.0")  // SSE support
+
 
 
 

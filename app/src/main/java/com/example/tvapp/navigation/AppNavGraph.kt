@@ -1,6 +1,8 @@
 package com.example.tvapp.navigation
 
 import LoginScreen
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -18,6 +20,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 
+@RequiresApi(Build.VERSION_CODES.M)
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
@@ -43,7 +46,7 @@ fun AppNavGraph() {
             arguments = listOf(navArgument("videoUrl") { type = NavType.StringType })
         ) { backStackEntry ->
             val encodedUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
-            val videoUrl = URLDecoder.decode(encodedUrl, StandardCharsets.UTF_8.toString()) // ✅ Decode URL
+            val videoUrl = URLDecoder.decode(encodedUrl, StandardCharsets.UTF_8.toString())
             HomePlayer(navController, videoUrl)
         }
 
