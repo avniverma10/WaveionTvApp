@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.lifecycleScope
 import androidx.tv.material3.Surface
+import com.example.tvapp.api.DeviceInfoService
 import com.example.tvapp.navigation.AppNavGraph
 import com.example.tvapp.screens.EPGScreen
 import com.example.tvapp.ui.screens.HomeScreen
 import com.example.tvapp.ui.theme.TVAppTheme
 import com.example.tvapp.viewmodels.HomeViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -32,6 +35,10 @@ class MainActivity : ComponentActivity() {
                   AppNavGraph()
                 }
             }
+        }
+        //TODO put this at login page, this is jsyt for testing
+        lifecycleScope.launch {
+            DeviceInfoService.sendDeviceInfo(applicationContext, "rishi")
         }
     }
 }
