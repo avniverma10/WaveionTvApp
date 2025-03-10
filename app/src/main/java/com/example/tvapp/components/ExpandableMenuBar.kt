@@ -48,15 +48,9 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
         BackHandler { expanded = false }
     }
 
-    if (tabs.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = "Loading...", color = Color.White)
-        }
-        return
-    }
-
-    val profileTab = tabs.first()
-    val otherTabs = tabs.drop(1)
+    // Split tabs into profile and others if available
+    val profileTab = tabs.firstOrNull()
+    val otherTabs = if (tabs.isNotEmpty()) tabs.drop(1) else emptyList()
 
     Column(
         modifier = Modifier
@@ -66,27 +60,30 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
             .animateContentSize()
             .padding(8.dp)
     ) {
-        // Profile row with focus handling
+        // Profile row (Show a placeholder if tabs are empty)
         FocusableRow(
             onClick = {
-                if (!expanded) {
-                    expanded = true
-                } else {
-                    expanded = false
-                }
+                expanded = !expanded
             }
         ) {
-            if (profileTab.iconUrl != null) {
+            if (profileTab?.iconUrl != null) {
                 AsyncImage(
                     model = profileTab.iconUrl,
                     contentDescription = profileTab.displayName,
                     modifier = Modifier.size(32.dp)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(Color.Gray) // Placeholder for profile icon
+                )
             }
+
             if (expanded) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = profileTab.displayName,
+                    text = profileTab?.displayName ?: "Profile",
                     color = Color.White,
                     fontSize = 14.sp
                 )
@@ -101,43 +98,56 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
 
         Spacer(modifier = Modifier.height(60.dp))
 
-        // Loop through tabs and handle navigation when "Home" is clicked
-        otherTabs.forEach { tab ->
-            FocusableRow(
-                onClick = {
-                    if (!expanded) {
-                        expanded = true
-                    } else {
-                        if (tab.displayName == "Home") {
-                            navController.navigate("home_screen")
+        // If tabs are not available yet, show a small loading indicator instead of empty space
+        if (tabs.isEmpty()) {
+            Text(
+                text = "Loading...",
+                color = Color.White,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp)
+            )
+        } else {
+            // Render available tabs
+            otherTabs.forEach { tab ->
+                FocusableRow(
+                    onClick = {
+                        if (!expanded) {
+                            expanded = true
+                        } else {
+                            if (tab.displayName == "Home") {
+                                navController.navigate("home_screen")
+                            }
+                            if (tab.displayName == "Search") {
+                                navController.navigate("search_screen")
+                            }
+                            if (tab.displayName == "Live Tv") {
+                                navController.navigate("epg")
+                            }
+                            expanded = false
                         }
-                        if (tab.displayName == "Search") {
-                            navController.navigate("search_screen")
-                        }
-
-                        expanded = false
                     }
-                }
-            ) {
-                if (tab.iconUrl != null) {
-                    AsyncImage(
-                        model = tab.iconUrl,
-                        contentDescription = tab.displayName,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                if (expanded) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = tab.displayName,
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
+                ) {
+                    if (tab.iconUrl != null) {
+                        AsyncImage(
+                            model = tab.iconUrl,
+                            contentDescription = tab.displayName,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    if (expanded) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = tab.displayName,
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun FocusableRow(

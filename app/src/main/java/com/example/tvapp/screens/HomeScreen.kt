@@ -3,7 +3,11 @@ package com.example.tvapp.ui.screens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -14,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
@@ -88,6 +93,7 @@ fun HomeScreen(navController: NavController,
 fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
     if (bannerList.isNotEmpty()) {
         var selectedIndex by remember { mutableStateOf(0) }
+        var isButtonFocused by remember { mutableStateOf(false) }
 
         // Auto-scroll logic for Hero Carousel
         LaunchedEffect(bannerList) {
@@ -121,6 +127,13 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                     onClick = {  },
                     modifier = Modifier
                         .padding(8.dp)
+                        .onFocusChanged { isButtonFocused = it.isFocused } // Track button focus
+                        .focusable() // Make it focusable for navigation
+                        .border(
+                            width = if (isButtonFocused) 3.dp else 0.dp, // Show border when focused
+                            color = Color.White,
+                            shape = RoundedCornerShape(4.dp)
+                        )
                         .clip(RoundedCornerShape(4.dp)),
                     shape = RectangleShape, // Sharp corners
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
@@ -159,12 +172,22 @@ fun CategorySection(title: String, contentList: List<HomeContent>,  navControlle
     }
 }
 
+
 @Composable
 fun VideoThumbnail(content: HomeContent, onVideoClick: (String) -> Unit) {
+    var isFocused by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .padding(8.dp)
             .width(160.dp)
+            .onFocusChanged { focusState -> isFocused = focusState.isFocused } // Track focus state
+            .focusable() // Make the item navigable
+            .border(
+                width = if (isFocused) 4.dp else 0.dp, // Show border only when focused
+                color = Color.White,
+                shape = RoundedCornerShape(10.dp)
+            )
             .clickable { onVideoClick(content.videoUrl) },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -180,7 +203,10 @@ fun VideoThumbnail(content: HomeContent, onVideoClick: (String) -> Unit) {
         Text(
             text = content.title,
             modifier = Modifier.padding(top = 4.dp),
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+           // Optional: Change text color when focused
         )
     }
 }
+
+
