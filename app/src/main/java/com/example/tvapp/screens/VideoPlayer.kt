@@ -111,18 +111,27 @@ fun VideoPlayer(
         }
     }
 
+
     // Update video when channel changes
     LaunchedEffect(currentIndex) {
         if (currentIndex in allChannels.indices) {
             val newVideoUrl = allChannels[currentIndex].videoUrl ?: ""
+            Log.d("ExoPlayer", "Switching to video: $newVideoUrl")
+            // Stop and clear previous media to avoid issues
+            exoPlayer.stop()
+            exoPlayer.clearMediaItems()
             val mediaItem = if (drmSupported) {
-                MediaItem.Builder().setUri(newVideoUrl).setDrmConfiguration(drmConfiguration).build()
+                MediaItem.Builder()
+                    .setUri(newVideoUrl)
+                    .setDrmConfiguration(drmConfiguration) // Keep DRM Configuration
+                    .build()
             } else {
                 Log.e("DRM", "Fallback to clear playback")
                 MediaItem.fromUri(newVideoUrl)
             }
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
+            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
     }
 
@@ -311,8 +320,6 @@ fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
         }
     })
 }
-
-
 
 // Generates watermark hash
 fun generateWatermark(userPhone: String?, deviceId: String): String {

@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
                     shape = RectangleShape
                 ) {
                     val navController = rememberNavController() // Create NavController
-                  AppNavGraph()
+                    AppNavGraph()
                 }
             }
         }
