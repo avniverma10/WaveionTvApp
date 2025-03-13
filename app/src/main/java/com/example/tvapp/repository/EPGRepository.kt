@@ -45,9 +45,13 @@ class EPGRepository @Inject constructor(private val dao: EPGDao, private val api
         return dao.getProgramsForNextHours(startTime, endTime)
     }
 
-    suspend fun getProgramsByName(query: String): List<EPGProgram> {
-        return dao.searchProgramsByName("%$query%").first()
+//    suspend fun getProgramsByName(query: String): List<EPGProgram> {
+//        return dao.searchProgramsByName("%$query%").first()
+//    }
+    suspend fun getChannelsByName(query: String): List<EPGChannel> {
+         return dao.searchChannelsByName("%$query%").first()
     }
+
 
     suspend fun fetchAndStoreEPGsFromApi() {
         withContext(Dispatchers.IO) {

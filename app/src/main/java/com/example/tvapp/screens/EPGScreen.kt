@@ -7,9 +7,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -47,13 +50,13 @@ fun EPGScreen(navController:NavController,viewModel: EPGViewModel = hiltViewMode
     val tabsList by viewModel.tabs.collectAsState(initial = emptyList())
     val showBanner = isBannerVisible(tabsList)
 
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF161D25))) {
         // Left Navigation Menu
         ExpandableNavigationMenu(navController)
 
         Column(modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)) {
+            .background(Color(0xFF161D25))) {
             // Top Banner
 
 //            AdvertisementBanner(bannerList = bannerList)
@@ -64,9 +67,10 @@ fun EPGScreen(navController:NavController,viewModel: EPGViewModel = hiltViewMode
                 Log.i("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
             }
 
-            Row(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // Left Navigation Menu
                 NavigationMenu()
+
                 EPGContent()
 
                 // Log tabs data for debugging purposes

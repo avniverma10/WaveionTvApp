@@ -1,6 +1,5 @@
 package com.example.tvapp.navigation
 
-import LoginScreen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
@@ -12,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tvapp.screens.EPGScreen
 import com.example.tvapp.screens.HomePlayer
+import com.example.tvapp.screens.LoginScreen
 import com.example.tvapp.screens.SearchScreen
 import com.example.tvapp.screens.SplashScreen
 import com.example.tvapp.ui.screens.HomeScreen

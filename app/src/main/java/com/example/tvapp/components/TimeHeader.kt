@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,10 +16,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tvapp.R
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -26,40 +32,55 @@ import java.util.Locale
 
 @Composable
 fun TimeHeader(leftPanelWidth: Dp) {
-    // Use a fixed current time for initialization; update every minute.
+    // Keeping a fixed initial time and updating every minute
     val fixedCurrentTime = remember { mutableStateOf(parseFixedTime("20250205010000")) }
+
     LaunchedEffect(Unit) {
         while (true) {
             delay(60_000)
             fixedCurrentTime.value = System.currentTimeMillis()
         }
     }
+
     val timeSlots = remember(fixedCurrentTime.value) { generateTimeSlots(fixedCurrentTime.value) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
-            .background(Color.Black),
+            .height(50.dp)  // Increased height for a better visual match
+            .background(Color(0xFF161D25)), // Dark background color matching the image
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Use the leftPanelWidth so the time slots align with the timeline below.
+        // Left space for the channel list to align with the EPG grid
         Spacer(modifier = Modifier.width(leftPanelWidth))
+
+        // Time Slots Row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(50.dp, Alignment.Start), // Ensures proper spacing
             verticalAlignment = Alignment.CenterVertically
         ) {
             timeSlots.forEach { time ->
                 Text(
                     text = time,
                     color = Color.White,
-                    fontSize = 14.sp,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(150.dp) , // Fixed width for uniform spacing
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        lineHeight = 28.01.sp,
+                        fontFamily = FontFamily(Font(R.font.figtree_light)),
+                        fontWeight = FontWeight(600),
+                        color = Color(0xFFB5B5B5),
+                    )
                 )
+
             }
         }
     }
 }
+
+
 
 fun parseFixedTime(timestamp: String): Long {
     val format = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())

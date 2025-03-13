@@ -6,5 +6,6 @@ data class Banner(
     val bannerUrl: String,
     val sequence: Int,
     val createdAt: String,
-    val __v: Int
+    val __v: Int,
+    val bannerContentLink: String
 )

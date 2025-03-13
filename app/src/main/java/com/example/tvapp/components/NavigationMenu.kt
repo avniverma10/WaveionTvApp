@@ -4,16 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +31,9 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,86 +43,82 @@ import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.screens.MenuItem
 import com.example.tvapp.viewmodels.EPGViewModel
+import androidx.compose.foundation.lazy.LazyRow
 
 
 @Composable
 fun NavigationMenu(viewModel: EPGViewModel = hiltViewModel()) {
     val menuItems = listOf(
-        MenuItem(R.drawable.all, "ALL"),
-        MenuItem(R.drawable.recent, "Recently Watched"),
+        MenuItem(R.drawable.all, "All Channels"),
+        MenuItem(R.drawable.recent, "Recent"),
+        MenuItem(R.drawable.music, "Sports"),
         MenuItem(R.drawable.news, "News"),
-        MenuItem(R.drawable.face, "Entertainment"),
-        MenuItem(R.drawable.music, "Music"),
-        MenuItem(R.drawable.kid, "Kids"),
-        MenuItem(R.drawable.spirit, "Spiritual"),
-        MenuItem(R.drawable.movie, "Movies"),
-        MenuItem(R.drawable.star, "Lifestyle")
+        MenuItem(R.drawable.star, "Movies"),
+        MenuItem(R.drawable.kid, "Kids")
     )
 
     Column(
         modifier = Modifier
-            .width(200.dp)
-            .fillMaxHeight()
-            .background(Color.DarkGray)
-            .padding(top = 16.dp)
+            .fillMaxWidth()
+            .height(80.dp)
+            .background(Color(0xFF161D25), shape = RoundedCornerShape(12.dp)) // Rounded Background
     ) {
-        LazyColumn {
-            itemsIndexed(menuItems) { index, item ->
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(53.dp), // **Increased space between items**
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            itemsIndexed(menuItems) { _, item ->
                 val focusRequester = remember { FocusRequester() }
                 val isFocused = remember { mutableStateOf(false) }
 
-                val isFirstItem = index == 0
-                val isLastItem = index == menuItems.lastIndex
-
-                Row(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp, horizontal = 16.dp)
-                        .then(if (isFocused.value) Modifier.border(2.dp, Color.White) else Modifier)
-                        .onFocusChanged { isFocused.value = it.isFocused }
+                        .background(
+                            if (isFocused.value) Color(0xFF1F7A8C) else Color(0xFF161D25), // Highlight focused item
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .border(
+                            2.dp,
+                            if (isFocused.value) Color.White else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable {
+                            if (item.label == "Recent") {
+                                viewModel.showRecentlyWatched()
+                            } else {
+                                viewModel.filterChannelsByGenre(item.label)
+                            }
+                        }
                         .focusRequester(focusRequester)
                         .focusable()
-                        .onPreviewKeyEvent { keyEvent ->
-                            if (keyEvent.type == KeyEventType.KeyDown) {
-                                when (keyEvent.nativeKeyEvent.keyCode) {
-                                    KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                        if (item.label == "Recently Watched") {
-                                            viewModel.showRecentlyWatched()
-                                        } else {
-                                            viewModel.filterChannelsByGenre(item.label)
-                                        }
-                                        true
-                                    }
-                                    KeyEvent.KEYCODE_DPAD_UP -> {
-                                        if (isFirstItem) true else false
-                                    }
-                                    KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                        if (isLastItem) true else false
-                                    }
-                                    else -> false
-                                }
-                            } else false
-                        },
-                    verticalAlignment = Alignment.CenterVertically
+                        .onFocusChanged { isFocused.value = it.isFocused }
+                        .padding(horizontal = 22.dp, vertical = 30.dp), // Padding inside the filter button
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.label,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
                     Text(
                         text = item.label,
                         color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            lineHeight = 28.01.sp,
+                            fontFamily = FontFamily(Font(R.font.figtree_light)),
+                            fontWeight = FontWeight(400),
+                        ),
+                    modifier = Modifier.align(Alignment.Center)
                     )
                 }
-
             }
         }
     }
+
+    // **Bottom Divider**
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color(0xFF353C44))
+    )
 }
+
+

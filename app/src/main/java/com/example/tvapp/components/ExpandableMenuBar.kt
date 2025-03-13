@@ -1,3 +1,5 @@
+@file:Suppress("IMPLICIT_CAST_TO_ANY")
+
 package com.example.tvapp.components
 
 import androidx.activity.compose.BackHandler
@@ -27,11 +29,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.tv.material3.Text
@@ -52,96 +58,118 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
     val profileTab = tabs.firstOrNull()
     val otherTabs = if (tabs.isNotEmpty()) tabs.drop(1) else emptyList()
 
-    Column(
+    Box(
         modifier = Modifier
-            .width(if (expanded) 180.dp else 80.dp)
             .fillMaxHeight()
-            .background(Color.Black)
-            .animateContentSize()
-            .padding(8.dp)
+            .zIndex(4f) // Ensure it appears on top when expanded
     ) {
-        // Profile row (Show a placeholder if tabs are empty)
-        FocusableRow(
-            onClick = {
-                expanded = !expanded
-            }
+        Column(
+            modifier = Modifier
+                .width(if (expanded) 199.dp else 70.dp)
+                .fillMaxHeight()
+                .drawBehind {
+                    if (expanded) {
+                        drawIntoCanvas { canvas ->
+                            val gradient = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black,
+                                    Color.Black.copy(alpha = 0.9f),
+                                    Color.Black.copy(alpha = 0.8f),
+                                    Color.Black.copy(alpha = 0.6f),
+                                    Color.Transparent
+                                )
+                            )
+                            drawRect(brush = gradient, size = size)
+                        }
+                    } else {
+                        drawRect(color = Color.Black) // Solid black when collapsed
+                    }
+                }
+                .animateContentSize()
+                .padding(8.dp)
         ) {
-            if (profileTab?.iconUrl != null) {
-                AsyncImage(
-                    model = profileTab.iconUrl,
-                    contentDescription = profileTab.displayName,
-                    modifier = Modifier.size(32.dp)
+            // Profile row (Show a placeholder if tabs are empty)
+            FocusableRow(
+                onClick = {
+                    expanded = !expanded
+                }
+            ) {
+                if (profileTab?.iconUrl != null) {
+                    AsyncImage(
+                        model = profileTab.iconUrl,
+                        contentDescription = profileTab.displayName,
+                        modifier = Modifier
+                            .width(25.dp)
+                            .height(25.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Color.Gray) // Placeholder for profile icon
+                    )
+                }
+
+                if (expanded) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = profileTab?.displayName ?: "Profile",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(80.dp))
+
+            // If tabs are not available yet, show a small loading indicator instead of empty space
+            if (tabs.isEmpty()) {
+                Text(
+                    text = "Loading...",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(start = 16.dp, top = 8.dp)
                 )
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(Color.Gray) // Placeholder for profile icon
-                )
-            }
-
-            if (expanded) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = profileTab?.displayName ?: "Profile",
-                    color = Color.White,
-                    fontSize = 14.sp
-                )
-            }
-        }
-
-        Divider(
-            color = Color.Gray,
-            thickness = 1.dp,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(60.dp))
-
-        // If tabs are not available yet, show a small loading indicator instead of empty space
-        if (tabs.isEmpty()) {
-            Text(
-                text = "Loading...",
-                color = Color.White,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp)
-            )
-        } else {
-            // Render available tabs
-            otherTabs.forEach { tab ->
-                FocusableRow(
-                    onClick = {
-                        if (!expanded) {
-                            expanded = true
-                        } else {
-                            if (tab.displayName == "Home") {
-                                navController.navigate("home_screen")
+                // Render available tabs
+                otherTabs.forEach { tab ->
+                    FocusableRow(
+                        onClick = {
+                            if (!expanded) {
+                                expanded = true
+                            } else {
+                                if (tab.displayName == "Home") {
+                                    navController.navigate("home_screen")
+                                }
+                                if (tab.displayName == "Search") {
+                                    navController.navigate("search_screen")
+                                }
+                                if (tab.displayName == "Live Tv") {
+                                    navController.navigate("epg")
+                                }
+                                expanded = false
                             }
-                            if (tab.displayName == "Search") {
-                                navController.navigate("search_screen")
-                            }
-                            if (tab.displayName == "Live Tv") {
-                                navController.navigate("epg")
-                            }
-                            expanded = false
+                        }
+                    ) {
+                        if (tab.iconUrl != null) {
+                            AsyncImage(
+                                model = tab.iconUrl,
+                                contentDescription = tab.displayName,
+                                modifier = Modifier
+                                    .width(25.dp)
+                                    .height(25.dp)
+                            )
+                        }
+                        if (expanded) {
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = tab.displayName,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
                         }
                     }
-                ) {
-                    if (tab.iconUrl != null) {
-                        AsyncImage(
-                            model = tab.iconUrl,
-                            contentDescription = tab.displayName,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                    if (expanded) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = tab.displayName,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
             }
         }

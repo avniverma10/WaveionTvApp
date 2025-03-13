@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -40,7 +42,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.example.tvapp.R
 import com.example.tvapp.components.TimeHeader
 import com.example.tvapp.components.parseFixedTime
 import com.example.tvapp.models.EPGChannel
@@ -106,12 +113,12 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 .background(Color.Black),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            LeftPanelHeader(leftPanelWidth)
+//            LeftPanelHeader(leftPanelWidth)
             TimeHeader(0.dp)
         }
 
         // The BoxWithConstraints now uses the same leftPanelWidth.
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
             val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
             val leftPanelWidthPx = with(LocalDensity.current) { leftPanelWidth.toPx() }
             val timelineWidthPx = containerWidthPx - leftPanelWidthPx
@@ -144,11 +151,11 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(Color.Gray)
+                        .background(Color(0xFF353C44))
                 )
 
                 // Channel list.
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
                     itemsIndexed(filteredPrograms.groupBy { it.channelId }.entries.toList()) { channelIndex, channelGroup ->
                         val (channelId, programs) = channelGroup
                         val channelData = filteredChannels.find { it.id == channelId }
@@ -156,7 +163,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                         val isLastChannel = (channelIndex == filteredChannels.lastIndex)
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .fillMaxWidth().background(color = Color(0xFF1A2124))
                                 .height(70.dp)
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -165,8 +172,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             // Pass channelData and a callback for video click.
                             channelData?.let { channel ->
                                 ChannelInfo(
-                                    leftPanelWidth = 205.dp,
+                                    leftPanelWidth = 180.dp,
                                     channel = channel,
+                                    channelIndex = channelIndex,
                                     isFirstChannel = isFirstChannel,
                                     isLastChannel = isLastChannel,
                                     onPlayClicked = { videoUrl ->
@@ -181,12 +189,12 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                             LazyRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        start = maxOf(
-                                            0,
-                                            -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()
-                                        ).dp
-                                    )
+//                                    .padding(
+//                                        start = maxOf(
+//                                            0,
+//                                            -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()
+//                                        ).dp
+//                                    )
                             ) {
                                 itemsIndexed(programs) { programIndex, program ->
                                     val programWidth = calculateProgramWidth(
@@ -207,8 +215,10 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     Box(
                                         modifier = Modifier
                                             .width(programWidth)
-                                            .height(60.dp)
-                                            .background(Color.Black)
+                                            .height(105.dp)
+                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(2.dp)) // **Rounded corners applied**
+//                                            .border(1.dp, Color(0xFF353C44), shape = RoundedCornerShape(1.dp)) // **Border for clear grid separation**
+//                                            .background(Color(0xFF2A3139))
                                             .then(
                                                 if (isFocused.value)
                                                     Modifier.border(2.dp, Color.White)
@@ -254,7 +264,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                         Text(
                                             text = program.eventName,
                                             color = Color.White,
-                                            fontSize = 12.sp,
+                                            fontSize = 15.sp,
+                                            fontFamily = FontFamily(Font(R.font.figtree_light)),
+                                            fontWeight = FontWeight(400),
                                             textAlign = TextAlign.Center
                                         )
                                     }
@@ -262,8 +274,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxHeight()
-                                            .width(1.dp)
-                                            .background(Color.Gray)
+                                            .width(3.dp)
+                                            .background(Color(0xFF161D25))
                                     )
                                 }
                             }
@@ -272,8 +284,8 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(3.dp)
-                                .background(Color.Gray)
+                                .height(1.dp)
+                                .background(Color(0xFF353C44))
                         )
                     }
                 }
@@ -283,8 +295,11 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                 modifier = Modifier
                     .offset(x = indicatorOffsetDp)
                     .fillMaxHeight()
-                    .width(2.dp)
-                    .background(Color.Red)
+                    .shadow(elevation = 4.800000190734863.dp, spotColor = Color(0xFF49FEDD), ambientColor = Color(0xFF49FEDD))
+                    .padding(0.dp)
+                    .width(1.dp)
+                    .height(721.dp)
+                    .background(color = Color(0xFF49FEDD))
             )
         }
     }
@@ -379,18 +394,19 @@ fun calculateProgramWidth(startTime: String, endTime: String): Dp {
     return (blocks.toFloat() * widthPerBlock.value).dp
 }
 
-@Composable
-fun LeftPanelHeader(width: Dp) {
-    // A Box or Row that is exactly `width` wide
-    Row(modifier = Modifier.width(width), verticalAlignment = Alignment.CenterVertically) {
-        Spacer(modifier = Modifier.width(14.dp))
-        Text(text = "All", color = Color.White, fontSize = 18.sp)
-    }
-}
+//@Composable
+//fun LeftPanelHeader(width: Dp) {
+//    // A Box or Row that is exactly `width` wide
+//    Row(modifier = Modifier.width(width), verticalAlignment = Alignment.CenterVertically) {
+//        Spacer(modifier = Modifier.width(14.dp))
+//        Text(text = "All", color = Color.White, fontSize = 18.sp)
+//    }
+//}
 @Composable
 fun ChannelInfo(
     leftPanelWidth: Dp,
     channel: EPGChannel,
+    channelIndex: Int,  // Add channel index to show serial numbers
     isFirstChannel: Boolean,
     isLastChannel: Boolean,
     onPlayClicked: (String?) -> Unit
@@ -401,10 +417,9 @@ fun ChannelInfo(
     Row(
         modifier = Modifier
             .width(leftPanelWidth)
+            .background(Color(0xFF161D25)) // Background color for both number & logo
             .then(
-                if (isFocused.value)
-                    Modifier.border(2.dp, Color.White)
-                else Modifier
+                if (isFocused.value) Modifier.border(2.dp, Color.White) else Modifier
             )
             .onFocusChanged { isFocused.value = it.isFocused }
             .focusRequester(focusRequester)
@@ -416,62 +431,59 @@ fun ChannelInfo(
                             onPlayClicked(channel.videoUrl)
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_UP -> {
-                            if (isFirstChannel) {
-                                true // Consume event to prevent moving out
-                            } else {
-                                false
-                            }
-                        }
-                        KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            if (isLastChannel) {
-                                true // Consume event to prevent moving out
-                            } else {
-                                false
-                            }
-                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> if (isFirstChannel) true else false
+                        KeyEvent.KEYCODE_DPAD_DOWN -> if (isLastChannel) true else false
                         else -> false
                     }
                 } else false
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.width(8.dp))
-        Spacer(modifier = Modifier.width(6.dp))
+        // **Channel Serial Number**
+        Box(
+            modifier = Modifier
+                .width(50.dp) // Fixed width for channel numbers
+                .height(70.dp)
+                .background(Color(0xFF161D25)), // Background same as the channel logo
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = (channelIndex + 1).toString(),
+                color = Color.White,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
+        }
+
+        // **Vertical Divider**
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(1.dp)
-                .background(Color.Gray)
+                .background(Color(0xFF353C44))
         )
-        // Display the channel logo.
+
+        // **Channel Logo**
         AsyncImage(
             model = channel.logoUrl,
             contentDescription = "Channel Logo",
-            modifier = Modifier.size(40.dp)
-        )
-        Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-                .background(Color.Gray)
+                .width(126.dp)
+                .height(96.dp)
+                .background(Color(0xFF161D25), shape = RoundedCornerShape(2.dp)), // Ensure background covers full area
+            contentScale = ContentScale.FillBounds
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        // Display the channel title.
-        Column(
-            modifier = Modifier.width(120.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(text = channel.name, color = Color.White, fontSize = 12.sp)
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-                .background(Color.Gray)
-        )
+
+//        // **Vertical Divider**
+//        Box(
+//            modifier = Modifier
+//                .fillMaxHeight()
+//                .width(1.dp)
+//                .background(Color.Gray)
+//        )
     }
 }
+
 
 fun getTimeInMillis(timeStr: String): Long {
     return try {

@@ -104,16 +104,15 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
         }
 
         val selectedBanner = bannerList[selectedIndex]
-//        val encodedUrl = URLEncoder.encode(selectedBanner.videoUrl, StandardCharsets.UTF_8.toString())
+        val encodedUrl = URLEncoder.encode(selectedBanner.bannerContentLink, StandardCharsets.UTF_8.toString())
 
         Box(modifier = Modifier.fillMaxWidth()) {
             Image(
-                painter = rememberAsyncImagePainter(selectedBanner.bannerUrl), // ✅ Use Banner Image
+                painter = rememberAsyncImagePainter(selectedBanner.bannerUrl),
                 contentDescription = "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(300.dp),
-//                    .clickable { navController.navigate("homeplayer/$encodedUrl") }
                 contentScale = ContentScale.Crop
             )
 
@@ -122,20 +121,22 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
             ) {
-
                 Button(
-                    onClick = {  },
+                    onClick = {
+                        Log.d("HeroCarousel", "Navigating to video: ${selectedBanner.bannerContentLink}")
+                        navController.navigate("homeplayer/$encodedUrl")
+                    },
                     modifier = Modifier
                         .padding(8.dp)
-                        .onFocusChanged { isButtonFocused = it.isFocused } // Track button focus
-                        .focusable() // Make it focusable for navigation
+                        .onFocusChanged { isButtonFocused = it.isFocused }
+                        .focusable()
                         .border(
-                            width = if (isButtonFocused) 3.dp else 0.dp, // Show border when focused
+                            width = if (isButtonFocused) 3.dp else 0.dp,
                             color = Color.White,
                             shape = RoundedCornerShape(4.dp)
                         )
                         .clip(RoundedCornerShape(4.dp)),
-                    shape = RectangleShape, // Sharp corners
+                    shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                 ) {
                     Text(text = "Watch Now", color = Color.White)
@@ -144,6 +145,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
         }
     }
 }
+
 
 
 @Composable

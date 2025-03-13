@@ -4,10 +4,14 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-03-07T11:00:58.372288200Z">
+<<<<<<< Updated upstream
+        <DropdownSelection timestamp="2025-03-10T12:44:52.383156500Z">
+=======
+        <DropdownSelection timestamp="2025-03-10T11:53:15.153435900Z">
+>>>>>>> Stashed changes
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.1.19:5555;connection=0168a574" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\avniv\.android\avd\Television_1080p_API_34.avd" />
             </handle>
           </Target>
         </DropdownSelection>

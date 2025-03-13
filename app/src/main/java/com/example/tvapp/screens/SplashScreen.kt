@@ -1,104 +1,97 @@
 package com.example.tvapp.screens
-
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
-import androidx.compose.foundation.background
-import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
+import com.example.tvapp.R
 import com.example.tvapp.viewmodels.SplashViewModel
-
+import kotlinx.coroutines.delay
 
 @RequiresApi(Build.VERSION_CODES.M)
 @Composable
-fun SplashScreen(navController: NavController,viewModel: SplashViewModel = hiltViewModel()) {
+fun SplashScreen(navController: NavController, viewModel: SplashViewModel = hiltViewModel()) {
+
     val logoUrl by viewModel.logoUrl.collectAsState()
+//    val backgroundUrl by viewModel.backgroundUrl.collectAsState() // Background image from API
     val errorMessage by viewModel.errorMessage.collectAsState()
-
-    Log.d("AVNI", "SplashScreen: ERROr  is ${errorMessage}")
-
     val authToken by viewModel.authToken.collectAsState(initial = null)
-
     val isDataLoaded by viewModel.isDataLoaded.collectAsState()
-
-    Log.d("Splash","Is data loaded --> $isDataLoaded")
-
 
     val context = LocalContext.current
 
-    Log.d("AVNI", "Logo URL: $logoUrl")
-
-
-
     LaunchedEffect(isDataLoaded) {
         if (isDataLoaded) {
-            navController.navigate("epg")  // Navigate only after data is fully loaded
+            navController.navigate("epg")
         }
     }
 
-    LaunchedEffect(errorMessage,authToken) {
+    LaunchedEffect(errorMessage, authToken) {
         if (errorMessage != null) {
-            // Show error message
             errorMessage?.let {
                 Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             }
             return@LaunchedEffect
         }
 
-        delay(4000) // Optional: Keep splash visible for UX purposes
+        delay(4000) // Optional delay for splash screen duration
         if (isDataLoaded) {
-
-
-            if (authToken.isNullOrEmpty()) {
-                navController.navigate("login_screen") {
-                    popUpTo("splash_screen") { inclusive = true }
-                }
-            } else {
-                navController.navigate("epg") { // Navigate to EPG or Player Screen
-                    popUpTo("splash_screen") { inclusive = true }
-                }
+            val destination = if (authToken.isNullOrEmpty()) "home_screen" else "home_screen"
+            navController.navigate(destination) {
+                popUpTo("splash_screen") { inclusive = true }
             }
         }
-
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
     ) {
-        // Logo
-        if (logoUrl!= null) {
-            AsyncImage(
-                model = logoUrl,
-                contentDescription = "Logo",
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(250.dp)
-            )
-        } else {
-            AsyncImage(
-                model = "https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
-                contentDescription = "Fallback Logo",
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(250.dp)
-            )
-        }
+
+        Image(
+            painter = painterResource(id = R.drawable.splash_background), // Fallback image
+            contentDescription = "Default Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+////        // **Check if Background URL is Available**
+//        if (backgroundUrl.isNullOrEmpty()) {
+//            // **Load Hardcoded Drawable as Background**
+//            Image(
+//                painter = painterResource(id = R.drawable.splash_background), // Fallback image
+//                contentDescription = "Default Background",
+//                modifier = Modifier.fillMaxSize(),
+//                contentScale = ContentScale.Crop
+//            )
+//        } else {
+//            // **Load Background from API**
+//            AsyncImage(
+//                model = backgroundUrl,
+//                contentDescription = "API Background Image",
+//                modifier = Modifier.fillMaxSize()
+//            )
+//        }
+
+        // **Center Logo**
+        AsyncImage(
+            model = logoUrl ?: "https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
+            contentDescription = "Logo",
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(250.dp)
+        )
     }
 }

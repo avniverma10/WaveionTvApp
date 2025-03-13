@@ -46,6 +46,9 @@ interface EPGDao {
     @Query("SELECT * FROM epg_programs WHERE eventName LIKE :query")
     fun searchProgramsByName(query: String): Flow<List<EPGProgram>>
 
+    @Query("SELECT * FROM epg_channels WHERE name LIKE :query")
+    fun searchChannelsByName(query: String): Flow<List<EPGChannel>>
+
     @Query("""
     SELECT * FROM epg_programs 
     WHERE channelId = :channelId 

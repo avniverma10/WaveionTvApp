@@ -120,6 +120,9 @@ dependencies {
     //Rooms DB
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
+    //material3
+    implementation("androidx.compose.material3:material3:1.3.1")
+
 
 
 }

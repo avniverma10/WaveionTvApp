@@ -44,8 +44,8 @@ class EPGViewModel @Inject constructor(
     private val _selectedGenre = MutableStateFlow<String?>("ALL")
     val selectedGenre: StateFlow<String?> = _selectedGenre.asStateFlow()
 
-    private val _searchResults = MutableStateFlow<List<EPGProgram>>(emptyList())
-    val searchResults: StateFlow<List<EPGProgram>> = _searchResults
+    private val _searchResults = MutableStateFlow<List<EPGChannel>>(emptyList())
+    val searchResults: StateFlow<List<EPGChannel>> = _searchResults
 
     // New state for banner list
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
@@ -240,11 +240,16 @@ class EPGViewModel @Inject constructor(
         }
     }
 
-        fun searchPrograms(query: String) {
+//        fun searchPrograms(query: String) {
+//            viewModelScope.launch {
+//                _searchResults.value = repository.getProgramsByName(query)
+//            }
+//        }
+        fun searchChannels(query: String) {
             viewModelScope.launch {
-                _searchResults.value = repository.getProgramsByName(query)
-            }
+                _searchResults.value = repository.getChannelsByName(query)
         }
+    }
 //
 //        suspend fun fetchBanners() {
 //            try {
