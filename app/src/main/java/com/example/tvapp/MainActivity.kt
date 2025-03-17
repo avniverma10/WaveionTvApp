@@ -14,12 +14,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.lifecycleScope
 import androidx.tv.material3.Surface
 import com.example.tvapp.api.DeviceInfoService
-import com.example.tvapp.components.ExpandableNavigationMenu
 import com.example.tvapp.navigation.AppNavGraph
 import com.example.tvapp.screens.EPGContent
 import com.example.tvapp.screens.EPGScreen
 import com.example.tvapp.screens.LoginScreen
 import com.example.tvapp.screens.SearchScreen
+import com.example.tvapp.screens.SplashScreen
 import com.example.tvapp.ui.screens.HomeScreen
 import com.example.tvapp.ui.theme.TVAppTheme
 import com.example.tvapp.utils.RootCheckUtil
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     shape = RectangleShape
                 ) {
                     val navController = rememberNavController() // Create NavController
-                  LoginScreen(navController)
+                  EPGScreen(navController)
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.example.tvapp.screens
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -44,6 +47,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -60,10 +65,12 @@ import com.example.tvapp.components.parseFixedTime
 import com.example.tvapp.models.EPGChannel
 import com.example.tvapp.viewmodels.EPGViewModel
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
 
 @Composable
 fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
@@ -89,7 +96,9 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
 
     // Define a fixed width for the left panel that contains channel info.
     // Adjust this value to the total width of all elements in your left panel.
-    val leftPanelWidth = 205.dp
+    val leftPanelWidth = 160.dp
+//    val leftPanelWidth = 205.dp
+
 
     // Update current time every second.
     LaunchedEffect(Unit) {
@@ -110,10 +119,10 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)
-                .background(Color.Black),
+                .background(Color(0xFF161D25)),
             verticalAlignment = Alignment.CenterVertically
         ) {
-//            LeftPanelHeader(leftPanelWidth)
+            LeftPanelHeader(leftPanelWidth)
             TimeHeader(0.dp)
         }
 
@@ -216,12 +225,12 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(105.dp)
-                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(2.dp)) // **Rounded corners applied**
+                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp)) // **Rounded corners applied**
 //                                            .border(1.dp, Color(0xFF353C44), shape = RoundedCornerShape(1.dp)) // **Border for clear grid separation**
 //                                            .background(Color(0xFF2A3139))
                                             .then(
                                                 if (isFocused.value)
-                                                    Modifier.border(2.dp, Color.White)
+                                                    Modifier.border(1.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp)).background(Color(0x1A49FEDD),shape = RoundedCornerShape(size = 4.dp))
                                                 else Modifier
                                             )
                                             .onFocusChanged { isFocused.value = it.isFocused }
@@ -394,14 +403,65 @@ fun calculateProgramWidth(startTime: String, endTime: String): Dp {
     return (blocks.toFloat() * widthPerBlock.value).dp
 }
 
-//@Composable
-//fun LeftPanelHeader(width: Dp) {
-//    // A Box or Row that is exactly `width` wide
-//    Row(modifier = Modifier.width(width), verticalAlignment = Alignment.CenterVertically) {
-//        Spacer(modifier = Modifier.width(14.dp))
-//        Text(text = "All", color = Color.White, fontSize = 18.sp)
-//    }
-//}
+@Composable
+fun LeftPanelHeader(width: Dp) {
+    val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000) // Update time every second
+            currentTime.value = System.currentTimeMillis()
+        }
+    }
+
+    val formattedTime = remember(currentTime.value) {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = currentTime.value
+        val sdf = SimpleDateFormat("hh:mma", Locale.US) // 12-hour format with AM/PM
+        sdf.format(calendar.time)
+    }
+
+    Row(
+        modifier = Modifier
+            .width(width)
+            .background(Color(0xFF161D25))
+            .padding(start = 35.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.End // Moves content to the right
+
+    ) {
+
+        Row(
+            modifier = Modifier
+                .width(width)
+                .padding(start = 16.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween // Keep the layout balanced
+        ) {
+            // **Logo from Drawable**
+            Image(
+                painter = painterResource(id = R.drawable.vector_271), // Replace with actual drawable name
+                contentDescription = "",
+                modifier = Modifier
+                    .size(16.dp) // Adjust size as needed
+            )
+            Text(
+                text = formattedTime,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(150.dp) , // Fixed width for uniform spacing
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    lineHeight = 28.01.sp,
+                    fontFamily = FontFamily(Font(R.font.figtree_light)),
+                    fontWeight = FontWeight(600),
+                    color = Color(0xFFB5B5B5),)
+                )
+            Spacer(modifier = Modifier.width(14.dp))
+        }
+    }
+}
+
+
 @Composable
 fun ChannelInfo(
     leftPanelWidth: Dp,
@@ -418,12 +478,6 @@ fun ChannelInfo(
         modifier = Modifier
             .width(leftPanelWidth)
             .background(Color(0xFF161D25)) // Background color for both number & logo
-            .then(
-                if (isFocused.value) Modifier.border(2.dp, Color.White) else Modifier
-            )
-            .onFocusChanged { isFocused.value = it.isFocused }
-            .focusRequester(focusRequester)
-            .focusable()
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
@@ -456,33 +510,37 @@ fun ChannelInfo(
         }
 
         // **Vertical Divider**
+
+
+        // **Channel Logo with Focus Border**
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-                .background(Color(0xFF353C44))
-        )
-
-        // **Channel Logo**
-        AsyncImage(
-            model = channel.logoUrl,
-            contentDescription = "Channel Logo",
-            modifier = Modifier
-                .width(126.dp)
-                .height(96.dp)
-                .background(Color(0xFF161D25), shape = RoundedCornerShape(2.dp)), // Ensure background covers full area
-            contentScale = ContentScale.FillBounds
-        )
-
-//        // **Vertical Divider**
-//        Box(
-//            modifier = Modifier
-//                .fillMaxHeight()
-//                .width(1.dp)
-//                .background(Color.Gray)
-//        )
+                .width(120.dp)
+                .height(125.dp)
+                .then(
+                    if (isFocused.value)
+                        Modifier.border(2.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp))
+                    else Modifier
+                )
+                .onFocusChanged { isFocused.value = it.isFocused }
+                .focusRequester(focusRequester)
+                .focusable()
+                .clip(RoundedCornerShape(4.dp))
+                .clickable { onPlayClicked(channel.videoUrl) }
+        ) {
+            AsyncImage(
+                model = channel.logoUrl,
+                contentDescription = "Channel Logo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color(0xFF161D25), shape = RoundedCornerShape(4.dp)), // Ensure background covers full area
+                contentScale = ContentScale.FillBounds
+            )
+        }
     }
 }
+
 
 
 fun getTimeInMillis(timeStr: String): Long {

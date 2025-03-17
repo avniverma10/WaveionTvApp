@@ -57,68 +57,70 @@ fun NavigationMenu(viewModel: EPGViewModel = hiltViewModel()) {
         MenuItem(R.drawable.kid, "Kids")
     )
 
+    val selectedIndex = remember { mutableStateOf(-1) } // Track selected item index
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
             .background(Color(0xFF161D25), shape = RoundedCornerShape(12.dp)) // Rounded Background
+
     ) {
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(53.dp), // **Increased space between items**
             verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(menuItems) { _, item ->
+            itemsIndexed(menuItems) { index, item ->
                 val focusRequester = remember { FocusRequester() }
                 val isFocused = remember { mutableStateOf(false) }
 
+                val backgroundColor = when {
+                    isFocused.value || selectedIndex.value == index -> Color(0x1A49FEDD) // **Keep background highlighted**
+                    else -> Color.Transparent
+                }
+
                 Box(
                     modifier = Modifier
-                        .background(
-                            if (isFocused.value) Color(0xFF1F7A8C) else Color(0xFF161D25), // Highlight focused item
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .border(
-                            2.dp,
-                            if (isFocused.value) Color.White else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp)
-                        )
+//                        .background(backgroundColor, shape = RoundedCornerShape(8.dp)) // Explicit background control
+                        .onFocusChanged {
+                            isFocused.value = it.isFocused
+                            if (it.isFocused) {
+                                selectedIndex.value = index // Keep item highlighted when clicked
+                            }
+                        }
+                        .focusRequester(focusRequester)
+                        .focusable()
                         .clickable {
+                            selectedIndex.value = index // Ensure selection remains
                             if (item.label == "Recent") {
                                 viewModel.showRecentlyWatched()
                             } else {
                                 viewModel.filterChannelsByGenre(item.label)
                             }
                         }
-                        .focusRequester(focusRequester)
-                        .focusable()
-                        .onFocusChanged { isFocused.value = it.isFocused }
                         .padding(horizontal = 22.dp, vertical = 30.dp), // Padding inside the filter button
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = item.label,
-                        color = Color.White,
+                        color = if (isFocused.value || selectedIndex.value == index) Color(0xFF49FEDD) else Color.White, // Keep color after click
                         style = TextStyle(
                             fontSize = 18.sp,
                             lineHeight = 28.01.sp,
                             fontFamily = FontFamily(Font(R.font.figtree_light)),
                             fontWeight = FontWeight(400),
                         ),
-                    modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center)
                     )
                 }
             }
         }
     }
 
-    // **Bottom Divider**
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color(0xFF353C44))
-    )
+
 }
+
+
 
 

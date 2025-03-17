@@ -248,12 +248,14 @@ fun PhoneNumberSection(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    var isPressed by remember { mutableStateOf(false) }
+
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .imePadding() // **Moves UI up when keyboard opens**
+            .imePadding() // **Ensures UI moves up when keyboard appears**
             .padding(horizontal = 20.dp)
     ) {
         Text(
@@ -267,7 +269,7 @@ fun PhoneNumberSection(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Phone Number Input Field with Updated Color and Proper Keyboard Handling
+        // **Phone Number Input Field with Proper Focus Handling**
         OutlinedTextField(
             value = phoneNumber,
             colors = TextFieldDefaults.colors(
@@ -276,7 +278,7 @@ fun PhoneNumberSection(
                 disabledTextColor = Color.Gray,
                 errorTextColor = Color.Red,
                 focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor =  Color(0xFF2A2A2A),
+                unfocusedContainerColor = Color(0xFF2A2A2A), // Gray background when unfocused
                 disabledContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
                 cursorColor = LightGreen,
@@ -288,7 +290,7 @@ fun PhoneNumberSection(
                     onPhoneNumberChange(input)
                 }
             },
-            textStyle = TextStyle(color = Color.White, fontSize = 18.sp), // **Updated Text Color**
+            textStyle = TextStyle(color = Color.White, fontSize = 18.sp), // Updated Text Color
             placeholder = {
                 Text("+91 Mobile number", color = Color.Gray)
             },
@@ -301,33 +303,48 @@ fun PhoneNumberSection(
                 .focusRequester(focusRequester)
                 .onFocusChanged { focusState ->
                     if (focusState.isFocused) {
-                        keyboardController?.show() // Show keyboard when focused
+                        keyboardController?.show() // **Show keyboard when focused**
                     }
                 }
                 .clickable {
                     focusRequester.requestFocus()
-                    keyboardController?.show() // Show keyboard on click
+                    keyboardController?.show() // **Show keyboard on click**
                 }
         )
 
         Spacer(modifier = Modifier.height(12.dp)) // Space before keyboard appears
 
-        // Button appears below the keyboard naturally
+        // **Button appears below the keyboard naturally**
+        // **Square-Shaped Send OTP Button**
         if (isButtonVisible) {
-            Button(
-                onClick = {
-                    keyboardController?.hide() // Hide keyboard when clicking send OTP
-                    focusManager.clearFocus() // Remove focus to close keyboard
-                    onSendOtpClick()
-                },
-                modifier = Modifier.width(220.dp),
-                colors = ButtonDefaults.buttonColors(Color(0xFF999999))
+            Box(
+                modifier = Modifier
+                    .width(280.dp)
+                    .height(45.dp)
+                    .background(
+                        color = if (isPressed) Color(0xFF285752) else Color(0xFF285752),
+                        shape = RoundedCornerShape(size = 4.00208.dp)
+                    )
+                    .clickable {
+                        keyboardController?.hide() // Hide keyboard when clicking send OTP
+                        focusManager.clearFocus() // Remove focus to close keyboard
+                        onSendOtpClick()
+                    }
+                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text("Send OTP", fontSize = 18.sp, color = Color.White)
+                Text(
+                    text = "Send OTP",
+                    fontSize = 18.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
+
+
 
 
 @Preview(showBackground = true, widthDp = 1280, heightDp = 720)
@@ -337,18 +354,18 @@ fun PreviewLoginScreen() {
     LoginScreen(navController)
 }
 
-
-@Composable
-fun SendOTPButton(onSendOtpClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(
-        onClick = { onSendOtpClick() },
-        modifier = Modifier
-            .padding(6.dp)
-            .size(200.dp, 60.dp)
-    ) {
-        Text(text = "Send OTP", fontSize = 18.sp, color = Color.White)
-    }
-}
+//
+//@Composable
+//fun SendOTPButton(onSendOtpClick: () -> Unit, modifier: Modifier = Modifier) {
+//    Button(
+//        onClick = { onSendOtpClick() },
+//        modifier = Modifier
+//            .padding(6.dp)
+//            .size(200.dp, 60.dp)
+//    ) {
+//        Text(text = "Send OTP", fontSize = 18.sp, color = Color.White)
+//    }
+//}
 
 fun generateQRCode(content: String, size: Int = 1024): Bitmap? {
     return try {

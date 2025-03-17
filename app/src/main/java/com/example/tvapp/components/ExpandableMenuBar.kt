@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,11 +32,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -43,20 +48,20 @@ import androidx.navigation.NavController
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.viewmodels.TabsViewModel
-
 @Composable
-fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewModel = hiltViewModel()) {
+fun ExpandableNavigationMenu(
+    navController: NavController,
+    viewModel: TabsViewModel = hiltViewModel()
+) {
     val tabs = viewModel.tabs.collectAsState(initial = emptyList()).value
     var expanded by remember { mutableStateOf(false) }
+    var selectedIndex by remember { mutableStateOf(-1) } // No initial focus
+    val menuFocusRequester = remember { FocusRequester() }
 
     // Handle back button press to collapse the menu
     if (expanded) {
         BackHandler { expanded = false }
     }
-
-    // Split tabs into profile and others if available
-    val profileTab = tabs.firstOrNull()
-    val otherTabs = if (tabs.isNotEmpty()) tabs.drop(1) else emptyList()
 
     Box(
         modifier = Modifier
@@ -87,14 +92,18 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
                 }
                 .animateContentSize()
                 .padding(8.dp)
+                .focusRequester(menuFocusRequester)
+                .focusable()
         ) {
-            // Profile row (Show a placeholder if tabs are empty)
+            // **Profile Row (No Initial Focus)**
             FocusableRow(
-                onClick = {
-                    expanded = !expanded
-                }
+                selected = selectedIndex == 0,
+                expanded = expanded,
+                onFocus = { selectedIndex = 0 },
+                onClick = { expanded = !expanded }
             ) {
-                if (profileTab?.iconUrl != null) {
+                if (tabs.isNotEmpty()) {
+                    val profileTab = tabs.first()
                     AsyncImage(
                         model = profileTab.iconUrl,
                         contentDescription = profileTab.displayName,
@@ -102,110 +111,120 @@ fun ExpandableNavigationMenu(navController: NavController, viewModel: TabsViewMo
                             .width(25.dp)
                             .height(25.dp)
                     )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(Color.Gray) // Placeholder for profile icon
-                    )
-                }
-
-                if (expanded) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = profileTab?.displayName ?: "Profile",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
+                    if (expanded) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = profileTab.displayName,
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
-            // If tabs are not available yet, show a small loading indicator instead of empty space
-            if (tabs.isEmpty()) {
-                Text(
-                    text = "Loading...",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 16.dp, top = 8.dp)
-                )
-            } else {
-                // Render available tabs
-                otherTabs.forEach { tab ->
-                    FocusableRow(
-                        onClick = {
-                            if (!expanded) {
-                                expanded = true
-                            } else {
-                                if (tab.displayName == "Home") {
-                                    navController.navigate("home_screen")
-                                }
-                                if (tab.displayName == "Search") {
-                                    navController.navigate("search_screen")
-                                }
-                                if (tab.displayName == "Live Tv") {
-                                    navController.navigate("epg")
-                                }
-                                expanded = false
+            // **Available Tabs**
+            tabs.drop(1).forEachIndexed { index, tab ->
+                val itemFocusRequester = remember { FocusRequester() }
+
+                FocusableRow(
+                    modifier = Modifier.focusRequester(itemFocusRequester),
+                    selected = selectedIndex == index + 1,
+                    expanded = expanded,
+                    onFocus = { selectedIndex = index + 1 },
+                    onClick = {
+                        selectedIndex = index + 1
+                        if (!expanded) {
+                            expanded = true
+                        } else {
+                            when (tab.displayName) {
+                                "Home" -> navController.navigate("home_screen")
+                                "Search" -> navController.navigate("search_screen")
+                                "Live Tv" -> navController.navigate("epg")
                             }
-                        }
-                    ) {
-                        if (tab.iconUrl != null) {
-                            AsyncImage(
-                                model = tab.iconUrl,
-                                contentDescription = tab.displayName,
-                                modifier = Modifier
-                                    .width(25.dp)
-                                    .height(25.dp)
-                            )
-                        }
-                        if (expanded) {
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = tab.displayName,
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
+                            expanded = false
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                ) {
+                    AsyncImage(
+                        model = tab.iconUrl,
+                        contentDescription = tab.displayName,
+                        modifier = Modifier
+                            .width(25.dp)
+                            .height(25.dp)
+                    )
+                    if (expanded) {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = tab.displayName,
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
 
+
+
+
+
+
 @Composable
 fun FocusableRow(
+    modifier: Modifier = Modifier,
+    selected: Boolean,
+    expanded: Boolean,
+    onFocus: () -> Unit,
     onClick: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
+            .width(160.dp)
+            .height(50.dp)
             .padding(8.dp)
-            // First, mark this as a focus target and capture focus changes.
-            .focusTarget()
-            .onFocusChanged { isFocused = it.isFocused }
-            // Optionally add a background tint when focused.
-            .background(if (isFocused) Color.White.copy(alpha = 0.1f) else Color.Transparent)
-            // Draw the white border if focused.
-            .border(
-                border = if (isFocused) BorderStroke(2.dp, Color.White)
-                else BorderStroke(0.dp, Color.Transparent)
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    onFocus()
+                } else if (!focusState.hasFocus) {
+                    onFocus() // Ensures focus moves out properly
+                }
+            }
+            .focusable()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    // 🔹 If moving right, remove focus from menu
+                    false
+                } else {
+                    false
+                }
+            }
+            .background(if (selected && expanded) Color.White.copy(alpha = 0.2f) else Color.Transparent)
+            .then(
+                if (selected) {
+                    Modifier
+                        .border(1.dp, if (expanded) Color(0xFF49FEDD) else Color.Transparent, shape = RoundedCornerShape(4.dp))
+                        .background(
+                            if (expanded) Color(0x1A49FEDD) else Color.Transparent,
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                } else Modifier
             )
-            // Make the row clickable and focusable.
-            .clickable(onClick = onClick)
-            .focusable(),
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         content()
     }
 }
+
+
 
 
 

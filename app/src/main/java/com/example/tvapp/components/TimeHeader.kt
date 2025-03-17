@@ -56,14 +56,13 @@ fun TimeHeader(leftPanelWidth: Dp) {
 
         // Time Slots Row
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().height(29.dp),
             horizontalArrangement = Arrangement.spacedBy(50.dp, Alignment.Start), // Ensures proper spacing
             verticalAlignment = Alignment.CenterVertically
         ) {
             timeSlots.forEach { time ->
                 Text(
                     text = time,
-                    color = Color.White,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.width(150.dp) , // Fixed width for uniform spacing
                     style = TextStyle(
