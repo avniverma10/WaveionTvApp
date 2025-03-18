@@ -1,95 +1,66 @@
 package com.example.tvapp.di
 
-import android.content.Context
-import androidx.room.Room
-import com.example.tvapp.api.ApiServiceForData
-import com.example.tvapp.api.ApiServiceForLogin
-import com.example.tvapp.database.EPGDao
-import com.example.tvapp.database.EPGDatabase
-import com.example.tvapp.models.DataStoreManager
-import com.example.tvapp.repository.EPGRepository
-import com.example.tvapp.repository.TabsRepository
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
+import com.example.tvapp.utils.network.LoggingInterceptor
+import com.example.tvapp.utils.network.NetworkApiCallInterface
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import javax.inject.Named
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private var CONNECT_TIMEOUT: Long = 3 * 60L
+    private var READ_TIMEOUT: Long = 3 * 60L
+    private var WRITE_TIMEOUT: Long = 3 * 60L
 
-
-    @Provides
     @Singleton
-    @Named("API1")
-    fun provideRetrofitApi1(): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(Constants.BASE_URL_API_1)
-            .addConverterFactory(GsonConverterFactory.create())
+    @Provides
+    fun okHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(false)
+            .addInterceptor(LoggingInterceptor())
+            .cache(null)
             .build()
     }
 
-    @Provides
     @Singleton
-    @Named("API2")
-    fun provideRetrofitApi2(): Retrofit {
+    @Provides
+    fun retrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(Constants.BASE_URL_API_2)
-            .addConverterFactory(GsonConverterFactory.create())
+            .baseUrl("http://example.com")
+            .client(okHttpClient)
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .setLenient()
+                        .create()
+                )
+            )
             .build()
     }
 
 
     @Provides
     @Singleton
-    fun provideApiService1( @Named("API2")retrofit: Retrofit): ApiServiceForLogin {
-        return retrofit.create(ApiServiceForLogin::class.java)
+    fun provideNetworkAPIService(retrofit: Retrofit): NetworkApiCallInterface {
+        return retrofit.create(NetworkApiCallInterface::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideApiService2(@Named("API1") retrofit: Retrofit): ApiServiceForData {
-        return retrofit.create(ApiServiceForData::class.java)
+    fun provideWTVNetworkRepository(networkApiCallInterface: NetworkApiCallInterface):WTVNetworkRepositoryImpl{
+        return WTVNetworkRepositoryImpl(networkApiCallInterface)
     }
 
-    @Provides
-    @Singleton
-    fun provideDataStoreManager(@ApplicationContext context: Context): DataStoreManager {
-        return DataStoreManager(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideEPGDatabase(@ApplicationContext context: Context): EPGDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            EPGDatabase::class.java,
-            "epg_database"
-        ).fallbackToDestructiveMigration().build()
-    }
-
-    @Provides
-    fun provideEPGDao(database: EPGDatabase): EPGDao {
-        return database.epgDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideEPGRepository(dao: EPGDao,apiServiceForData: ApiServiceForData): EPGRepository {
-        return EPGRepository(dao,apiServiceForData)
-
-    }
-
-    @Provides
-    @Singleton
-    fun provideTabRepository(apiServiceForData: ApiServiceForData):TabsRepository{
-        return TabsRepository(apiServiceForData)
-
-    }
 }

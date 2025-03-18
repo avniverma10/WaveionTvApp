@@ -7,18 +7,20 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <uses-feature
         android:name="android.hardware.touchscreen"
-        android:required="false" />
+        android:required="false"/>
     <uses-feature
         android:name="android.software.leanback"
-        android:required="false" />
+        android:required="true"/>
 
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <application
-        android:name=".StreamingApp"
+        android:name=".WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
         android:banner="@mipmap/ic_launcher"
@@ -28,7 +30,9 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
         <activity
-            android:name=".MainActivity"
+            android:name=".view.MainActivity"
+            android:screenOrientation="landscape"
+            android:launchMode="singleInstance"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,6 +41,11 @@
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".model.wtvdatabase.EPGContentProvider"
+            android:authorities="com.example.tvapp.provider"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -1,0 +1,473 @@
+package com.example.tvapp.extensions
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Build
+import android.util.Base64
+import android.util.Log
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
+import org.json.JSONObject
+import org.threeten.bp.Duration
+import org.threeten.bp.ZonedDateTime
+import org.threeten.bp.format.DateTimeFormatter
+import java.io.UnsupportedEncodingException
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.regex.Pattern
+
+
+fun String?.isNotNullOrEmpty(): Boolean = this != null && this.trim().isNotEmpty()
+
+fun String?.getColor(): Int {
+    if (this == "#00000000" || this.isNullOrEmpty() || this.startsWith("#") && this.length > 9) {
+        return Color.TRANSPARENT
+    }
+    return try {
+        val color = this?.let {
+            if (this.isEmpty()) -1 else this.getOctColor()
+        } ?: kotlin.run {
+            -1
+        }
+        color
+    } catch (e: Exception) {
+        -1
+    }
+}
+
+private fun String.getOctColor(): Int {
+    if (this.contains("rgba")) {
+        var tempstr = this.split("rgba\\(".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()//.split(",");
+        tempstr = tempstr[1].split("\\)".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        tempstr = tempstr[0].split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+
+
+        if (!this.equals("rgba(255,255,255,0)", ignoreCase = true)) {
+            return Color.parseColor(
+                String.format(
+                    "#%02x%02x%02x%02x",
+                    Math.round(java.lang.Float.parseFloat(tempstr[3].trim()) * 255),
+                    Integer.parseInt(tempstr[0].trim()),
+                    Integer.parseInt(tempstr[1].trim()),
+                    Integer.parseInt(tempstr[2].trim())
+                )
+            )
+        }
+        return Color.parseColor("#00000000")
+    } else {
+        return this.getObjColor()
+    }
+
+}
+
+
+private fun String.getObjColor(): Int {
+
+    try {
+        if (this.contains("rgb")) {
+            var tempstr = this.split("rgb\\(".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()//.split(",");
+            tempstr =
+                tempstr[1].split("\\)".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            tempstr = tempstr[0].split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            return Color.rgb(
+                Integer.parseInt(tempstr[0].trim { it <= ' ' }),
+                Integer.parseInt(tempstr[1].trim { it <= ' ' }),
+                Integer.parseInt(tempstr[2].trim { it <= ' ' })
+            )
+
+        } else if (this.contains("#")) {
+            if (this.length < 5) {
+                val color = this.replace("#", "")
+                var tempColor = ""
+                for (i in 0..2) tempColor = color[i].toString() + color[i].toString() + tempColor
+                //logReport("AppCompactView", "received color #$tempColor")
+                return Color.parseColor("#$tempColor")
+
+            } else return Color.parseColor(this)
+        }
+    } catch (e: Exception) {
+        return Color.parseColor("#000000")
+    }
+
+    return Color.parseColor("#000000")
+}
+
+fun String?.getToolBarTextSize(): Float {
+    return if (this.equals("largeHeaderBar", ignoreCase = true)) 26f
+    else if (this.equals("mediumHeaderBar", ignoreCase = true)) 20f
+    else if (this.equals("smallHeaderBar", ignoreCase = true)) 14f
+    else if (this.equals("xlargeHeaderBar", ignoreCase = true)) 36f
+    else 20f
+}
+
+fun String?.getFloatValue(defaultValue: Float = 0f): Float {
+    return try {
+        this?.toFloatOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        0f
+    }
+}
+
+fun String?.getDoubleValue(): Double {
+    return try {
+        this?.toDoubleOrNull() ?: 0.toDouble()
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        0.toDouble()
+    }
+}
+
+
+fun String?.getIntValue(defaultValue: Int = 0): Int {
+    return try {
+        this?.trim()?.toIntOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getLongValue(defaultValue: Long = 0): Long {
+    return try {
+        this?.toLongOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getBigDecimalValue(defaultValue: BigDecimal = BigDecimal(0)): BigDecimal {
+    return try {
+        this?.toBigDecimal() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun BigDecimal?.getIntWithBigDecimal(defaultValue: Int = 0): Int {
+    return try {
+        this?.toInt() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getBooleanValue(): Boolean {
+    return try {
+        return this?.trim() == "true" || this?.trim() == "True" || this?.trim() == "TRUE" || this?.trim() == "1" || this?.trim() == "Yes" || this?.trim() == "YES" || this?.trim() == "yes"
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        false
+    }
+}
+
+
+fun String?.validateEmail(): Boolean = this?.let {
+    Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE)
+        .matcher(this).find()
+} ?: kotlin.run { false }
+
+
+fun String?.isPhoneInput(): Boolean {
+    this?.let {
+        val doubleValue: Double = this.trim().toDoubleOrNull() ?: 0.toDouble()
+        return (doubleValue > 0.toDouble())
+    } ?: kotlin.run {
+        return false
+    }
+}
+
+
+fun String?.isMobileInput(): Boolean {
+    this?.let {
+        val doubleValue: Double = this.trim().toDoubleOrNull() ?: 0.toDouble()
+        return (doubleValue > 0.toDouble()) && this.trim().length >= 10
+    } ?: kotlin.run {
+        return false
+    }
+}
+
+
+fun String?.stableId() = this?.hashCode()?.toLong() ?: 0L
+
+
+fun String.toJsonObject(): JsonObject? {
+    return try {
+        Gson().fromJson(this, JsonObject::class.java)
+    } catch (e: Throwable) {
+        Log.e("","${e.message}")
+        null
+    }
+}
+
+fun String.toJSONObject(): JSONObject? {
+    return try {
+        JSONObject(this)
+    } catch (e: Throwable) {
+        Log.e("","${e.message}")
+        null
+    }
+}
+
+fun String.toJsonArray(): JsonArray? {
+    return try {
+        Gson().fromJson(this, JsonArray::class.java)
+    } catch (e: Throwable) {
+        Log.e("","${e.message}")
+        null
+    }
+}
+
+fun String.getSharableIntent(): Intent {
+    val intent = Intent("android.intent.action.SEND")
+    intent.type = "text/plain"
+    intent.putExtra("android.intent.extra.TEXT", this)
+    return intent
+}
+
+
+fun getDateInInputPattern(pattern: String): String {
+    val calendar = Calendar.getInstance()
+    val time = calendar.time
+    val outputFmt = SimpleDateFormat(pattern, Locale.US)
+    return outputFmt.format(time)
+}
+
+
+fun String.encodeURIComponent(): String {
+    val result: String? = try {
+        URLEncoder.encode(this, "UTF-8").replace("\\+".toRegex(), "%20")
+            .replace("\\%21".toRegex(), "!").replace("\\%27".toRegex(), "'")
+            .replace("\\%28".toRegex(), "(").replace("\\%29".toRegex(), ")")
+            .replace("\\%7E".toRegex(), "~")
+    } catch (e: UnsupportedEncodingException) {
+        this
+    }
+    return result ?: ""
+}
+
+
+
+fun String.convertStringToDateDDMMMYYYY(): String {
+    val date = SimpleDateFormat("dd-MM-yyyy").parse(this)
+    val format = SimpleDateFormat("dd-MMM-yyyy")
+    return format.format(date)
+}
+
+fun String.convertSimpleDateFormat(): String {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        android.icu.text.SimpleDateFormat(this, Locale.getDefault()).format(Date())
+    } else {
+        SimpleDateFormat(this, Locale.getDefault()).format(Date())
+    }
+}
+
+fun String.toUrlUtf(): String {
+    return try {
+        URLEncoder.encode(this, "UTF-8")
+    } catch (e: Throwable) {
+        Log.e("","${e.message}")
+        ""
+    }
+}
+
+fun String.decodeUrlUTF(): String {
+    return try {
+        URLDecoder.decode(this, "UTF-8")
+    } catch (e: Throwable) {
+        Log.e("","${e.message}")
+        ""
+    }
+}
+
+
+fun String.getMD5(): String {
+    return try {
+        val md = MessageDigest.getInstance("MD5")
+        val messageDigest = md.digest(this.toByteArray())
+        val number = BigInteger(1, messageDigest)
+        var hashtext = number.toString(16)
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while (hashtext.length < 32) {
+            hashtext = "0$hashtext"
+        }
+        hashtext
+    } catch (e: NoSuchAlgorithmException) {
+        this
+    }
+
+}
+
+fun String.getSHA1(): String {
+    return try {
+        val md = MessageDigest.getInstance("SHA-1")
+        val messageDigest = md.digest(this.toByteArray())
+        val number = BigInteger(1, messageDigest)
+        var hashtext = number.toString(16)
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while (hashtext.length < 32) {
+            hashtext = "0$hashtext"
+        }
+        hashtext
+    } catch (e: NoSuchAlgorithmException) {
+        this
+    }
+}
+
+@SuppressLint("SimpleDateFormat")
+fun String?.getDate(format: String, locale: Locale? = null): Date? {
+    return try {
+        val date = this ?: return null
+        val dateFormat: SimpleDateFormat =
+            locale?.let { SimpleDateFormat(format, locale) } ?: SimpleDateFormat(format)
+        dateFormat.parse(date)
+    } catch (e: Exception) {
+        Log.e("","${e.message}")
+        null
+    }
+}
+
+@SuppressLint("SimpleDateFormat")
+fun convertDateYYYYMMDDtoMMDDYYYY(time: String): String? {
+    val inputPattern = "yyyy-MM-dd"
+    val outputPattern = "MM-dd-yyyy"
+    val inputFormat = SimpleDateFormat(inputPattern)
+    val outputFormat = SimpleDateFormat(outputPattern)
+    try {
+        val date = inputFormat.parse(time) ?: return null
+        return outputFormat.format(date)
+    } catch (e: ParseException) {
+        e.printStackTrace()
+    }
+    return null
+}
+
+fun String?.getQueryParamFromUrl(key: String): String? {
+    this?.let {
+        try {
+            val videoUri = Uri.parse(it)
+            return videoUri.getQueryParameter(key)
+        } catch (e: java.lang.Exception) {
+            Log.e("","${e.message}")
+        }
+    }
+    return null
+}
+
+fun <T> String?.convertIntoModel(classRef: Class<T>): T? {
+    return try {
+        convertIntoModel(classRef = classRef, gson = this!!.provideGsonWithCoreJsonString())
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+fun <T> String?.convertIntoModels(type: TypeToken<T>): T? {
+    return try {
+        this?.provideGsonWithCoreJsonString()?.fromJson(this, type.type)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+
+fun <T> String?.convertIntoModel(classRef: Class<T>, gson: Gson): T? {
+    return try {
+        gson.fromJson(this, classRef)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+
+fun <T> String?.convertIntoModels(type: TypeToken<T>, gson: Gson): T? {
+    return try {
+        gson.fromJson(this, type.type)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+
+}
+fun String?.getContactNo(): String = this?.replace("[^0-9]".toRegex(), "") ?: this ?: "qwerty"
+
+fun String.isValidPassword(): Boolean {
+    val password = this.trim()
+    val hasUpperCase = password.any { it.isUpperCase() }
+    val hasLowerCase = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecialChar = password.any { !it.isLetterOrDigit() }
+    return hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar
+}
+
+// Helper function to convert program time string to milliseconds.
+fun String.provideTimeInMillis(): Long {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+        val zdt = ZonedDateTime.parse(this, formatter)
+        zdt.toInstant().toEpochMilli()
+    } catch (e: Exception) {
+        try {
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+            val zdt = ZonedDateTime.parse("$this+0000", DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z"))
+            zdt.toInstant().toEpochMilli()
+        } catch (ex: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+}
+
+fun calculateProgramWidth(startTime:String, endTime:String,widthPerBlock: Dp = 50.dp): Dp {
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    val startDateTime = ZonedDateTime.parse(startTime, formatter)
+    val endDateTime = ZonedDateTime.parse(endTime, formatter)
+
+    val durationInMinutes = Duration.between(startDateTime, endDateTime).toMinutes()
+    val blocks = durationInMinutes / 30.0
+
+    return (blocks.toFloat() * widthPerBlock.value).dp
+}
+
+fun String.decodeJwtToken(): String? {
+    return try {
+        val parts = this.split(".") // JWT consists of header, payload, signature
+        if (parts.size < 2) return null // Ensure it's a valid token
+
+        val payload = String(Base64.decode(parts[1], Base64.URL_SAFE)) // Decode payload
+        val jsonObject = JSONObject(payload)
+
+        // Log full JWT payload for debugging
+        Log.d("HASH", "Decoded Payload: $payload")
+
+
+        // Extract phone number (fallback to `sub` if no phone field exists)
+        jsonObject.optString("phone", jsonObject.optString("sub", null.toString())) //  Now extracts `sub`
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
