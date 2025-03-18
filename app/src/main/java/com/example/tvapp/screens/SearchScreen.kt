@@ -37,7 +37,7 @@ fun SearchScreen(navController: NavController, viewModel: EPGViewModel = hiltVie
     val coroutineScope = rememberCoroutineScope()
 
     Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) { // Background Color
-        ExpandableNavigationMenu(navController)
+//        ExpandableNavigationMenu(navController)
         Column(modifier = Modifier.fillMaxSize().padding(16.dp))
         {
             // Search Box

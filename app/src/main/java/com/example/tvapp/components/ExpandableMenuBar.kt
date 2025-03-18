@@ -67,6 +67,17 @@ fun ExpandableNavigationMenu(
         modifier = Modifier
             .fillMaxHeight()
             .zIndex(4f) // Ensure it appears on top when expanded
+            .focusRequester(menuFocusRequester)
+            .focusable()
+            .onPreviewKeyEvent { keyEvent ->
+                if (expanded && (keyEvent.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT ||
+                            keyEvent.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT)) {
+                    // 🔹 Consume the event so nothing happens
+                    true
+                } else {
+                    false
+                }
+            }
     ) {
         Column(
             modifier = Modifier

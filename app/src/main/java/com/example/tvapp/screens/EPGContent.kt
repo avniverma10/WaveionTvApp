@@ -2,6 +2,7 @@ package com.example.tvapp.screens
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
@@ -42,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -189,7 +192,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                     onPlayClicked = { videoUrl ->
                                         val firstProgram = programs.firstOrNull()
                                         //viewModel.onShowWishlistPopup()
-                                        viewModel.onChannelVideoSelected(videoUrl,firstProgram)
+                                        viewModel.onChannelVideoSelected(videoUrl, firstProgram)
                                     }
                                 )
                             }
@@ -225,12 +228,22 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(105.dp)
-                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp)) // **Rounded corners applied**
+                                            .background(
+                                                Color(0xFF2A3139),
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) // **Rounded corners applied**
 //                                            .border(1.dp, Color(0xFF353C44), shape = RoundedCornerShape(1.dp)) // **Border for clear grid separation**
 //                                            .background(Color(0xFF2A3139))
                                             .then(
                                                 if (isFocused.value)
-                                                    Modifier.border(1.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp)).background(Color(0x1A49FEDD),shape = RoundedCornerShape(size = 4.dp))
+                                                    Modifier.border(
+                                                        1.dp,
+                                                        Color(0xFF49FEDD),
+                                                        shape = RoundedCornerShape(4.dp)
+                                                    ).background(
+                                                        Color(0x1A49FEDD),
+                                                        shape = RoundedCornerShape(size = 4.dp)
+                                                    )
                                                 else Modifier
                                             )
                                             .onFocusChanged { isFocused.value = it.isFocused }
@@ -242,28 +255,53 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                                                             // When DPAD center is pressed, use the video URL fetched from your API.
-                                                            viewModel.onChannelVideoSelected(channelData?.videoUrl, program)
-                                                            Log.i("RISHI", "EPGContent: dpad center")
-                                                            val currentTime = currentTimeMillis.value
-                                                            val programStartMillis = getTimeInMillis(program.startTime)
-                                                            val programEndMillis = getTimeInMillis(program.endTime)
+                                                            viewModel.onChannelVideoSelected(
+                                                                channelData?.videoUrl,
+                                                                program
+                                                            )
+                                                            Log.i(
+                                                                "RISHI",
+                                                                "EPGContent: dpad center"
+                                                            )
+                                                            val currentTime =
+                                                                currentTimeMillis.value
+                                                            val programStartMillis =
+                                                                getTimeInMillis(program.startTime)
+                                                            val programEndMillis =
+                                                                getTimeInMillis(program.endTime)
 
                                                             // Debug logging to verify values:
-                                                            Log.i("DEBUG_TIME", "Current: $currentTime, Start: $programStartMillis, End: $programEndMillis")
+                                                            Log.i(
+                                                                "DEBUG_TIME",
+                                                                "Current: $currentTime, Start: $programStartMillis, End: $programEndMillis"
+                                                            )
 
                                                             // For testing, force one branch:
                                                             if (currentTime in programStartMillis..programEndMillis || true /*temporary override*/) {
-                                                                Log.i("RISHIRAJ", "EPGContent: video should play")
-                                                                viewModel.onChannelVideoSelected(channelData?.videoUrl, program)
+                                                                Log.i(
+                                                                    "RISHIRAJ",
+                                                                    "EPGContent: video should play"
+                                                                )
+                                                                viewModel.onChannelVideoSelected(
+                                                                    channelData?.videoUrl,
+                                                                    program
+                                                                )
                                                             } else if (currentTime < programStartMillis) {
-                                                                Log.i("RISHIRAJ", "EPGContent: pop should show")
-                                                                viewModel.onShowWishlistPopup(program)
+                                                                Log.i(
+                                                                    "RISHIRAJ",
+                                                                    "EPGContent: pop should show"
+                                                                )
+                                                                viewModel.onShowWishlistPopup(
+                                                                    program
+                                                                )
                                                             }
                                                             true
                                                         }
+
                                                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                                             if (isFocused.value && isLastProgram) true else false
                                                         }
+
                                                         else -> false
                                                     }
                                                 } else false
@@ -299,19 +337,48 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     }
                 }
             }
+
             // Red progress indicator overlay.
+
             Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffsetDp)
-                    .fillMaxHeight()
-                    .shadow(elevation = 4.800000190734863.dp, spotColor = Color(0xFF49FEDD), ambientColor = Color(0xFF49FEDD))
-                    .padding(0.dp)
-                    .width(1.dp)
-                    .height(721.dp)
-                    .background(color = Color(0xFF49FEDD))
-            )
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Vertical Progress Indicator
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffsetDp) // Move dynamically based on time
+                        .fillMaxHeight()
+                        .width(1.dp) // Slightly thicker progress bar
+                        .background(Color(0xFF49FEDD)) // Green progress bar
+                )
+
+                // Outlined Circle with Image Inside
+                Box(
+                    modifier = Modifier
+                        .size(25.dp) // Size of the outlined circle
+                        .offset(x = indicatorOffsetDp - 12.dp, y = (-20).dp) // Positioning at top
+                ) {
+                    // Draw the outlined circle
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawCircle(
+                            color = Color(0xFF49FEDD), // Same color as progress bar
+                            style = Stroke(width = 1.dp.toPx()) // Stroke for outline effect
+                        )
+                    }
+
+                    // Place the Image Inside the Outlined Circle
+                    Image(
+                        painter = painterResource(id = R.drawable.vector_271), // Load from drawable
+                        contentDescription = "Progress Indicator",
+                        modifier = Modifier
+                            .size(20.dp) // Ensure it fits inside the circle
+                            .align(Alignment.Center) // Keep it centered
+                    )
+                }
+            }
         }
-    }
+
+        }
     if (selectedVideoUrl != null) {
         Dialog(
             onDismissRequest = { viewModel.onChannelVideoSelected(null,null) },

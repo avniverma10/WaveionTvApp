@@ -55,7 +55,7 @@ fun HomeScreen(navController: NavController,
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Side: Expandable Navigation Menu
-        ExpandableNavigationMenu(navController)
+//        ExpandableNavigationMenu(navController)
 
         // Right Side: Scrollable Home Content
         LazyColumn(
