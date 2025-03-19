@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
 import com.example.tvapp.viewmodels.SharedViewModel

@@ -9,4 +9,5 @@ object Destination {
     const val searchScreen = "search_screen"
     const val playerScreen = "homeplayer"
     const val splashScreen = "splash"
+    const val otpScreen = "otpScreen"
 }

@@ -72,13 +72,9 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
             }
 
             // Main content area
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
+            Column(modifier = Modifier.fillMaxSize()){
                 // Left Navigation Menu (optional duplicate, remove if ExpandableNavigationMenu is sufficient)
-                // NavigationMenu(menuItems)
+                 NavigationMenu(menuItems)
 
                 // EPG Content
                 EPGContent(sharedViewModel)

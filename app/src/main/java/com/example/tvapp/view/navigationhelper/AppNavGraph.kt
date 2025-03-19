@@ -14,10 +14,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.tvapp.otp.OtpScreen1
+import com.example.tvapp.search.SearchScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayer
 import com.example.tvapp.view.home.HomeScreen
-import com.example.tvapp.view.login.LoginScreen
+import com.example.tvapp.view.login.LoginScreen1
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLDecoder
@@ -45,14 +47,17 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             SplashScreen(sharedViewModel = sharedViewModel,navController)
         }
         composable(Destination.loginScreen) {
-            LoginScreen(navController)
+            LoginScreen1(navController)
         }
 
         composable(Destination.epgScreen) {
             EPGScreen(navController,sharedViewModel)
         }
+        composable(Destination.otpScreen) {
+            OtpScreen1(navController)
+        }
         composable(Destination.searchScreen) {
-           // SearchScreen(navController)
+            SearchScreen(navController,sharedViewModel)
         }
         composable(
             route = Destination.playerScreen +"/{videoUrl}",

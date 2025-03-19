@@ -2,6 +2,7 @@ package com.example.tvapp.view.epg
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,6 +42,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -61,6 +63,7 @@ import com.example.tvapp.R
 import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.extensions.provideTimeInMillis
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.view.navigationhelper.TimeHeader
 import com.example.tvapp.view.navigationhelper.parseFixedTime
 import com.example.tvapp.view.player.VideoPlayer
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -112,7 +115,7 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             LeftPanelHeader(leftPanelWidth)
-            //TimeHeader(0.dp)
+            TimeHeader(0.dp)
         }
 
         // The BoxWithConstraints now uses the same leftPanelWidth.
@@ -275,18 +278,46 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
                     }
                 }
             }
-            // Red progress indicator overlay.
+            // Green progress indicator overlay.
             Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffsetDp)
-                    .fillMaxHeight()
-                    .shadow(elevation = 4.800000190734863.dp, spotColor = Color(0xFF49FEDD), ambientColor = Color(0xFF49FEDD))
-                    .padding(0.dp)
-                    .width(1.dp)
-                    .height(721.dp)
-                    .background(color = Color(0xFF49FEDD))
-            )
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Vertical Progress Indicator
+                Box(
+                    modifier = Modifier
+                        .offset(x = indicatorOffsetDp) // Move dynamically based on time
+                        .shadow(elevation = 4.800000190734863.dp, spotColor = Color(0xFF49FEDD), ambientColor = Color(0xFF49FEDD))
+                        .fillMaxHeight()
+                        .width(1.dp) // Slightly thicker progress bar
+                        .background(Color(0xFF49FEDD)) // Green progress bar
+                )
+
+                // Outlined Circle with Image Inside
+                Box(
+                    modifier = Modifier
+                        .size(16.dp) // Size of the outlined circle
+                        .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp) // Positioning at top
+                ) {
+                    // Draw the outlined circle
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawCircle(
+                            color = Color(0xFF49FEDD), // Same color as progress bar
+                            style = Stroke(width = 1.dp.toPx()) // Stroke for outline effect
+                        )
+                    }
+
+                    // Place the Image Inside the Outlined Circle
+                    Image(
+                        painter = painterResource(id = R.drawable.vector_271), // Load from drawable
+                        contentDescription = "Progress Indicator",
+                        modifier = Modifier
+                            .size(16.dp) // Ensure it fits inside the circle
+                            .align(Alignment.Center) // Keep it centered
+                    )
+                }
+            }
         }
+
     }
     if (selectedVideoUrl != null) {
         Dialog(
