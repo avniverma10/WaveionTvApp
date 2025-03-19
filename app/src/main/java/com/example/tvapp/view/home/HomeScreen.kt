@@ -1,5 +1,6 @@
 package com.example.tvapp.view.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import com.example.tvapp.R
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
@@ -33,11 +35,19 @@ import java.nio.charset.StandardCharsets
 
 @Composable
 fun HomeScreen(navController: NavController,sharedViewModel:SharedViewModel) {
+
+    BackHandler {
+        navController.navigate(Destination.epgScreen) {
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
+
     val bannerList = listOf(
-        Banner(R.drawable.banner4, "Star News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.banner1, "AajTak", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.banner2, "News18", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.banner3, "Zee News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.banner4, "Zee News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.banner5, "AajTak", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.dd, "News18", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.banner15, "Star News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
 
     )
 

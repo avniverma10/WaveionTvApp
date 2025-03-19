@@ -1,5 +1,6 @@
 package com.example.tvapp.otp
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,6 +40,7 @@ fun OtpScreen1(navController: NavController) {
     var timer by remember { mutableStateOf(30) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
+
 
     // Create separate focus requesters for each box
     val focusRequesters = remember { List(6) { FocusRequester() } }
@@ -113,10 +115,13 @@ fun OtpScreen1(navController: NavController) {
                                 if (index < 5) {
                                     focusRequesters[index + 1].requestFocus()
                                 } else {
-                                    // Once all 6 digits are entered, stay on the last box and navigate
+                                    // Onexce all 6 digits are entered, stay on the last box and navigate
                                     keyboardController?.hide()
                                     if (otpValues.joinToString("").length == 6) {
-                                        navController.navigate("epg_screen")
+                                        navController.navigate("epg_screen"){
+                                            popUpTo(0)
+                                            launchSingleTop = true
+                                        }
                                     }
                                 }
                             } else if (newValue.isEmpty()) {

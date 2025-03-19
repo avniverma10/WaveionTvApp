@@ -1,6 +1,7 @@
 package com.example.tvapp.search
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -27,6 +28,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,6 +37,13 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
+
+    BackHandler {
+        navController.navigate(Destination.epgScreen) {
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
     var searchText by remember { mutableStateOf("") }
     val allChannels by viewModel.epgChannels.collectAsState()
     Log.d("AVNI", "All Channels ---> ${allChannels}")// Fetch all channels initially

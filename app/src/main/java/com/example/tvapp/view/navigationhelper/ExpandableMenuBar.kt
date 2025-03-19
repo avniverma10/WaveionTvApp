@@ -116,7 +116,7 @@ fun ExpandableNavigationMenu(navController: NavController,sharedViewModel: Share
                 selected = selectedIndex == 0,
                 expanded = expanded,
                 onFocus = { selectedIndex = 0 },
-                onClick = { expanded = !expanded }
+                onClick = {  expanded = true }
 
             ) {
                 if (profileTab?.iconUrl != null) {
@@ -169,15 +169,18 @@ fun ExpandableNavigationMenu(navController: NavController,sharedViewModel: Share
                                 expanded = true
                             } else {
                                 if (tab.displayName == "Home") {
-                                    Log.d("AVNI","Inside this")
                                     navController.navigate(Destination.homeScreen)
                                 }
+
                                 if (tab.displayName == "Search") {
-                                    Log.d("AVNI","Inside search")
                                     navController.navigate(Destination.searchScreen)
                                 }
+
                                 if (tab.displayName == "Live Tv") {
-                                    navController.navigate(Destination.epgScreen)
+                                    navController.navigate(Destination.epgScreen) {
+                                        popUpTo(0) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
                                 }
                                 expanded = false
                             }
@@ -248,7 +251,9 @@ fun FocusableRow(
                         )
                 } else Modifier
             )
-            .clickable(onClick = onClick),
+            .clickable {
+                onClick() //  Open instantly when clicked
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         content()

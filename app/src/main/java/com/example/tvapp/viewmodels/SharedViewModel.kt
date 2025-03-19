@@ -53,6 +53,9 @@ open class SharedViewModel @Inject constructor(
     private val _filteredPrograms = MutableStateFlow<List<Programme>>(emptyList())
     val filteredPrograms: StateFlow<List<Programme>> = _filteredPrograms.asStateFlow()
 
+    private val _searchResults = MutableStateFlow<List<Channel>>(emptyList())
+    val searchResults: StateFlow<List<Channel>> = _searchResults.asStateFlow()
+
 
     // ================= Wishlist Integration =================
 
@@ -198,8 +201,6 @@ open class SharedViewModel @Inject constructor(
         }
         _filteredChannels.value =  _epgChannels.value
     }
-    private val _searchResults = MutableStateFlow<List<Channel>>(emptyList())
-    val searchResults: StateFlow<List<Channel>> = _searchResults.asStateFlow()
 
     fun searchChannels(context: Context, query: String) {
         viewModelScope.launch {
@@ -215,11 +216,14 @@ open class SharedViewModel @Inject constructor(
             val filteredChannels = epgList.mapNotNull { epgItem ->
                 epgItem.tv?.channel?.takeIf { channel ->
                     val name = channel.displayName ?: ""
-                    val genre = channel.genreId ?: ""
+                    val genre = epgItem.content?.genreId ?: ""
 
-                    name.contains(query, ignoreCase = true) ||
-                            genre.contains(query, ignoreCase = true)
-                }
+                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
+                }?.copy(  // Ensure thumbnail and videoUrl are correctly assigned
+                    logoUrl = epgItem.content?.thumbnailUrl,
+                    videoUrl = epgItem.content?.videoUrl,
+                    genreId = epgItem.content?.genreId ?: "Unknown"
+                )
             }
 
             Log.d("AVNI", "Filtered Channels After Search: ${filteredChannels.size}")

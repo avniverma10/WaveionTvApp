@@ -3,6 +3,7 @@ package com.example.tvapp.view.login
 import android.graphics.Bitmap
 import android.util.Log
 import android.view.KeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -61,6 +62,8 @@ fun LoginScreen1(navController: NavController, viewModel: LoginViewModel = hiltV
     var phoneNumber by remember { mutableStateOf("") }
     var isButtonVisible by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf("") }
+
+
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -334,7 +337,10 @@ fun PhoneNumberSection(
                         focusManager.clearFocus() // Remove focus to close keyboard
 
                         // **Navigate to OTP Screen (Static Behavior)**
-                        navController.navigate("otpScreen") // Ensure the route exists in NavGraph
+                        navController.navigate("otpScreen") {
+                            popUpTo("login_screen") { inclusive = false }
+                            launchSingleTop = true
+                        }
                     }
                     .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 8.dp),
                 contentAlignment = Alignment.Center
