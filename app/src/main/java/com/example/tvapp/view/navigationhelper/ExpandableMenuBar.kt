@@ -1,5 +1,6 @@
 package com.example.tvapp.view.navigationhelper
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -142,12 +143,6 @@ fun ExpandableNavigationMenu(navController: NavController,sharedViewModel: Share
                 }
             }
 
-            Divider(
-                color = Color.Gray,
-                thickness = 1.dp,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
             Spacer(modifier = Modifier.height(60.dp))
 
             // If tabs are not available yet, show a small loading indicator instead of empty space
@@ -174,9 +169,11 @@ fun ExpandableNavigationMenu(navController: NavController,sharedViewModel: Share
                                 expanded = true
                             } else {
                                 if (tab.displayName == "Home") {
+                                    Log.d("AVNI","Inside this")
                                     navController.navigate(Destination.homeScreen)
                                 }
                                 if (tab.displayName == "Search") {
+                                    Log.d("AVNI","Inside search")
                                     navController.navigate(Destination.searchScreen)
                                 }
                                 if (tab.displayName == "Live Tv") {

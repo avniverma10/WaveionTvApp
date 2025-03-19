@@ -13,13 +13,19 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.tvapp.R
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+
 @Composable
 fun HomePlayer(navController: NavController, videoUrl: String) {
     val context = LocalContext.current
 
+    // Decode the URL before passing it to ExoPlayer
+    val decodedUrl = URLDecoder.decode(videoUrl, StandardCharsets.UTF_8.toString())
+
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(videoUrl)))
+            setMediaItem(MediaItem.fromUri(Uri.parse(decodedUrl)))
             prepare()
             playWhenReady = true
         }
@@ -49,3 +55,4 @@ fun HomePlayer(navController: NavController, videoUrl: String) {
         }
     }
 }
+
