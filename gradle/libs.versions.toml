@@ -25,7 +25,7 @@ kotlinx-coroutines = "1.7.3"
 coil = "3.0.4"
 constraintlayout-compose = "1.0.1"
 
-#exoplayer = "2.19.1"
+exoplayer = "2.19.1"
 zxing_embedded_version = "4.3.0" #message central
 datastore_version = "1.1.2"
 viewmodel_compose_v = "2.8.5"
@@ -84,7 +84,7 @@ media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = 
 media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3" }
 media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
-media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3-ui" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler-ksp = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }

@@ -56,7 +56,6 @@ android {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar", "*.aar"))))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform(libs.androidx.compose.bom))
@@ -109,6 +108,7 @@ dependencies {
     implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
-
+   // If you don't use feature license encrypt, please comment line below
+    implementation ("com.sigma.packer:sigma-packer:1.0.1")
 
 }
