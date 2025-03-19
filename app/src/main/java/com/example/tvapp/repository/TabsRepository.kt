@@ -31,7 +31,7 @@ class TabsRepository {
 
     private fun connectToSSE(scope: ProducerScope<List<Tab>>) {
         val request = Request.Builder()
-            .url("http://nextwave.waveiontechnologies.com:5000/api/tabs/sse-tabs")
+            .url("https://nextwave.waveiontechnologies.com:5000/api/tabs/sse-tabs")
             .build()
 
         val listener = object : EventSourceListener() {

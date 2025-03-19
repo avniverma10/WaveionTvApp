@@ -155,11 +155,11 @@ class EPGViewModel @Inject constructor(
                     _filteredPrograms.value = programs
                     Log.d("RISHI", "Programs fetched from fixed current time to next 4 hours: ${programs.size}")
                     programs.forEach { program ->
-                        Log.d("RISHI", "Channel: ${program.channelId} Program: ${program.eventName}, Start Time: ${program.startTime}, End Time: ${program.endTime}")
+                        //Log.d("RISHI", "Channel: ${program.channelId} Program: ${program.eventName}, Start Time: ${program.startTime}, End Time: ${program.endTime}")
                     }
                 }
             }
-            Log.d("RISHI", "Fetching and filtering programs took $duration ms")
+            //Log.d("RISHI", "Fetching and filtering programs took $duration ms")
         }
     }
 

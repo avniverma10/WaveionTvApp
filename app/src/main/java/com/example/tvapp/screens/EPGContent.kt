@@ -290,8 +290,7 @@ fun EPGContent(viewModel: EPGViewModel = hiltViewModel()) {
                     .background(Color.Black)
             ) {
                 VideoPlayer(
-                    videoUrl = selectedVideoUrl!!,
-                    modifier = Modifier.fillMaxSize()
+                    videoUrl = "https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/DD_SPORTS_HD/DASH_SIGMA/DD_SPORTS_HD.mpd"
                 )
             }
         }
