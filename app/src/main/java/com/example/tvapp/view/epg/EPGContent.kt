@@ -62,7 +62,7 @@ import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.extensions.provideTimeInMillis
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.navigationhelper.parseFixedTime
-import com.example.tvapp.view.player.VideoPlayer
+import com.example.tvapp.view.wtvplayer.WTVVideoPlayer
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -166,7 +166,7 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
                         ) {
                             // Left Panel: Channel info.
                             // Pass channelData and a callback for video click.
-                            channelData?.let { channel ->
+                            channelData.let { channel ->
                                 ChannelInfo(
                                     leftPanelWidth = 180.dp,
                                     channel = channel,
@@ -298,7 +298,7 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
                     .fillMaxSize()
                     .background(Color.Black)
             ) {
-                VideoPlayer(
+                WTVVideoPlayer (
                     initialVideoUrl = selectedVideoUrl?:"",
                     allChannels = epgList,
                     onVideoChange = {
