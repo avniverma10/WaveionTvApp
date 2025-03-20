@@ -205,28 +205,22 @@ open class SharedViewModel @Inject constructor(
     fun searchChannels(context: Context, query: String) {
         viewModelScope.launch {
             if (query.isBlank()) {
-                _searchResults.value = _epgChannels.value // Show all if search is empty
-                Log.d("AVNI", "🔍 Search empty, showing all ${_searchResults.value.size} channels")
+                _searchResults.value = _epgChannels.value
                 return@launch
             }
-
-            val epgList = fetchEPGList(context) // Fetch fresh EPG list
-            Log.d("AVNI", "EPG List Size Before Filtering: ${epgList.size}")
-
+            val epgList = fetchEPGList(context)
             val filteredChannels = epgList.mapNotNull { epgItem ->
                 epgItem.tv?.channel?.takeIf { channel ->
                     val name = channel.displayName ?: ""
                     val genre = epgItem.content?.genreId ?: ""
 
                     (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
-                }?.copy(  // Ensure thumbnail and videoUrl are correctly assigned
+                }?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
                 )
             }
-
-            Log.d("AVNI", "Filtered Channels After Search: ${filteredChannels.size}")
             _searchResults.value = filteredChannels
         }
     }
