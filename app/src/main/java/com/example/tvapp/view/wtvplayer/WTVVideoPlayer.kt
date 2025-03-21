@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import kotlinx.coroutines.Job
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +50,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -74,7 +76,10 @@ fun WTVVideoPlayer(
 
     var currentIndex by remember { mutableStateOf(allChannels.indexOfFirst { it.content?.videoUrl == initialVideoUrl }) }
     val currentChannel = allChannels.getOrNull(currentIndex)
-    var isOverlayVisible by remember { mutableStateOf(false) }
+    var isOverlayVisible by remember { mutableStateOf(true) }
+
+    val overlayJob = remember { mutableStateOf<Job?>(null) }
+
 
     // ExoPlayer Setup
     val exoPlayer = remember {
@@ -93,15 +98,6 @@ fun WTVVideoPlayer(
             })
         }
     }
-
-    // Auto-hide overlay after 5 sec
-    LaunchedEffect(isOverlayVisible) {
-        if (isOverlayVisible) {
-            delay(5000)
-            isOverlayVisible = false
-        }
-    }
-
 
     // Update video when channel changes
     LaunchedEffect(currentIndex) {
@@ -145,6 +141,15 @@ fun WTVVideoPlayer(
 
     fun showOverlay() {
         isOverlayVisible = true
+
+        // Cancel any existing job
+        overlayJob.value?.cancel()
+
+        // Start a new 5s delay
+        overlayJob.value = coroutineScope.launch {
+            delay(5000)
+            isOverlayVisible = false
+        }
     }
 
     DisposableEffect(exoPlayer) {
@@ -190,7 +195,7 @@ fun WTVVideoPlayer(
 
                 playerView.apply {
                     player = exoPlayer
-                    useController = true
+                    useController = false
                     keepScreenOn = true
                     addWatermarkToPlayer(this, wtvPlayerViewModel.provideWatermarkHash(context))
                 }
@@ -218,11 +223,6 @@ fun WTVVideoPlayer(
         }
 
         if (isOverlayVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f))
-            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,6 +245,22 @@ fun WTVVideoPlayer(
                             fontSize = 20.sp,
                             modifier = Modifier.padding(start = 16.dp)
                         )
+                        // Spacer between title and LIVE
+                        androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(8.dp))
+
+                        // Live badge
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(Color.Red, shape = androidx.compose.foundation.shape.CircleShape)
+                            )
+                            Text(
+                                text = " LIVE",
+                                color = Color.Red,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
                 /*nextProgram?.let {
@@ -257,7 +273,6 @@ fun WTVVideoPlayer(
                         Text(text = "Next: ${it.title}", color = Color.White, fontSize = 18.sp)
                     }
                 }*/
-            }
         }
     }
 }
