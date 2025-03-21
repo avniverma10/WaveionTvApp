@@ -50,6 +50,10 @@ open class SharedViewModel @Inject constructor(
     private val _filteredChannels = MutableStateFlow<List<Channel>>(emptyList())
     val filteredChannels: StateFlow<List<Channel>> = _filteredChannels.asStateFlow()
 
+    private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
+
+
     private val _filteredPrograms = MutableStateFlow<List<Programme>>(emptyList())
     val filteredPrograms: StateFlow<List<Programme>> = _filteredPrograms.asStateFlow()
 
@@ -78,6 +82,13 @@ open class SharedViewModel @Inject constructor(
         // Fetch banners from API
         viewModelScope.launch {
             provideBanners()
+        }
+
+        // Set full EPG list as the initial filtered list
+        viewModelScope.launch {
+            epgDataFlow.collect { data ->
+                _filteredEPGList.value = data
+            }
         }
     }
 
@@ -202,6 +213,7 @@ open class SharedViewModel @Inject constructor(
         _filteredChannels.value =  _epgChannels.value
     }
 
+
     fun searchChannels(context: Context, query: String) {
         viewModelScope.launch {
             if (query.isBlank()) {
@@ -224,6 +236,17 @@ open class SharedViewModel @Inject constructor(
             _searchResults.value = filteredChannels
         }
     }
+
+    fun filterChannelsByGenre(genre: String) {
+        if (genre.equals("All", ignoreCase = true)) {
+            _filteredEPGList.value = epgDataFlow.value
+        } else {
+            _filteredEPGList.value = epgDataFlow.value.filter {
+                it.content?.genreId.equals(genre, ignoreCase = true)
+            }
+        }
+    }
+
 
 
 }

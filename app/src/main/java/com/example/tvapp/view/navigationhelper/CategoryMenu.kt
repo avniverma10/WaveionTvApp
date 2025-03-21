@@ -7,15 +7,10 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,75 +26,83 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import com.example.tvapp.R
-import com.example.tvapp.extensions.provideCategoryResource
 import com.example.tvapp.model.data.manifest.EPGCategory
-
+import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
-fun NavigationMenu(menuItems:List<EPGCategory>) {
-    val selectedIndex = remember { mutableStateOf(-1) } // Track selected item index
+fun CategoryMenu(
+    menuItems: List<EPGCategory>,
+    sharedViewModel: SharedViewModel,
+    firstChannelFocusRequester: FocusRequester
+) {
+    val selectedIndex = remember { mutableStateOf(0) }
+
+    // Inject static "All" at the start
+    val allMenuItems = listOf(EPGCategory(
+        name = "All",
+        version = 0)) + menuItems
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
-            .background(Color(0xFF161D25), shape = RoundedCornerShape(12.dp)) // Rounded Background
-
+            .background(Color(0xFF161D25), shape = RoundedCornerShape(12.dp))
     ) {
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(53.dp), // **Increased space between items**
+            horizontalArrangement = Arrangement.spacedBy(53.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(menuItems) { index, item ->
+            itemsIndexed(allMenuItems) { index, item ->
                 val focusRequester = remember { FocusRequester() }
                 val isFocused = remember { mutableStateOf(false) }
 
-                val backgroundColor = when {
-                    isFocused.value || selectedIndex.value == index -> Color(0x1A49FEDD) // **Keep background highlighted**
-                    else -> Color.Transparent
-                }
-
                 Box(
                     modifier = Modifier
-//                        .background(backgroundColor, shape = RoundedCornerShape(8.dp)) // Explicit background control
+                        .width(120.dp)
+                        .height(80.dp)
+                        .then(
+                            if (isFocused.value)
+                                Modifier
+                                    .border(1.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(4.dp))
+                                    .background(Color(0x1A49FEDD), shape = RoundedCornerShape(4.dp))
+                            else Modifier
+                        )
                         .onFocusChanged {
                             isFocused.value = it.isFocused
                             if (it.isFocused) {
-                                selectedIndex.value = index // Keep item highlighted when clicked
+                                selectedIndex.value = index
+                                item.name?.let { genre ->
+                                    sharedViewModel.filterChannelsByGenre(genre)
+                                }
                             }
                         }
                         .focusRequester(focusRequester)
                         .focusable()
-                        .clickable {
-                            selectedIndex.value = index // Ensure selection remains
-//                            if (item.label == "Recent") {
-//                                viewModel.showRecentlyWatched()
-//                            } else {
-//                                viewModel.filterChannelsByGenre(item.label)
-//                            }
+                        .onPreviewKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown &&
+                                keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                            ) {
+                                if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
+                                    firstChannelFocusRequester.requestFocus()
+                                }
+                                true
+                            } else false
                         }
-                        .padding(
-                            horizontal = 22.dp,
-                            vertical = 30.dp
-                        ), // Padding inside the filter button
+                        .padding(horizontal = 22.dp, vertical = 30.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = item.name ?: "",
-                        color = if (isFocused.value || selectedIndex.value == index) Color(
-                            0xFF49FEDD
-                        ) else Color.White, // Keep color after click
+                        color = Color.White,
                         style = TextStyle(
                             fontSize = 18.sp,
                             lineHeight = 28.01.sp,

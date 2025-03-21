@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,7 @@ import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
-import com.example.tvapp.view.navigationhelper.NavigationMenu
+import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -52,6 +53,8 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab?: emptyList()) }
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
     val showBanner = isBannerVisible(tabItems)
+    val firstChannelFocusRequester = remember { FocusRequester() }
+
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Navigation Menu
@@ -74,10 +77,10 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
             // Main content area
             Column(modifier = Modifier.fillMaxSize()){
                 // Left Navigation Menu (optional duplicate, remove if ExpandableNavigationMenu is sufficient)
-                 NavigationMenu(menuItems)
+                 CategoryMenu(menuItems,sharedViewModel,firstChannelFocusRequester)
 
                 // EPG Content
-                EPGContent(sharedViewModel)
+                EPGContent(sharedViewModel,firstChannelFocusRequester)
             }
         }
     }

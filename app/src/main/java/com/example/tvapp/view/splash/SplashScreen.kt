@@ -43,7 +43,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
         Handler(Looper.getMainLooper()).postDelayed({
             if (authToken.isNullOrEmpty()) {
-                navController.navigate(Destination.loginScreen) {
+                navController.navigate(Destination.epgScreen) {
                     popUpTo(Destination.splashScreen) { inclusive = true }
                 }
             } else {

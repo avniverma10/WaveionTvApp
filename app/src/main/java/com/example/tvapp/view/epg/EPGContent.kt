@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,8 +74,9 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun EPGContent(sharedViewModel: SharedViewModel) {
-    val epgList by sharedViewModel.epgDataFlow.collectAsState()
+fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: FocusRequester) {
+
+    val epgList by sharedViewModel.filteredEPGList.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedVideoUrl.collectAsState()
 
     // Update current time every second.
@@ -84,7 +86,7 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
     val wishlistAlertProgram by sharedViewModel.wishlistAlertProgram.collectAsState()
     val channelMap = epgList.associateBy { it.channelId }
 
-
+    val hasInitiallyFocused = remember { mutableStateOf(false) }
 
     // Define a fixed width for the left panel that contains channel info.
     // Adjust this value to the total width of all elements in your left panel.
@@ -180,7 +182,9 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
                                        // val firstProgram = programs.firstOrNull()
                                         //viewModel.onShowWishlistPopup()
                                         sharedViewModel.onChannelVideoSelected(videoUrl,epgList[0].tv?.programme?.get(0))
-                                    }
+                                    },
+                                    hasInitiallyFocused = hasInitiallyFocused,
+                                    focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null // 👈 only for first
                                 )
                             }
 
@@ -202,20 +206,12 @@ fun EPGContent(sharedViewModel: SharedViewModel) {
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
 
-                                    if (channelIndex == 0 && programIndex == 0) {
-                                        LaunchedEffect(Unit) {
-                                            focusRequester.requestFocus()
-                                        }
-                                    }
-
                                     val isLastProgram = (programIndex == channelData.tv.programme.lastIndex)
                                     Box(
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(105.dp)
                                             .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp)) // **Rounded corners applied**
-//                                            .border(1.dp, Color(0xFF353C44), shape = RoundedCornerShape(1.dp)) // **Border for clear grid separation**
-//                                            .background(Color(0xFF2A3139))
                                             .then(
                                                 if (isFocused.value)
                                                     Modifier.border(1.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp)).background(Color(0x1A49FEDD),shape = RoundedCornerShape(size = 4.dp))
@@ -459,18 +455,20 @@ fun LeftPanelHeader(width: Dp) {
 fun ChannelInfo(
     leftPanelWidth: Dp,
     channel: EPGDataItem,
-    channelIndex: Int,  // Add channel index to show serial numbers
+    channelIndex: Int,
     isFirstChannel: Boolean,
     isLastChannel: Boolean,
-    onPlayClicked: (String?) -> Unit
+    onPlayClicked: (String?) -> Unit,
+    hasInitiallyFocused: MutableState<Boolean>,
+    focusRequester: FocusRequester? = null
 ) {
-    val focusRequester = remember { FocusRequester() }
+    val actualFocusRequester = focusRequester ?: remember { FocusRequester() }
     val isFocused = remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .width(leftPanelWidth)
-            .background(Color(0xFF161D25)) // Background color for both number & logo
+            .background(Color(0xFF161D25))
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
@@ -478,20 +476,18 @@ fun ChannelInfo(
                             onPlayClicked(channel.content?.videoUrl)
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_UP -> if (isFirstChannel) true else false
-                        KeyEvent.KEYCODE_DPAD_DOWN -> if (isLastChannel) true else false
+                        KeyEvent.KEYCODE_DPAD_DOWN -> isLastChannel
                         else -> false
                     }
                 } else false
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // **Channel Serial Number**
         Box(
             modifier = Modifier
-                .width(50.dp) // Fixed width for channel numbers
+                .width(50.dp)
                 .height(70.dp)
-                .background(Color(0xFF161D25)), // Background same as the channel logo
+                .background(Color(0xFF161D25)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -502,32 +498,36 @@ fun ChannelInfo(
             )
         }
 
-        // **Vertical Divider**
-
-
-        // **Channel Logo with Focus Border**
         Box(
             modifier = Modifier
                 .width(120.dp)
                 .height(125.dp)
                 .then(
                     if (isFocused.value)
-                        Modifier.border(2.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp))
+                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
-                .focusRequester(focusRequester)
+                .focusRequester(actualFocusRequester)
                 .focusable()
                 .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }
         ) {
+
+            if (channelIndex == 0 && !hasInitiallyFocused.value) {
+                LaunchedEffect(Unit) {
+                    actualFocusRequester.requestFocus()
+                    hasInitiallyFocused.value = true
+                }
+            }
+
             AsyncImage(
                 model = channel.content?.thumbnailUrl,
                 contentDescription = "Channel Logo",
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFF161D25), shape = RoundedCornerShape(4.dp)), // Ensure background covers full area
+                    .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
                 contentScale = ContentScale.FillBounds
             )
         }
