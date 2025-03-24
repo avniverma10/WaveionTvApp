@@ -3,6 +3,10 @@ package com.example.tvapp.search
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,7 +18,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -38,6 +45,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
 
+    val searchFieldFocusRequester = remember { FocusRequester() }
+    val firstThumbnailFocusRequester = remember { FocusRequester() }
+
     BackHandler {
         navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
@@ -46,15 +56,15 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
     }
     var searchText by remember { mutableStateOf("") }
     val allChannels by viewModel.epgChannels.collectAsState()
-    Log.d("AVNI", "All Channels ---> ${allChannels}")// Fetch all channels initially
+    Log.d("SEARCH", "All Channels coming ---> ${allChannels}")// Fetch all channels initially
     val searchResults by viewModel.searchResults.collectAsState()  // Fetch search results
-    Log.d("AVNI","Search ---> $searchResults")
+    Log.d("SEARCH","Searched ones ---> $searchResults")
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
     Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) { // Background Color
         ExpandableNavigationMenu(navController,viewModel,  onNavMenuIntent = { tabInfo, selectedIndex ->
-            Log.d("AVNI", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
+            Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
         })
 
         Column(
@@ -70,15 +80,22 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
                     searchText = newText
                     coroutineScope.launch {
                         viewModel.searchChannels(context, newText)
-
-                        // Call search function when typing
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)) // Rounded corners
-                    .background(Color(0xFF2A2D32)) // Dark Gray Background
-                    .padding(horizontal = 8.dp),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF2A2D32))
+                    .padding(horizontal = 8.dp)
+                    .focusRequester(searchFieldFocusRequester)
+                    .onKeyEvent { event ->
+                        if (event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+                        ) {
+                            firstThumbnailFocusRequester.requestFocus()
+                            true
+                        } else false
+                    },
                 placeholder = {
                     Text(
                         "Movies, TV Shows and more",
@@ -140,10 +157,19 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
 
 @Composable
 fun ChannelThumbnail(channel: Channel) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     Card(
         modifier = Modifier
             .padding(8.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .focusable(interactionSource = interactionSource)
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            ),
         shape = RoundedCornerShape(12.dp), // Rounded corners
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Small shadow effect
@@ -151,10 +177,10 @@ fun ChannelThumbnail(channel: Channel) {
         AsyncImage(
             model = channel.logoUrl,
             contentDescription = channel.displayName,
-            contentScale = ContentScale.Crop, // Crop image to fill the space
+            contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(16f / 9f) // Matches the aspect ratio of thumbnails
+                .height(90.dp)
         )
     }
 }
