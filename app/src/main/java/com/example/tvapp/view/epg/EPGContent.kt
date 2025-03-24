@@ -265,12 +265,12 @@ fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: Focu
                             }
                         }
                         // Horizontal divider between channels.
-                        Box(
+                        /*Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(1.dp)
                                 .background(Color(0xFF353C44))
-                        )
+                        )*/
                     }
                 }
             }
