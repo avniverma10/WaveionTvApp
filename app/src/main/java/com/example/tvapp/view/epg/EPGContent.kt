@@ -528,7 +528,7 @@ fun ChannelInfo(
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.FillBounds
+                contentScale = ContentScale.Fit
             )
         }
     }
