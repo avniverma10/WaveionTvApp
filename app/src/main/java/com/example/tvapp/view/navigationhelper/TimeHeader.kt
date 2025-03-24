@@ -36,7 +36,7 @@ fun TimeHeader(leftPanelWidth: Dp) {
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(60_000)
+            delay(1)
             fixedCurrentTime.value = System.currentTimeMillis()
         }
     }

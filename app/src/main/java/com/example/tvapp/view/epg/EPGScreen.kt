@@ -2,7 +2,9 @@
 package com.example.tvapp.view.epg
 
 
+import android.app.Activity
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.tv.material3.Icon
@@ -34,6 +39,7 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
@@ -48,6 +54,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
+    val context = LocalContext.current
+
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab?: emptyList()) }
@@ -55,6 +63,44 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
     val showBanner = isBannerVisible(tabItems)
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    var lastBackPressedTime by remember { mutableStateOf(0L) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    // Intercept back press on landing screen to show exit confirmation
+    BackHandler {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressedTime < 2000) {
+            // Double back press detected, show exit confirmation dialog
+            showExitDialog = true
+        } else {
+            // Update the time and prompt the user
+            lastBackPressedTime = currentTime
+            context.showToastS("Press back again to exit")
+        }
+    }
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Exit App") },
+            text = { Text("Do you want to close the app?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        (context as? Activity)?.finish()
+                    }
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("No")
+                }
+            }
+        )
+    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Navigation Menu
