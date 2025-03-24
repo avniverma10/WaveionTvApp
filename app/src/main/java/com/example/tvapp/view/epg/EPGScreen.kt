@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
@@ -102,7 +103,7 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
         )
     }
 
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) {
         // Left Navigation Menu
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, selectedTabIndex ->
             menuItems = tabInfo.categories ?: emptyList()
@@ -112,6 +113,7 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF161D25))
+                .zIndex(1f)
         ) {
             // Top Banner
             if (showBanner) {

@@ -63,7 +63,7 @@ fun HomeScreen(navController: NavController,sharedViewModel:SharedViewModel) {
         HomeContent("The Rings of Power", R.drawable.news5, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
     )
 
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) {
         // Left Side: Expandable Navigation Menu
         // Left Navigation Menu
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, selectedTabIndex ->
