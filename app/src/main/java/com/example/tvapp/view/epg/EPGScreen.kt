@@ -46,6 +46,7 @@ import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
+import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -125,8 +126,8 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
             // Main content area
             Column(modifier = Modifier.fillMaxSize()){
                 // Left Navigation Menu (optional duplicate, remove if ExpandableNavigationMenu is sufficient)
-                 CategoryMenu(menuItems,sharedViewModel,firstChannelFocusRequester)
-
+                 CategoryMenu(sharedViewModel,firstChannelFocusRequester)
+                  LanguageMenu(sharedViewModel)
                 // EPG Content
                 EPGContent(sharedViewModel,firstChannelFocusRequester)
             }

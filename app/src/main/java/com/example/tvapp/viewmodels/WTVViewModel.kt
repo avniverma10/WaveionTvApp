@@ -16,6 +16,7 @@ import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -111,9 +112,12 @@ open class WTVViewModel @Inject constructor(private val application: Application
             _isInitializeData.value = true
         }
         viewModelScope.launch {
-            networkApiCallInterfaceImpl.provideWTVLanguageData(languageUrl = "https://nextwave.waveiontechnologies.com:5000/api/genres/").collect{response ->
+            networkApiCallInterfaceImpl.provideWTVLanguageData(languageUrl = "https://nextwave.waveiontechnologies.com:5000/api/languages/").collect{response ->
                 when (response) {
                     is WTVListResponse.Success -> {
+                        var languageList = arrayListOf<WTVLanguage>()
+                        languageList.add(WTVLanguage(name = "All"))
+                        languageList.addAll(response.data)
                         // Handle successful response
                         application.applicationContext.applyAppLanguage(response.data)
                         logReport("applyAppLanguage:${ response.data}")

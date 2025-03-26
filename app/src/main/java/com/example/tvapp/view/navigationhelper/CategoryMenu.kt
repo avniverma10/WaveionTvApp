@@ -2,7 +2,6 @@ package com.example.tvapp.view.navigationhelper
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -34,21 +35,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.example.tvapp.R
-import com.example.tvapp.model.data.manifest.EPGCategory
+import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.model.data.genre.WTVGenre
 
 @Composable
 fun CategoryMenu(
-    menuItems: List<EPGCategory>,
     sharedViewModel: SharedViewModel,
     firstChannelFocusRequester: FocusRequester
 ) {
-    val selectedIndex = remember { mutableStateOf(0) }
+    val appGenreData by sharedViewModel
+        .provideApplicationContext()
+        .appGenreLiveData()
+        .observeAsState(initial = emptyList())
 
-    // Inject static "All" at the start
-    val allMenuItems = listOf(EPGCategory(
-        name = "All",
-        version = 0)) + menuItems
+    val menuItems: List<WTVGenre> = appGenreData
+
+    val selectedIndex = remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -61,7 +64,7 @@ fun CategoryMenu(
             horizontalArrangement = Arrangement.spacedBy(53.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(allMenuItems) { index, item ->
+            itemsIndexed(menuItems) { index, item ->
                 val focusRequester = remember { FocusRequester() }
                 val isFocused = remember { mutableStateOf(false) }
 
@@ -80,9 +83,8 @@ fun CategoryMenu(
                             isFocused.value = it.isFocused
                             if (it.isFocused) {
                                 selectedIndex.value = index
-                                item.name?.let { genre ->
-                                    sharedViewModel.filterChannelsByGenre(genre)
-                                }
+                                val genreName = item.name ?: "Unknown"
+                                sharedViewModel.filterChannelsByGenre(genreName)
                             }
                         }
                         .focusRequester(focusRequester)
@@ -97,15 +99,14 @@ fun CategoryMenu(
                                 true
                             } else false
                         }
-                        .padding(horizontal = 22.dp, vertical = 30.dp),
+                        .padding(horizontal = 20.dp, vertical = 30.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = item.name ?: "",
                         color = Color.White,
                         style = TextStyle(
-                            fontSize = 18.sp,
-                            lineHeight = 28.01.sp,
+                            fontSize = 17.sp,
                             fontFamily = FontFamily(Font(R.font.figtree_light)),
                             fontWeight = FontWeight(400),
                         ),

@@ -241,11 +241,25 @@ open class SharedViewModel @Inject constructor(
         if (genre.equals("All", ignoreCase = true)) {
             _filteredEPGList.value = epgDataFlow.value
         } else {
-            _filteredEPGList.value = epgDataFlow.value.filter {
-                it.content?.genreId.equals(genre, ignoreCase = true)
+            _filteredEPGList.value = epgDataFlow.value.filter { epgItem ->
+                Log.d("SharedViewModel", "Genres: ${epgItem.content?.genre}")
+                (epgItem.content?.genre?.any { (it as? String)?.equals(genre, ignoreCase = true) == true } ?: false)
+
             }
         }
     }
+    fun filterChannelsByLanguage(language: String) {
+        if (language.equals("All", ignoreCase = true)) {
+            _filteredEPGList.value = epgDataFlow.value
+        } else {
+            _filteredEPGList.value = epgDataFlow.value.filter { epgItem ->
+                Log.d("SharedViewModel", "Languages: ${epgItem.content?.language}")
+                epgItem.content?.language?.equals(language, ignoreCase = true) ?: false
+            }
+        }
+    }
+
+
 
 
 

@@ -52,7 +52,9 @@ data class Content(
     val releaseDate: String?="3545-05-31T00:00:00.000Z",
     val thumbnailUrl: String?="https://nextwave.waveiontechnologies.com:5000/uploads/thumbnails/1738997579816.jpg",
     val title: String?="005 News 18 UP",
-    val videoUrl: String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/Chardikla_Time_TV/DASH/Chardikla_Time_TV.mpd"
+    val videoUrl: String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/Chardikla_Time_TV/DASH/Chardikla_Time_TV.mpd",
+    val genre: List<String>? = emptyList(),
+    val language: String?= ""
 )
 data class Channel(
     val _id: String?="ZEE_SALAAM_RS-0.10",

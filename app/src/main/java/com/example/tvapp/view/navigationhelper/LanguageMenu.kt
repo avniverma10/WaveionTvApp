@@ -1,0 +1,118 @@
+package com.example.tvapp.view.navigationhelper
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import com.example.tvapp.viewmodels.SharedViewModel
+import android.view.KeyEvent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.tv.material3.Text
+import com.example.tvapp.R
+import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.model.data.language.WTVLanguage
+
+@Composable
+fun LanguageMenu(sharedViewModel: SharedViewModel) {
+    val appLanguageData by sharedViewModel
+        .provideApplicationContext()
+        .appLanguageLiveData()
+        .observeAsState(initial = emptyList())
+
+    val languageItems: List<WTVLanguage> = appLanguageData
+
+    val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
+
+    // State for the selected index (if needed for UI highlighting).
+    val selectedIndex = remember { mutableStateOf(0) }
+
+    // Build the UI for the language menu.
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(45.dp),
+//            .focusRequester(languageMenuFocusRequester),
+        contentPadding = PaddingValues(start = 25.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        itemsIndexed(allLanguageItems) { index, item ->
+            val focusRequester = remember { FocusRequester() }
+            val isFocused = remember { mutableStateOf(false) }
+
+            Box(
+                modifier = Modifier
+                    .then(
+                        if (isFocused.value)
+                            Modifier
+                                .border(
+                                    1.dp,
+                                    Color(0xFF49FEDD),
+                                    shape = RoundedCornerShape(30.dp)
+                                )
+                                .background(
+                                    Color(0x1A49FEDD),
+                                    shape = RoundedCornerShape(30.dp)
+                                )
+                        else Modifier
+                    )
+                    .onFocusChanged {
+                        isFocused.value = it.isFocused
+                        if (it.isFocused) {
+                            selectedIndex.value = index
+                            // When focused, call the filter function with the language name.
+                            val languageName = item.name ?: "Unknown"
+                            sharedViewModel.filterChannelsByLanguage(languageName)
+                        }
+                    }
+                    .focusRequester(focusRequester)
+                    .focusable()
+                    .padding(horizontal = 6.dp)
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item.name ?: "",
+                    color = Color.White,
+                    style = TextStyle(
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily(Font(R.font.figtree_light)),
+                        fontWeight = FontWeight.Medium,
+                    )
+                )
+            }
+        }
+    }
+}

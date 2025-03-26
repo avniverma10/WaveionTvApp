@@ -526,7 +526,7 @@ fun ChannelInfo(
                 contentDescription = "Channel Logo",
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(4.dp)).padding(8.dp)
                     .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
                 contentScale = ContentScale.Fit
             )
