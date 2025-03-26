@@ -10,6 +10,8 @@ import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.example.tvapp.utils.sealed.LoginResponse
@@ -46,6 +48,38 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             if (response.isSuccessful && response.body() != null) {
                 val epgData: List<EPGDataItem>? = response.body()?.toJSONArray().toString()
                     .convertIntoModels(object : TypeToken<List<EPGDataItem>>() {})
+                // Optionally save EPG data into ContentProvider or DB here
+                emit(WTVListResponse.Success(epgData!!))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun provideWTVGenreData(genreUrl: String): Flow<WTVListResponse<WTVGenre>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpGetRequest(genreUrl).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val epgData: List<WTVGenre>? = response.body()?.toJSONArray().toString()
+                    .convertIntoModels(object : TypeToken<List<WTVGenre>>() {})
+                // Optionally save EPG data into ContentProvider or DB here
+                emit(WTVListResponse.Success(epgData!!))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun provideWTVLanguageData(languageUrl: String): Flow<WTVListResponse<WTVLanguage>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpGetRequest(languageUrl).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val epgData: List<WTVLanguage>? = response.body()?.toJSONArray().toString()
+                    .convertIntoModels(object : TypeToken<List<WTVLanguage>>() {})
                 // Optionally save EPG data into ContentProvider or DB here
                 emit(WTVListResponse.Success(epgData!!))
             } else {

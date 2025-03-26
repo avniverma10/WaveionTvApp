@@ -11,6 +11,8 @@ import android.util.Log
 import android.widget.Toast
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 
 
@@ -30,6 +32,23 @@ fun Context.appManifestLiveData() =
 
 fun Context.applyAppManifest(data: WTVManifest) =
     (applicationContext as? CoreComponentProvider)?.initializeAppManifest(data)
+
+fun Context.appGenreLiveData() =
+    (applicationContext as? CoreComponentProvider)?.provideGenreLiveData()
+        ?: throw IllegalStateException("Manifest is null: $applicationContext")
+
+
+fun Context.applyAppGenre(data: List<WTVGenre>) =
+    (applicationContext as? CoreComponentProvider)?.initializeGenre(data)
+
+
+fun Context.appLanguageLiveData() =
+    (applicationContext as? CoreComponentProvider)?.provideLanguageLiveData()
+        ?: throw IllegalStateException("Manifest is null: $applicationContext")
+
+
+fun Context.applyAppLanguage(data: List<WTVLanguage>) =
+    (applicationContext as? CoreComponentProvider)?.initializeLanguage(data)
 
 
 fun Context.isInternetOn(): Boolean {

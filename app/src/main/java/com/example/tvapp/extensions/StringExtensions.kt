@@ -439,6 +439,15 @@ fun String.provideTimeInMillis(): Long {
         }
     }
 }
+fun String.toTimestamp(): Long {
+    // Define the formatter according to the input pattern.
+    // "yyyyMMddHHmmss Z" expects a space before the timezone offset.
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    // Parse the string into a ZonedDateTime and convert to epoch milliseconds.
+    return ZonedDateTime.parse(this.trim(), formatter)
+        .toInstant().toEpochMilli()
+}
+
 
 fun calculateProgramWidth(startTime:String, endTime:String,widthPerBlock: Dp = 50.dp): Dp {
     val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
@@ -470,4 +479,25 @@ fun String.decodeJwtToken(): String? {
         e.printStackTrace()
         null
     }
+}
+
+// Convert a date/time string to a formatted time "HH:mm:ss"
+fun String.toFormattedTime(): String {
+    val inputFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    val outputFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+    // Parse and then format the date/time
+    return ZonedDateTime.parse(this.trim(), inputFormatter)
+        .format(outputFormatter)
+}
+
+// Extension function to produce "HH:mm:ss-HH:mm:ss" from a start and an end time string.
+fun String.formatStartEndTime(endTime: String): String {
+    val startFormatted = this.toFormattedTime()
+    val endFormatted = endTime.toFormattedTime()
+    return "$startFormatted-$endFormatted"
+}
+
+fun Date.formatToCustom(): String {
+    val formatter = SimpleDateFormat("hh:mma | dd MMM", Locale.ENGLISH)
+    return formatter.format(this)
 }

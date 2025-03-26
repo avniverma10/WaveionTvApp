@@ -6,12 +6,16 @@ import android.content.ContentValues
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.applyAppGenre
+import com.example.tvapp.extensions.applyAppLanguage
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,6 +82,47 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         // Handle error state
                         // _errorLoadingData.value = response.error.message
                         logReport("EPGResponse:${ response.error.message}")
+
+                    }
+                }
+            }
+            _isInitializeData.value = true
+        }
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.provideWTVGenreData(genreUrl = "https://nextwave.waveiontechnologies.com:5000/api/genres/").collect{response ->
+                when (response) {
+                    is WTVListResponse.Success -> {
+                        var genreList = arrayListOf<WTVGenre>()
+                        genreList.add(WTVGenre(name = "All"))
+                        genreList.addAll(response.data)
+                        // Handle successful response
+                        application.applicationContext.applyAppGenre(genreList)
+                        logReport("applyAppGenre:${ response.data}")
+
+                    }
+                    is WTVListResponse.Failure -> {
+                        // Handle error state
+                        // _errorLoadingData.value = response.error.message
+                        logReport("applyAppGenre:${ response.error.message}")
+
+                    }
+                }
+            }
+            _isInitializeData.value = true
+        }
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.provideWTVLanguageData(languageUrl = "https://nextwave.waveiontechnologies.com:5000/api/genres/").collect{response ->
+                when (response) {
+                    is WTVListResponse.Success -> {
+                        // Handle successful response
+                        application.applicationContext.applyAppLanguage(response.data)
+                        logReport("applyAppLanguage:${ response.data}")
+
+                    }
+                    is WTVListResponse.Failure -> {
+                        // Handle error state
+                        // _errorLoadingData.value = response.error.message
+                        logReport("applyAppLanguage:${ response.error.message}")
 
                     }
                 }
