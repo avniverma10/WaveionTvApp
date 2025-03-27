@@ -55,62 +55,57 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
+fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
 
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories?: emptyList()) }
-    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab?: emptyList()) }
+    var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
+
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
     val showBanner = isBannerVisible(tabItems)
+
     val firstChannelFocusRequester = remember { FocusRequester() }
 
-    val genreSelectedIndex = remember { mutableStateOf(0) }
+    val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
+    val categoryFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
+    val languageFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
 
 
+    val genreSelectedIndex = remember { mutableStateOf(0) }
     var lastBackPressedTime by remember { mutableStateOf(0L) }
     var showExitDialog by remember { mutableStateOf(false) }
 
-    // Intercept back press on landing screen to show exit confirmation
     BackHandler {
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastBackPressedTime < 2000) {
-            // Double back press detected, show exit confirmation dialog
             showExitDialog = true
         } else {
-            // Update the time and prompt the user
             lastBackPressedTime = currentTime
             context.showToastS("Press back again to exit")
         }
     }
-
-    // Exit confirmation dialog
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
             title = { Text("Exit App") },
             text = { Text("Do you want to close the app?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        (context as? Activity)?.finish()
-                    }
-                ) {
-                    Text("Yes")
-                }
+                TextButton(onClick = { (context as? Activity)?.finish() }) { Text("Yes") }
             },
             dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) {
-                    Text("No")
-                }
+                TextButton(onClick = { showExitDialog = false }) { Text("No") }
             }
         )
     }
 
-    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) {
-        // Left Navigation Menu
-        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, selectedTabIndex ->
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF14161A))
+    ) {
+        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, _ ->
             menuItems = tabInfo.categories ?: emptyList()
         })
 
@@ -120,25 +115,42 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
                 .background(Color(0xFF161D25))
                 .zIndex(1f)
         ) {
-            // Top Banner
             if (showBanner) {
                 AdvertisementBanner(bannerList = bannerList)
             } else {
                 Log.i("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
             }
 
-            // Main content area
-            Column(modifier = Modifier.fillMaxSize()){
-                // Left Navigation Menu (optional duplicate, remove if ExpandableNavigationMenu is sufficient)
-                 CategoryMenu(sharedViewModel,genreSelectedIndex)
-                  LanguageMenu(sharedViewModel,languageSelectedIndex,firstChannelFocusRequester)
-                // EPG Content
-                EPGContent(sharedViewModel,firstChannelFocusRequester)
+            Column(modifier = Modifier.fillMaxSize()) {
+                CategoryMenu(
+                    sharedViewModel = sharedViewModel,
+                    selectedIndex = categorySelectedIndex,
+                    categoryFocusRequesters = categoryFocusRequesters,
+                    languageFocusRequesters = languageFocusRequesters
+                )
+
+                LanguageMenu(
+                    sharedViewModel = sharedViewModel,
+                    selectedIndex = languageSelectedIndex,
+                    firstChannelFocusRequester = firstChannelFocusRequester,
+                    languageFocusRequesters = languageFocusRequesters,
+                    categoryFocusRequesters = categoryFocusRequesters,
+                    categorySelectedIndex = categorySelectedIndex
+                )
+
+                EPGContent(
+                    sharedViewModel,
+                    firstChannelFocusRequester,
+                    languageFocusRequesters,
+                    languageSelectedIndex,
+                    categoryFocusRequesters,
+                    genreSelectedIndex
+                )
             }
         }
     }
-
 }
+
 
 
 fun isBannerVisible(tabsList: List<TabInfo>?): Boolean {
@@ -181,7 +193,6 @@ fun AdvertisementBanner(bannerList: List<Banner>) {
         val pagerState = rememberPagerState(initialPage = 0)
         val coroutineScope = rememberCoroutineScope()
 
-        // Auto-scroll every 3 seconds
         LaunchedEffect(pagerState) {
             while (true) {
                 delay(3000)
@@ -202,7 +213,6 @@ fun AdvertisementBanner(bannerList: List<Banner>) {
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { page ->
-                // Load the image from the URL using Coil's AsyncImage
                 AsyncImage(
                     model = bannerList[page].bannerUrl,
                     contentDescription = "Advertisement",
@@ -211,7 +221,6 @@ fun AdvertisementBanner(bannerList: List<Banner>) {
                 )
             }
 
-            // Left Button
             IconButton(
                 onClick = {
                     coroutineScope.launch {
@@ -230,7 +239,6 @@ fun AdvertisementBanner(bannerList: List<Banner>) {
                 )
             }
 
-            // Right Button
             IconButton(
                 onClick = {
                     coroutineScope.launch {

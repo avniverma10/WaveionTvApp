@@ -74,27 +74,25 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: FocusRequester) {
-
+fun EPGContent(
+    sharedViewModel: SharedViewModel,
+    firstChannelFocusRequester: FocusRequester,
+    languageFocusRequesters: MutableMap<Int, FocusRequester>,
+    languageSelectedIndex: MutableState<Int>,
+    categoryFocusRequesters: MutableMap<Int, FocusRequester>,
+    categorySelectedIndex: MutableState<Int>
+) {
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedVideoUrl.collectAsState()
 
-    // Update current time every second.
-    val currentTimeMillis = remember { mutableStateOf(parseFixedTime("20250208104600")) }
+    val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
 
     val wishlistPopupProgram by sharedViewModel.wishlistPopupProgram.collectAsState()
     val wishlistAlertProgram by sharedViewModel.wishlistAlertProgram.collectAsState()
     val channelMap = epgList.associateBy { it.channelId }
-
     val hasInitiallyFocused = remember { mutableStateOf(false) }
-
-    // Define a fixed width for the left panel that contains channel info.
-    // Adjust this value to the total width of all elements in your left panel.
     val leftPanelWidth = 160.dp
-//    val leftPanelWidth = 205.dp
 
-
-    // Update current time every second.
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
@@ -102,137 +100,95 @@ fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: Focu
         }
     }
 
-    // minutesPerPixel for program scrolling.
-    val minutesPerPixel = 2
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
+        val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+        val leftPanelWidthPx = with(LocalDensity.current) { leftPanelWidth.toPx() }
+        val timelineWidthPx = containerWidthPx - leftPanelWidthPx
+        val calendar = Calendar.getInstance().apply { timeInMillis = currentTimeMillis.value }
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        val minute = calendar.get(Calendar.MINUTE)
+        calendar.set(Calendar.MINUTE, if (minute < 30) 0 else 30)
+        val blockStartMillis = calendar.timeInMillis
+        val fraction = ((currentTimeMillis.value - blockStartMillis).coerceAtLeast(0).toFloat()) / (30 * 60 * 1000).toFloat()
+        val oneSlotWidthPx = timelineWidthPx / 5f
+        val indicatorOffsetPx = leftPanelWidthPx + fraction * oneSlotWidthPx
+        val indicatorOffsetDp = with(LocalDensity.current) { indicatorOffsetPx.toDp() }
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)) {
-        // Top row with "All" text and TimeHeader.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .background(Color(0xFF161D25)),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LeftPanelHeader(leftPanelWidth)
-            TimeHeader(0.dp)
-        }
-
-        // The BoxWithConstraints now uses the same leftPanelWidth.
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
-            val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
-            val leftPanelWidthPx = with(LocalDensity.current) { leftPanelWidth.toPx() }
-            val timelineWidthPx = containerWidthPx - leftPanelWidthPx
-
-            // Compute the start of the current 30-minute block.
-            val blockStartMillis = run {
-                val calendar = Calendar.getInstance().apply {
-                    timeInMillis = currentTimeMillis.value
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                    val minute = get(Calendar.MINUTE)
-                    set(Calendar.MINUTE, if (minute < 30) 0 else 30)
-                }
-                calendar.timeInMillis
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(Color(0xFF161D25)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LeftPanelHeader(leftPanelWidth)
+                TimeHeader(0.dp)
             }
-            // Fraction of the half‑hour that has elapsed.
-            val fraction = ((currentTimeMillis.value - blockStartMillis)
-                .coerceAtLeast(0)
-                .toFloat()) / (30 * 60 * 1000).toFloat()
-
-            // Assuming 5 time slots, calculate width per slot.
-            val oneSlotWidthPx = timelineWidthPx / 5f
-            val indicatorOffsetPx = leftPanelWidthPx + fraction * oneSlotWidthPx
-            val indicatorOffsetDp = with(LocalDensity.current) { indicatorOffsetPx.toDp() }
-
-            Column(modifier = Modifier.fillMaxSize()) {
-
-                // Horizontal divider under the header row.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Color(0xFF353C44))
-                )
-
-                // Channel list.
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
                 LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
-                    itemsIndexed(epgList) { channelIndex,channelData->
+                    itemsIndexed(epgList) { channelIndex, channelData ->
                         val isFirstChannel = (channelIndex == 0)
-                        val isLastChannel = (channelIndex == epgList.size-1)
+                        val isLastChannel = (channelIndex == epgList.size - 1)
                         Row(
                             modifier = Modifier
-                                .fillMaxWidth().background(color = Color(0xFF1A2124))
+                                .fillMaxWidth()
+                                .background(Color(0xFF1A2124))
                                 .height(70.dp)
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Left Panel: Channel info.
-                            // Pass channelData and a callback for video click.
-                            channelData.let { channel ->
-                                ChannelInfo(
-                                    leftPanelWidth = 180.dp,
-                                    channel = channel,
-                                    channelIndex = channelIndex,
-                                    isFirstChannel = isFirstChannel,
-                                    isLastChannel = isLastChannel,
-                                    onPlayClicked = { videoUrl ->
-                                       // val firstProgram = programs.firstOrNull()
-                                        //viewModel.onShowWishlistPopup()
-                                        sharedViewModel.onChannelVideoSelected(videoUrl,epgList[0].tv?.programme?.get(0))
-                                    },
-                                    hasInitiallyFocused = hasInitiallyFocused,
-                                    focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null // 👈 only for first
-                                )
-                            }
+                            ChannelInfo(
+                                leftPanelWidth = 180.dp,
+                                channel = channelData,
+                                channelIndex = channelIndex,
+                                isFirstChannel = isFirstChannel,
+                                isLastChannel = isLastChannel,
+                                onPlayClicked = { videoUrl ->
+                                    sharedViewModel.onChannelVideoSelected(videoUrl, epgList[0].tv?.programme?.get(0))
+                                },
+                                hasInitiallyFocused = hasInitiallyFocused,
+                                focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
+                                languageFocusRequesters = languageFocusRequesters,
+                                languageSelectedIndex = languageSelectedIndex,
+                                categoryFocusRequesters = categoryFocusRequesters,
+                                categorySelectedIndex = categorySelectedIndex
+                            )
 
-                            // Timeline area for program listings.
                             LazyRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(
-                                        start = maxOf(
-                                            0,
-                                            -((currentTimeMillis.value / 60000) % minutesPerPixel).toInt()
-                                        ).dp
+                                        start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
                                     )
                             ) {
                                 itemsIndexed(channelData.tv?.programme!!) { programIndex, program ->
-                                    val programWidth = calculateProgramWidth(program.startTime?:"0",program.endTime?:"0")
-
-
+                                    val programWidth = calculateProgramWidth(program.startTime ?: "0", program.endTime ?: "0")
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
-
                                     val isLastProgram = (programIndex == channelData.tv.programme.lastIndex)
                                     Box(
                                         modifier = Modifier
                                             .width(programWidth)
                                             .height(105.dp)
-                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp)) // **Rounded corners applied**
+                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp))
                                             .then(
                                                 if (isFocused.value)
-                                                    Modifier.border(1.dp, Color(0xFF49FEDD),shape = RoundedCornerShape(4.dp)).background(Color(0x1A49FEDD),shape = RoundedCornerShape(size = 4.dp))
+                                                    Modifier
+                                                        .border(1.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
+                                                        .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
                                                 else Modifier
                                             )
                                             .onFocusChanged { isFocused.value = it.isFocused }
                                             .focusRequester(focusRequester)
                                             .focusable()
-                                            // Intercept DPAD Right if it’s the last item and currently focused
                                             .onPreviewKeyEvent { keyEvent ->
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                                            // When DPAD center is pressed, use the video URL fetched from your API.
-                                                            sharedViewModel.onChannelVideoSelected(channelData.content?.videoUrl, program)
-                                                            Log.i("RISHI", "EPGContent: dpad center")
-                                                            val currentTime = currentTimeMillis.value
-                                                            val programStartMillis = program.startTime?.provideTimeInMillis()?:0L
-                                                            val programEndMillis = program.endTime?.provideTimeInMillis()?:0L
-
-                                                            // For testing, force one branch:
                                                             sharedViewModel.onChannelVideoSelected(channelData.content?.videoUrl, program)
                                                             true
                                                         }
@@ -246,7 +202,7 @@ fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: Focu
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = program.title?:"",
+                                            text = program.title ?: "",
                                             color = Color.White,
                                             fontSize = 15.sp,
                                             fontFamily = FontFamily(Font(R.font.figtree_light)),
@@ -254,7 +210,6 @@ fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: Focu
                                             textAlign = TextAlign.Center
                                         )
                                     }
-                                    // Vertical divider between programs.
                                     Box(
                                         modifier = Modifier
                                             .fillMaxHeight()
@@ -264,192 +219,125 @@ fun EPGContent(sharedViewModel: SharedViewModel,firstChannelFocusRequester: Focu
                                 }
                             }
                         }
-                        // Horizontal divider between channels.
-                        /*Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(Color(0xFF353C44))
-                        )*/
                     }
                 }
-            }
-            // Green progress indicator overlay.
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                // Vertical Progress Indicator
-                Box(
-                    modifier = Modifier
-                        .offset(x = indicatorOffsetDp) // Move dynamically based on time
-                        .shadow(elevation = 4.800000190734863.dp, spotColor = Color(0xFF49FEDD), ambientColor = Color(0xFF49FEDD))
-                        .fillMaxHeight()
-                        .width(1.dp) // Slightly thicker progress bar
-                        .background(Color(0xFF49FEDD)) // Green progress bar
-                )
-
-                // Outlined Circle with Image Inside
-                Box(
-                    modifier = Modifier
-                        .size(16.dp) // Size of the outlined circle
-                        .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp) // Positioning at top
-                ) {
-                    // Draw the outlined circle
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawCircle(
-                            color = Color(0xFF49FEDD), // Same color as progress bar
-                            style = Stroke(width = 1.dp.toPx()) // Stroke for outline effect
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = indicatorOffsetDp)
+                            .fillMaxHeight()
+                            .width(1.dp)
+                            .background(Color(0xFF49FEDD))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp)
+                    ) {
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            drawCircle(color = Color(0xFF49FEDD), style = Stroke(width = 1.dp.toPx()))
+                        }
+                        Image(
+                            painter = painterResource(id = R.drawable.vector_271),
+                            contentDescription = "Progress Indicator",
+                            modifier = Modifier.size(16.dp).align(Alignment.Center)
                         )
                     }
-
-                    // Place the Image Inside the Outlined Circle
-                    Image(
-                        painter = painterResource(id = R.drawable.vector_271), // Load from drawable
-                        contentDescription = "Progress Indicator",
-                        modifier = Modifier
-                            .size(16.dp) // Ensure it fits inside the circle
-                            .align(Alignment.Center) // Keep it centered
-                    )
                 }
             }
         }
-
     }
+
     if (selectedVideoUrl != null) {
         Dialog(
-            onDismissRequest = { sharedViewModel.onChannelVideoSelected(null,null) },
+            onDismissRequest = { sharedViewModel.onChannelVideoSelected(null, null) },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-            ) {
-                WTVVideoPlayer (
-                    initialVideoUrl = selectedVideoUrl?:"",
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                WTVVideoPlayer(
+                    initialVideoUrl = selectedVideoUrl ?: "",
                     allChannels = epgList,
-                    onVideoChange = {
-
-                        // Find the currently playing program based on the video URL
-                       /* val currentProgram = epgList
-                            .flatMap { channel -> filteredPrograms.filter { it.channelId == channel.id && channel.videoUrl == newVideoUrl } }
-                            .firstOrNull()
-                        sharedViewModel.onChannelVideoSelected(selectedVideoUrl,currentProgram)*/
-                    }
+                    onVideoChange = { /* Handle video change if necessary */ }
                 )
             }
         }
     }
-
     if (wishlistPopupProgram != null) {
         Dialog(onDismissRequest = { sharedViewModel.clearWishlistPopup() }) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)) {
-                // Retrieve channel name using channelMap if available
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
                 val channelName = channelMap[wishlistPopupProgram?.channelId]?.displayName ?: "Unknown Channel"
                 Column(modifier = Modifier.align(Alignment.Center)) {
                     Text(text = "Channel: $channelName", color = Color.White)
                     Text(text = "Start: ${wishlistPopupProgram!!.startTime}", color = Color.White)
                     Text(text = "End: ${wishlistPopupProgram!!.endTime}", color = Color.White)
-                    // Button to add to wishlist:
-                    Button(onClick = { sharedViewModel.addToWishlist(wishlistPopupProgram!!) }) {
-                        Text("Add to Wishlist")
-                    }
-                    Button(onClick = { sharedViewModel.clearWishlistPopup() }) {
-                        Text("Cancel")
-                    }
+                    Button(onClick = { sharedViewModel.addToWishlist(wishlistPopupProgram!!) }) { Text("Add to Wishlist") }
+                    Button(onClick = { sharedViewModel.clearWishlistPopup() }) { Text("Cancel") }
                 }
             }
         }
     }
     if (wishlistAlertProgram != null) {
         Dialog(onDismissRequest = { sharedViewModel.clearWishlistAlert() }) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
                 val channelName = channelMap[wishlistAlertProgram?.channelId]?.displayName ?: "Unknown Channel"
                 Column(modifier = Modifier.align(Alignment.Center)) {
                     Text(text = "Your wishlist event is starting", color = Color.White)
                     Text(text = "Channel: $channelName", color = Color.White)
                     Text(text = "Start: ${wishlistAlertProgram?.startTime}", color = Color.White)
                     Text(text = "End: ${wishlistAlertProgram?.endTime}", color = Color.White)
-                    // Button to play:
                     Button(onClick = {
                         sharedViewModel.onChannelVideoSelected(channelMap[wishlistAlertProgram?.channelId]?.content?.videoUrl, program = null)
                         sharedViewModel.clearWishlistAlert()
-                    }) {
-                        Text("Play")
-                    }
-                    Button(onClick = { sharedViewModel.clearWishlistAlert() }) {
-                        Text("Cancel")
-                    }
+                    }) { Text("Play") }
+                    Button(onClick = { sharedViewModel.clearWishlistAlert() }) { Text("Cancel") }
                 }
             }
         }
     }
-
-
 }
 
 @Composable
 fun LeftPanelHeader(width: Dp) {
     val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
-
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000) // Update time every second
+            delay(1000)
             currentTime.value = System.currentTimeMillis()
         }
     }
-
     val formattedTime = remember(currentTime.value) {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = currentTime.value
-        val sdf = SimpleDateFormat("hh:mma", Locale.US) // 12-hour format with AM/PM
+        val calendar = Calendar.getInstance().apply { timeInMillis = currentTime.value }
+        val sdf = SimpleDateFormat("hh:mma", Locale.US)
         sdf.format(calendar.time)
     }
-
     Row(
         modifier = Modifier
             .width(width)
             .background(Color(0xFF161D25))
             .padding(start = 35.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End // Moves content to the right
-
+        horizontalArrangement = Arrangement.End
     ) {
-
         Row(
-            modifier = Modifier
-                .width(width)
-                .padding(start = 16.dp, end = 16.dp),
+            modifier = Modifier.width(width).padding(start = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween // Keep the layout balanced
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // **Logo from Drawable**
             Image(
-                painter = painterResource(id = R.drawable.vector_271), // Replace with actual drawable name
+                painter = painterResource(id = R.drawable.vector_271),
                 contentDescription = "",
-                modifier = Modifier
-                    .size(16.dp) // Adjust size as needed
+                modifier = Modifier.size(16.dp)
             )
             Text(
                 text = formattedTime,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.width(150.dp) , // Fixed width for uniform spacing
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    lineHeight = 28.01.sp,
-                    fontFamily = FontFamily(Font(R.font.figtree_light)),
-                    fontWeight = FontWeight(600),
-                    color = Color(0xFFB5B5B5),)
+                modifier = Modifier.width(150.dp),
+                style = TextStyle(fontSize = 16.sp, lineHeight = 28.01.sp, fontFamily = FontFamily(Font(R.font.figtree_light)), fontWeight = FontWeight(600), color = Color(0xFFB5B5B5))
             )
             Spacer(modifier = Modifier.width(14.dp))
         }
     }
 }
-
 
 @Composable
 fun ChannelInfo(
@@ -460,11 +348,14 @@ fun ChannelInfo(
     isLastChannel: Boolean,
     onPlayClicked: (String?) -> Unit,
     hasInitiallyFocused: MutableState<Boolean>,
-    focusRequester: FocusRequester? = null
+    focusRequester: FocusRequester? = null,
+    languageFocusRequesters: Map<Int, FocusRequester>,
+    languageSelectedIndex: MutableState<Int>,
+    categoryFocusRequesters: Map<Int, FocusRequester>,
+    categorySelectedIndex: MutableState<Int>
 ) {
     val actualFocusRequester = focusRequester ?: remember { FocusRequester() }
     val isFocused = remember { mutableStateOf(false) }
-
     Row(
         modifier = Modifier
             .width(leftPanelWidth)
@@ -475,6 +366,12 @@ fun ChannelInfo(
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                             onPlayClicked(channel.content?.videoUrl)
                             true
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (isFirstChannel) {
+                                languageFocusRequesters[languageSelectedIndex.value]?.requestFocus()
+                                true
+                            } else false
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> isLastChannel
                         else -> false
@@ -497,7 +394,6 @@ fun ChannelInfo(
                 textAlign = TextAlign.Center
             )
         }
-
         Box(
             modifier = Modifier
                 .width(120.dp)
@@ -513,20 +409,19 @@ fun ChannelInfo(
                 .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }
         ) {
-
             if (channelIndex == 0 && !hasInitiallyFocused.value) {
                 LaunchedEffect(Unit) {
                     actualFocusRequester.requestFocus()
                     hasInitiallyFocused.value = true
                 }
             }
-
             AsyncImage(
                 model = channel.content?.thumbnailUrl,
                 contentDescription = "Channel Logo",
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(4.dp)).padding(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .padding(8.dp)
                     .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
                 contentScale = ContentScale.Fit
             )

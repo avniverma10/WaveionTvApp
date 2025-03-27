@@ -33,6 +33,7 @@ navigation_compose_v = "2.8.6"
 threetenabp_v = "1.4.8"
 splash_v = "1.0.1"
 sdp_android_v = "1.1.0"
+runtimeLivedata = "1.7.8"
 
 
 
@@ -97,6 +98,7 @@ zxing-embedded = { module = "com.journeyapps:zxing-android-embedded", version.re
 jakewharton-threetenab = { module = "com.jakewharton.threetenabp:threetenabp", version.ref = "threetenabp_v" }
 sdp-intuit = { module = "com.intuit.sdp:sdp-android", version.ref = "sdp_android_v" }
 ssp-intuit = { module = "com.intuit.ssp:ssp-android", version.ref = "sdp_android_v" }
+androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
