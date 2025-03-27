@@ -65,6 +65,10 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
     val showBanner = isBannerVisible(tabItems)
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    val genreSelectedIndex = remember { mutableStateOf(0) }
+    val languageSelectedIndex = remember { mutableStateOf(0) }
+
+
     var lastBackPressedTime by remember { mutableStateOf(0L) }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -126,8 +130,8 @@ fun EPGScreen(navController:NavController,sharedViewModel: SharedViewModel) {
             // Main content area
             Column(modifier = Modifier.fillMaxSize()){
                 // Left Navigation Menu (optional duplicate, remove if ExpandableNavigationMenu is sufficient)
-                 CategoryMenu(sharedViewModel,firstChannelFocusRequester)
-                  LanguageMenu(sharedViewModel)
+                 CategoryMenu(sharedViewModel,genreSelectedIndex)
+                  LanguageMenu(sharedViewModel,languageSelectedIndex,firstChannelFocusRequester)
                 // EPG Content
                 EPGContent(sharedViewModel,firstChannelFocusRequester)
             }

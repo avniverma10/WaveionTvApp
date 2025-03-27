@@ -53,6 +53,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val epgChannels by sharedViewModel.epgChannels.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
 
+
     BackHandler {
         navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
@@ -126,7 +127,11 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
             items(channels) { channel ->
                 ChannelBox(channel = channel) { videoUrl ->
                     val encodedUrl = URLEncoder.encode(videoUrl, StandardCharsets.UTF_8.toString())
-                    navController.navigate("homeplayer/$encodedUrl")
+                    navController.navigate(
+                        "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
+                                "?categoryIds=${channels.joinToString(",") { it._id ?: "" }}"
+                    )
+
                 }
             }
         }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -45,7 +46,7 @@ import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.model.data.language.WTVLanguage
 
 @Composable
-fun LanguageMenu(sharedViewModel: SharedViewModel) {
+fun LanguageMenu(sharedViewModel: SharedViewModel,selectedIndex: MutableState<Int>,firstChannelFocusRequester:FocusRequester) {
     val appLanguageData by sharedViewModel
         .provideApplicationContext()
         .appLanguageLiveData()
@@ -55,27 +56,23 @@ fun LanguageMenu(sharedViewModel: SharedViewModel) {
 
     val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
 
-    // State for the selected index (if needed for UI highlighting).
-    val selectedIndex = remember { mutableStateOf(0) }
-
-    // Build the UI for the language menu.
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
             .height(45.dp),
-//            .focusRequester(languageMenuFocusRequester),
         contentPadding = PaddingValues(start = 25.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         itemsIndexed(allLanguageItems) { index, item ->
             val focusRequester = remember { FocusRequester() }
+            val isSelected = selectedIndex.value == index
             val isFocused = remember { mutableStateOf(false) }
 
             Box(
                 modifier = Modifier
                     .then(
-                        if (isFocused.value)
+                        if (isFocused.value || isSelected)
                             Modifier
                                 .border(
                                     1.dp,
@@ -99,6 +96,16 @@ fun LanguageMenu(sharedViewModel: SharedViewModel) {
                     }
                     .focusRequester(focusRequester)
                     .focusable()
+                    .onPreviewKeyEvent { keyEvent ->
+                        if (keyEvent.type == KeyEventType.KeyDown &&
+                            keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                        ) {
+                            if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
+                                firstChannelFocusRequester.requestFocus()
+                            }
+                            true
+                        } else false
+                    }
                     .padding(horizontal = 6.dp)
                     .padding(horizontal = 20.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center

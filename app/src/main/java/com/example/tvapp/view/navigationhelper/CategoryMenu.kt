@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,7 @@ import com.example.tvapp.model.data.genre.WTVGenre
 @Composable
 fun CategoryMenu(
     sharedViewModel: SharedViewModel,
-    firstChannelFocusRequester: FocusRequester
+    selectedIndex: MutableState<Int>
 ) {
     val appGenreData by sharedViewModel
         .provideApplicationContext()
@@ -51,7 +52,6 @@ fun CategoryMenu(
 
     val menuItems: List<WTVGenre> = appGenreData
 
-    val selectedIndex = remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -67,13 +67,14 @@ fun CategoryMenu(
             itemsIndexed(menuItems) { index, item ->
                 val focusRequester = remember { FocusRequester() }
                 val isFocused = remember { mutableStateOf(false) }
+                val isSelected = selectedIndex.value == index
 
                 Box(
                     modifier = Modifier
                         .width(120.dp)
                         .height(80.dp)
                         .then(
-                            if (isFocused.value)
+                            if (isFocused.value || isSelected)
                                 Modifier
                                     .border(1.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(4.dp))
                                     .background(Color(0x1A49FEDD), shape = RoundedCornerShape(4.dp))
@@ -93,10 +94,7 @@ fun CategoryMenu(
                             if (keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                             ) {
-                                if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
-                                    firstChannelFocusRequester.requestFocus()
-                                }
-                                true
+                                false
                             } else false
                         }
                         .padding(horizontal = 20.dp, vertical = 30.dp),

@@ -77,6 +77,8 @@ open class SharedViewModel @Inject constructor(
     val epgDataFlow = observeEPGChanges(application).stateIn(
         viewModelScope, SharingStarted.Lazily, emptyList()
     )
+    private var selectedGenre: String? = "All"
+    private var selectedLanguage: String? = "All"
 
     init {
         // Fetch banners from API
@@ -238,28 +240,30 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun filterChannelsByGenre(genre: String) {
-        if (genre.equals("All", ignoreCase = true)) {
-            _filteredEPGList.value = epgDataFlow.value
-        } else {
-            _filteredEPGList.value = epgDataFlow.value.filter { epgItem ->
-                Log.d("SharedViewModel", "Genres: ${epgItem.content?.genre}")
-                (epgItem.content?.genre?.any { (it as? String)?.equals(genre, ignoreCase = true) == true } ?: false)
-
-            }
-        }
+        selectedGenre = genre
+        applyFilters()
     }
+
     fun filterChannelsByLanguage(language: String) {
-        if (language.equals("All", ignoreCase = true)) {
-            _filteredEPGList.value = epgDataFlow.value
-        } else {
-            _filteredEPGList.value = epgDataFlow.value.filter { epgItem ->
-                Log.d("SharedViewModel", "Languages: ${epgItem.content?.language}")
-                epgItem.content?.language?.equals(language, ignoreCase = true) ?: false
-            }
-        }
+        selectedLanguage = language
+        applyFilters()
     }
 
+    private fun applyFilters() {
+        val fullList = epgDataFlow.value
 
+        val filtered = fullList.filter { epgItem ->
+            val genreMatch = selectedGenre.equals("All", true) ||
+                    (epgItem.content?.genre?.any { (it as? String)?.equals(selectedGenre, true) == true } == true)
+
+            val languageMatch = selectedLanguage.equals("All", true) ||
+                    epgItem.content?.language?.equals(selectedLanguage, true) == true
+
+            genreMatch && languageMatch
+        }
+
+        _filteredEPGList.value = filtered
+    }
 
 
 

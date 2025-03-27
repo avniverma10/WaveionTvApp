@@ -169,12 +169,12 @@ fun HomePlayerScreen(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
-//                            playNextChannel()
+                            playNextChannel()
                             showOverlay()
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-//                            playPreviousChannel()
+                            playPreviousChannel()
                             showOverlay()
                             true
                         }

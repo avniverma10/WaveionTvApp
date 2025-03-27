@@ -18,11 +18,13 @@ import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayer
+import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
 import com.example.tvapp.view.login.LoginScreen1
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLDecoder
+import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 
@@ -59,12 +61,29 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         composable(Destination.searchScreen) {
             SearchScreen(navController,sharedViewModel)
         }
+
         composable(
-            route = Destination.playerScreen +"/{videoUrl}",
-            arguments = listOf(navArgument("videoUrl") { type = NavType.StringType })
+            route =  Destination.playerScreen +"/{videoUrl}?categoryIds={categoryIds}",
+            arguments = listOf(
+                navArgument("videoUrl") { type = NavType.StringType },
+                navArgument("categoryIds") { type = NavType.StringType; defaultValue = "" }
+            )
         ) { backStackEntry ->
             val videoUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
-            HomePlayer(navController, videoUrl)
+            val categoryIds = backStackEntry.arguments?.getString("categoryIds")?.split(",") ?: emptyList()
+            val filteredEPGList = sharedViewModel.filteredEPGList.collectAsState().value
+            val categoryEPGItems = filteredEPGList.filter { categoryIds.contains(it.channelId ?: "") }
+
+            HomePlayerScreen(
+                initialVideoUrl = videoUrl,
+                allChannels = categoryEPGItems,
+                onBack = { navController.popBackStack() },
+                onVideoChange = { newUrl ->
+                    navController.navigate("homeplayer/${URLEncoder.encode(newUrl, StandardCharsets.UTF_8.toString())}?categoryIds=${categoryIds.joinToString(",")}") {
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
         composable(Destination.homeScreen) {
