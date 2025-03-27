@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.applyAppGenre
+import com.example.tvapp.extensions.applyAppHome
 import com.example.tvapp.extensions.applyAppLanguage
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.logReport
@@ -17,6 +18,7 @@ import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -133,6 +135,26 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }
             _isInitializeData.value = true
         }
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.provideWTVHomeData(homeUrl = "https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory").collect{response ->
+                when (response) {
+                    is WTVListResponse.Success -> {
+                        // Handle successful response
+                        application.applicationContext.applyAppHome(response.data)
+                        logReport("applyAppLanguage:${ response.data}")
+
+                    }
+                    is WTVListResponse.Failure -> {
+                        // Handle error state
+                        // _errorLoadingData.value = response.error.message
+                        logReport("applyAppLanguage:${ response.error.message}")
+
+                    }
+                }
+            }
+            _isInitializeData.value = true
+        }
+
     }
 
     suspend fun saveEPGList(context: Context, epgList: List<EPGDataItem>) {

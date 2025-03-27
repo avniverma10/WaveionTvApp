@@ -6,6 +6,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
+import com.example.tvapp.model.home.WTVHomeCategory
 
 @Keep
 interface CoreComponentProvider {
@@ -17,4 +18,6 @@ interface CoreComponentProvider {
     fun initializeGenre(data: List<WTVGenre>)
     fun provideLanguageLiveData(): LiveData<List<WTVLanguage>>
     fun initializeLanguage(data: List<WTVLanguage>)
+    fun provideHomeLiveData(): LiveData<List<WTVHomeCategory>>
+    fun initializeHome(data: List<WTVHomeCategory>)
 }

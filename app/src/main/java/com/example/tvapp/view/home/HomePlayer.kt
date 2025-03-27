@@ -1,58 +1,49 @@
 package com.example.tvapp.view.home
 
-
-import android.net.Uri
-import android.view.LayoutInflater
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.compose.ui.viewinterop.AndroidView
-import com.example.tvapp.R
-
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
+import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.viewmodels.WTVPlayerViewModel
 
 @Composable
-fun HomePlayer(navController: NavController, videoUrl: String) {
-    val context = LocalContext.current
+fun HomePlayer(
+    navController: NavController,
+    videoUrl: String,
+    sharedViewModel: SharedViewModel = hiltViewModel(),
+    wtvPlayerViewModel: WTVPlayerViewModel = hiltViewModel()
+) {
+    val epgDataItems by sharedViewModel.filteredEPGList.collectAsState()
 
-    // Decode the URL before passing it to ExoPlayer
-    val decodedUrl = URLDecoder.decode(videoUrl, StandardCharsets.UTF_8.toString())
-
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(Uri.parse(decodedUrl)))
-            prepare()
-            playWhenReady = true
-        }
-    }
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        AndroidView(
-            factory = { ctx ->
-                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                val playerView = view.findViewById<androidx.media3.ui.PlayerView>(R.id.player_view)
-
-                playerView.player = exoPlayer
-                playerView.useController = true
-                playerView.keepScreenOn = true  // Prevent TV from sleeping
-
-                view
+    if (epgDataItems.isNotEmpty()) {
+        HomePlayerScreen(
+            initialVideoUrl = videoUrl,
+            allChannels = epgDataItems,
+            onBack = { navController.popBackStack() },
+            onVideoChange = { newUrl ->
+                navController.navigate("homeplayer/${newUrl}") {
+                    launchSingleTop = true
+                }
             },
-            modifier = Modifier.fillMaxSize()
+            wtvPlayerViewModel = wtvPlayerViewModel
         )
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.release()
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = Color.White)
         }
     }
 }
-

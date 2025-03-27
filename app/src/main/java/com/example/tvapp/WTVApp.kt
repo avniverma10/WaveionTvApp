@@ -8,6 +8,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
+import com.example.tvapp.model.home.WTVHomeCategory
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -16,6 +17,7 @@ class WTVApp : Application(), CoreComponentProvider{
     private var wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
     private var wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
     private var wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
+    private var wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
 
     override fun onCreate() {
         super.onCreate()
@@ -46,4 +48,9 @@ class WTVApp : Application(), CoreComponentProvider{
         this.wtvLanguage.postValue(data)
     }
 
+    override fun provideHomeLiveData(): LiveData<List<WTVHomeCategory>>  = wtvHome
+
+    override fun initializeHome(data: List<WTVHomeCategory>) {
+        this.wtvHome.postValue(data)
+    }
 }

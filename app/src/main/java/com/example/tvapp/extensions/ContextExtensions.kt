@@ -14,6 +14,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
+import com.example.tvapp.model.home.WTVHomeCategory
 
 
 fun Context.coreEPGLiveData() =
@@ -40,6 +41,15 @@ fun Context.appGenreLiveData() =
 
 fun Context.applyAppGenre(data: List<WTVGenre>) =
     (applicationContext as? CoreComponentProvider)?.initializeGenre(data)
+
+
+fun Context.appHomeLiveData() =
+    (applicationContext as? CoreComponentProvider)?.provideHomeLiveData()
+        ?: throw IllegalStateException("Manifest is null: $applicationContext")
+
+
+fun Context.applyAppHome(data: List<WTVHomeCategory>) =
+    (applicationContext as? CoreComponentProvider)?.initializeHome(data)
 
 
 fun Context.appLanguageLiveData() =

@@ -63,14 +63,14 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             route = Destination.playerScreen +"/{videoUrl}",
             arguments = listOf(navArgument("videoUrl") { type = NavType.StringType })
         ) { backStackEntry ->
-            val encodedUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
-            val videoUrl = URLDecoder.decode(encodedUrl, StandardCharsets.UTF_8.toString())
+            val videoUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
             HomePlayer(navController, videoUrl)
         }
 
         composable(Destination.homeScreen) {
             HomeScreen(navController,sharedViewModel)
         }
+
     }
 
 }

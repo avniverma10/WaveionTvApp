@@ -1,21 +1,24 @@
 package com.example.tvapp.view.home
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.*
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -25,17 +28,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
+import coil3.compose.AsyncImage
 import com.example.tvapp.R
+import com.example.tvapp.extensions.appHomeLiveData
+import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 @Composable
-fun HomeScreen(navController: NavController,sharedViewModel:SharedViewModel) {
+fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+    // Observe your dynamic home categories and EPG channels (like in your first home screen)
+    val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
+    val epgChannels by sharedViewModel.epgChannels.collectAsState()
 
+    // Back handler: navigate to EPG screen when back is pressed.
     BackHandler {
         navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
@@ -43,42 +53,143 @@ fun HomeScreen(navController: NavController,sharedViewModel:SharedViewModel) {
         }
     }
 
+    // (Optional) Keep your static banner list for the Hero Carousel.
+    // You could also choose to make this dynamic if needed.
     val bannerList = listOf(
-        Banner(R.drawable.banner4, "Zee News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.banner5, "AajTak", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.dd, "News18", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        Banner(R.drawable.banner15, "Star News", "Watch the latest breaking news", "Watch Now","https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-
+        Banner(R.drawable.banner4, "Zee News", "Watch the latest breaking news", "Watch Now",
+            "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.banner5, "AajTak", "Watch the latest breaking news", "Watch Now",
+            "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.dd, "News18", "Watch the latest breaking news", "Watch Now",
+            "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
+        Banner(R.drawable.banner15, "Star News", "Watch the latest breaking news", "Watch Now",
+            "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8")
     )
 
-    val staticHomeContent = listOf(
-        HomeContent("Avatar", R.drawable.news3, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("The Rings of Power", R.drawable.news5, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("Squid Game 2", R.drawable.news6, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("Superhero India", R.drawable.news7, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("Movie X", R.drawable.news9, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("TV Show Y", R.drawable.news10, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("Squid Game", R.drawable.news1, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("Avatar", R.drawable.news3, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-        HomeContent("The Rings of Power", R.drawable.news5, "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"),
-    )
-
-    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) {
-        // Left Side: Expandable Navigation Menu
-        // Left Navigation Menu
-        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, selectedTabIndex ->
-            //menuItems = tabInfo.categories ?: emptyList()
-        })
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF14161A))
+    ) {
+        // Left Navigation Menu (kept from your second layout)
+        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item { HeroCarousel(bannerList, navController) }
-        item { CategorySection("Continue Watching", staticHomeContent, navController) }
-        item { CategorySection("Trending", staticHomeContent, navController) }
-        item { CategorySection("TV Shows", staticHomeContent, navController) }
-        item { CategorySection("Movies", staticHomeContent, navController) }
-    }
+            // Hero carousel at the top
+            item {
+                HeroCarousel(bannerList = bannerList, navController = navController)
+            }
+            // For each dynamic category, map the channels and display a section.
+            items(homeCategories) { category ->
+                // Map channel IDs from the category to detailed Channel objects from epgChannels.
+                val channelsForCategory = category.channels.mapNotNull { channelId ->
+                    epgChannels.find { it._id?.equals(channelId, ignoreCase = true) == true }
+                }
+                if (channelsForCategory.isNotEmpty()) {
+                    CategorySectionDynamic(
+                        title = category.name,
+                        channels = channelsForCategory,
+                        navController = navController
+                    )
+                }
+            }
         }
+    }
 }
+
+// A composable for displaying a category section using dynamic channel data.
+@Composable
+fun CategorySectionDynamic(title: String, channels: List<Channel>, navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF14161A))
+            .padding(vertical = 10.dp)
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 16.dp, bottom = 5.dp),
+            style = TextStyle(
+                fontSize = 22.sp,
+                fontFamily = FontFamily(Font(R.font.figtree_light)),
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        )
+        LazyRow(
+//            modifier = Modifier
+////                .padding(start = 8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(channels) { channel ->
+                // Reuse your ChannelCard from the first home screen for each channel.
+                ChannelBox(channel = channel) { videoUrl ->
+                    Log.d("AVNIV","VideoUrl --->$videoUrl")
+                    val encodedUrl = URLEncoder.encode(videoUrl, StandardCharsets.UTF_8.toString())
+                    navController.navigate("homeplayer/$encodedUrl")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
+    // Track whether this box is currently focused
+    var isFocused by remember { mutableStateOf(false) }
+
+    // Animate scale when focused/unfocused
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.1f else 1f,
+        animationSpec = tween(durationMillis = 150)
+    )
+
+    Box(
+        modifier = Modifier
+            .width(140.dp)
+            // Apply the scale animation
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            // Detect focus changes
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            }
+            // Make this composable focusable
+            .focusable()
+            // Rounded corners
+            .clip(RoundedCornerShape(8.dp))
+            // Background color (could be Color.Transparent if you prefer)
+            .background(Color.Black)
+            // Show border only when focused
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
+                shape = RoundedCornerShape(2.dp)
+            )
+            // Clickable logic
+            .clickable {
+                channel.videoUrl?.let { onChannelClick(it) }
+            }
+    ) {
+        // Only show the channel logo
+        AsyncImage(
+            model = channel.logoUrl,
+            contentDescription = channel.displayName,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp).padding(8.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+
+
+
+// Hero Carousel from your second home screen.
 @Composable
 fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
     var selectedIndex by remember { mutableStateOf(0) }
@@ -94,7 +205,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
         )
     )
 
-    // Auto-scroll logic for Hero Carousel
+    // Auto-scroll logic for the hero carousel.
     LaunchedEffect(bannerList) {
         while (true) {
             delay(5000)
@@ -129,8 +240,8 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                 style = TextStyle(
                     fontSize = 35.sp,
                     fontFamily = FontFamily(Font(R.font.figtree_medium)),
-                    fontWeight = FontWeight(700),
-                    color = Color(0xFFFFFFFF)
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 ),
                 modifier = Modifier.padding(8.dp)
             )
@@ -140,7 +251,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                 style = TextStyle(
                     fontSize = 16.sp,
                     fontFamily = FontFamily(Font(R.font.figtree_light)),
-                    fontWeight = FontWeight(600),
+                    fontWeight = FontWeight.SemiBold,
                 ),
                 color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.padding(8.dp)
@@ -149,9 +260,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Button(
-                onClick = {
-                    navController.navigate("homeplayer/$encodedUrl")
-                },
+                onClick = { navController.navigate("homeplayer/$encodedUrl") },
                 modifier = Modifier
                     .padding(8.dp)
                     .onFocusChanged { isButtonFocused = it.isFocused }
@@ -170,15 +279,15 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                     style = TextStyle(
                         fontSize = 18.sp,
                         fontFamily = FontFamily(Font(R.font.figtree_light)),
-                        fontWeight = FontWeight(600),
-                        color = Color(0xFF000000),
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black,
                     )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.play), // Load the icon
+                    painter = painterResource(id = R.drawable.play),
                     contentDescription = "Play Icon",
-                    modifier = Modifier.size(18.dp) // Adjust icon size
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -203,83 +312,11 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
     }
 }
 
-
-
-@Composable
-fun VideoThumbnail(content: HomeContent, onVideoClick: (String) -> Unit) {
-    var isFocused by remember { mutableStateOf(false) }
-    val animatedSize by animateDpAsState(if (isFocused) 200.dp else 180.dp, animationSpec = tween(150))
-
-    Column(
-        modifier = Modifier
-            .padding(4.dp)
-            .width(animatedSize)
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .clickable { val encodedUrl = URLEncoder.encode(content.videoUrl, StandardCharsets.UTF_8.toString())
-                onVideoClick(encodedUrl)  },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = content.videoResId),
-            contentDescription = content.title,
-            modifier = Modifier
-                .width(animatedSize)
-                .height(animatedSize * 0.6f)
-                .clip(RoundedCornerShape(8.dp))
-                .border(
-                    if (isFocused) 2.dp else 0.dp,
-                    if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
-                    shape = RoundedCornerShape(4.dp),
-                ),
-            contentScale = ContentScale.Crop
-        )
-    }
-}
-
-@Composable
-fun CategorySection(title: String, contentList: List<HomeContent>, navController: NavController) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF14161A))
-            .padding(vertical = 10.dp)
-    ) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(start = 16.dp, bottom = 5.dp),
-            style = TextStyle(
-                fontSize = 22.sp,
-                fontFamily = FontFamily(Font(R.font.figtree_light)),
-                fontWeight = FontWeight(600),
-                color = Color.White,
-            )
-        )
-
-        LazyRow(
-            modifier = Modifier.padding(start = 16.dp)
-        ) {
-            itemsIndexed(contentList) { _, content ->
-                VideoThumbnail(content) { videoUrl ->
-                    navController.navigate("homeplayer/$videoUrl") // Pass encoded URL
-                }
-            }
-        }
-    }
-}
-
-
-// Data Classes
+// Data classes remain the same.
 data class Banner(
     val bannerResId: Int,
     val title: String,
     val description: String,
     val buttonText: String,
-    val videoUrl: String
-)
-
-data class HomeContent(
-    val title: String,
-    val videoResId: Int,
     val videoUrl: String
 )

@@ -13,6 +13,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
+import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.example.tvapp.utils.sealed.LoginResponse
 import com.google.gson.reflect.TypeToken
@@ -90,6 +91,21 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
+    suspend fun provideWTVHomeData(homeUrl: String): Flow<WTVListResponse<WTVHomeCategory>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpGetRequest(homeUrl).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val epgData: List<WTVHomeCategory>? = response.body()?.toJSONArray().toString()
+                    .convertIntoModels(object : TypeToken<List<WTVHomeCategory>>() {})
+                // Optionally save EPG data into ContentProvider or DB here
+                emit(WTVListResponse.Success(epgData!!))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
 
     suspend fun getBanners(bannerUrl: String): Flow<WTVListResponse<Banner>> = flow {
         try {
