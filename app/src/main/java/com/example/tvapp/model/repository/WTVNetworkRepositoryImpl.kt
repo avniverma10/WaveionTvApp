@@ -1,5 +1,6 @@
 package com.example.tvapp.model.repository
 
+import android.util.Log
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
@@ -21,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
@@ -111,7 +113,7 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         try {
             val response = networkApiCallInterface.makeHttpGetRequest(bannerUrl).execute()
             if (response.isSuccessful && response.body() != null) {
-                val banners = response.body()?.toString()?.convertIntoModels(object : TypeToken<List<Banner>>() {})
+                val banners = response.body()?.toJSONArray()?.toString()?.convertIntoModels(object : TypeToken<List<Banner>>() {})
                 banners?.let { data ->
                     emit(WTVListResponse.Success(data))
                 } ?: emit(WTVListResponse.Failure(Throwable("Parsing error: data is null")))
@@ -121,7 +123,7 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         } catch (e: Exception) {
             emit(WTVListResponse.Failure(e))
         }
-    }
+    }.flowOn(Dispatchers.IO)
 
 
     suspend fun provideHomeContent(homeContentUrl:String): Flow<List<HomeData>> = flow {
