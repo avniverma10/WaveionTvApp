@@ -114,7 +114,7 @@ fun ExpandableNavigationMenu(
     ) {
         Column(
             modifier = Modifier
-                .width(if (expanded) 180.dp else 60.dp)
+                .width(if (expanded) 199.dp else 70.dp)
                 .fillMaxHeight()
                 .animateContentSize()
                 .focusable()
@@ -147,9 +147,9 @@ fun ExpandableNavigationMenu(
                 AsyncImage(
                     model = profileTab?.iconUrl ?: "",
                     contentDescription = profileTab?.displayName ?: "Profile",
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(32.dp),
                     colorFilter = if (selectedIndex == 0) {
-                        androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF1D7373))
+                        androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
                     } else {
                         null
                     }
@@ -164,7 +164,7 @@ fun ExpandableNavigationMenu(
                 }
             }
 
-            Spacer(modifier = Modifier.height(67.dp))
+            Spacer(modifier = Modifier.height(60.dp))
 
             otherTabs.forEachIndexed { index, tab ->
                 val isFirstItem = index == 0
@@ -196,7 +196,7 @@ fun ExpandableNavigationMenu(
                     AsyncImage(
                         model = tab.iconUrl,
                         contentDescription = tab.displayName,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(32.dp),
                         colorFilter = if (selectedIndex == index + 1) {
                             androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
                         } else {
@@ -268,7 +268,7 @@ fun FocusableRow(
             }
             .background(if (selected && expanded) Color.White.copy(alpha = 0.2f) else Color.Transparent)
             .border(
-                width = if (selected && expanded) 1.dp else 0.dp,
+                width = if (selected && expanded) 2.dp else 0.dp,
                 color = if (selected && expanded) Color(0xFF49FEDD) else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )

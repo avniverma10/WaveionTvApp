@@ -95,7 +95,6 @@ fun ChannelScreen(
                     selectedIndex = languageSelectedIndex,
                     firstChannelFocusRequester = firstChannelFocusRequester,
                     languageFocusRequesters = languageFocusRequesters,
-
                     categoryFocusRequesters = categoryFocusRequesters,
                     categorySelectedIndex = categorySelectedIndex
                 )
