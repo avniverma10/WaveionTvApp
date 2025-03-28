@@ -250,11 +250,11 @@ open class SharedViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
-        val fullList = epgDataFlow.value
+        val fullList = epgDataFlow.value ?: emptyList()
 
         val filtered = fullList.filter { epgItem ->
             val genreMatch = selectedGenre.equals("All", true) ||
-                    (epgItem.content?.genre?.any { (it as? String)?.equals(selectedGenre, true) == true } == true)
+                    (epgItem.content?.genre?.orEmpty()?.any { it.equals(selectedGenre, true) } == true)
 
             val languageMatch = selectedLanguage.equals("All", true) ||
                     epgItem.content?.language?.equals(selectedLanguage, true) == true
@@ -262,7 +262,7 @@ open class SharedViewModel @Inject constructor(
             genreMatch && languageMatch
         }
 
-        _filteredEPGList.value = filtered
+        _filteredEPGList.value = filtered.ifEmpty { emptyList() }
     }
 
 

@@ -55,6 +55,8 @@ fun ExpandableNavigationMenu(
             Destination.homeScreen -> tabs?.indexOfFirst { it.displayName == "Home" } ?: -1
             Destination.searchScreen -> tabs?.indexOfFirst { it.displayName == "Search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.displayName == "Live Tv" } ?: -1
+            Destination.channel -> tabs?.indexOfFirst { it.displayName == "Channels" } ?: -1
+
             else -> -1
         }
     }
@@ -182,6 +184,7 @@ fun ExpandableNavigationMenu(
                         expanded = false
                         when (tab.displayName) {
                             "Home" -> navController.navigate(Destination.homeScreen)
+                            "Channels" -> navController.navigate(Destination.channel)
                             "Search" -> navController.navigate(Destination.searchScreen)
                             "Live Tv" -> navController.navigate(Destination.epgScreen) {
                                 popUpTo(0) { inclusive = true }

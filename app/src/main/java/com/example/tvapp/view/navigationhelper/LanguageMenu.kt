@@ -53,8 +53,12 @@ fun LanguageMenu(
         .provideApplicationContext()
         .appLanguageLiveData()
         .observeAsState(initial = emptyList())
-    val languageItems: List<WTVLanguage> = appLanguageData
+    val languageItems: List<WTVLanguage> = appLanguageData ?: emptyList()
     val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
+
+    if (allLanguageItems.isEmpty()) {
+        return
+    }
 
     val coroutineScope = rememberCoroutineScope()
 

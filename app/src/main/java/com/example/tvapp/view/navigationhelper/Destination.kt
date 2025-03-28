@@ -10,4 +10,6 @@ object Destination {
     const val playerScreen = "homeplayer"
     const val splashScreen = "splash"
     const val otpScreen = "otpScreen"
+    const val channel = "allchannels"
+
 }

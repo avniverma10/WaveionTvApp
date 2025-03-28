@@ -52,7 +52,11 @@ fun CategoryMenu(
         .provideApplicationContext()
         .appGenreLiveData()
         .observeAsState(initial = emptyList())
-    val menuItems: List<WTVGenre> = appGenreData
+    val menuItems: List<WTVGenre> = appGenreData?: emptyList()
+
+    if (menuItems.isEmpty()) {
+        return
+    }
 
     Column(
         modifier = Modifier

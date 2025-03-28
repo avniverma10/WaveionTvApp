@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.utils.theme.TVAppTheme
+import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomeScreen
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
@@ -27,6 +28,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             TVAppTheme {
                 WTVPlayerApp(sharedViewModel=sharedViewModel)
+//                val navController = rememberNavController()
+//                ChannelScreen(navController ,sharedViewModel)
             }
         }
     }
