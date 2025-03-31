@@ -90,7 +90,7 @@ fun LanguageMenu(
                     if (it.isFocused) {
                         selectedIndex.value = index
                         val languageName = item.name ?: "Unknown"
-                        sharedViewModel.filterChannelsByLanguage(languageName)
+                        sharedViewModel.updateLanguage(languageName)
                     }
                 }
                 .focusRequester(focusRequester)
@@ -107,6 +107,7 @@ fun LanguageMenu(
                             }
                             true
                         }
+
                         keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {

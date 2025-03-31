@@ -86,7 +86,8 @@ fun ChannelScreen(
                     sharedViewModel = sharedViewModel,
                     selectedIndex = categorySelectedIndex,
                     categoryFocusRequesters = categoryFocusRequesters,
-                    languageFocusRequesters = languageFocusRequesters
+                    languageFocusRequesters = languageFocusRequesters,
+                    languageSelectedIndex = languageSelectedIndex
                 )
 
                 // LanguageMenu calls filterChannelsByLanguage on selection change.

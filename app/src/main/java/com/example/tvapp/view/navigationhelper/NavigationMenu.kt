@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 fun CategoryMenu(
     sharedViewModel: SharedViewModel,
     selectedIndex: MutableState<Int>,
+    languageSelectedIndex: MutableState<Int>,
     categoryFocusRequesters: MutableMap<Int, FocusRequester>,
     languageFocusRequesters: MutableMap<Int, FocusRequester>
 ) {
@@ -90,7 +91,7 @@ fun CategoryMenu(
                         if (it.isFocused) {
                             selectedIndex.value = index
                             val genreName = item.name ?: "Unknown"
-                            sharedViewModel.filterChannelsByGenre(genreName)
+                            sharedViewModel.updateGenre(genreName)
                         }
                     }
                     .focusRequester(focusRequester)
@@ -99,7 +100,9 @@ fun CategoryMenu(
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                         ) {
-                            languageFocusRequesters[0]?.requestFocus()
+//                            languageFocusRequesters[0]?.requestFocus()
+                            languageFocusRequesters[ languageSelectedIndex.value ]?.requestFocus()
+
                             true
                         } else false
                     }

@@ -1,35 +1,26 @@
 package com.example.tvapp.viewmodels
 
-
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
-import android.util.Log
 import androidx.lifecycle.viewModelScope
-import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
-import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.DataStoreManager
+import com.example.tvapp.model.data.FilterPreferences
+import com.example.tvapp.model.data.FilterState
+import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
-import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
-import com.example.tvapp.model.data.home.HomeContent
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
+import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.model.data.home.HomeContent
+import com.example.tvapp.utils.sealed.WTVListResponse
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -38,84 +29,73 @@ import javax.inject.Inject
 open class SharedViewModel @Inject constructor(
     private val wtvNetworkRepositoryImpl: WTVNetworkRepositoryImpl,
     private val application: Application,
-    private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl) {
+    private val dataStoreManager: DataStoreManager,
+    private val filterPreferences: FilterPreferences
+) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl) {
 
-    // New state for banner list
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
 
-    private val _epgChannels = MutableStateFlow<List<Channel>>(emptyList())
-    val epgChannels: StateFlow<List<Channel>> = _epgChannels.asStateFlow()
-
-    private val _filteredChannels = MutableStateFlow<List<Channel>>(emptyList())
-    val filteredChannels: StateFlow<List<Channel>> = _filteredChannels.asStateFlow()
+    private val _epgDataList = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val epgDataList: StateFlow<List<EPGDataItem>> = _epgDataList.asStateFlow()
 
     private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
 
-
-    private val _filteredPrograms = MutableStateFlow<List<Programme>>(emptyList())
-    val filteredPrograms: StateFlow<List<Programme>> = _filteredPrograms.asStateFlow()
+    private val _epgChannels = MutableStateFlow<List<Channel>>(emptyList())
+    val epgChannels: StateFlow<List<Channel>> = _epgChannels.asStateFlow()
 
     private val _searchResults = MutableStateFlow<List<Channel>>(emptyList())
     val searchResults: StateFlow<List<Channel>> = _searchResults.asStateFlow()
 
-
-    // ================= Wishlist Integration =================
-
-    // Wishlist state flows for popup and alert.
     private val _wishlistPopupProgram = MutableStateFlow<Programme?>(null)
     val wishlistPopupProgram: StateFlow<Programme?> = _wishlistPopupProgram.asStateFlow()
 
     private val _wishlistAlertProgram = MutableStateFlow<Programme?>(null)
     val wishlistAlertProgram: StateFlow<Programme?> = _wishlistAlertProgram.asStateFlow()
 
-    // Internal wishlist list.
     private val _wishlist = MutableStateFlow<List<Programme>>(emptyList())
     val wishlist: StateFlow<List<Programme>> = _wishlist.asStateFlow()
 
-    val epgDataFlow = observeEPGChanges(application).stateIn(
-        viewModelScope, SharingStarted.Lazily, emptyList()
-    )
-    private var selectedGenre: String? = "All"
-    private var selectedLanguage: String? = "All"
+    private val _filterState = MutableStateFlow(FilterState())
+    val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
+
 
     init {
-        // Fetch banners from API
+        // only load once, no continuous observation to avoid overriding
+        viewModelScope.launch {
+            val saved = filterPreferences.filterFlow.first() // <-- one-time load only
+            _filterState.value = saved
+            applyFilters()
+        }
+
+        // observe EPG changes continuously
+        viewModelScope.launch {
+            observeEPGChanges(application).collect()
+        }
+
+        // load banners
         viewModelScope.launch {
             provideBanners()
         }
-
-        // Set full EPG list as the initial filtered list
-        viewModelScope.launch {
-            epgDataFlow.collect { data ->
-                _filteredEPGList.value = data
-            }
-        }
     }
 
-    // Clear the wishlist popup.
-    fun clearWishlistPopup() {
-        _wishlistPopupProgram.value = null
-    }
 
-    // Add an event to the wishlist and clear the popup.
+
+
+
+    fun clearWishlistPopup() { _wishlistPopupProgram.value = null }
+
     fun addToWishlist(program: Programme) {
         program.watchedAt = System.currentTimeMillis()
         _wishlist.value += program
         clearWishlistPopup()
     }
-    // Called when a future event is clicked to show the popup.
-    fun onShowWishlistPopup(program: Programme) {
-        _wishlistPopupProgram.value = program
-    }
-    // Clear the wishlist alert popup.
-    fun clearWishlistAlert() {
-        _wishlistAlertProgram.value = null
-    }
 
+    fun onShowWishlistPopup(program: Programme) { _wishlistPopupProgram.value = program }
 
-    // State to trigger video playback for a particular channel.
+    fun clearWishlistAlert() { _wishlistAlertProgram.value = null }
+
     private val _selectedVideoUrl = MutableStateFlow<String?>(null)
     val selectedVideoUrl: StateFlow<String?> = _selectedVideoUrl.asStateFlow()
 
@@ -123,37 +103,23 @@ open class SharedViewModel @Inject constructor(
 
     fun checkUserLoginStatus(onLoggedIn: () -> Unit, onLoggedOut: () -> Unit) {
         viewModelScope.launch {
-            authToken.collect { token ->
-                if (token.isNullOrEmpty()) {
-                    onLoggedOut()
-                } else {
-                    onLoggedIn()
-                }
+            authToken.collectLatest { token ->
+                if (token.isNullOrEmpty()) onLoggedOut() else onLoggedIn()
             }
         }
     }
 
     suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners("https://nextwave.waveiontechnologies.com:5000/api/banners").collect{response ->
+        wtvNetworkRepositoryImpl.getBanners("https://nextwave.waveiontechnologies.com:5000/api/banners").collect { response ->
             when (response) {
-                is WTVListResponse.Success -> {
-                    // Handle successful response
-                    _bannerList.value = response.data
-                    logReport("_bannerList:${ response.data}")
-
-                }
-                is WTVListResponse.Failure -> {
-                    logReport("_bannerList:${ response.error.message}")
-
-                }
+                is WTVListResponse.Success -> _bannerList.value = response.data
+                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")
             }
         }
     }
 
-
     fun onChannelVideoSelected(videoUrl: String?, program: Programme?) {
         _selectedVideoUrl.value = videoUrl
-        //program?.let { addToRecentlyWatched(it) }
     }
 
     suspend fun fetchEPGList(context: Context): List<EPGDataItem> {
@@ -161,7 +127,6 @@ open class SharedViewModel @Inject constructor(
             val cursor = context.contentResolver.query(
                 EPGContract.EPGEntry.CONTENT_URI, null, null, null, null
             )
-
             val list = mutableListOf<EPGDataItem>()
             cursor?.use {
                 while (it.moveToNext()) {
@@ -179,42 +144,64 @@ open class SharedViewModel @Inject constructor(
         val observer = object : ContentObserver(null) {
             override fun onChange(selfChange: Boolean) {
                 launch {
-                    val epgList = fetchEPGList((context))
-                    provideChannelFilterData(epgList=epgList)
+                    val epgList = fetchEPGList(context)
+                    _epgDataList.value = epgList
+                    _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
+                    applyFilters()
                     trySend(epgList)
                 }
             }
         }
         context.contentResolver.registerContentObserver(
-            EPGContract.EPGEntry.CONTENT_URI,
-            true,
-            observer
+            EPGContract.EPGEntry.CONTENT_URI, true, observer
         )
-        // Initial load
-        val epgList = fetchEPGList((context))
-        provideChannelFilterData(epgList=epgList)
+        val epgList = fetchEPGList(context)
+        _epgDataList.value = epgList
+        _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
+        applyFilters()
         trySend(epgList)
 
-        awaitClose {
-            context.contentResolver.unregisterContentObserver(observer)
-        }
+        awaitClose { context.contentResolver.unregisterContentObserver(observer) }
     }.flowOn(Dispatchers.IO)
 
-
-
-    fun provideChannelFilterData(epgList:List<EPGDataItem>){
-        _epgChannels.value = epgList.mapNotNull { epg ->
-            epg.tv?.channel?.let { existingChannel ->
-                existingChannel.copy(
-                    videoUrl = epg.content?.videoUrl,
-                    logoUrl = epg.content?.thumbnailUrl,
-                    genreId = epg.content?.genreId?:""
-                )
-            }
-        }
-        _filteredChannels.value =  _epgChannels.value
+    fun updateGenre(genre: String?) {
+        val newGenre = if (genre == "All") null else genre
+        _filterState.value = _filterState.value.copy(genre = newGenre)
+        saveFilters()
+        applyFilters()
     }
 
+    fun updateLanguage(language: String?) {
+        val newLanguage = if (language == "All") null else language
+        _filterState.value = _filterState.value.copy(language = newLanguage)
+        saveFilters()
+        applyFilters()
+    }
+
+
+    private fun saveFilters() {
+        filterPreferences.saveFilter(viewModelScope, _filterState.value)
+    }
+
+
+
+
+    private fun applyFilters() {
+        val fullList = _epgDataList.value
+        val filter = _filterState.value
+
+        val filtered = fullList.filter { epgItem ->
+            val genreList = epgItem.content?.genre.orEmpty()
+            val language = epgItem.content?.language.orEmpty()
+
+            val genreMatch = filter.genre == null || genreList.any { it.equals(filter.genre, true) }
+            val languageMatch = filter.language == null || language.equals(filter.language, true)
+
+            genreMatch && languageMatch
+        }
+
+        _filteredEPGList.value = filtered
+    }
 
     fun searchChannels(context: Context, query: String) {
         viewModelScope.launch {
@@ -227,7 +214,6 @@ open class SharedViewModel @Inject constructor(
                 epgItem.tv?.channel?.takeIf { channel ->
                     val name = channel.displayName ?: ""
                     val genre = epgItem.content?.genreId ?: ""
-
                     (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
                 }?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
@@ -238,33 +224,4 @@ open class SharedViewModel @Inject constructor(
             _searchResults.value = filteredChannels
         }
     }
-
-    fun filterChannelsByGenre(genre: String) {
-        selectedGenre = genre
-        applyFilters()
-    }
-
-    fun filterChannelsByLanguage(language: String) {
-        selectedLanguage = language
-        applyFilters()
-    }
-
-    private fun applyFilters() {
-        val fullList = epgDataFlow.value ?: emptyList()
-
-        val filtered = fullList.filter { epgItem ->
-            val genreMatch = selectedGenre.equals("All", true) ||
-                    (epgItem.content?.genre?.orEmpty()?.any { it.equals(selectedGenre, true) } == true)
-
-            val languageMatch = selectedLanguage.equals("All", true) ||
-                    epgItem.content?.language?.equals(selectedLanguage, true) == true
-
-            genreMatch && languageMatch
-        }
-
-        _filteredEPGList.value = filtered.ifEmpty { emptyList() }
-    }
-
-
-
 }

@@ -126,7 +126,8 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                     sharedViewModel = sharedViewModel,
                     selectedIndex = categorySelectedIndex,
                     categoryFocusRequesters = categoryFocusRequesters,
-                    languageFocusRequesters = languageFocusRequesters
+                    languageFocusRequesters = languageFocusRequesters,
+                    languageSelectedIndex = languageSelectedIndex
                 )
 
                 LanguageMenu(
