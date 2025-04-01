@@ -1,6 +1,6 @@
 package com.example.tvapp.view.home
 
-import android.util.Log
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -38,10 +39,13 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.extensions.appHomeLiveData
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -50,15 +54,26 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
-    val epgChannels by sharedViewModel.epgChannels.collectAsState()
+    val epgChannels by sharedViewModel.epgDataList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
-
+    val context = LocalContext.current
+    var showExitDialog by remember { mutableStateOf(false) }
+    // Observe the SSE event flow.
+    val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
 
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
-            popUpTo(0) { inclusive = true }
-            launchSingleTop = true
-        }
+        showExitDialog = true
+    }
+
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finish()
+        }, onDismiss = {
+            showExitDialog = false
+        })
     }
 
     Row(
@@ -69,28 +84,35 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-
-            item {
-                if (banners.isNotEmpty()) {
-                    HeroCarousel(bannerList = banners, navController = navController)
-                } else {
-                    // Show a loading indicator while banners are loading.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Color.White)
+            if(appManifestData.value?.tab?.find { it.name =="home" }?.components?.get(0)?.isVisible == true || tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true) {
+                item {
+                    if (banners.isNotEmpty()) {
+                        HeroCarousel(bannerList = banners, navController = navController)
+                    } else {
+                        // Show a loading indicator while banners are loading.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
                     }
                 }
             }
             // For each dynamic category, map channel IDs to detailed Channel objects from epgChannels.
             items(homeCategories) { category ->
-                val channelsForCategory = category.channels.mapNotNull { channelId ->
-                    epgChannels.find { it._id?.equals(channelId, ignoreCase = true) == true }
+                val epgList = epgChannels.filter { it.channelId != null && it.channelId in category.channels }
+                val channelsForCategory = epgList.mapNotNull { epgItem ->
+                    epgItem.tv?.channel?.copy(
+                        logoUrl = epgItem.content?.thumbnailUrl,
+                        videoUrl = epgItem.content?.videoUrl,
+                        genreId = epgItem.content?.genreId ?: "Unknown"
+                    )
                 }
-                if (channelsForCategory.isNotEmpty()) {
+
+                if (epgList.isNotEmpty()) {
                     CategorySection(
                         title = category.name,
                         channels = channelsForCategory,
@@ -126,11 +148,11 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
         ) {
             items(channels) { channel ->
                 ChannelBox(channel = channel) { videoUrl ->
-                    val encodedUrl = URLEncoder.encode(videoUrl, StandardCharsets.UTF_8.toString())
-                    navController.navigate(
-                        "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
-                                "?categoryIds=${channels.joinToString(",") { it._id ?: "" }}"
-                    )
+
+                    Constants.selectedChannelUrl = channel.videoUrl
+                    navController.navigate(Destination.panMetroScreen) {
+                        popUpTo(Destination.homeScreen) { inclusive = true }
+                    }
 
                 }
             }

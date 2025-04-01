@@ -1,6 +1,7 @@
 package com.example.tvapp.view.channels
 
 import android.util.Log
+import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -23,6 +24,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -30,9 +34,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.CategoryMenu
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -42,7 +49,7 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun ChannelScreen(
     navController: NavController,
-    sharedViewModel: SharedViewModel = hiltViewModel(),
+    sharedViewModel: SharedViewModel,
     showBanner: Boolean = true,
     bannerList: List<Banner> = emptyList()
 ) {
@@ -118,31 +125,54 @@ fun ChannelScreen(
                 ) {
                     itemsIndexed(channelList) { index, channel ->
                         // Attach the focusRequester only to the first item.
+                        val isFirstChannel = (index == 0)
+                        val isLastChannel = (index == channelList.size - 1)
                         if (index == 0) {
                             ChannelList(
+                                sharedViewModel= sharedViewModel,
                                 channel = channel,
                                 focusRequester = firstChannelFocusRequester,
+                                isFirstChannel = isFirstChannel,
+                                isLastChannel = isLastChannel,
                                 onClick = { clickedChannel ->
+                                    Constants.selectedChannelUrl = channel.videoUrl?:""
+                                    navController.navigate(Destination.panMetroScreen) {
+                                        popUpTo(Destination.channel) { inclusive = true }
+                                    }
 
-
-                                    navController.navigate(
+                                   /* navController.navigate(
                                         "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
                                                 "?categoryIds="
-                                    )
+                                    )*/
 
 
-                                }
+                                },
+                                languageFocusRequesters = languageFocusRequesters,
+                                languageSelectedIndex = languageSelectedIndex,
+                                categoryFocusRequesters = categoryFocusRequesters,
+                                categorySelectedIndex = categorySelectedIndex
                             )
                         } else {
                             ChannelList(
+                                sharedViewModel= sharedViewModel,
                                 channel = channel,
                                 onClick = { clickedChannel ->
-                                    navController.navigate(
+                                    Constants.selectedChannelUrl = channel.videoUrl?:""
+                                    navController.navigate(Destination.panMetroScreen) {
+                                        popUpTo(Destination.channel) { inclusive = true }
+                                    }
+                                    /*navController.navigate(
                                         "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
                                                 "?categoryIds="
-                                    )
+                                    )*/
 
-                                }
+                                },
+                                isFirstChannel = isFirstChannel,
+                                isLastChannel = isLastChannel,
+                                languageFocusRequesters = languageFocusRequesters,
+                                languageSelectedIndex = languageSelectedIndex,
+                                categoryFocusRequesters = categoryFocusRequesters,
+                                categorySelectedIndex = categorySelectedIndex
                             )
                         }
                     }
@@ -154,9 +184,16 @@ fun ChannelScreen(
 
 @Composable
 fun ChannelList(
+    sharedViewModel: SharedViewModel,
     channel: Channel,
     focusRequester: FocusRequester? = null,
-    onClick: (Channel) -> Unit = {}
+    onClick: (Channel) -> Unit = {},
+    isFirstChannel: Boolean,
+    isLastChannel: Boolean,
+    languageFocusRequesters: Map<Int, FocusRequester>,
+    languageSelectedIndex: MutableState<Int>,
+    categoryFocusRequesters: Map<Int, FocusRequester>,
+    categorySelectedIndex: MutableState<Int>
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -177,7 +214,25 @@ fun ChannelList(
             }
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .focusable(interactionSource = interactionSource)
-            .clickable { onClick(channel) },
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            onClick(channel)
+                            true
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (isFirstChannel) {
+                                languageFocusRequesters[languageSelectedIndex.value]?.requestFocus()
+                                true
+                            } else false
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> isLastChannel
+                        else -> false
+                    }
+                } else false
+            }
+        ,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // ✅ No shadow

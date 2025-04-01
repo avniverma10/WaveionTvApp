@@ -21,6 +21,7 @@ import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.extensions.decodeJwtToken
 import com.example.tvapp.model.data.DataStoreManager
+import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
 import com.example.tvapp.view.player.generateWatermark
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
@@ -28,6 +29,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -40,6 +43,11 @@ open class WTVPlayerViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl) {
     // Mutable StateFlow to store the mobile number
     private var _mobileNumber = MutableLiveData<String?>(null)
+
+    // State to trigger video playback for a particular channel.
+    private val _selectedVideoUrl = MutableStateFlow<String?>(null)
+    val selectedVideoUrl: StateFlow<String?> = _selectedVideoUrl.asStateFlow()
+
     // Observe mobile number
     init {
         // Collect mobile number from DataStore
@@ -85,6 +93,12 @@ open class WTVPlayerViewModel @Inject constructor(
         // Device ID
         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         return generateWatermark(_mobileNumber.value, deviceId)
+    }
+
+
+    fun onChannelVideoSelected(videoUrl: String?, program: Programme?) {
+        _selectedVideoUrl.value = videoUrl
+        //program?.let { addToRecentlyWatched(it) }
     }
 
 

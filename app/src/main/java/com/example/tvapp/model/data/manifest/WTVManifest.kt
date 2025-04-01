@@ -1,5 +1,6 @@
 package com.example.tvapp.model.data.manifest
 
+import android.util.Log
 import com.google.gson.annotations.SerializedName
 
 data class WTVManifest(
@@ -10,8 +11,13 @@ data class WTVManifest(
     var styleNavigation:StyleNavigation?=null,
     var language: HashMap<String,String>?=null,
     var tab:List<TabInfo>?= null,
-    var contact:Contact?=null
-)
+    var contact:Contact?=null,
+    var landingChannel:LandingChannel?=null
+){
+    fun shouldBannerVisible(tabName:String): Boolean {
+        return tab?.find { it.name == tabName }?.components?.getOrNull(0)?.name.equals("Banner",true)
+    }
+}
 
 data class Contact(
     @SerializedName("__v")
@@ -21,6 +27,17 @@ data class Contact(
     val email: String?=null,
     val phone: String?=null,
     val website: String?=null
+)
+
+data class LandingChannel(
+    val _id: String?=null,
+    val title: String?=null,
+    val ChannelID: String?=null,
+    val videoUrl: String?=null,
+    val createdAt: String?=null,
+    val updatedAt: String?=null,
+    @SerializedName("__v")
+    val version: Int?=0,
 )
 
 data class StyleNavigation(var fontName:String?="")

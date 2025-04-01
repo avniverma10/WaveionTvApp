@@ -16,11 +16,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
 import com.example.tvapp.view.login.LoginScreen1
+import com.example.tvapp.view.panmetro.PanMetroVideoPlayer
+import com.example.tvapp.view.panmetro.PanmetroGenreScreen
+import com.example.tvapp.view.panmetro.WTVMetroVideoPlayer
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
@@ -50,6 +54,28 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)
         }
+        composable(Destination.genreScreen) {
+            PanmetroGenreScreen(navController,sharedViewModel)
+        }
+        composable(Destination.panMetroScreen) {backStackEntry ->
+            //val channelId = backStackEntry.arguments?.getString("channelId")
+            PanMetroVideoPlayer(navController,sharedViewModel)
+        }
+       /*
+       composable(
+            route = Destination.panMetroScreen+"{fromEpg}",
+            arguments = listOf(
+                navArgument("fromEpg") {
+                    type = NavType.StringType
+                    defaultValue = "false"
+                }
+            )
+        ) { backStackEntry ->
+            val fromEpg = backStackEntry.arguments?.getString("fromEpg")?.toBoolean() ?: false
+            PanMetroVideoPlayer(fromEpg,navController,sharedViewModel)
+
+        }
+        */
         composable(Destination.otpScreen) {
             OtpScreen1(navController)
         }
@@ -65,7 +91,6 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
                 navArgument("categoryIds") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
-
             val videoUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
             val categoryIds = backStackEntry.arguments?.getString("categoryIds") ?: ""
 
@@ -98,4 +123,5 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             ChannelScreen(navController = navController, sharedViewModel = sharedViewModel)
         }
     }
+
 }

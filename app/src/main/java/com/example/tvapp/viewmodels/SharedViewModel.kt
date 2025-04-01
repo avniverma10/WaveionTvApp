@@ -1,26 +1,41 @@
 package com.example.tvapp.viewmodels
 
+
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
-import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
-import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
-import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.home.HomeContent
-import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -60,8 +75,14 @@ open class SharedViewModel @Inject constructor(
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
 
+    private val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
+
+    private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
+    val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
 
     init {
+        filterPanMetroChannelsByGenre("All")
         // only load once, no continuous observation to avoid overriding
         viewModelScope.launch {
             val saved = filterPreferences.filterFlow.first() // <-- one-time load only
@@ -223,5 +244,29 @@ open class SharedViewModel @Inject constructor(
             }
             _searchResults.value = filteredChannels
         }
+    }
+
+
+    fun providePlayableProgramData(programs: List<Programme>){
+        val currentTime = System.currentTimeMillis()
+        _availableProgram.value = programs.filter { program ->
+            // Convert _start and _stop to epoch milliseconds
+            val startMillis = program.startTime?:0L
+            val endMillis = program.endTime?:0L
+            // Keep the program if it hasn't ended yet
+            endMillis > currentTime
+        }
+    }
+
+
+
+    fun filterPanMetroChannelsByGenre(genre:String) {
+        val filtered = _epgDataList.value.filter { epgItem ->
+            val genreMatch = genre.equals("All", true) ||
+                    (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
+
+            genreMatch
+        }
+        _filteredPanMetroChannels.value = filtered.ifEmpty { emptyList() }
     }
 }

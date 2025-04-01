@@ -15,6 +15,8 @@ import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import org.json.JSONObject
 import org.threeten.bp.Duration
+import org.threeten.bp.Instant
+import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
 import org.threeten.bp.format.DateTimeFormatter
 import java.io.UnsupportedEncodingException
@@ -459,6 +461,17 @@ fun calculateProgramWidth(startTime:String, endTime:String,widthPerBlock: Dp = 5
 
     return (blocks.toFloat() * widthPerBlock.value).dp
 }
+
+fun calculateProgramWidth(startTime:Long, endTime:Long,widthPerBlock: Dp = 50.dp): Dp {
+    val durationMillis = endTime - startTime
+    // Convert milliseconds to minutes
+    val durationInMinutes = durationMillis / 60000.0
+    // Calculate the number of 30-minute blocks (each block represents 30 minutes)
+    val blocks = durationInMinutes / 30.0
+    // Calculate and return the width based on the number of blocks
+    return (blocks.toFloat() * widthPerBlock.value).dp
+}
+
 
 fun String.decodeJwtToken(): String? {
     return try {

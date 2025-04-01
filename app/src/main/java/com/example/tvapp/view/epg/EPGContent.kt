@@ -59,11 +59,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.extensions.provideTimeInMillis
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.utils.Constants
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
 import com.example.tvapp.view.navigationhelper.parseFixedTime
 import com.example.tvapp.view.wtvplayer.WTVVideoPlayer
@@ -75,6 +78,7 @@ import java.util.Locale
 
 @Composable
 fun EPGContent(
+    navController: NavController,
     sharedViewModel: SharedViewModel,
     firstChannelFocusRequester: FocusRequester,
     languageFocusRequesters: MutableMap<Int, FocusRequester>,
@@ -83,7 +87,6 @@ fun EPGContent(
     categorySelectedIndex: MutableState<Int>
 ) {
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
-    val selectedVideoUrl by sharedViewModel.selectedVideoUrl.collectAsState()
 
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
 
@@ -148,7 +151,12 @@ fun EPGContent(
                                 isFirstChannel = isFirstChannel,
                                 isLastChannel = isLastChannel,
                                 onPlayClicked = { videoUrl ->
-                                    sharedViewModel.onChannelVideoSelected(videoUrl, epgList[0].tv?.programme?.get(0))
+                                    epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
+                                        sharedViewModel.updateSelectedChannel(channelItem)
+                                        navController.navigate(Destination.panMetroScreen) {
+                                            // popUpTo(Destination.epgScreen) { inclusive = true }
+                                        }
+                                    }
                                 },
                                 hasInitiallyFocused = hasInitiallyFocused,
                                 focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
@@ -166,7 +174,7 @@ fun EPGContent(
                                     )
                             ) {
                                 itemsIndexed(channelData.tv?.programme!!) { programIndex, program ->
-                                    val programWidth = calculateProgramWidth(program.startTime ?: "0", program.endTime ?: "0")
+                                    val programWidth = calculateProgramWidth(program.startTime ?: 0, program.endTime ?: 0)
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == channelData.tv.programme.lastIndex)
@@ -189,7 +197,12 @@ fun EPGContent(
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                                            sharedViewModel.onChannelVideoSelected(channelData.content?.videoUrl, program)
+                                                            epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
+                                                                sharedViewModel.updateSelectedChannel(channelItem)
+                                                                navController.navigate(Destination.panMetroScreen) {
+                                                                    // popUpTo(Destination.epgScreen) { inclusive = true }
+                                                                }
+                                                            }
                                                             true
                                                         }
                                                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -246,21 +259,7 @@ fun EPGContent(
                 }
             }
         }
-    }
 
-    if (selectedVideoUrl != null) {
-        Dialog(
-            onDismissRequest = { sharedViewModel.onChannelVideoSelected(null, null) },
-            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                WTVVideoPlayer(
-                    initialVideoUrl = selectedVideoUrl ?: "",
-                    allChannels = epgList,
-                    onVideoChange = { /* Handle video change if necessary */ }
-                )
-            }
-        }
     }
     if (wishlistPopupProgram != null) {
         Dialog(onDismissRequest = { sharedViewModel.clearWishlistPopup() }) {
@@ -286,7 +285,12 @@ fun EPGContent(
                     Text(text = "Start: ${wishlistAlertProgram?.startTime}", color = Color.White)
                     Text(text = "End: ${wishlistAlertProgram?.endTime}", color = Color.White)
                     Button(onClick = {
-                        sharedViewModel.onChannelVideoSelected(channelMap[wishlistAlertProgram?.channelId]?.content?.videoUrl, program = null)
+                        epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
+                            sharedViewModel.updateSelectedChannel(channelItem)
+                            navController.navigate(Destination.panMetroScreen) {
+                               // popUpTo(Destination.epgScreen) { inclusive = true }
+                            }
+                        }
                         sharedViewModel.clearWishlistAlert()
                     }) { Text("Play") }
                     Button(onClick = { sharedViewModel.clearWishlistAlert() }) { Text("Cancel") }

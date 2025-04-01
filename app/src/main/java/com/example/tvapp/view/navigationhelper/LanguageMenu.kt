@@ -34,7 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.example.tvapp.R
+import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.extensions.isNotNullOrEmpty
+import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -49,6 +52,13 @@ fun LanguageMenu(
     categoryFocusRequesters: MutableMap<Int, FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
+
+    val appGenreData by sharedViewModel
+        .provideApplicationContext()
+        .appGenreLiveData()
+        .observeAsState(initial = emptyList())
+    val menuItems: List<WTVGenre> = appGenreData?: emptyList()
+
     val appLanguageData by sharedViewModel
         .provideApplicationContext()
         .appLanguageLiveData()

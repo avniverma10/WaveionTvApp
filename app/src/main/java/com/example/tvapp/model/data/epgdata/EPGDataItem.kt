@@ -1,5 +1,7 @@
 package com.example.tvapp.model.data.epgdata
 
+import com.example.tvapp.extensions.toTimestamp
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
 data class EPGDataItem(
@@ -12,7 +14,8 @@ data class EPGDataItem(
     val lastUpdated: String?="2025-03-13T06:24:17.848Z",
     val tv: Tv?=null,
     val url: String?=null,
-    val channelHash: String?=null
+    val channelHash: String?=null,
+    val currentPrograms: List<Programme>?=null
 )
 
 
@@ -27,13 +30,16 @@ data class Programme(
     @SerializedName("_clumpidx")
     val clumpIdx: String?="0/1",
     @SerializedName("_start")
-    val startTime: String?="20250212000000 +0530",
+    @JsonAdapter(TimestampAdapter::class)
+    val startTime: Long? = null,
     @SerializedName("_stop")
-    val endTime: String?="20250212003000 +0530",
+    @JsonAdapter(TimestampAdapter::class)
+    val endTime: Long? = null,
     val date: String?="20250212",
     val desc: String?="Covering the top highlight of day from across the globe.",
     val title: String?="News Panorama",
-    var watchedAt: Long? = null // Add timestamp to track when watched
+    var watchedAt: Long? = null, // Add timestamp to track when watched
+    var isVisible: Boolean = false // Add timestamp to check current watchableProgram
 )
 
 data class Content(
@@ -62,5 +68,6 @@ data class Channel(
     val displayName: String?="ZEE SALAAM RS-0.10",
     val logoUrl: String? = null,
     val videoUrl: String? = null,
-    val genreId: String //  genreId for filtering
+    val genreId: String, //  genreId for filtering
+    val availableProgramme: List<Programme>?= null
 )

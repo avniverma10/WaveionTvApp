@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -29,17 +28,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.extensions.appGenreLiveData
+import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.viewmodels.SharedViewModel
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun CategoryMenu(
@@ -54,6 +56,15 @@ fun CategoryMenu(
         .appGenreLiveData()
         .observeAsState(initial = emptyList())
     val menuItems: List<WTVGenre> = appGenreData?: emptyList()
+
+
+    val appLanguageData by sharedViewModel
+        .provideApplicationContext()
+        .appLanguageLiveData()
+        .observeAsState(initial = emptyList())
+    val languageItems: List<WTVLanguage> = appLanguageData ?: emptyList()
+    val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
+
 
     if (menuItems.isEmpty()) {
         return
@@ -100,9 +111,11 @@ fun CategoryMenu(
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                         ) {
-//                            languageFocusRequesters[0]?.requestFocus()
-                            languageFocusRequesters[ languageSelectedIndex.value ]?.requestFocus()
-
+                            var currentLanguageIndex = languageSelectedIndex.value
+                            if(sharedViewModel.filterState.value.language.isNotNullOrEmpty()){
+                                 currentLanguageIndex  = allLanguageItems.mapNotNull { it.name }.indexOf(sharedViewModel.filterState.value.language)
+                            }
+                            languageFocusRequesters[ currentLanguageIndex ]?.requestFocus()
                             true
                         } else false
                     }

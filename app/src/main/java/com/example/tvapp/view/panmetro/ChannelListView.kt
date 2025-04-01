@@ -1,0 +1,290 @@
+package com.example.tvapp.view.panmetro
+
+import android.view.KeyEvent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
+import coil3.compose.AsyncImage
+import com.example.tvapp.model.data.epgdata.EPGDataItem
+
+
+@Composable
+fun ChannelListScreen(channels: List<EPGDataItem>,
+                      genreListFocusRequester: FocusRequester,
+                      channelListFocusRequester: FocusRequester,
+                      onVideoChange: (EPGDataItem, Int) -> Unit,
+                      onDoubleClickIntent: (EPGDataItem)->Unit,) {
+    // Track the currently focused channel index
+    var focusedIndex by remember { mutableStateOf(0) }
+    // LazyListState tracks the scroll state of the LazyColumn.
+    val listState = rememberLazyListState()
+    // Derived state to determine if there are items above the visible area.
+    val topArrowHighlighted by remember {
+        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    }
+    // Derived state to determine if there are items below the visible area.
+    val bottomArrowHighlighted by remember {
+        derivedStateOf {
+            val visibleItems = listState.layoutInfo.visibleItemsInfo
+            // If there are visible items, check if the last visible index is less than the last index.
+            if (visibleItems.isNotEmpty()) {
+                visibleItems.last().index < listState.layoutInfo.totalItemsCount - 1
+            } else {
+                false
+            }
+        }
+    }
+
+    LaunchedEffect(focusedIndex) {
+        if(focusedIndex>0) {
+            listState.animateScrollToItem(index = focusedIndex)
+        }
+    }
+
+    // Store the time and key of the last press
+    var lastPressTime by remember { mutableStateOf(0L) }
+    var lastKey by remember { mutableStateOf<Key?>(null) }
+
+    Column(modifier = Modifier
+        .fillMaxWidth(1f) // fixed width for the side menu
+        .fillMaxHeight()
+        .border(
+            width = (.5).dp,
+            color = Color.Green,
+            shape = RoundedCornerShape(8.dp)
+        )
+        .background(Color.Transparent, shape = RoundedCornerShape(8.dp)))
+    {
+
+        Row (
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp)
+                .background(if(topArrowHighlighted)Color.Cyan else Color.Green, shape = RoundedCornerShape(8.dp))
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = Icons.Filled.KeyboardArrowUp,
+                contentDescription = "Up Icon",
+                tint = Color.Gray,
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .fillMaxWidth()
+            )
+        }
+
+        // A vertical list of channels
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .padding(10.dp)
+                .focusRequester(channelListFocusRequester)
+                .focusable()
+                .onPreviewKeyEvent { keyEvent ->
+                    if (keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.nativeKeyEvent.keyCode) {
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                // Switch focus back to the left list
+                                genreListFocusRequester.requestFocus()
+                                true
+                            }
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                // Switch focus back to the left list
+                                genreListFocusRequester.requestFocus()
+                                true
+                            }
+                            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                // Move focus upward: cycle to last item if at the top.
+                                focusedIndex = if (focusedIndex < channels.size - 1) focusedIndex + 1 else 0
+                                true
+                            }
+                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                // Switch focus back to the left list
+                                focusedIndex = if (focusedIndex > 0) focusedIndex - 1 else channels.size - 1
+
+                                true
+                            }
+
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                val currentTime = System.currentTimeMillis()
+                                val currentKey = keyEvent.key
+                                // Check if this is the same key as last time and within the threshold
+                                if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
+                                    // Double press detected! Perform your action or navigate.
+                                    if(channels.isNotEmpty() && channels.size> focusedIndex){
+                                        onDoubleClickIntent(channels[focusedIndex])
+                                    }
+
+                                    // Consume the event
+                                    true
+                                } else {
+                                    // Update the last press info and do not consume
+                                    lastPressTime = currentTime
+                                    lastKey = currentKey
+                                    // When DPAD Center is pressed, select the right item.
+                                    if(channels.isNotEmpty() && channels.size> focusedIndex){
+                                        onVideoChange(channels[focusedIndex],focusedIndex)
+                                    }
+                                    false
+                                }
+                            }
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                // When DPAD Center is pressed, select the right item.
+                                if(channels.isNotEmpty() && channels.size> focusedIndex){
+                                    onVideoChange(channels[focusedIndex],focusedIndex)
+                                }
+                                true
+                            }
+
+                            else -> false
+                        }
+                    } else false
+                }
+
+        ) {
+
+            itemsIndexed(channels) { index, channel ->
+                ChannelRow(
+                    channel = channel,
+                    isFocused = (index == focusedIndex),
+                    onFocus = { focusedIndex = index },
+                    onVideoChange = onVideoChange
+                )
+            }
+        }
+
+        Row (
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp)
+                .background(if(bottomArrowHighlighted)Color.Cyan else Color.Green, shape = RoundedCornerShape(8.dp))
+                .onKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyUp) {
+                        true
+                    } else false
+                }
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Up Icon",
+                tint = Color.Gray,
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .fillMaxWidth()
+            )
+        }
+    }
+
+}
+
+@Composable
+fun ChannelRow(
+    channel: EPGDataItem,
+    isFocused: Boolean,
+    onFocus: () -> Unit,
+    onVideoChange: (EPGDataItem, Int) -> Unit
+) {
+
+    val isCurrentFocused = remember { mutableStateOf(false) }
+    // Example highlight colors when focused
+    val backgroundColor = if (isFocused) Color.Green else Color(0x001F3A6B)
+    val contentColor = if (isFocused) Color.Green else Color.White
+
+    // Each row is focusable
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .focusable()
+            .onFocusChanged {
+                if (it.isFocused){
+                    onVideoChange(channel,0)
+                    onFocus() }
+            }
+            .border(
+                width = if (isFocused) (1f).dp else 0.dp,
+                color = backgroundColor,
+                shape = RoundedCornerShape(5.dp)
+            )
+            .padding(8.dp)
+    ) {
+        // Layout: icon on left, then channel number & name
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Icon (e.g. network logo)
+            AsyncImage(
+                model = channel.content?.thumbnailUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White, RoundedCornerShape(4.dp))
+                    .padding(4.dp), // example icon padding
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Channel Number & Name
+            Column() {
+                Text(
+                    text = channel.channelId?.replace("_"," ").toString(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = channel.displayName?:"",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}

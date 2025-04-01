@@ -8,8 +8,10 @@ object Destination {
     const val epgScreen = "epg_screen"
     const val searchScreen = "search_screen"
     const val playerScreen = "homeplayer"
+    const val panMetroScreen = "panMetroplayer"//"panMetroplayer?fromEpg="
     const val splashScreen = "splash"
     const val otpScreen = "otpScreen"
+    const val genreScreen = "genreScreen"
     const val channel = "allchannels"
 
 }

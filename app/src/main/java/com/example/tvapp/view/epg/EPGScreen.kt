@@ -2,8 +2,6 @@
 package com.example.tvapp.view.epg
 
 
-import android.app.Activity
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,11 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,12 +36,14 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
@@ -62,8 +60,9 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
+    // Observe the SSE event flow.
+    val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
-    val showBanner = isBannerVisible(tabItems)
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
@@ -74,30 +73,13 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
 
     val genreSelectedIndex = remember { mutableStateOf(0) }
-    var lastBackPressedTime by remember { mutableStateOf(0L) }
-    var showExitDialog by remember { mutableStateOf(false) }
+
 
     BackHandler {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastBackPressedTime < 2000) {
-            showExitDialog = true
-        } else {
-            lastBackPressedTime = currentTime
-            context.showToastS("Press back again to exit")
+        navController.navigate(Destination.homeScreen) {
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
         }
-    }
-    if (showExitDialog) {
-        AlertDialog(
-            onDismissRequest = { showExitDialog = false },
-            title = { Text("Exit App") },
-            text = { Text("Do you want to close the app?") },
-            confirmButton = {
-                TextButton(onClick = { (context as? Activity)?.finish() }) { Text("Yes") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) { Text("No") }
-            }
-        )
     }
 
     Row(
@@ -115,10 +97,10 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 .background(Color(0xFF161D25))
                 .zIndex(1f)
         ) {
-            if (showBanner) {
+            if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
                 AdvertisementBanner(bannerList = bannerList)
             } else {
-                Log.i("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
+                logReport("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
             }
 
             Column(modifier = Modifier.fillMaxSize()) {
@@ -140,6 +122,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 )
 
                 EPGContent(
+                    navController,
                     sharedViewModel,
                     firstChannelFocusRequester,
                     languageFocusRequesters,
@@ -154,21 +137,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
 
 
-fun isBannerVisible(tabsList: List<TabInfo>?): Boolean {
-    if (tabsList.isNullOrEmpty()) {
-        Log.i("EPGScreen", "No tabs data available or tabs list is empty.")
-        return false
-    }
-    val bannerVisible = tabsList.any { tab ->
-        tab.components.any { component ->
-            component.name == "Banner" && component.isVisible
-        }
-    }
-    if (!bannerVisible) {
-        Log.i("EPGScreen", "Banner component not visible or not found in any tab.")
-    }
-    return bannerVisible
-}
+
 
 
 

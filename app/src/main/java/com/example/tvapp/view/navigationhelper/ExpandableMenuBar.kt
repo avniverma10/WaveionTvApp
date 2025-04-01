@@ -46,17 +46,17 @@ fun ExpandableNavigationMenu(
     var selectedIndex by remember { mutableStateOf(-1) }
     val menuFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    var lastClickTime by remember { mutableStateOf(0L) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
-            Destination.homeScreen -> tabs?.indexOfFirst { it.displayName == "Home" } ?: -1
-            Destination.searchScreen -> tabs?.indexOfFirst { it.displayName == "Search" } ?: -1
-            Destination.epgScreen -> tabs?.indexOfFirst { it.displayName == "Live Tv" } ?: -1
-            Destination.channel -> tabs?.indexOfFirst { it.displayName == "Channels" } ?: -1
-
+            Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+            Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
+            Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
+            Destination.channel -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
             else -> -1
         }
     }
@@ -75,7 +75,11 @@ fun ExpandableNavigationMenu(
         if (expanded) {
             coroutineScope.launch {
                 delay(200)
-                when {
+                if(selectedIndex > 1) {
+                    focusRequesters.getOrNull(selectedIndex - 1)?.requestFocus()
+                }
+
+                /*when {
                     selectedIndex == -1 -> {
                         selectedIndex = 0
                         profileFocusRequester.requestFocus()
@@ -86,7 +90,7 @@ fun ExpandableNavigationMenu(
                     else -> {
                         focusRequesters.getOrNull(selectedIndex - 1)?.requestFocus()
                     }
-                }
+                }*/
             }
         }
     }
@@ -182,11 +186,11 @@ fun ExpandableNavigationMenu(
                         selectedTabIndex = index
                         selectedIndex = index + 1
                         expanded = false
-                        when (tab.displayName) {
-                            "Home" -> navController.navigate(Destination.homeScreen)
-                            "Channels" -> navController.navigate(Destination.channel)
-                            "Search" -> navController.navigate(Destination.searchScreen)
-                            "Live Tv" -> navController.navigate(Destination.epgScreen) {
+                        when (tab.name) {
+                            "home" -> navController.navigate(Destination.homeScreen)
+                            "channels" -> navController.navigate(Destination.channel)
+                            "search" -> navController.navigate(Destination.searchScreen)
+                            "epg" -> navController.navigate(Destination.epgScreen) {
                                 popUpTo(0) { inclusive = true }
                                 launchSingleTop = true
                             }

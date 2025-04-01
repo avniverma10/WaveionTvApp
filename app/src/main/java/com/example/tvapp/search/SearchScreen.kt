@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -35,6 +36,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -43,10 +45,19 @@ import kotlinx.coroutines.launch
 
 
 @Composable
-fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
+fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val searchFieldFocusRequester = remember { FocusRequester() }
     val firstThumbnailFocusRequester = remember { FocusRequester() }
+
+    var searchText by remember { mutableStateOf("") }
+    val epgData by sharedViewModel.epgDataList.collectAsState()
+    Log.d("SEARCH", "All Channels coming ---> ${epgData}")// Fetch all channels initially
+    val searchResults by sharedViewModel.searchResults.collectAsState()  // Fetch search results
+    Log.d("SEARCH","Searched ones ---> $searchResults")
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
 
     BackHandler {
         navController.navigate(Destination.epgScreen) {
@@ -54,16 +65,9 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
             launchSingleTop = true
         }
     }
-    var searchText by remember { mutableStateOf("") }
-    val allChannels by viewModel.epgChannels.collectAsState()
-    Log.d("SEARCH", "All Channels coming ---> ${allChannels}")// Fetch all channels initially
-    val searchResults by viewModel.searchResults.collectAsState()  // Fetch search results
-    Log.d("SEARCH","Searched ones ---> $searchResults")
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) { // Background Color
-        ExpandableNavigationMenu(navController,viewModel,  onNavMenuIntent = { tabInfo, selectedIndex ->
+        ExpandableNavigationMenu(navController,sharedViewModel,  onNavMenuIntent = { tabInfo, selectedIndex ->
             Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
         })
 
@@ -79,7 +83,7 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
                 onValueChange = { newText ->
                     searchText = newText
                     coroutineScope.launch {
-                        viewModel.searchChannels(context, newText)
+                        sharedViewModel.searchChannels(context, newText)
                     }
                 },
                 modifier = Modifier
@@ -146,9 +150,23 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                val displayedChannels = if (searchText.isEmpty()) allChannels else searchResults
+                val channelsForEmpty = epgData.mapNotNull { epgItem ->
+                    epgItem.tv?.channel?.copy(
+                        logoUrl = epgItem.content?.thumbnailUrl,
+                        videoUrl = epgItem.content?.videoUrl,
+                        genreId = epgItem.content?.genreId ?: "Unknown"
+                    )
+                }
+                val displayedChannels = if (searchText.isEmpty()) channelsForEmpty else searchResults
                 items(displayedChannels) { channel ->
-                    ChannelThumbnail(channel)
+                    ChannelThumbnail(channel){
+                        epgData.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
+                            sharedViewModel.updateSelectedChannel(channelItem)
+                            navController.navigate(Destination.panMetroScreen) {
+                                popUpTo(Destination.searchScreen) { inclusive = true }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -156,7 +174,7 @@ fun SearchScreen(navController: NavController, viewModel: SharedViewModel) {
 }
 
 @Composable
-fun ChannelThumbnail(channel: Channel) {
+fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
@@ -169,7 +187,10 @@ fun ChannelThumbnail(channel: Channel) {
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
-            ),
+            )
+            .clickable {
+                channel.videoUrl?.let { onChannelClick(it) }
+            },
         shape = RoundedCornerShape(12.dp), // Rounded corners
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Small shadow effect
