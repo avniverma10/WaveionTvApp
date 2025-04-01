@@ -1,5 +1,6 @@
 package com.example.tvapp.extensions
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
@@ -7,6 +8,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkInfo
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import com.example.tvapp.di.CoreComponentProvider
@@ -137,4 +139,16 @@ fun Context.showSimpleDialog(title: String?, message: String?) {
     builder.setPositiveButton("OK", null)
     val dialog: Dialog = builder.create()
     dialog.show()
+}
+
+@SuppressLint("HardwareIds")
+fun Context.findMyDeviceId(): String {
+    try {
+        return Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ANDROID_ID
+        )
+    } catch (e: java.lang.Exception) {
+        return ""
+    }
 }
