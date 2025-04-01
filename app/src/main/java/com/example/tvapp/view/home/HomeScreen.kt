@@ -137,12 +137,13 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
             text = title,
             modifier = Modifier.padding(start = 16.dp, bottom = 5.dp),
             style = TextStyle(
-                fontSize = 22.sp,
+                fontSize = 19.sp,
                 fontFamily = FontFamily(Font(R.font.figtree_light)),
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White
             )
         )
+        Spacer(modifier = Modifier.height(10.dp))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -180,7 +181,7 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             }
             .focusable()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black)
+            .background(Color(0xFF14161A))
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
@@ -195,7 +196,7 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             contentDescription = channel.displayName,
             modifier = Modifier
                 .aspectRatio(16f / 9f)
-                .padding(8.dp)
+                .padding(10.dp)
                 .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Fit
         )
