@@ -75,8 +75,14 @@ fun ExpandableNavigationMenu(
         if (expanded) {
             coroutineScope.launch {
                 delay(200)
-                if(selectedIndex > 1) {
-                    focusRequesters.getOrNull(selectedIndex - 1)?.requestFocus()
+                if (expanded) {
+                    focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
+                        try {
+                            requester.requestFocus()
+                        } catch (e: IllegalStateException) {
+                            Log.e("FocusError", "FocusRequester not initialized", e)
+                        }
+                    }
                 }
 
                 /*when {
@@ -123,7 +129,6 @@ fun ExpandableNavigationMenu(
                 .animateContentSize()
                 .focusable()
                 .drawBehind {
-                    if (expanded) {
                         val gradient = Brush.horizontalGradient(
                             colors = listOf(
                                 Color.Black,
@@ -134,9 +139,6 @@ fun ExpandableNavigationMenu(
                             )
                         )
                         drawRect(brush = gradient, size = size)
-                    } else {
-                        drawRect(color = Color.Black)
-                    }
                 }
         ) {
             FocusableRow(

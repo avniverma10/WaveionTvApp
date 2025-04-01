@@ -392,7 +392,7 @@ fun ChannelInfo(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = (channelIndex + 1).toString(),
+                text = channel.content?.channelNo?.toString() ?: "",
                 color = Color.White,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center

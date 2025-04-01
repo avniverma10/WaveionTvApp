@@ -194,8 +194,7 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             model = channel.logoUrl,
             contentDescription = channel.displayName,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
+                .aspectRatio(16f / 9f)
                 .padding(8.dp)
                 .clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Fit
@@ -284,7 +283,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text(
-                    text = "Watch Now", // default button text
+                    text = "Watch Now",
                     style = TextStyle(
                         fontSize = 18.sp,
                         fontFamily = FontFamily(Font(R.font.figtree_light)),

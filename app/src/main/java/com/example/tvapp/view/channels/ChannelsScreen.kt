@@ -55,17 +55,11 @@ fun ChannelScreen(
 ) {
     val context = LocalContext.current
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
-
-
-    // Setup state for Category and Language menus.
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
     val categoryFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
-    val languageFocusRequesters =
-        remember { mutableStateOf(mutableMapOf<Int, FocusRequester>()) }.value
+    val languageFocusRequesters = remember { mutableStateOf(mutableMapOf<Int, FocusRequester>()) }.value
     val firstChannelFocusRequester = remember { FocusRequester() }
-
-    // Determine banner visibility.
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
 
     Row(
@@ -73,12 +67,10 @@ fun ChannelScreen(
             .fillMaxSize()
             .background(Color(0xFF14161A))
     ) {
-        // Side navigation menu.
         ExpandableNavigationMenu(
             navController = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { tabInfo, _ ->
-                // Update categories if needed based on the tab info.
             }
         )
         Column(
@@ -88,7 +80,6 @@ fun ChannelScreen(
                 .zIndex(1f)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // CategoryMenu calls filterChannelsByGenre on selection change.
                 CategoryMenu(
                     sharedViewModel = sharedViewModel,
                     selectedIndex = categorySelectedIndex,
@@ -96,8 +87,6 @@ fun ChannelScreen(
                     languageFocusRequesters = languageFocusRequesters,
                     languageSelectedIndex = languageSelectedIndex
                 )
-
-                // LanguageMenu calls filterChannelsByLanguage on selection change.
                 LanguageMenu(
                     sharedViewModel = sharedViewModel,
                     selectedIndex = languageSelectedIndex,
@@ -106,8 +95,6 @@ fun ChannelScreen(
                     categoryFocusRequesters = categoryFocusRequesters,
                     categorySelectedIndex = categorySelectedIndex
                 )
-
-                // Map filtered EPG items to Channel objects.
                 val channelList = filteredContent.mapNotNull { epgItem ->
                     epgItem.tv?.channel?.copy(
                         videoUrl = epgItem.content?.videoUrl,
@@ -124,7 +111,6 @@ fun ChannelScreen(
                         .background(Color(0xFF14161A))
                 ) {
                     itemsIndexed(channelList) { index, channel ->
-                        // Attach the focusRequester only to the first item.
                         val isFirstChannel = (index == 0)
                         val isLastChannel = (index == channelList.size - 1)
                         if (index == 0) {
@@ -202,7 +188,6 @@ fun ChannelList(
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    // Animate scaling when focused
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.1f else 1f,
         animationSpec = tween(durationMillis = 150)
@@ -239,7 +224,7 @@ fun ChannelList(
         ,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // ✅ No shadow
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier

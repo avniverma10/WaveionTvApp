@@ -23,9 +23,9 @@
         android:name=".WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
-        android:banner="@mipmap/ic_launcher"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:banner="@drawable/panmetro_app_icon"
+        android:icon="@drawable/panmetro_app_icon"
+        android:label="NextWave"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
