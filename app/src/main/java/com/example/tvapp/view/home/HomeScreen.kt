@@ -185,7 +185,7 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
-                shape = RoundedCornerShape(2.dp)
+                shape = RoundedCornerShape(8.dp)
             )
             .clickable {
                 channel.videoUrl?.let { onChannelClick(it) }
