@@ -117,7 +117,7 @@ fun PanMetroVideoPlayer(
             // Stop and clear previous media to avoid issues
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-
+            wtvPlayerViewModel.provideMediaSourceFactory(contentUrl =selectedChannel.content?.videoUrl?:"",context=context )
             // Create a MediaItem from your video URL.
             val mediaItem = MediaItem.fromUri(selectedChannel.content?.videoUrl?:"")
 

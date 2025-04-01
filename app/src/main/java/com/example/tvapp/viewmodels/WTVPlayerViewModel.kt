@@ -20,6 +20,8 @@ import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.extensions.decodeJwtToken
+import com.example.tvapp.extensions.findMyDeviceId
+import com.example.tvapp.extensions.toBase64Encoded
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
@@ -34,6 +36,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -95,16 +105,56 @@ open class WTVPlayerViewModel @Inject constructor(
         return generateWatermark(_mobileNumber.value, deviceId)
     }
 
+    fun provideMediaSourceFactory(contentUrl:String,context: Context){
+            // Base URL without the trailing '?' because HttpUrl.Builder will add it
+            val baseUrl = "https://cryptoguard.waveiontechnologies.com:4443"
 
-    fun onChannelVideoSelected(videoUrl: String?, program: Programme?) {
-        _selectedVideoUrl.value = videoUrl
-        //program?.let { addToRecentlyWatched(it) }
+            // Build URL with query parameters using OkHttp's HttpUrl builder.
+            val httpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()
+                ?.addQueryParameter("PlayState", "1")
+                ?.addQueryParameter("DrmSystem", "Widevine")
+                ?.addQueryParameter("LoginName", "am9zaXA=".toBase64Encoded())
+                ?.addQueryParameter("Password", "Y3J5cHRvZ3VhcmQ=".toBase64Encoded())
+                ?.addQueryParameter("KeyId", "NTQ2NDY1ZjEtYTU0Yy00MTQ2LWI0MTctYzVkNWFjMGQwODAy".toBase64Encoded())
+                ?.addQueryParameter("UniqueDeviceId", context.findMyDeviceId().toBase64Encoded())
+                ?.addQueryParameter("ContentUrl", contentUrl.toBase64Encoded())
+                ?.addQueryParameter("DeviceTypeName", "android".toBase64Encoded())
+                ?.build()
+
+            if (httpUrl == null) {
+                println("Invalid URL.")
+                return
+            }
+
+            // Create the GET request
+            val request = Request.Builder()
+                .url(httpUrl)
+                .get()
+                .build()
+
+            // Create the OkHttpClient instance
+            val client = OkHttpClient()
+
+            // Asynchronously execute the request
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    // Handle failure, e.g. log or update UI accordingly
+                    println("DRM request failed: ${e.message}")
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use {
+                        if (!response.isSuccessful) {
+                            println("Unexpected response code: ${response.code}")
+                        } else {
+                            // Process the response (for example, parse the DRM license)
+                            val responseBody = response.body?.string()
+                            println("DRM License Response: $responseBody")
+                            // TODO: Implement DRM license handling logic here.
+                        }
+                    }
+                }
+            })
+        }
+
     }
-
-
-
-
-
-
-
-}

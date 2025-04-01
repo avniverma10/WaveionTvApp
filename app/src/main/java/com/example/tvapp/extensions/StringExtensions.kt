@@ -514,3 +514,7 @@ fun Date.formatToCustom(): String {
     val formatter = SimpleDateFormat("hh:mma | dd MMM", Locale.ENGLISH)
     return formatter.format(this)
 }
+
+fun String.toBase64Encoded(): String {
+    return Base64.encodeToString(this.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+}

@@ -135,9 +135,11 @@ fun ChannelScreen(
                                 isFirstChannel = isFirstChannel,
                                 isLastChannel = isLastChannel,
                                 onClick = { clickedChannel ->
-                                    Constants.selectedChannelUrl = channel.videoUrl?:""
-                                    navController.navigate(Destination.panMetroScreen) {
-                                        popUpTo(Destination.channel) { inclusive = true }
+                                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
+                                        sharedViewModel.updateSelectedChannel(channelItem)
+                                        navController.navigate(Destination.panMetroScreen) {
+                                            popUpTo(Destination.homeScreen) { inclusive = true }
+                                        }
                                     }
 
                                    /* navController.navigate(
@@ -157,9 +159,11 @@ fun ChannelScreen(
                                 sharedViewModel= sharedViewModel,
                                 channel = channel,
                                 onClick = { clickedChannel ->
-                                    Constants.selectedChannelUrl = channel.videoUrl?:""
-                                    navController.navigate(Destination.panMetroScreen) {
-                                        popUpTo(Destination.channel) { inclusive = true }
+                                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
+                                        sharedViewModel.updateSelectedChannel(channelItem)
+                                        navController.navigate(Destination.panMetroScreen) {
+                                            popUpTo(Destination.homeScreen) { inclusive = true }
+                                        }
                                     }
                                     /*navController.navigate(
                                         "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +

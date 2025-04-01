@@ -116,7 +116,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                     CategorySection(
                         title = category.name,
                         channels = channelsForCategory,
-                        navController = navController
+                        navController = navController,
+                        sharedViewModel= sharedViewModel
                     )
                 }
             }
@@ -125,7 +126,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 }
 
 @Composable
-fun CategorySection(title: String, channels: List<Channel>, navController: NavController) {
+fun CategorySection(title: String, channels: List<Channel>, navController: NavController,sharedViewModel: SharedViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -148,12 +149,12 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
         ) {
             items(channels) { channel ->
                 ChannelBox(channel = channel) { videoUrl ->
-
-                    Constants.selectedChannelUrl = channel.videoUrl
-                    navController.navigate(Destination.panMetroScreen) {
-                        popUpTo(Destination.homeScreen) { inclusive = true }
+                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
+                        sharedViewModel.updateSelectedChannel(channelItem)
+                        navController.navigate(Destination.panMetroScreen) {
+                            popUpTo(Destination.homeScreen) { inclusive = true }
+                        }
                     }
-
                 }
             }
         }
@@ -267,7 +268,8 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                onClick = { navController.navigate("homeplayer/$encodedUrl") },
+                onClick = {
+                    navController.navigate("homeplayer/$encodedUrl") },
                 modifier = Modifier
                     .padding(8.dp)
                     .onFocusChanged { isButtonFocused = it.isFocused }
