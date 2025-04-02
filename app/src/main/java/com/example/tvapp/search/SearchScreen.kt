@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -146,7 +147,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
 
             // Display Channel Thumbnails in a Grid (All channels by default, filtered when searching)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4), // Adjust grid columns as per UI reference
+                columns = GridCells.Fixed(5), // Adjust grid columns as per UI reference
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -176,11 +177,13 @@ fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
-    Card(
+    Box(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)
+            .background(Color(0xFF262C36), shape = RoundedCornerShape(12.dp))
+            .padding(4.dp)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
@@ -189,9 +192,6 @@ fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
             .clickable {
                 channel.videoUrl?.let { onChannelClick(it) }
             },
-        shape = RoundedCornerShape(12.dp), // Rounded corners
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Small shadow effect
     ) {
         AsyncImage(
             model = channel.logoUrl,
@@ -199,7 +199,8 @@ fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(90.dp)
+                .height(80.dp)
+                .padding(10.dp)
         )
     }
 }

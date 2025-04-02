@@ -112,7 +112,7 @@ fun ChannelScreen(
                 }.ifEmpty { emptyList() }
 
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
+                    columns = GridCells.Fixed(5),
                     contentPadding = PaddingValues(16.dp),
                     modifier = Modifier
                         .fillMaxSize()
@@ -246,7 +246,7 @@ fun ChannelList(
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp)
+                    .height(80.dp)
                     .padding(8.dp)
                     .clip(RoundedCornerShape(12.dp))
             )

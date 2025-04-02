@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,16 +50,18 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
-fun ChannelListScreen(channels: List<EPGDataItem>,
+fun ChannelListScreen(sharedViewModel: SharedViewModel,
                       genreListFocusRequester: FocusRequester,
                       channelListFocusRequester: FocusRequester,
                       onVideoChange: (EPGDataItem, Int) -> Unit,
                       onDoubleClickIntent: (EPGDataItem)->Unit,) {
     // Track the currently focused channel index
     var focusedIndex by remember { mutableStateOf(0) }
+    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
     // LazyListState tracks the scroll state of the LazyColumn.
     val listState = rememberLazyListState()
     // Derived state to determine if there are items above the visible area.
@@ -139,12 +142,12 @@ fun ChannelListScreen(channels: List<EPGDataItem>,
                             }
                             KeyEvent.KEYCODE_DPAD_DOWN -> {
                                 // Move focus upward: cycle to last item if at the top.
-                                focusedIndex = if (focusedIndex < channels.size - 1) focusedIndex + 1 else 0
+                                focusedIndex = if (focusedIndex < filteredChannels.size - 1) focusedIndex + 1 else 0
                                 true
                             }
                             KeyEvent.KEYCODE_DPAD_UP -> {
                                 // Switch focus back to the left list
-                                focusedIndex = if (focusedIndex > 0) focusedIndex - 1 else channels.size - 1
+                                focusedIndex = if (focusedIndex > 0) focusedIndex - 1 else filteredChannels.size - 1
 
                                 true
                             }
@@ -155,8 +158,8 @@ fun ChannelListScreen(channels: List<EPGDataItem>,
                                 // Check if this is the same key as last time and within the threshold
                                 if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
                                     // Double press detected! Perform your action or navigate.
-                                    if(channels.isNotEmpty() && channels.size> focusedIndex){
-                                        onDoubleClickIntent(channels[focusedIndex])
+                                    if(filteredChannels.isNotEmpty() && filteredChannels.size> focusedIndex){
+                                        onDoubleClickIntent(filteredChannels[focusedIndex])
                                     }
 
                                     // Consume the event
@@ -166,16 +169,16 @@ fun ChannelListScreen(channels: List<EPGDataItem>,
                                     lastPressTime = currentTime
                                     lastKey = currentKey
                                     // When DPAD Center is pressed, select the right item.
-                                    if(channels.isNotEmpty() && channels.size> focusedIndex){
-                                        onVideoChange(channels[focusedIndex],focusedIndex)
+                                    if(filteredChannels.isNotEmpty() && filteredChannels.size> focusedIndex){
+                                        onVideoChange(filteredChannels[focusedIndex],focusedIndex)
                                     }
                                     false
                                 }
                             }
                             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 // When DPAD Center is pressed, select the right item.
-                                if(channels.isNotEmpty() && channels.size> focusedIndex){
-                                    onVideoChange(channels[focusedIndex],focusedIndex)
+                                if(filteredChannels.isNotEmpty() && filteredChannels.size> focusedIndex){
+                                    onVideoChange(filteredChannels[focusedIndex],focusedIndex)
                                 }
                                 true
                             }
@@ -187,7 +190,7 @@ fun ChannelListScreen(channels: List<EPGDataItem>,
 
         ) {
 
-            itemsIndexed(channels) { index, channel ->
+            itemsIndexed(filteredChannels) { index, channel ->
                 ChannelRow(
                     channel = channel,
                     isFocused = (index == focusedIndex),

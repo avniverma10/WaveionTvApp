@@ -45,7 +45,6 @@ fun PanmetroGenreScreen(
     sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
-    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
     val epgList by sharedViewModel.epgDataList.collectAsState()
 
     val availableGenre by sharedViewModel.availableGenre.collectAsState()
@@ -109,7 +108,7 @@ fun PanmetroGenreScreen(
                             Spacer(modifier = Modifier.width(5.dp))
                             // Middle: Channel List
                             ChannelListScreen(
-                                channels = filteredChannels,
+                                sharedViewModel = sharedViewModel,
                                 genreListFocusRequester = genreListFocusRequester,
                                 channelListFocusRequester = channelListFocusRequester,
                                 onVideoChange = onVideoChange,

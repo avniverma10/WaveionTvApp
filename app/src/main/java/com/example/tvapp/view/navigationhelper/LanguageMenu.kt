@@ -139,7 +139,7 @@ fun LanguageMenu(
                     text = item.name ?: "",
                     color = Color.White,
                     style = androidx.compose.ui.text.TextStyle(
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         fontFamily = androidx.compose.ui.text.font.FontFamily(
                             androidx.compose.ui.text.font.Font(R.font.figtree_light)
                         ),

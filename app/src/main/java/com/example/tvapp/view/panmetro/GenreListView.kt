@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -165,11 +166,11 @@ fun CategoryMenuItem(
     onKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean
 ) {
     // Example highlight colors when focused
-    val backgroundColor = if (onSelectedIndex) Color.Blue else Color.White
+    val backgroundColor = if (onSelectedIndex) Color(0xFF224685) else Color.White
     val contentColor = if (isFocused || onSelectedIndex) Color.Green else Color.White
 
     val borderModifier = if (onSelectedIndex) {
-        Modifier.background( backgroundColor)
+        Modifier.background( backgroundColor, shape = RoundedCornerShape(8.dp))
     } else {
         Modifier // No border
     }
@@ -182,7 +183,7 @@ fun CategoryMenuItem(
             .onFocusChanged { if (it.isFocused) onFocus() }
             .onKeyEvent(onKeyEvent)
             .then(borderModifier)
-            .padding(5.dp)
+            .padding(8.dp)
     ) {
         Text(
             text = categoryName,
@@ -192,13 +193,16 @@ fun CategoryMenuItem(
                 .weight(1f)
                 .fillMaxHeight()
                 .padding(end = 5.dp)
+                .wrapContentHeight(Alignment.CenterVertically)
         )
         if(isFocused){
             androidx.compose.material3.Icon(
                 imageVector = Icons.Filled.PlayArrow,
                 contentDescription = "Up Icon",
                 tint =  contentColor,
-                modifier = Modifier.padding(end = 4.dp)
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
             )
         }
     }

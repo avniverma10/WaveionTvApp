@@ -179,7 +179,7 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             }
             .focusable()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF14161A))
+            .background(Color(0xFF262C36))
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,

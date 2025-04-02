@@ -82,7 +82,6 @@ open class SharedViewModel @Inject constructor(
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
 
     init {
-        filterPanMetroChannelsByGenre("All")
         // only load once, no continuous observation to avoid overriding
         viewModelScope.launch {
             val saved = filterPreferences.filterFlow.first() // <-- one-time load only
@@ -170,6 +169,7 @@ open class SharedViewModel @Inject constructor(
                     _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
                     applyFilters()
                     trySend(epgList)
+                    filterPanMetroChannelsByGenre()
                 }
             }
         }
@@ -181,6 +181,7 @@ open class SharedViewModel @Inject constructor(
         _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
         applyFilters()
         trySend(epgList)
+        filterPanMetroChannelsByGenre()
 
         awaitClose { context.contentResolver.unregisterContentObserver(observer) }
     }.flowOn(Dispatchers.IO)
@@ -260,14 +261,16 @@ open class SharedViewModel @Inject constructor(
 
 
 
-    fun filterPanMetroChannelsByGenre(genre:String) {
-        val filtered = _epgDataList.value.filter { epgItem ->
-            val genreMatch = genre.equals("All", true) ||
-                    (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
+    fun filterPanMetroChannelsByGenre(genre:String?=null) {
+          genre?.let {
+              _filteredPanMetroChannels.value =    _epgDataList.value.filter { epgItem ->
+                  val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
+                  genreMatch
+              }
+          }?:kotlin.run {
+              _filteredPanMetroChannels.value = _epgDataList.value
+          }
 
-            genreMatch
-        }
-        _filteredPanMetroChannels.value = filtered.ifEmpty { emptyList() }
     }
 
     override fun onCleared() {
