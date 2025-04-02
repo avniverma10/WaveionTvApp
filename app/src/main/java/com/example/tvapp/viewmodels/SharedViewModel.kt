@@ -269,4 +269,9 @@ open class SharedViewModel @Inject constructor(
         }
         _filteredPanMetroChannels.value = filtered.ifEmpty { emptyList() }
     }
+
+    override fun onCleared() {
+        filterPreferences.clearFilter(viewModelScope)
+        super.onCleared()
+    }
 }

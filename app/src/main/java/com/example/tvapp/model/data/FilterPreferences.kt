@@ -17,7 +17,7 @@ class FilterPreferences(private val dataStore: DataStore<Preferences>) {
 //    private val countryKey = stringPreferencesKey("filter_country")
 //    private val sortOrderKey = stringPreferencesKey("filter_sort_order")
 
-    val filterFlow: Flow<FilterState> = dataStore.data.map { prefs ->
+    var filterFlow: Flow<FilterState> = dataStore.data.map { prefs ->
         FilterState(
             genre = prefs[genreKey],
             language = prefs[languageKey],
@@ -33,6 +33,16 @@ class FilterPreferences(private val dataStore: DataStore<Preferences>) {
                 state.language?.let { prefs[languageKey] = it } ?: prefs.remove(languageKey)
 //                state.country?.let { prefs[countryKey] = it } ?: prefs.remove(countryKey)
 //                state.sortOrder?.let { prefs[sortOrderKey] = it } ?: prefs.remove(sortOrderKey)
+            }
+        }
+    }
+
+
+    fun clearFilter(scope: CoroutineScope) {
+        scope.launch {
+            dataStore.edit { prefs ->
+                prefs[genreKey]="All"
+                prefs[languageKey]="All"
             }
         }
     }
