@@ -152,9 +152,7 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
                 ChannelBox(channel = channel) { videoUrl ->
                     sharedViewModel.epgDataList.value.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
                         sharedViewModel.updateSelectedChannel(channelItem)
-                        navController.navigate(Destination.panMetroScreen) {
-                            popUpTo(Destination.homeScreen) { inclusive = true }
-                        }
+                        navController.navigate(Destination.panMetroScreen)
                     }
                 }
             }

@@ -2,6 +2,7 @@ package com.example.tvapp.view.channels
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -61,6 +62,13 @@ fun ChannelScreen(
     val languageFocusRequesters = remember { mutableStateOf(mutableMapOf<Int, FocusRequester>()) }.value
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
+
+    BackHandler {
+        navController.navigate(Destination.homeScreen) {
+            popUpTo(0) { inclusive = true }
+            launchSingleTop = true
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -123,9 +131,7 @@ fun ChannelScreen(
                                 onClick = { clickedChannel ->
                                     sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen) {
-                                            popUpTo(Destination.homeScreen) { inclusive = true }
-                                        }
+                                        navController.navigate(Destination.panMetroScreen)
                                     }
 
                                    /* navController.navigate(
@@ -147,9 +153,7 @@ fun ChannelScreen(
                                 onClick = { clickedChannel ->
                                     sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen) {
-                                            popUpTo(Destination.homeScreen) { inclusive = true }
-                                        }
+                                        navController.navigate(Destination.panMetroScreen)
                                     }
                                     /*navController.navigate(
                                         "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +

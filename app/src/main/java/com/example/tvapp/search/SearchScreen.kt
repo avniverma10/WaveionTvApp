@@ -60,7 +60,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
 
 
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
+        navController.navigate(Destination.homeScreen) {
             popUpTo(0) { inclusive = true }
             launchSingleTop = true
         }
@@ -162,9 +162,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
                     ChannelThumbnail(channel){
                         epgData.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
-                            navController.navigate(Destination.panMetroScreen) {
-                                popUpTo(Destination.searchScreen) { inclusive = true }
-                            }
+                            navController.navigate(Destination.panMetroScreen)
                         }
                     }
                 }

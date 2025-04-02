@@ -80,18 +80,7 @@ fun PanMetroVideoPlayer(
     var isProgramOverlayVisible by remember { mutableStateOf(true) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    BackHandler {
-        navController.popBackStack()
 
-        /*if(!navController.destinationExists(Destination.epgScreen)) {
-            navController.navigate(Destination.homeScreen) {
-                popUpTo(Destination.panMetroScreen) { inclusive = true }
-            }
-        }else {
-            // Otherwise, simply pop the current screen to reveal the previous screen.
-            navController.popBackStack()
-        }*/
-    }
     // ExoPlayer Setup
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
@@ -163,11 +152,17 @@ fun PanMetroVideoPlayer(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BACK -> {
-                            navController.navigate(Destination.homeScreen) {
-                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                            if (navController.previousBackStackEntry == null) {
+                                navController.navigate(Destination.homeScreen) {
+                                    popUpTo(0) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                navController.popBackStack()
                             }
                             true
                         }
+
                         KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
                             navController.navigate(Destination.epgScreen) {
                                 popUpTo(Destination.panMetroScreen)// { inclusive = true }
