@@ -59,18 +59,18 @@ fun PanMetroPlayer(
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(wtvPlayerViewModel.provideMediaSourceFactory(context=context)).build().apply {
-             playWhenReady = true
-            addAnalyticsListener(object : AnalyticsListener {
-                override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                    if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                        Log.d("DRM", "Keys loaded successfully")
+                playWhenReady = true
+                addAnalyticsListener(object : AnalyticsListener {
+                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
+                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                            Log.d("DRM", "Keys loaded successfully")
+                        }
+                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                            Log.e("DRM", "Session manager error")
+                        }
                     }
-                    if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                        Log.e("DRM", "Session manager error")
-                    }
-                }
-            })
-        }
+                })
+            }
     }
 
     // Update video when channel changes
@@ -82,7 +82,7 @@ fun PanMetroPlayer(
         val mediaItem =  selectedVideoUrl?.let {mediaUrl ->
             MediaItem.fromUri(mediaUrl)
         }?:kotlin.run {
-            MediaItem.fromUri(Constants.defaultChannel?.content?.videoUrl?:"")
+            MediaItem.fromUri(Constants.manifest?.landingChannel?.videoUrl?:"")
         }
 
         exoPlayer.setMediaItem(mediaItem)

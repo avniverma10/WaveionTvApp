@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,16 +38,12 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.tv.material3.MaterialTheme
 import coil3.compose.AsyncImage
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
-import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.navigationhelper.Destination
 import kotlinx.coroutines.delay
@@ -81,7 +76,7 @@ fun PlayerOverlay(
     }
 
     BackHandler {
-        navController.navigate(Destination.genreScreen) {
+        navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
             launchSingleTop = true
         }
@@ -211,7 +206,7 @@ fun ProgramsInfoSection(
     Box(
         modifier = Modifier
             .background(Color.Black.copy(alpha = 0.6f))
-           // .padding(5.dp, 5.dp, 20.dp, 5.dp)
+            // .padding(5.dp, 5.dp, 20.dp, 5.dp)
             .onKeyEvent { keyEvent ->
                 // Handle selection or directional keys if needed
                 if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Enter) {
@@ -385,7 +380,7 @@ fun IntentButtonSection(
         ) {
             Row(
                 modifier = Modifier.onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.Back) {
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.NavigateNext) {
                         // For example, perform genre action
                         println("Genre button: Back key pressed")
                         true
@@ -395,32 +390,17 @@ fun IntentButtonSection(
             ) {
                 androidx.compose.material3.Icon(
                     imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Genre Icon",
+                    contentDescription = "Menu Icon",
                     tint = Color.White
                 )
-                Text(text = "Genre",
+                Text(text = "Menu",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White)
             }
-
-            Spacer(modifier = Modifier.width(4.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                androidx.compose.material3.Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Genre Icon",
-                    tint = Color.White
-                )
-                Text(text = "Catch Up",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White)
-            }
-
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Row(
                 modifier = Modifier.onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyDown && event.key == Key.NavigateNext) {
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.Back) {
                         // For example, perform genre action
                         println("Genre button: Back key pressed")
                         true
@@ -433,7 +413,7 @@ fun IntentButtonSection(
                     contentDescription = "Genre Icon",
                     tint = Color.White
                 )
-                Text(text = "EPG",
+                Text(text = "Genre",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White)
             }

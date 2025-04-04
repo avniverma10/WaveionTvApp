@@ -7,6 +7,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkInfo
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
@@ -151,4 +152,17 @@ fun Context.findMyDeviceId(): String {
     } catch (e: java.lang.Exception) {
         return ""
     }
+}
+
+
+
+/**
+ * Extension function on Context to get the TV's MAC address.
+ * Note: This method may return "02:00:00:00:00:00" on Android 6.0+ due to security restrictions.
+ */
+@SuppressLint("HardwareIds")
+fun Context.getTvMacId(): String? {
+    val wifiManager = this.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+    val wifiInfo = wifiManager?.connectionInfo
+    return wifiInfo?.macAddress
 }

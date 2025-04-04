@@ -39,7 +39,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             return@LaunchedEffect
         }
         Handler(Looper.getMainLooper()).postDelayed({
-            navController.navigate(Destination.panMetroScreen) {
+            navController.navigate(Destination.loginScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
 

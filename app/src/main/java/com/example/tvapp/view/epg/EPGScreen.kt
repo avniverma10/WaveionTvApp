@@ -2,6 +2,7 @@
 package com.example.tvapp.view.epg
 
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,10 +42,12 @@ import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
+import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -57,8 +60,8 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
 
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
-    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
+    var menuItems by remember { mutableStateOf<List<EPGCategory>>(Constants.manifest?.tab?.get(0)?.categories ?: emptyList()) }
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(Constants.manifest?.tab ?: emptyList()) }
 
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
@@ -74,12 +77,20 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val genreSelectedIndex = remember { mutableStateOf(0) }
 
+    var showExitDialog by remember { mutableStateOf(false) }
 
     BackHandler {
-        navController.navigate(Destination.homeScreen) {
-            popUpTo(0) { inclusive = true }
-            launchSingleTop = true
-        }
+        showExitDialog = true
+    }
+
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finish()
+        }, onDismiss = {
+            showExitDialog = false
+        })
     }
 
     Row(
@@ -97,11 +108,11 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 .background(Color(0xFF161D25))
                 .zIndex(1f)
         ) {
-            if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
+            /*if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
                 AdvertisementBanner(bannerList = bannerList)
             } else {
                 logReport("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
-            }
+            }*/
 
             Column(modifier = Modifier.fillMaxSize()) {
                 CategoryMenu(

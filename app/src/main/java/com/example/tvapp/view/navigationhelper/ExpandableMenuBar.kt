@@ -40,7 +40,7 @@ fun ExpandableNavigationMenu(
     sharedViewModel: SharedViewModel,
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit
 ) {
-    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab
+    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile") }
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -53,10 +53,11 @@ fun ExpandableNavigationMenu(
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
-            Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
-            Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
+            // Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+            //  Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
-            Destination.channel -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
+            Destination.genreScreen -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
+            Destination.settings -> tabs?.indexOfFirst { it.name == "settings" } ?: -1
             else -> -1
         }
     }
@@ -76,11 +77,15 @@ fun ExpandableNavigationMenu(
             coroutineScope.launch {
                 delay(200)
                 if (expanded) {
-                    focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
-                        try {
-                            requester.requestFocus()
-                        } catch (e: IllegalStateException) {
-                            Log.e("FocusError", "FocusRequester not initialized", e)
+                    if(selectedIndex<=0){
+                        profileFocusRequester.requestFocus()
+                    }else {
+                        focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
+                            try {
+                                requester.requestFocus()
+                            } catch (e: IllegalStateException) {
+                                Log.e("FocusError", "FocusRequester not initialized", e)
+                            }
                         }
                     }
                 }
@@ -129,16 +134,16 @@ fun ExpandableNavigationMenu(
                 .animateContentSize()
                 .focusable()
                 .drawBehind {
-                        val gradient = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Black,
-                                Color.Black.copy(alpha = 0.9f),
-                                Color.Black.copy(alpha = 0.6f),
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Transparent
-                            )
+                    val gradient = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Black,
+                            Color.Black.copy(alpha = 0.9f),
+                            Color.Black.copy(alpha = 0.6f),
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Transparent
                         )
-                        drawRect(brush = gradient, size = size)
+                    )
+                    drawRect(brush = gradient, size = size)
                 }
         ) {
             FocusableRow(
@@ -189,9 +194,9 @@ fun ExpandableNavigationMenu(
                         selectedIndex = index + 1
                         expanded = false
                         when (tab.name) {
-                            "home" -> navController.navigate(Destination.homeScreen)
-                            "channels" -> navController.navigate(Destination.channel)
-                            "search" -> navController.navigate(Destination.searchScreen)
+                            //"home" -> navController.navigate(Destination.homeScreen)
+                            "channels" -> navController.navigate(Destination.genreScreen)
+                            "settings" -> navController.navigate(Destination.settings)
                             "epg" -> navController.navigate(Destination.epgScreen) {
                                 popUpTo(0) { inclusive = true }
                                 launchSingleTop = true

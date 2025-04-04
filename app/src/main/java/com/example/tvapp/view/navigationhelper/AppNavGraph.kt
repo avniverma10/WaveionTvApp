@@ -2,12 +2,9 @@ package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
 import android.os.Build
-import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -16,15 +13,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
-import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
-import com.example.tvapp.view.login.LoginScreen1
+import com.example.tvapp.view.panmetro.PanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.PanMetroVideoPlayer
 import com.example.tvapp.view.panmetro.PanmetroGenreScreen
-import com.example.tvapp.view.panmetro.WTVMetroVideoPlayer
+import com.example.tvapp.view.panmetro.PanmetroLoginScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
@@ -49,7 +45,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             SplashScreen(sharedViewModel = sharedViewModel, navController)
         }
         composable(Destination.loginScreen) {
-            LoginScreen1(navController)
+            PanmetroLoginScreen(sharedViewModel,navController)
         }
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)
@@ -57,25 +53,28 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         composable(Destination.genreScreen) {
             PanmetroGenreScreen(navController,sharedViewModel)
         }
+        composable(Destination.settings) {
+            PanMetroSettingsScreen(navController,sharedViewModel)
+        }
         composable(Destination.panMetroScreen) {backStackEntry ->
             //val channelId = backStackEntry.arguments?.getString("channelId")
             PanMetroVideoPlayer(navController,sharedViewModel)
         }
-       /*
-       composable(
-            route = Destination.panMetroScreen+"{fromEpg}",
-            arguments = listOf(
-                navArgument("fromEpg") {
-                    type = NavType.StringType
-                    defaultValue = "false"
-                }
-            )
-        ) { backStackEntry ->
-            val fromEpg = backStackEntry.arguments?.getString("fromEpg")?.toBoolean() ?: false
-            PanMetroVideoPlayer(fromEpg,navController,sharedViewModel)
+        /*
+        composable(
+             route = Destination.panMetroScreen+"{fromEpg}",
+             arguments = listOf(
+                 navArgument("fromEpg") {
+                     type = NavType.StringType
+                     defaultValue = "false"
+                 }
+             )
+         ) { backStackEntry ->
+             val fromEpg = backStackEntry.arguments?.getString("fromEpg")?.toBoolean() ?: false
+             PanMetroVideoPlayer(fromEpg,navController,sharedViewModel)
 
-        }
-        */
+         }
+         */
         composable(Destination.otpScreen) {
             OtpScreen1(navController)
         }

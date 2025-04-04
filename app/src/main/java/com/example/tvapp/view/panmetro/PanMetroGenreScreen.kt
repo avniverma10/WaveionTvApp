@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +37,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -66,12 +69,28 @@ fun PanmetroGenreScreen(
         }
         sharedViewModel.onChannelVideoSelected(videoUrl = channel.content?.videoUrl, program = null)  // This method should update selectedVideoUrl.
     }
+    var showExitDialog by remember { mutableStateOf(false) }
 
     BackHandler {
+        navController.navigate(Destination.epgScreen) {
+            popUpTo(Destination.genreScreen) { inclusive = true }
+        }
+    }
+
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finish()
+        }, onDismiss = {
+            showExitDialog = false
+        })
+    }
+    /*BackHandler {
         navController.navigate(Destination.homeScreen) {
             popUpTo(0) { inclusive = true }
         }
-    }
+    }*/
 
     // The entire screen is a Box so we can layer items if needed
     Box(
@@ -97,7 +116,8 @@ fun PanmetroGenreScreen(
                         .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) {
                         Row(modifier = Modifier) {
                             // Left: Categories
-                            CategoryMenu(availableGenre,
+                            CategoryMenu(
+                                Constants.genreList?:availableGenre,
                                 channelListFocusRequester = channelListFocusRequester,
                                 genreListFocusRequester = genreListFocusRequester,
                                 onCategoryForward = { selectedGenre->
@@ -113,7 +133,7 @@ fun PanmetroGenreScreen(
                                 channelListFocusRequester = channelListFocusRequester,
                                 onVideoChange = onVideoChange,
                                 onDoubleClickIntent = {channelInfo->
-                                    epgList.find { it.content?.videoUrl == channelInfo.content?.videoUrl }?.let {channelItem->
+                                    Constants.epgItemList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen) {
                                             popUpTo(Destination.genreScreen) { inclusive = true }
@@ -140,7 +160,7 @@ fun PanmetroGenreScreen(
                                 .fillMaxHeight(1f)
                                 .padding(20.dp)) {
                                 Box(modifier = Modifier.background(Color.Transparent, shape = RoundedCornerShape(10.dp))
-                                    ){
+                                ){
                                     Image(
                                         painter = painterResource(id = R.drawable.alliance_logo),
                                         contentDescription = "Panmetro Logo",

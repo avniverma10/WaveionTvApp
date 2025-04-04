@@ -264,7 +264,7 @@ fun EPGContent(
     if (wishlistPopupProgram != null) {
         Dialog(onDismissRequest = { sharedViewModel.clearWishlistPopup() }) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                val channelName = channelMap[wishlistPopupProgram?.channelId]?.displayName ?: "Unknown Channel"
+                val channelName = channelMap?.get(wishlistPopupProgram?.channelId)?.displayName ?: "Unknown Channel"
                 Column(modifier = Modifier.align(Alignment.Center)) {
                     Text(text = "Channel: $channelName", color = Color.White)
                     Text(text = "Start: ${wishlistPopupProgram!!.startTime}", color = Color.White)
@@ -288,7 +288,7 @@ fun EPGContent(
                         epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen) {
-                               // popUpTo(Destination.epgScreen) { inclusive = true }
+                                // popUpTo(Destination.epgScreen) { inclusive = true }
                             }
                         }
                         sharedViewModel.clearWishlistAlert()

@@ -26,13 +26,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.extensions.getTvMacId
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun PanmetroLoginScreen(
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,navController: NavController
 ) {
     val context = LocalContext.current
 
@@ -49,14 +52,15 @@ fun PanmetroLoginScreen(
             // Gradient background placed directly under the top header
             GradientBackground {
                 // The login UI is placed within the gradient background
-                LoginScreenUI()
+                LoginScreenUI(navController)
             }
         }
     }
 }
 
 @Composable
-fun LoginScreenUI() {
+fun LoginScreenUI(navController: NavController) {
+    val context = LocalContext.current
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
     // Center the login UI elements in a Row
@@ -122,7 +126,7 @@ fun LoginScreenUI() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Static MAC ID field
-                LoginItem(iconResId = R.drawable.user1, label = "12:34:56:78:9A:BC")
+                LoginItem(iconResId = R.drawable.user1, label = context.getTvMacId()?:"12:34:56:78:9A:BC")
                 Spacer(modifier = Modifier.height(8.dp))
 
                 LoginItem(iconResId = R.drawable.mac, label = "Mac id")
@@ -135,6 +139,9 @@ fun LoginScreenUI() {
                         .wrapContentWidth()
                         .clickable {
                             // Optionally handle click for navigation
+                            navController.navigate(Destination.genreScreen) {
+                                //popUpTo(Destination.loginScreen) { inclusive = true }
+                            }
                         }
                         .padding(8.dp)
                 ) {
@@ -143,7 +150,7 @@ fun LoginScreenUI() {
                     androidx.compose.material3.Icon(
                         imageVector = Icons.Filled.ArrowForward,
                         contentDescription = "Up Icon",
-                        tint = Color.Black
+                        tint = Color.White
                     )
                     // Uncomment if you want an arrow icon:
                     // Image(

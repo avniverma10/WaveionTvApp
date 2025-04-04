@@ -41,10 +41,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.tvapp.R
-import com.example.tvapp.extensions.destinationExists
 import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.addWatermarkToPlayer
@@ -60,13 +58,13 @@ fun PanMetroVideoPlayer(
     wtvPlayerViewModel:WTVPlayerViewModel= hiltViewModel()
 ) {
     val context = LocalContext.current
-    val epgList by sharedViewModel.filteredEPGList.collectAsState()
+    val epgList by sharedViewModel.epgDataList.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
 
     var currentIndex by remember {
         mutableIntStateOf(epgList.indexOfFirst {
             it.content?.videoUrl == (selectedChannel.content?.videoUrl ?: "")
-        })
+        }?:0)
     }
 
     // Mutable state for UI updates
@@ -85,18 +83,18 @@ fun PanMetroVideoPlayer(
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(wtvPlayerViewModel.provideMediaSourceFactory(context=context)).build().apply {
-            playWhenReady = true
-            addAnalyticsListener(object : AnalyticsListener {
-                override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                    if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                        Log.d("DRM", "Keys loaded successfully")
+                playWhenReady = true
+                addAnalyticsListener(object : AnalyticsListener {
+                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
+                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                            Log.d("DRM", "Keys loaded successfully")
+                        }
+                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                            Log.e("DRM", "Session manager error")
+                        }
                     }
-                    if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                        Log.e("DRM", "Session manager error")
-                    }
-                }
-            })
-        }
+                })
+            }
     }
 
     // Update video when channel changes
@@ -106,7 +104,7 @@ fun PanMetroVideoPlayer(
             // Stop and clear previous media to avoid issues
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-           // wtvPlayerViewModel.provideMediaSourceFactory(contentUrl =selectedChannel.content?.videoUrl?:"",context=context )
+            // wtvPlayerViewModel.provideMediaSourceFactory(contentUrl =selectedChannel.content?.videoUrl?:"",context=context )
             // Create a MediaItem from your video URL.
             val mediaItem = MediaItem.fromUri(selectedChannel.content?.videoUrl?:"")
 
@@ -124,8 +122,14 @@ fun PanMetroVideoPlayer(
         }
     }
 
+    BackHandler {
+        navController.navigate(Destination.epgScreen) {
+            popUpTo(Destination.panMetroScreen) { inclusive = true }
+        }
+    }
+
     fun playNextChannel() {
-        if (currentIndex < epgList.lastIndex) {
+        if (currentIndex < (epgList.lastIndex )) {
             currentIndex++
             sharedViewModel.updateSelectedChannel(epgList[currentIndex])
         }
@@ -152,25 +156,28 @@ fun PanMetroVideoPlayer(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BACK -> {
-                            if (navController.previousBackStackEntry == null) {
+                            navController.navigate(Destination.epgScreen) {
+                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                            }
+                            /*if (navController.previousBackStackEntry == null) {
                                 navController.navigate(Destination.homeScreen) {
                                     popUpTo(0) { inclusive = true }
                                     launchSingleTop = true
                                 }
                             } else {
                                 navController.popBackStack()
-                            }
+                            }*/
                             true
                         }
 
                         KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            navController.navigate(Destination.epgScreen) {
+                            navController.navigate(Destination.genreScreen) {
                                 popUpTo(Destination.panMetroScreen)// { inclusive = true }
                             }
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
-                            navController.navigate(Destination.genreScreen) {
+                            navController.navigate(Destination.epgScreen) {
                                 popUpTo(Destination.panMetroScreen) { inclusive = true }
                             }
                             true

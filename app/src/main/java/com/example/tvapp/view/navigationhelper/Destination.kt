@@ -13,5 +13,6 @@ object Destination {
     const val otpScreen = "otpScreen"
     const val genreScreen = "genreScreen"
     const val channel = "allchannels"
+    const val settings = "settings"
 
 }

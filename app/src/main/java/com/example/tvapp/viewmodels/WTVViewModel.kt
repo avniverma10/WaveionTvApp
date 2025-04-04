@@ -72,7 +72,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
     init {
         initAppRequiredData()
         // Start the SSE connection globally.
-        startSSE()
+     //   startSSE()
     }
 
     fun initAppRequiredData(){
@@ -83,6 +83,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 when (response) {
                     is WTVResponse.Success -> {
                         application.applicationContext.applyAppManifest(response.data)
+                        Constants.manifest = response.data
                         logReport("ManifestResponse:${ response.data}")
                     }
                     is WTVResponse.Failure -> {
@@ -100,6 +101,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     is WTVListResponse.Success -> {
                         // Handle successful response
                         updateEPGData(response.data)
+                        Constants.epgItemList = response.data
                         response.data.find { it.channelId == provideApplicationContext().appManifestLiveData().value?.landingChannel?.ChannelID }?.let {
                             updateSelectedChannel(it)
                         }
@@ -124,6 +126,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         genreList.add(WTVGenre(name = "All"))
                         genreList.addAll(response.data)
                         _availableGenre.value = genreList
+                        Constants.genreList = genreList
                         // Handle successful response
                         application.applicationContext.applyAppGenre(genreList)
                         logReport("applyAppGenre:${ response.data}")
@@ -147,6 +150,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         languageList.add(WTVLanguage(name = "All"))
                         languageList.addAll(response.data)
                         // Handle successful response
+                        Constants.languageList = languageList
                         application.applicationContext.applyAppLanguage(response.data)
                         logReport("applyAppLanguage:${ response.data}")
 

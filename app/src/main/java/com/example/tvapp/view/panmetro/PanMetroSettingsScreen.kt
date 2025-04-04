@@ -35,11 +35,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
+import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
-fun PanMetroSettingsScreen() {
+fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -161,10 +163,10 @@ fun MenuItemCard(
             .then(
                 if (isFocused) Modifier.background(Color.Yellow)
                     .border(
-                    width = 3.dp,
-                    color = Color.Yellow,
-                    shape = RoundedCornerShape(8.dp)
-                ) else Modifier
+                        width = 3.dp,
+                        color = Color.Yellow,
+                        shape = RoundedCornerShape(8.dp)
+                    ) else Modifier
             ),
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
         shape = RoundedCornerShape(8.dp),
