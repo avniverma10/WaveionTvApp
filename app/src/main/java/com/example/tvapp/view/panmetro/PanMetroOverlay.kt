@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -44,11 +46,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.tv.material3.MaterialTheme
 import coil3.compose.AsyncImage
+import com.example.tvapp.extensions.findProgramDateTimeStamp
+import com.example.tvapp.extensions.findProgramTimeStamp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.navigationhelper.Destination
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 
@@ -195,12 +200,20 @@ fun ChannelInfoSection(
 fun ProgramsInfoSection(
     dataItem: EPGDataItem?=null
 ) {
+
     val now = System.currentTimeMillis()
     // Suppose you have a field: val selectedChannelId = ...
-    val filtered = dataItem?.currentPrograms?.sortedBy { it.startTime }
 
-    val current = filtered?.firstOrNull { (it.startTime ?: 0) <= now && (it.endTime ?: 0) > now }
-    val upcoming = filtered?.filter { (it.startTime ?: 0) > now }
+    val current = dataItem?.tv?.programme?.firstOrNull {
+       // Log.e("AvailableTimings:", findProgramDateTimeStamp(it.startTime,it.endTime))
+        (it.startTime ?: 0) < now && (it.endTime ?: 0) > now
+    }
+    val upcoming = dataItem?.tv?.programme
+        ?.filter {
+           // Log.e("UpcomingTimings:", findProgramDateTimeStamp(it.startTime,it.endTime))
+            (it.startTime ?: 0) > now
+        }
+        ?.take(2)
 
     // For D-pad navigation, make it focusable if user can select it
     Box(
@@ -236,7 +249,7 @@ fun ProgramsInfoSection(
                 contentScale = ContentScale.Fit
             )
 
-            if(current != null && upcoming?.size?:0 >0) {
+            if(current != null || (upcoming?.size ?: 0) > 0) {
 
                 Column {
                     Row(modifier = Modifier.padding(10.dp, 0.dp, 10.dp, 0.dp)) {
@@ -253,7 +266,7 @@ fun ProgramsInfoSection(
                             )
                         }
                         Text(
-                            text = "${current?.startTime ?: "00:00-00:00"}",
+                            text = findProgramTimeStamp(current?.startTime,current?.endTime),
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
@@ -262,16 +275,22 @@ fun ProgramsInfoSection(
                                 .align(Alignment.CenterVertically)
                         )
                     }
-                    Text(
-                        text = current?.title ?: "No information available",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .background(Color.Transparent)
-                            .padding(top = 15.dp)
-                            .align(Alignment.CenterHorizontally)
+                    Box(modifier = Modifier.padding(10.dp, 0.dp, 10.dp, 0.dp)
+                        .background(Color.Transparent),
+                        contentAlignment = Alignment.Center) {
+                        Text(
+                            text = current?.title ?: "No information available",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                .background(Color.Transparent)
+                                .wrapContentWidth()
+                                .padding(top = 15.dp)
 
-                    )
+                        )
+                    }
+
+
                 }
                 Column(modifier = Modifier.padding(10.dp, 0.dp, 10.dp, 0.dp)) {
                     Box(
@@ -290,17 +309,18 @@ fun ProgramsInfoSection(
                     Row(
                         modifier = Modifier
                             .padding(top = 15.dp)
-                            .align(Alignment.CenterHorizontally)
+                            .wrapContentWidth()
+                            .align(Alignment.Start)
                     ) {
                         Text(
-                            text = "${upcoming?.getOrNull(0)?.startTime ?: "00:00-00:00"}",
+                            text = findProgramTimeStamp(upcoming?.getOrNull(0)?.startTime,upcoming?.getOrNull(0)?.endTime),
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
                                 .background(Color.Transparent)
                         )
                         Text(
-                            text = upcoming?.getOrNull(0)?.title ?: " | No information available",
+                            text = " | ${upcoming?.getOrNull(0)?.title}" ?: " | No information available",
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
@@ -310,18 +330,19 @@ fun ProgramsInfoSection(
 
                     Row(
                         modifier = Modifier
-                            .padding(top = 5.dp)
-                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 15.dp)
+                            .wrapContentWidth()
+                            .align(Alignment.Start)
                     ) {
                         Text(
-                            text = "${upcoming?.getOrNull(1)?.startTime ?: "00:00-00:00"}",
+                            text = findProgramTimeStamp(upcoming?.getOrNull(1)?.startTime,upcoming?.getOrNull(1)?.endTime),
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
                                 .background(Color.Transparent)
                         )
                         Text(
-                            text = upcoming?.getOrNull(1)?.title ?: " | No information available",
+                            text = " | ${upcoming?.getOrNull(1)?.title}" ?: " | No information available",
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier
@@ -329,7 +350,7 @@ fun ProgramsInfoSection(
                         )
                     }
                 }
-            }else{
+            } else{
                 Text(
                     text = "No information available",
                     color = Color.White,

@@ -248,17 +248,17 @@ open class SharedViewModel @Inject constructor(
     }
 
 
-    fun providePlayableProgramData(programs: List<Programme>){
+    fun providePlayableProgramData(programs: List<Programme>):List<Programme>{
         val currentTime = System.currentTimeMillis()
-        _availableProgram.value = programs.filter { program ->
-            // Convert _start and _stop to epoch milliseconds
-            val startMillis = program.startTime?:0L
-            val endMillis = program.endTime?:0L
-            // Keep the program if it hasn't ended yet
-            endMillis > currentTime
-        }
+        return programs.filter { program ->
+                val startMillis = program.startTime ?: 0L
+                val endMillis = program.endTime ?: 0L
+                // A program is playable if it is either currently running or upcoming:
+                // (i.e. its end time is in the future)
+                endMillis > currentTime
+            }
+            .sortedBy { it.startTime } // sort programs by their start time
     }
-
 
 
     fun filterPanMetroChannelsByGenre(genre:String?=null) {

@@ -10,8 +10,8 @@ class EPGDbHelper(context: Context) : SQLiteOpenHelper(context, "wtv_epg.db", nu
         db.execSQL(
             """
             CREATE TABLE ${EPGContract.EPGEntry.TABLE_NAME} (
-                ${EPGContract.EPGEntry.COLUMN_ID} TEXT PRIMARY KEY,
-                ${EPGContract.EPGEntry.COLUMN_CHANNEL_ID} TEXT,
+                ${EPGContract.EPGEntry.COLUMN_ID} TEXT,
+                ${EPGContract.EPGEntry.COLUMN_CHANNEL_ID} TEXT PRIMARY KEY,
                 ${EPGContract.EPGEntry.COLUMN_DATA} TEXT,
                 ${EPGContract.EPGEntry.COLUMN_CHANNEL_HASH} TEXT, 
                 ${EPGContract.EPGEntry.COLUMN_LAST_UPDATED} TEXT

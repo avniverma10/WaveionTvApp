@@ -1,5 +1,6 @@
 package com.example.tvapp.model.data.epgdata
 
+import TimestampAdapter
 import com.example.tvapp.extensions.toTimestamp
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
@@ -60,7 +61,11 @@ data class Content(
     val title: String?="005 News 18 UP",
     val videoUrl: String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/Chardikla_Time_TV/DASH/Chardikla_Time_TV.mpd",
     val genre: List<String>? = emptyList(),
-    val language: String?= ""
+    val language: String?= "",
+    @SerializedName("DRM")
+    val drmType: String?="cryptoguard",//{sigma, cryptoguard, None}
+    val assetId: String?="546465f1-a54c-4146-b417-c5d5ac0d0802",
+    val streamType: String?="",
 )
 data class Channel(
     val _id: String?="ZEE_SALAAM_RS-0.10",

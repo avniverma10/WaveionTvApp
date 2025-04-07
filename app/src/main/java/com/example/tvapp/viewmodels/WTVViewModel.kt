@@ -197,7 +197,19 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     put(EPGContract.EPGEntry.COLUMN_LAST_UPDATED, item.lastUpdated)
                     put(EPGContract.EPGEntry.COLUMN_DATA, Gson().toJson(item))
                 }
-                context.contentResolver.insert(EPGContract.EPGEntry.CONTENT_URI, values)
+
+                // Try to update the row with the given channelId.
+                val rowsUpdated = context.contentResolver.update(
+                    EPGContract.EPGEntry.CONTENT_URI,
+                    values,
+                    "${EPGContract.EPGEntry.COLUMN_CHANNEL_ID} = ?",
+                    arrayOf(item.channelId)
+                )
+
+                // If no row was updated, then insert a new record.
+                if (rowsUpdated == 0) {
+                    context.contentResolver.insert(EPGContract.EPGEntry.CONTENT_URI, values)
+                }
             }
         }
     }

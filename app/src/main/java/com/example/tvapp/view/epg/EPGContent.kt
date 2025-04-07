@@ -173,11 +173,12 @@ fun EPGContent(
                                         start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
                                     )
                             ) {
-                                itemsIndexed(channelData.tv?.programme!!) { programIndex, program ->
+                                val availableProgram = sharedViewModel.providePlayableProgramData(channelData.tv?.programme?: arrayListOf())
+                                itemsIndexed(availableProgram) { programIndex, program ->
                                     val programWidth = calculateProgramWidth(program.startTime ?: 0, program.endTime ?: 0)
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
-                                    val isLastProgram = (programIndex == channelData.tv.programme.lastIndex)
+                                    val isLastProgram = (programIndex == availableProgram.lastIndex)
                                     Box(
                                         modifier = Modifier
                                             .width(programWidth)
