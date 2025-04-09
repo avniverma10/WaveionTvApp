@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -35,25 +36,18 @@ import androidx.compose.ui.unit.dp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import java.text.SimpleDateFormat
 import java.util.Locale
-
 @Composable
 fun PanMetroNewOverlay(
     currentChannel: EPGDataItem?,
-    epgList: List<EPGDataItem>
+    epgList: List<EPGDataItem>,
+    isOverlayVisible: Boolean, // Pass overlay visibility
+    onChannelFocused: (EPGDataItem) -> Unit  // Callback for channel focus events
 ) {
+    // Create a LazyListState to control scrolling.
     val listState = rememberLazyListState()
 
-    val currentChannelIndex = currentChannel?.let { channel ->
-        epgList.indexOfFirst { it.channelId == channel.channelId }
-    } ?: -1
-
+    // Create focus requesters for each channel.
     val focusRequesters = remember { epgList.associate { it.channelId to FocusRequester() } }
-
-    LaunchedEffect(currentChannelIndex) {
-        if (currentChannelIndex >= 0) {
-            listState.animateScrollToItem(currentChannelIndex)
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Top overlay for program info.
@@ -67,12 +61,13 @@ fun PanMetroNewOverlay(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .background(brush = topBarGradient)
+                .background(topBarGradient)
                 .padding(horizontal = 24.dp, vertical = 13.dp)
         ) {
             TopOverlayInfo(dataItem = currentChannel)
         }
 
+        // Bottom overlay for channel cards.
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -86,21 +81,35 @@ fun PanMetroNewOverlay(
             ) {
                 itemsIndexed(
                     items = epgList,
-                    key = { index, item -> item.channelId?: index  } // Now using channelId as the key
-                ) { index, item ->
+                    key = { index, item -> item.channelId ?: index }
+                ) { _, item ->
                     ChannelCard(
                         epgDataItem = item,
-                        modifier = Modifier
-                            .focusRequester(focusRequesters[item.channelId]!!)
+                        modifier = Modifier.focusRequester(focusRequesters[item.channelId]!!),
+                        onFocus = { onChannelFocused(it) }
                     )
-                    LaunchedEffect(currentChannelIndex) {
-                        if (index == currentChannelIndex) {
-                            focusRequesters[item.channelId]?.requestFocus()
-                        }
-                    }
                 }
             }
+        }
 
+        // Global LaunchedEffect: when the overlay becomes visible or the current channel changes,
+        // scroll to that channel and then request focus.
+        LaunchedEffect(currentChannel?.channelId, isOverlayVisible) {
+            if (isOverlayVisible) {
+                currentChannel?.channelId?.let { channelId ->
+                    // Scroll the channel into view.
+                    val index = epgList.indexOfFirst { it.channelId == channelId }
+                    if (index >= 0) {
+                        listState.animateScrollToItem(index)
+                    }
+                    // Wait until the next frame.
+                    withFrameNanos { }
+                    // Optionally, wait a little extra time.
+                    kotlinx.coroutines.delay(100)
+                    // Finally, request focus.
+                    focusRequesters[channelId]?.requestFocus()
+                }
+            }
         }
     }
 }
@@ -108,7 +117,8 @@ fun PanMetroNewOverlay(
 @Composable
 fun ChannelCard(
     epgDataItem: EPGDataItem,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFocus: (EPGDataItem) -> Unit = {} // New onFocus callback
 ) {
     val now = System.currentTimeMillis()
     val programList = epgDataItem.currentPrograms ?: epgDataItem.tv?.programme
@@ -128,8 +138,16 @@ fun ChannelCard(
             .width(260.dp)
             .height(160.dp)
             .padding(4.dp)
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable() // Make the card focusable
+            .onFocusChanged { focusState ->
+                if (focusState.isFocused) {
+                    isFocused = true
+                    // Invoke callback when focused
+                    onFocus(epgDataItem)
+                } else {
+                    isFocused = false
+                }
+            }
+            .focusable() // Makes the card focusable
             .border(
                 width = if (isFocused) 2.5.dp else 0.dp,
                 color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,

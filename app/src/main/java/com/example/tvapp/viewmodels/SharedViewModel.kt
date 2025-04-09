@@ -169,7 +169,6 @@ open class SharedViewModel @Inject constructor(
                     _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
                     applyFilters()
                     trySend(epgList)
-                    filterPanMetroChannelsByGenre()
                 }
             }
         }
@@ -181,7 +180,7 @@ open class SharedViewModel @Inject constructor(
         _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
         applyFilters()
         trySend(epgList)
-        filterPanMetroChannelsByGenre()
+        //filterPanMetroChannelsByGenre()
 
         awaitClose { context.contentResolver.unregisterContentObserver(observer) }
     }.flowOn(Dispatchers.IO)

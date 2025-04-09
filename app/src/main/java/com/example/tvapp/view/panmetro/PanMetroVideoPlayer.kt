@@ -170,18 +170,18 @@ fun PanMetroVideoPlayer(
                             true
                         }
 
-                        KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            navController.navigate(Destination.genreScreen) {
-                                popUpTo(Destination.panMetroScreen)// { inclusive = true }
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_DPAD_LEFT -> {
-                            navController.navigate(Destination.epgScreen) {
-                                popUpTo(Destination.panMetroScreen) { inclusive = true }
-                            }
-                            true
-                        }
+//                        KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
+//                            navController.navigate(Destination.genreScreen) {
+//                                popUpTo(Destination.panMetroScreen)// { inclusive = true }
+//                            }
+//                            true
+//                        }
+//                        KeyEvent.KEYCODE_DPAD_LEFT -> {
+//                            navController.navigate(Destination.epgScreen) {
+//                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+//                            }
+//                            true
+//                        }
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                             if(isOverlayVisible){
                                 isOverlayVisible= false
@@ -253,11 +253,18 @@ fun PanMetroVideoPlayer(
         }
 
         if (isOverlayVisible) {
-            PlayerOverlay(
-                navController= navController,
-                dataItem = selectedChannel,
-                onDismiss = { isProgramOverlayVisible = false }
-            )
+                PanMetroNewOverlay(
+                    currentChannel = selectedChannel,
+                    epgList = epgList,
+                    isOverlayVisible = isOverlayVisible, // Pass the overlay visibility here
+                    onChannelFocused = { focusedChannel ->
+                        // Update the selected channel in the shared view model so the video updates
+                        sharedViewModel.updateSelectedChannel(focusedChannel)
+                    }
+                )
+
+
+
         }
     }
 }

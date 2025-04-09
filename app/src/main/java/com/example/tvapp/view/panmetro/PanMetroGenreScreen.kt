@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -77,6 +78,11 @@ fun PanmetroGenreScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        sharedViewModel.filterPanMetroChannelsByGenre()
+
+    }
+
 
     // Exit confirmation dialog
     if (showExitDialog) {
@@ -100,11 +106,11 @@ fun PanmetroGenreScreen(
     ) {
         // Column to hold the top bar and main content
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
             // 1) Top bar with brand logo on left and date/time on right
-            PermettoTopBar()
-            GradientBackground(content = {
+//            PermettoTopBar()
+//            GradientBackground(content = {
                 // 2) Main content row
                 Row(
                     modifier = Modifier
@@ -116,7 +122,7 @@ fun PanmetroGenreScreen(
                         .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) {
                         Row(modifier = Modifier) {
                             // Left: Categories
-                            CategoryMenu(
+                            NewCategoryMenu(
                                 Constants.genreList?:availableGenre,
                                 channelListFocusRequester = channelListFocusRequester,
                                 genreListFocusRequester = genreListFocusRequester,
@@ -125,9 +131,9 @@ fun PanmetroGenreScreen(
                                     val genreName = selectedGenre.name ?: "All"
                                     sharedViewModel.filterPanMetroChannelsByGenre(genreName)
                                 })
-                            Spacer(modifier = Modifier.width(5.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
                             // Middle: Channel List
-                            ChannelListScreen(
+                            NewChannelListScreen(
                                 sharedViewModel = sharedViewModel,
                                 genreListFocusRequester = genreListFocusRequester,
                                 channelListFocusRequester = channelListFocusRequester,
@@ -156,27 +162,31 @@ fun PanmetroGenreScreen(
                                     sharedViewModel= sharedViewModel
                                 )
                             }
-                            Box(modifier = Modifier
-                                .fillMaxHeight(1f)
-                                .padding(20.dp)) {
-                                Box(modifier = Modifier.background(Color.Transparent, shape = RoundedCornerShape(10.dp))
-                                ){
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight(1f)
+                                    .padding(25.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize() // Force the inner Box to fill the outer Box.
+                                        .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
+                                ) {
                                     Image(
                                         painter = painterResource(id = R.drawable.alliance_logo),
                                         contentDescription = "Panmetro Logo",
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .align(Alignment.Center)
-                                            .padding(10.dp)
-                                            .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed
+                                            .fillMaxSize() // Stretch the image to fill the inner Box.
+                                            .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
                                     )
                                 }
-
                             }
+
                         }
                     }
                 }
-            })
+//            })
         }
     }
 }
