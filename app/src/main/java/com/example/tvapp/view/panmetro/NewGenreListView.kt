@@ -52,9 +52,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun NewCategoryMenu(
     genres: List<WTVGenre>,
-    channelListFocusRequester: FocusRequester,
-    genreListFocusRequester: FocusRequester,
-    onCategoryForward: (WTVGenre) -> Unit
+    selectedIndex: Int,
+    focusRequesters: List<FocusRequester>,
+    onCategoryForward: (Int, WTVGenre) -> Unit
 ) {
     // Track which item is focused or selected.
     var focusedIndex by remember { mutableStateOf(0) }
@@ -100,14 +100,14 @@ fun NewCategoryMenu(
             modifier = Modifier
                 .weight(1f)
                 .padding(6.dp)
-                .focusRequester(genreListFocusRequester)
         ) {
             itemsIndexed(genres) { index, genre ->
                 NewCategoryMenuItem(
                     categoryName = genre.name ?: "",
                     isFocused = (index == focusedIndex),
                     onSelectedIndex = (index == selectedIndex),
-                    onFocus = { focusedIndex = index },
+                    focusRequester = focusRequesters[index],
+                    onFocus = { onCategoryForward(index, genre) },
                     onKeyEvent = { keyEvent ->
                         if (keyEvent.type == KeyEventType.KeyDown) {
                             when (keyEvent.nativeKeyEvent.keyCode) {
@@ -138,11 +138,15 @@ fun NewCategoryMenu(
                                     }
                                     true
                                 }
-                                KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    selectedIndex = focusedIndex
-                                    genres.getOrNull(selectedIndex)?.let { onCategoryForward(it) }
+                                KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     true
                                 }
+                                KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                    selectedIndex = focusedIndex
+                                    genres.getOrNull(selectedIndex)?.let { onCategoryForward(selectedIndex, it) }
+                                    true
+                                }
+
                                 else -> false
                             }
                         } else false
@@ -177,16 +181,15 @@ fun NewCategoryMenuItem(
     categoryName: String,
     isFocused: Boolean,
     onSelectedIndex: Boolean,
+    focusRequester: FocusRequester,
     onFocus: () -> Unit,
     onKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean
 ) {
-    // Animate scale change based on focus.
     val scale by animateFloatAsState(targetValue = if (isFocused) 1.1f else 1f)
-    // For the "All" item, show green only when focused. For others, show green when focused or selected.
     val contentColor = if (categoryName == "All") {
         if (isFocused) Color.Green else Color.White
     } else {
-        if (isFocused || onSelectedIndex) Color.Green else Color.White
+        if (isFocused) Color.Green else Color.White
     }
     val borderWidth = 1.5.dp
 
@@ -197,6 +200,7 @@ fun NewCategoryMenuItem(
             .scale(scale)
             .clip(RoundedCornerShape(6.dp))
             .padding(borderWidth)
+            .focusRequester(focusRequester)  // assign the FocusRequester here
     ) {
         Row(
             modifier = Modifier

@@ -59,6 +59,13 @@ fun PanmetroGenreScreen(
     // FocusRequester for the channel list area.
     var genreListFocusRequester = remember { FocusRequester() }
     var channelListFocusRequester = remember { FocusRequester() }
+    // Lift the selected genre index state.
+    var selectedGenreIndex by remember { mutableIntStateOf(0) }
+
+    // Create a list of FocusRequesters for the genre items.
+    val genreFocusRequesters = remember(availableGenre) { List(availableGenre.size) { FocusRequester() } }
+
+
 
     // When a channel is selected, update the video URL in the ViewModel.
     val onVideoChange: (EPGDataItem,Int) -> Unit = { channel,channelIndex ->
@@ -123,28 +130,39 @@ fun PanmetroGenreScreen(
                         Row(modifier = Modifier) {
                             // Left: Categories
                             NewCategoryMenu(
-                                Constants.genreList?:availableGenre,
-                                channelListFocusRequester = channelListFocusRequester,
-                                genreListFocusRequester = genreListFocusRequester,
-                                onCategoryForward = { selectedGenre->
-                                    channelListFocusRequester.requestFocus()
+                                genres = availableGenre,
+                                selectedIndex = selectedGenreIndex,
+                                focusRequesters = genreFocusRequesters,
+                                // On selection, update the index, filter channels, and move focus to the channel list.
+                                onCategoryForward = { index, selectedGenre ->
+                                    selectedGenreIndex = index
                                     val genreName = selectedGenre.name ?: "All"
                                     sharedViewModel.filterPanMetroChannelsByGenre(genreName)
-                                })
+                                    // Request focus back to the channel list so its first item is focused.
+                                    channelListFocusRequester.requestFocus()
+                                }
+                            )
                             Spacer(modifier = Modifier.width(10.dp))
                             // Middle: Channel List
                             NewChannelListScreen(
                                 sharedViewModel = sharedViewModel,
-                                genreListFocusRequester = genreListFocusRequester,
                                 channelListFocusRequester = channelListFocusRequester,
-                                onVideoChange = onVideoChange,
-                                onDoubleClickIntent = {channelInfo->
-                                    Constants.epgItemList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }?.let {channelItem->
-                                        sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen) {
-                                            popUpTo(Destination.genreScreen) { inclusive = true }
+                                onNavigateToGenre = {
+                                    // Request focus on the genre item that was last selected.
+                                    genreFocusRequesters.getOrNull(selectedGenreIndex)
+                                        ?.requestFocus()
+                                },
+                                onVideoChange =  onVideoChange,
+                                onDoubleClickIntent = { channelInfo ->
+                                    Constants.epgItemList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
+                                        ?.let { channelItem ->
+                                            sharedViewModel.updateSelectedChannel(channelItem)
+                                            navController.navigate(Destination.panMetroScreen) {
+                                                popUpTo(Destination.genreScreen) {
+                                                    inclusive = true
+                                                }
+                                            }
                                         }
-                                    }
                                 }
                             )
                         }
