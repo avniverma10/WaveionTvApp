@@ -1,28 +1,25 @@
-package com.example.tvapp.model.repository
+package com.example.tvapp.model.repository.common
 
-import android.util.Log
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.toJSONArray
 import com.example.tvapp.extensions.toJSONObject
-import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.model.data.banner.Banner
-import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.utils.network.NetworkApiCallInterface
-import com.example.tvapp.utils.sealed.LoginResponse
+import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.utils.sealed.WTVResponse
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
@@ -141,79 +138,5 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             logReport("Banner", "Error fetching Banner content", e)
         }
     }.flowOn(Dispatchers.IO) // <-- This moves the emission to the IO thread
-
-    suspend fun sendOtp(
-        url: String,
-        authToken: String,
-        countryCode: String = "+91",
-        customerId: String = "C-A690A89045B84E8",
-        flowType: String = "SMS",
-        mobileNumber: String = "7838115152"
-    ): Flow<LoginResponse> = flow {
-        try {
-
-            logReport("AVNI", "sendOtp: Inside the try block")
-
-            val response = networkApiCallInterface.sendOtp(
-                url = url,
-                authToken = authToken,
-                countryCode = countryCode,
-                customerId = customerId,
-                flowType = flowType,
-                mobileNumber = mobileNumber
-            )
-
-            logReport("AVNI", "sendOtp: $authToken")
-
-            if (response.isSuccessful) {
-                response.body()?.let { otpResponse ->
-                    emit(LoginResponse.Success(otpResponse.data.verificationId)) // Emit success
-                } ?: emit(LoginResponse.OnFailure("Response body is null"))
-            } else {
-                val errorBody = response.errorBody()?.string()
-                logReport("AVNI", "Error Response: $errorBody")
-                emit(LoginResponse.OnFailure("Failed to send OTP: ${response.message()}"))
-            }
-        } catch (e: Exception) {
-            logReport("AVNI", "Exception: ${e.localizedMessage}")
-            emit(LoginResponse.OnFailure(e.localizedMessage ?: "Unknown error occurred"))
-        }
-    }.flowOn(Dispatchers.IO) // Ensures network call runs on IO thread
-
-    suspend fun validateOtp(
-        url: String,
-        currentVerificationId: Long,
-        otpCode: String,
-        authToken: String
-    ): Flow<LoginResponse> = flow {
-        try {
-
-            logReport("AVNI", "sendOtp: Inside the try block")
-
-            val response = networkApiCallInterface.validateOtp(
-                url = url,
-                authToken = authToken,
-                verificationId = currentVerificationId,
-                code = otpCode,
-            )
-            if (response.isSuccessful) {
-                val validationData = response.body()?.data
-                if (validationData?.verificationStatus == "VERIFICATION_COMPLETED") {
-                    //dataStoreManager.saveLoginState(true, authToken)
-                    emit(LoginResponse.Success(authToken))
-
-                } else {
-                    emit(LoginResponse.OnFailure("OTP validation failed. Status: ${validationData?.verificationStatus}"))
-                }
-            } else {
-                val errorBody = response.errorBody()?.string()
-                logReport("AVNI", "Error Response: $errorBody")
-                emit(LoginResponse.OnFailure( "Failed to send OTP: ${response.message()}"))
-            }
-        } catch (e: Exception) {
-            logReport("AVNI", "Exception: ${e.localizedMessage}")
-            emit(LoginResponse.OnFailure(e.localizedMessage ?: "Unknown error occurred"))
-        }
-    }.flowOn(Dispatchers.IO) // Ensures network call runs on IO thread
 
 }

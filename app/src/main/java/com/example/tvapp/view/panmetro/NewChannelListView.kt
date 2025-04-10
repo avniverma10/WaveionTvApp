@@ -244,7 +244,7 @@ fun NewChannelRow(
 ) {
     val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
 
-    val titleTextColor = if (isFocused || isPreview) Color.Yellow else Color.White
+    val titleTextColor = if (isFocused || isPreview) Color(0xFF49FEDD) else Color.White
 
     Box(
         modifier = Modifier

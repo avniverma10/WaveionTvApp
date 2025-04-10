@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,17 +40,21 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
 fun CategoryMenu(genres: List<WTVGenre>,
                  channelListFocusRequester: FocusRequester,
+                 sharedViewModel: SharedViewModel,
                  genreListFocusRequester: FocusRequester,
                  onCategoryForward: (WTVGenre) -> Unit) {
     // Track which item is currently focused or selected
     var focusedIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(0) }
+    val panMetroGenreState by sharedViewModel.panMetroGenreState.collectAsState()
     // LazyListState tracks the scroll state of the LazyColumn.
     val listState = rememberLazyListState()
     // Derived state to determine if there are items above the visible area.
@@ -66,6 +71,13 @@ fun CategoryMenu(genres: List<WTVGenre>,
             } else {
                 false
             }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if(panMetroGenreState.genre.isNotNullOrEmpty()){
+            focusedIndex = genres.map { it.name }.indexOf(panMetroGenreState.genre)
+            selectedIndex = focusedIndex
         }
     }
     LaunchedEffect(focusedIndex) {

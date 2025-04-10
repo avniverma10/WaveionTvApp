@@ -1,6 +1,6 @@
 package com.example.tvapp.di
 
-import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
+import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.utils.network.LoggingInterceptor
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.google.gson.GsonBuilder
@@ -59,7 +59,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideWTVNetworkRepository(networkApiCallInterface: NetworkApiCallInterface):WTVNetworkRepositoryImpl{
+    fun provideWTVNetworkRepository(networkApiCallInterface: NetworkApiCallInterface): WTVNetworkRepositoryImpl {
         return WTVNetworkRepositoryImpl(networkApiCallInterface)
     }
 

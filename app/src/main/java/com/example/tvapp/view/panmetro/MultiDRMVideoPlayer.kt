@@ -1,7 +1,7 @@
 package com.example.tvapp.view.panmetro
 
 import android.app.Activity
-import android.util.Log
+import android.media.MediaDrm
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.WindowManager
@@ -14,50 +14,51 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
+import com.example.tvapp.extensions.provideSigmaSourceFactory
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PanMetroVideoPlayer(
+fun MultiDRMVideoPlayer(
     navController: NavController,
     sharedViewModel: SharedViewModel,
     wtvPlayerViewModel:WTVPlayerViewModel= hiltViewModel()
@@ -65,23 +66,12 @@ fun PanMetroVideoPlayer(
     val context = LocalContext.current
     val epgList by sharedViewModel.wtvEPGList.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
-    // 1️⃣ Remember the last interaction time (ms since epoch)
-    var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
-    // 2) How long have we been idle? (ms)
-    var idleDurationMs by remember { mutableStateOf(0L) }
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val scope = rememberCoroutineScope()
 
-    val channelRequesters = remember(epgList) {
-        List(epgList.size) { FocusRequester() }
+    var currentIndex by remember {
+        mutableIntStateOf(epgList.indexOfFirst {
+            it.content?.videoUrl == (selectedChannel.content?.videoUrl ?: "")
+        })
     }
-
-    val selectedChannelIndex = remember { mutableStateOf(0) }
-
-    // We’ll need the FocusManager to move focus programmatically
-    val focusManager = LocalFocusManager.current
-    // Keep track of which index is focused
-    val listState = rememberLazyListState()
 
     // Mutable state for UI updates
     // Set FLAG_SECURE if desired.
@@ -93,47 +83,96 @@ fun PanMetroVideoPlayer(
     var isOverlayVisible by remember { mutableStateOf(true) }
     var isProgramOverlayVisible by remember { mutableStateOf(true) }
 
-// Remember the player and recreate it when the DRM type changes
-    val exoPlayer = remember {
-        ExoPlayer.Builder(context).build()
+
+    // Remember the player and recreate it when the DRM type changes
+    // UI state
+    var uiState by remember { mutableStateOf(PlayerUiState()) }
+
+    // Build / rebuild ExoPlayer on DRM type change
+    val exoPlayer = remember(selectedChannel.content?.drmType) {
+            uiState = uiState.copy(isLoading = true, errorMessage = null)
+            ExoPlayer.Builder(context).apply {
+                logReport("selectedChannel.content?.drmType:::::${selectedChannel.content?.drmType}")
+                if (selectedChannel.content?.drmType.equals("sigma", true)) {
+                    setMediaSourceFactory(context.provideSigmaSourceFactory())
+                }
+            }
+            .build()
             .apply {
-                prepare()
                 playWhenReady = true
-                addAnalyticsListener(object : AnalyticsListener {
-                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                            Log.d("DRM", "Keys loaded successfully")
+                // Listen for state changes to drive loading indicator
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        uiState = when (state) {
+                            Player.STATE_BUFFERING -> uiState.copy(isLoading = false)
+                            Player.STATE_READY     -> uiState.copy(isLoading = false)
+                            Player.STATE_IDLE,
+                            Player.STATE_ENDED     -> uiState.copy(isLoading = false)
+                            else                   -> uiState
                         }
-                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                            Log.e("DRM", "Session manager error")
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        // Distinguish HTTP 404 from DRM errors
+                        val msg = when (val cause = error.cause) {
+                            is HttpDataSource.InvalidResponseCodeException ->
+                                "Video not found (HTTP ${cause.responseCode})"
+                            is MediaDrm.MediaDrmStateException ->
+                                "DRM error: unable to play content"
+                            else ->
+                                "Playback error: ${error.message}"
                         }
+                        uiState = uiState.copy(isLoading = false, errorMessage = msg)
                     }
                 })
             }
     }
+    // Release player when leaving this Composable or when DRM type changes
+    // Release on DRM type change / exit
+    DisposableEffect(
+        selectedChannel.content?.drmType,
+        selectedChannel.content?.videoUrl
+    ) {
+        logReport("DisposableEffect:::${selectedChannel.content?.drmType}")
+
+        onDispose { exoPlayer.release() }
+    }
 
     // Whenever the selected channel changes, load its media
-    LaunchedEffect(selectedChannel) {
-        selectedChannelIndex.value = epgList.indexOfFirst {
-            it.content?.videoUrl == (selectedChannel.content?.videoUrl ?: "")
-        }
-        selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+    // Load media when channel changes
+    LaunchedEffect(selectedChannel.content?.drmType,
+        selectedChannel.content?.videoUrl) {
+        uiState = uiState.copy(isLoading = true, errorMessage = null)
+        val url = selectedChannel.content?.videoUrl
+        if (!url.isNullOrEmpty()) {
+
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-            val mediaItem = if (selectedChannel.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedChannel.content?.videoUrl, contentId = selectedChannel.content?.assetId)
+            val mediaItem = if (
+                selectedChannel.content?.drmType.equals("cryptoguard", true)
+            ) {
+                context.provideCryptoGuardMediaSource()
             } else {
                 MediaItem.fromUri(url)
             }
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
-            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = null
+            )
+        } else {
+            uiState = uiState.copy(
+                isLoading = false,
+                errorMessage = "No video URL available."
+            )
         }
     }
+
     // Auto-hide overlay after 5 sec
     LaunchedEffect(isOverlayVisible) {
-        delay(10_000)
-        if(System.currentTimeMillis() - lastInteraction >= 10){
+        if (isOverlayVisible) {
+            delay(8000)
             isOverlayVisible = false
         }
     }
@@ -145,19 +184,18 @@ fun PanMetroVideoPlayer(
     }
 
     fun playNextChannel() {
-        if (selectedChannelIndex.value < (epgList.lastIndex )) {
-            selectedChannelIndex.value++
-            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.value])
+        if (currentIndex < (epgList.lastIndex )) {
+            currentIndex++
+            sharedViewModel.updateSelectedChannel(epgList[currentIndex])
         }
     }
 
     fun playPreviousChannel() {
-        if (selectedChannelIndex.value > 0) {
-            selectedChannelIndex.value--
-            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.value])
+        if (currentIndex > 0) {
+            currentIndex--
+            sharedViewModel.updateSelectedChannel(epgList[currentIndex])
         }
     }
-
 
     Box(
         modifier = Modifier
@@ -165,9 +203,6 @@ fun PanMetroVideoPlayer(
             .background(Color.Black)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
-                // Cancel any existing countdown
-                // on any tap, restart the timer
-                lastInteraction = System.currentTimeMillis()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BACK -> {
@@ -187,7 +222,7 @@ fun PanMetroVideoPlayer(
 
                         KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_CHANNEL_UP -> {
                             navController.navigate(Destination.genreScreen) {
-                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                                popUpTo(Destination.panMetroScreen)// { inclusive = true }
                             }
                             true
                         }
@@ -207,23 +242,11 @@ fun PanMetroVideoPlayer(
                         }
 
                         KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                            focusManager.moveFocus(FocusDirection.Down)
-                            scope.launch {
-                                delay(50)
-                                // Scroll into view
-                                listState.animateScrollToItem(selectedChannelIndex.value)
-                            }
                             playPreviousChannel()
                             isOverlayVisible = true
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            focusManager.moveFocus(FocusDirection.Up)
-                            scope.launch {
-                                delay(50)
-                                // Scroll into view
-                                listState.animateScrollToItem(selectedChannelIndex.value)
-                            }
                             playNextChannel()
                             isOverlayVisible = true
                             true
@@ -262,35 +285,42 @@ fun PanMetroVideoPlayer(
                 .padding(16.dp) // optional padding from the top/right edges
         )
 
-        // Show Loading Indicator if Buffering
-        /*Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (!isPlaying) {
-                CircularProgressIndicator()
-            }
-        }*/
-
-        DisposableEffect(Unit) {
-            onDispose {
-                exoPlayer.release()
-            }
-        }
 
         if (isOverlayVisible) {
-                PanMetroNewOverlay(
-                    selectedIndex =  selectedChannelIndex,
-                    lazyListState = listState,
-                    sharedViewModel = sharedViewModel,
-                    channelFocusRequesters = channelRequesters,
-                    onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
-                )
+            PlayerOverlay(
+                navController= navController,
+                dataItem = selectedChannel,
+                onDismiss = { isProgramOverlayVisible = false }
+            )
+        }
+        if (uiState.isLoading) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
 
+        uiState.errorMessage?.let { msg ->
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = msg,
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
         }
     }
-
 
 }
 

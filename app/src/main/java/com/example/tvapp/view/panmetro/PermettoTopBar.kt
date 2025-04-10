@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
@@ -32,7 +34,7 @@ import java.util.Calendar
 import java.util.Locale
 
 @Composable
-fun PermettoTopBar() {
+fun PermettoTopBar(topBGColor:Color?=Color.Black) {
     // Example of dynamic time formatting
     // Hold the current time and formatted string as state
     val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -62,18 +64,17 @@ fun PermettoTopBar() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                    .padding(bottom = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Thin green line below
                 Box(
                     modifier = Modifier
-                        .width(50.dp)
-                        .height(2.dp)
-                        .background(Color.Green)
+                        .width(70.dp)
+                        .height((1.5).dp)
+                        .background(Color(0xFF49FEDD))
                         .align(Alignment.CenterVertically)
-                        .padding(start = 5.dp, end = 10.dp)
                 )
                 // Logo or brand text
                 AsyncImage(
@@ -92,8 +93,8 @@ fun PermettoTopBar() {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(2.dp)
-                        .background(Color.Green)
+                        .height((1.5).dp)
+                        .background(Color(0xFF49FEDD))
                         .align(Alignment.CenterVertically)
                         .padding(start = 5.dp, end = 10.dp)
                 )
@@ -101,8 +102,12 @@ fun PermettoTopBar() {
                 // Dynamic date/time
                 Text(
                     text = formattedTime.value,
-                    color = Color.White,
-                    style = MaterialTheme.typography.body2
+                    color = Color(0xFF49FEDD),
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+
+                    ),
+                    modifier = Modifier.padding(start = 10.dp, end = 10.dp)
                 )
             }
         }

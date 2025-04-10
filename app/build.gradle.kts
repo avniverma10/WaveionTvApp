@@ -102,6 +102,8 @@ dependencies {
     implementation (libs.zxing.embedded)
 
     implementation (libs.jakewharton.threetenab)
+    //security
+    implementation (libs.bundles.security)
     //datastore
     implementation (libs.datastore.preferences)
     //constraintlayout

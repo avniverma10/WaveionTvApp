@@ -29,6 +29,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
+    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
     val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
     val context = LocalContext.current
@@ -39,8 +40,16 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             return@LaunchedEffect
         }
         Handler(Looper.getMainLooper()).postDelayed({
-            navController.navigate(Destination.loginScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
+            if(isInitializeData){
+                if(loginInfo?.username?.isNotEmpty() == true){
+                    navController.navigate(Destination.genreScreen) {
+                        //popUpTo(Destination.loginScreen) { inclusive = true }
+                    }
+                }else{
+                    navController.navigate(Destination.loginScreen) {
+                        popUpTo(Destination.splashScreen) { inclusive = true }
+                    }
+                }
             }
 
             /*if (authToken.isNullOrEmpty()) {

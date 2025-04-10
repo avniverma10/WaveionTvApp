@@ -1,5 +1,6 @@
 package com.example.tvapp.view.navigationhelper
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,11 +15,13 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -42,15 +45,19 @@ import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun CategoryMenu(
     sharedViewModel: SharedViewModel,
     selectedIndex: MutableState<Int>,
     languageSelectedIndex: MutableState<Int>,
-    categoryFocusRequesters: MutableMap<Int, FocusRequester>,
-    languageFocusRequesters: MutableMap<Int, FocusRequester>
+    categoryFocusRequesters: List<FocusRequester>,
+    languageFocusRequesters: List<FocusRequester>
 ) {
+
+    val coroutineScope = rememberCoroutineScope()
     val appGenreData by sharedViewModel
         .provideApplicationContext()
         .appGenreLiveData()
@@ -70,6 +77,17 @@ fun CategoryMenu(
         return
     }
 
+    LaunchedEffect(selectedIndex.value) {
+        categoryFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
+            try {
+                requester.requestFocus()
+            } catch (e: IllegalStateException) {
+                Log.e("FocusError", "FocusRequester not initialized", e)
+            }
+        }
+    }
+
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -82,8 +100,6 @@ fun CategoryMenu(
             verticalAlignment = Alignment.CenterVertically
         ) {
             itemsIndexed(menuItems) { index, item ->
-                val focusRequester = remember { FocusRequester() }
-                categoryFocusRequesters[index] = focusRequester
                 val isFocused = remember { mutableStateOf(false) }
                 val isSelected = selectedIndex.value == index
 
@@ -105,17 +121,19 @@ fun CategoryMenu(
                             sharedViewModel.updateGenre(genreName)
                         }
                     }
-                    .focusRequester(focusRequester)
+                    .focusRequester(categoryFocusRequesters[index])
                     .focusable()
                     .onPreviewKeyEvent { keyEvent ->
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                         ) {
-                            var currentLanguageIndex = languageSelectedIndex.value
-                            if(sharedViewModel.filterState.value.language.isNotNullOrEmpty()){
-                                 currentLanguageIndex  = allLanguageItems.mapNotNull { it.name }.indexOf(sharedViewModel.filterState.value.language)
+                            languageFocusRequesters[languageSelectedIndex.value].let { requester ->
+                                coroutineScope.launch {
+                                    delay(50)
+                                    requester.requestFocus()
+                                }
                             }
-                            languageFocusRequesters[ currentLanguageIndex ]?.requestFocus()
+                           // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }

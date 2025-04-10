@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.model.data.home.HomeContent
-import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
+import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

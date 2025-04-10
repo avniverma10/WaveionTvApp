@@ -54,7 +54,7 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
-    val epgChannels by sharedViewModel.epgDataList.collectAsState()
+    val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
@@ -150,7 +150,7 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
         ) {
             items(channels) { channel ->
                 ChannelBox(channel = channel) { videoUrl ->
-                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
+                    sharedViewModel.wtvEPGList.value.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
                         sharedViewModel.updateSelectedChannel(channelItem)
                         navController.navigate(Destination.panMetroScreen)
                     }

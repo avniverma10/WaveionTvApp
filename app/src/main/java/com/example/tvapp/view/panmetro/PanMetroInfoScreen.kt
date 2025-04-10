@@ -15,9 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tvapp.extensions.getAndroidTvDrmInfo
 
 @Composable
 fun PanMetroInfoScreen(
@@ -37,10 +39,13 @@ fun PanMetroInfoScreen(
     onOkClick: () -> Unit = {}
 ) {
 
+    val context = LocalContext.current
     BackHandler {
         onOkClick()
     }
     val okButtonFocusRequester = remember { FocusRequester() }
+
+    val systemInfo = context.getAndroidTvDrmInfo()
 
     LaunchedEffect(Unit) {
         okButtonFocusRequester.requestFocus()
@@ -79,17 +84,17 @@ fun PanMetroInfoScreen(
 
                 // Info rows
                 InfoRow(label = "Username", value = username)
-                InfoRow(label = "MAC ID", value = macId)
+                InfoRow(label = "MAC ID", value = systemInfo?.macId?:macId)
                 InfoRow(label = "Validity", value = validity)
                 InfoRow(label = "App version", value = appVersion)
-                InfoRow(label = "Android Version", value = androidVersion)
-                InfoRow(label = "RAM", value = ram)
-                InfoRow(label = "Storage", value = storage)
+                InfoRow(label = "Android Version", value = systemInfo?.androidVersion?:androidVersion)
+                InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
+                InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
                 InfoRow(label = "OTA", value = ota)
-                InfoRow(label = "STB Model", value = stbModel)
+                InfoRow(label = "STB Model", value = systemInfo?.model?:stbModel)
                 InfoRow(label = "Network ID", value = networkId)
                 InfoRow(label = "Network Name", value = networkName)
-                InfoRow(label = "DRM ID", value = drmId)
+                InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
                 InfoRow(label = "DRM VERSION", value = drmVersion)
 
                 Spacer(modifier = Modifier.height(16.dp))

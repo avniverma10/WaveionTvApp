@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,18 +32,19 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.R
+import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PanMetroPlayer(
+fun GenreMultiDRMPlayer(
     sharedViewModel: SharedViewModel,
     wtvPlayerViewModel:WTVPlayerViewModel= hiltViewModel()
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val selectedVideoUrl by sharedViewModel.selectedVideoUrl.collectAsState()
+    val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
 
     // Mutable state for UI updates
     val isBuffering = remember { mutableStateOf(false) }
@@ -53,10 +55,12 @@ fun PanMetroPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
-    // ExoPlayer Setup
+
+    // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(wtvPlayerViewModel.provideMediaSourceFactory(context=context)).build().apply {
+            .build()
+            .apply {
                 playWhenReady = true
                 addAnalyticsListener(object : AnalyticsListener {
                     override fun onEvents(player: Player, events: AnalyticsListener.Events) {
@@ -71,16 +75,22 @@ fun PanMetroPlayer(
             }
     }
 
-    // Update video when channel changes
+    // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
-        selectedVideoUrl?.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+        selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-            exoPlayer.setMediaItem(MediaItem.fromUri(url))
+            val mediaItem = if (selectedVideoUrl?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
+                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId)
+            } else {
+                MediaItem.fromUri(url)
+            }
+            exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
     }
+
 
     Box(
         modifier = Modifier
@@ -115,6 +125,15 @@ fun PanMetroPlayer(
             }
         }
 
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exoPlayer.run {
+                stop()
+                release()
+            }
+        }
     }
 }
 

@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -45,6 +47,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
 
     Box(
         modifier = Modifier
@@ -64,14 +67,18 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     }
     if (showInfo) {
         PanMetroInfoScreen(
+            username = loginInfo?.username?:"WTV",
             onOkClick = { showInfo = false }
         )
     }
     if (showExitDialog) {
         PanMetroLogoutDialog (
             onConfirmExit = {
+                sharedViewModel.clearLogin()
                 showExitDialog = false
-                android.os.Process.killProcess(android.os.Process.myPid())
+                navController.navigate(Destination.loginScreen) {
+                    popUpTo(Destination.settings) { inclusive = true }
+                }
             },
             onDismiss = {
                 showExitDialog = false

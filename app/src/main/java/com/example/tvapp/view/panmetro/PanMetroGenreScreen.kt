@@ -1,6 +1,7 @@
 package com.example.tvapp.view.panmetro
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -33,13 +34,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.tvapp.R
-import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.model.data.genre.WTVGenre
-import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ExitDialog
-import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -49,7 +46,7 @@ fun PanmetroGenreScreen(
     sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
-    val epgList by sharedViewModel.epgDataList.collectAsState()
+    val epgList by sharedViewModel.wtvEPGList.collectAsState()
 
     val availableGenre by sharedViewModel.availableGenre.collectAsState()
 
@@ -75,7 +72,7 @@ fun PanmetroGenreScreen(
                 it
             )
         }
-        sharedViewModel.onChannelVideoSelected(videoUrl = channel.content?.videoUrl, program = null)  // This method should update selectedVideoUrl.
+        sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
     }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -116,95 +113,102 @@ fun PanmetroGenreScreen(
             modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
             // 1) Top bar with brand logo on left and date/time on right
-//            PermettoTopBar()
+            PermettoTopBar()
 //            GradientBackground(content = {
-                // 2) Main content row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                ) {
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) {
-                        Row(modifier = Modifier) {
-                            // Left: Categories
-                            NewCategoryMenu(
-                                genres = availableGenre,
-                                selectedIndex = selectedGenreIndex,
-                                focusRequesters = genreFocusRequesters,
-                                // On selection, update the index, filter channels, and move focus to the channel list.
-                                onCategoryForward = { index, selectedGenre ->
-                                    selectedGenreIndex = index
-                                    val genreName = selectedGenre.name ?: "All"
-                                    sharedViewModel.filterPanMetroChannelsByGenre(genreName)
-                                    // Request focus back to the channel list so its first item is focused.
-                                    channelListFocusRequester.requestFocus()
+            // 2) Main content row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(top = 10.dp)
+            ) {
+                Box(modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) {
+                    Row(modifier = Modifier) {
+                        // Left: Categories
+                        NewCategoryMenu(
+                            genres = availableGenre,
+                            selectedIndex = selectedGenreIndex,
+                            focusRequesters = genreFocusRequesters,
+                            // On selection, update the index, filter channels, and move focus to the channel list.
+                            onCategoryForward = { index, selectedGenre ->
+                                selectedGenreIndex = index
+                                val genreName = selectedGenre.name ?: "All"
+                                sharedViewModel.filterPanMetroChannelsByGenre(genreName)
+                                // Request focus back to the channel list so its first item is focused.
+                                channelListFocusRequester.requestFocus()
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        // Middle: Channel List
+                        NewChannelListScreen(
+                            sharedViewModel = sharedViewModel,
+                            channelListFocusRequester = channelListFocusRequester,
+                            onNavigateToGenre = {
+                                // Request focus on the genre item that was last selected.
+                                genreFocusRequesters.getOrNull(selectedGenreIndex)?.let { requester ->
+                                    try {
+                                        requester.requestFocus()
+                                    } catch (e: IllegalStateException) {
+                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                    }
                                 }
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            // Middle: Channel List
-                            NewChannelListScreen(
-                                sharedViewModel = sharedViewModel,
-                                channelListFocusRequester = channelListFocusRequester,
-                                onNavigateToGenre = {
-                                    // Request focus on the genre item that was last selected.
-                                    genreFocusRequesters.getOrNull(selectedGenreIndex)
-                                        ?.requestFocus()
-                                },
-                                onVideoChange =  onVideoChange,
-                                onDoubleClickIntent = { channelInfo ->
-                                    Constants.epgItemList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
-                                        ?.let { channelItem ->
-                                            sharedViewModel.updateSelectedChannel(channelItem)
-                                            navController.navigate(Destination.panMetroScreen) {
-                                                popUpTo(Destination.genreScreen) {
-                                                    inclusive = true
-                                                }
+                            },
+                            onVideoChange =  onVideoChange,
+                            onDoubleClickIntent = { channelInfo ->
+                                epgList.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
+                                    ?.let { channelItem ->
+                                        sharedViewModel.updateSelectedChannel(channelItem)
+                                        navController.navigate(Destination.panMetroScreen) {
+                                            popUpTo(Destination.genreScreen) {
+                                                inclusive = true
                                             }
                                         }
-                                }
-                            )
-                        }
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        Column(
-                            modifier = Modifier
-                                .background(Color.Transparent)
-                        ) {
-                            Box(modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(.5f)) {
-                                PanMetroPlayer (
-                                    sharedViewModel= sharedViewModel
-                                )
+                                    }
                             }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight(1f)
-                                    .padding(25.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize() // Force the inner Box to fill the outer Box.
-                                        .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.alliance_logo),
-                                        contentDescription = "Panmetro Logo",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize() // Stretch the image to fill the inner Box.
-                                            .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-                                    )
-                                }
-                            }
-
-                        }
+                        )
                     }
                 }
-//            })
+
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .background(Color.Transparent)
+                    ) {
+                        Box(modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(.6f)) {
+                            GenreMultiDRMPlayer (
+                                sharedViewModel= sharedViewModel
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight(1f)
+                                .padding(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize() // Force the inner Box to fill the outer Box.
+                                    .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.alliance_logo),
+                                    contentDescription = "Panmetro Logo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize() // Stretch the image to fill the inner Box.
+                                        .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
+                                )
+                            }
+                        }
+
+                    }
+                }
+            }
+            //powered by footer
+            PoweredBy()
         }
     }
 }

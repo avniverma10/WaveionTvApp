@@ -4,6 +4,8 @@ package com.example.tvapp.viewmodels
 import android.app.Application
 import android.content.ContentValues
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.appManifestLiveData
@@ -11,24 +13,34 @@ import com.example.tvapp.extensions.applyAppGenre
 import com.example.tvapp.extensions.applyAppHome
 import com.example.tvapp.extensions.applyAppLanguage
 import com.example.tvapp.extensions.applyAppManifest
+import com.example.tvapp.extensions.applyEPGData
 import com.example.tvapp.extensions.logReport
-import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.utils.sealed.WTVResponse
-import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.sse.TabItem
-import com.example.tvapp.model.home.WTVHomeCategory
-import com.example.tvapp.model.repository.WTVNetworkRepositoryImpl
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
+import com.example.tvapp.model.repository.login.LoginInfo
+import com.example.tvapp.model.repository.login.LoginPrefsRepository
+import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.utils.network.heper.ConnectivityObserver
+import com.example.tvapp.utils.network.heper.NetworkStatus
+import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.utils.sealed.WTVResponse
+import com.example.tvapp.utils.sealed.firstOrNullSuccess
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -40,12 +52,19 @@ import okhttp3.sse.EventSources
 import javax.inject.Inject
 
 @HiltViewModel
-open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl) : AndroidViewModel(application) {
+open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
+    private val observer = ConnectivityObserver(application.applicationContext)
+    private val _userIdeal = MutableStateFlow<Boolean>(false)
+    val userIdeal: StateFlow<Boolean> = _userIdeal.asStateFlow()
+
+
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
     val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
     private var _isProgress = MutableStateFlow<Boolean>(false)
     val provideIsProgress: StateFlow<Boolean> get() = _isProgress
+    private var _wtvEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val wtvEPGList: StateFlow<List<EPGDataItem>> = _wtvEPGList.asStateFlow()
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
     private val _availableGenre = MutableStateFlow<List<WTVGenre>>(emptyList())
@@ -59,133 +78,112 @@ open class WTVViewModel @Inject constructor(private val application: Application
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    val networkStatus: StateFlow<NetworkStatus> =
+        observer.observe()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = NetworkStatus.Unavailable
+            )
 
-    fun updateEPGData(epgList: List<EPGDataItem>) {
+    val loginInfo = loginPrefsRepository?.loginInfoFlow?.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        LoginInfo()
+    )
+
+    fun clearLogin() {
+        viewModelScope.launch {
+            loginPrefsRepository?.clearLoginInfo()
+        }
+    }
+
+    /*fun updateEPGData(epgList: List<EPGDataItem>) {
         viewModelScope.launch {
             saveEPGList(application, epgList)
         }
-    }
+    }*/
 
     private val _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
     init {
-        initAppRequiredData()
+
+        viewModelScope.launch {
+            // This scope will suspend until ALL async children complete
+            coroutineScope {
+                val manifestDeferred = async {
+                    networkApiCallInterfaceImpl
+                        .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
+                        .firstOrNullSuccess()
+                        ?.also {
+                            application.applyAppManifest(it)
+
+                        }
+                }
+
+                val epgDeferred = async {
+                    networkApiCallInterfaceImpl
+                        .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
+                        .firstOrNullSuccess()
+                        ?.also { data ->
+                            _wtvEPGList.value = data
+
+                            data.find { it.channelId == application.appManifestLiveData().value?.landingChannel?.ChannelID }
+                                ?.let(::updateSelectedChannel)?:kotlin.run {
+                                _selectedChannel.value =  data.getOrNull(0)!!
+                            }
+                        }
+                }
+
+                val genreDeferred = async {
+                    networkApiCallInterfaceImpl
+                        .provideWTVGenreData("https://nextwave.waveiontechnologies.com:5000/api/genres/")
+                        .firstOrNullSuccess()
+                        ?.let { list ->
+                            val full = mutableListOf(WTVGenre("all", "All")) + list
+                            _availableGenre.value = full
+                            application.applyAppGenre(full)
+                        }
+                }
+
+                val languageDeferred = async {
+                    networkApiCallInterfaceImpl
+                        .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
+                        .firstOrNullSuccess()
+                        ?.also {list->
+                            val full = mutableListOf(WTVLanguage("all", "All")) + list
+                            application.applyAppLanguage(full) }
+                }
+
+                val homeDeferred = async {
+                    networkApiCallInterfaceImpl
+                        .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+                        .firstOrNullSuccess()
+                        ?.also { application.applyAppHome(it) }
+                }
+
+                // Wait for all to complete (success or failure)
+                awaitAll(
+                    manifestDeferred,
+                    epgDeferred,
+                    genreDeferred,
+                    languageDeferred,
+                   // homeDeferred
+                )
+
+                // **This line runs only after all of the above finish.**
+                _isInitializeData.value = true
+            }
+
+        }
+
         // Start the SSE connection globally.
      //   startSSE()
     }
 
-    fun initAppRequiredData(){
-        viewModelScope.launch {
-           // tvManifest.value = WTVManifest()
-            // Launch API calls in parallel
-            networkApiCallInterfaceImpl.provideWTVManifest(manifestUrl = "https://nextwave.waveiontechnologies.com:5000/api/manifest").collect{ response ->
-                when (response) {
-                    is WTVResponse.Success -> {
-                        application.applicationContext.applyAppManifest(response.data)
-                        Constants.manifest = response.data
-                        logReport("ManifestResponse:${ response.data}")
-                    }
-                    is WTVResponse.Failure -> {
-                        // Handle error state
-                       // _errorLoadingData.value = response.error.message
-                        logReport("ManifestResponse:${ response.error.message}")
 
-                    }
-                }
-            }
-        }
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl.provideWTVEPGData(epgContentUrl = "https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content").collect{response ->
-                when (response) {
-                    is WTVListResponse.Success -> {
-                        // Handle successful response
-                        updateEPGData(response.data)
-                        Constants.epgItemList = response.data
-                        response.data.find { it.channelId == provideApplicationContext().appManifestLiveData().value?.landingChannel?.ChannelID }?.let {
-                            updateSelectedChannel(it)
-                        }
-                        logReport("EPGResponse:${ response.data}")
-
-                    }
-                    is WTVListResponse.Failure -> {
-                        // Handle error state
-                        // _errorLoadingData.value = response.error.message
-                        logReport("EPGResponse:${ response.error.message}")
-
-                    }
-                }
-            }
-            _isInitializeData.value = true
-        }
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl.provideWTVGenreData(genreUrl = "https://nextwave.waveiontechnologies.com:5000/api/genres/").collect{response ->
-                when (response) {
-                    is WTVListResponse.Success -> {
-                        var genreList = arrayListOf<WTVGenre>()
-                        genreList.add(WTVGenre(name = "All"))
-                        genreList.addAll(response.data)
-                        _availableGenre.value = genreList
-                        Constants.genreList = genreList
-                        // Handle successful response
-                        application.applicationContext.applyAppGenre(genreList)
-                        logReport("applyAppGenre:${ response.data}")
-
-                    }
-                    is WTVListResponse.Failure -> {
-                        // Handle error state
-                        // _errorLoadingData.value = response.error.message
-                        logReport("applyAppGenre:${ response.error.message}")
-
-                    }
-                }
-            }
-            _isInitializeData.value = true
-        }
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl.provideWTVLanguageData(languageUrl = "https://nextwave.waveiontechnologies.com:5000/api/languages/").collect{response ->
-                when (response) {
-                    is WTVListResponse.Success -> {
-                        var languageList = arrayListOf<WTVLanguage>()
-                        languageList.add(WTVLanguage(name = "All"))
-                        languageList.addAll(response.data)
-                        // Handle successful response
-                        Constants.languageList = languageList
-                        application.applicationContext.applyAppLanguage(response.data)
-                        logReport("applyAppLanguage:${ response.data}")
-
-                    }
-                    is WTVListResponse.Failure -> {
-                        // Handle error state
-                        // _errorLoadingData.value = response.error.message
-                        logReport("applyAppLanguage:${ response.error.message}")
-
-                    }
-                }
-            }
-            _isInitializeData.value = true
-        }
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl.provideWTVHomeData(homeUrl = "https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory").collect{response ->
-                when (response) {
-                    is WTVListResponse.Success -> {
-                        // Handle successful response
-                        application.applicationContext.applyAppHome(response.data)
-                        logReport("applyAppLanguage:${ response.data}")
-
-                    }
-                    is WTVListResponse.Failure -> {
-                        // Handle error state
-                        // _errorLoadingData.value = response.error.message
-                        logReport("applyAppLanguage:${ response.error.message}")
-
-                    }
-                }
-            }
-            _isInitializeData.value = true
-        }
-
-    }
 
     suspend fun saveEPGList(context: Context, epgList: List<EPGDataItem>) {
         withContext(Dispatchers.IO) {
@@ -283,5 +281,11 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 }
         )*/
     }
+
+    //is user ideal since 10 sec
+    fun updateUserIdeal(isUserIdeal:Boolean) {
+        _userIdeal.value = isUserIdeal
+    }
+
 
 }

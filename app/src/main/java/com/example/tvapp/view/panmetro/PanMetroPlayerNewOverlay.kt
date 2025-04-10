@@ -1,5 +1,7 @@
 package com.example.tvapp.view.panmetro
 
+import android.util.Log
+import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -12,42 +14,87 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
+
 @Composable
 fun PanMetroNewOverlay(
-    currentChannel: EPGDataItem?,
-    epgList: List<EPGDataItem>,
-    isOverlayVisible: Boolean, // Pass overlay visibility
-    onChannelFocused: (EPGDataItem) -> Unit  // Callback for channel focus events
+    selectedIndex: MutableState<Int>,
+    lazyListState: LazyListState,
+    sharedViewModel: SharedViewModel,
+    channelFocusRequesters: List<FocusRequester>,
+    onChannelFocused: (EPGDataItem) -> Unit
 ) {
-    // Create a LazyListState to control scrolling.
-    val listState = rememberLazyListState()
 
-    // Create focus requesters for each channel.
-    val focusRequesters = remember { epgList.associate { it.channelId to FocusRequester() } }
+    val epgList by sharedViewModel.wtvEPGList.collectAsState()
+    val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
+    val scope = rememberCoroutineScope()
+    // 1) Create one FocusRequester for the container, so it can grab focus first
+    val containerRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+
+    // 1) Request initial focus into the first card
+    LaunchedEffect(selectedIndex) {
+        selectedIndex.value = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
+            .takeIf { it >= 0 } ?: 0
+        // Delay a frame to ensure row is in composition
+        channelFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
+            try {
+                requester.requestFocus()
+            } catch (e: IllegalStateException) {
+                Log.e("FocusError", "FocusRequester not initialized", e)
+            }
+        }
+        /* withFrameNanos {
+             channelFocusRequesters[selectedIndex.value].requestFocus()
+         }*/
+    }
+
+    // Whenever focusedIndex changes, scroll & focus
+    /*LaunchedEffect(focusedIndex) {
+        listState.animateScrollToItem(focusedIndex)
+        channelRequesters[focusedIndex].requestFocus()
+        onChannelFocused(epgList[focusedIndex])
+    }*/
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Top overlay for program info.
@@ -64,61 +111,77 @@ fun PanMetroNewOverlay(
                 .background(topBarGradient)
                 .padding(horizontal = 24.dp, vertical = 13.dp)
         ) {
-            TopOverlayInfo(dataItem = currentChannel)
+            TopOverlayInfo(dataItem = selectedChannel)
         }
 
-        // Bottom overlay for channel cards.
-        Column(
+        // Bottom channel strip
+        Box (
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(Color.Transparent)
-                .padding(horizontal = 24.dp, vertical = 13.dp)
+                .padding(24.dp, 13.dp)
+                .focusTarget()   // enable focus movement inside
+
         ) {
             LazyRow(
-                state = listState,
-                modifier = Modifier.focusTarget()
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
                 itemsIndexed(
                     items = epgList,
                     key = { index, item -> item.channelId ?: index }
-                ) { _, item ->
+                ) { index, item ->
+                    val isFocused = remember { mutableStateOf(false) }
+                    val isSelected = selectedIndex.value == index
+                    val modifier = Modifier
+                        .then(
+                            when {
+                                isSelected ->
+                                    Modifier.border(2.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(10.dp))
+                                else -> Modifier
+                            }
+                        )
+                        .onFocusChanged {
+                            isFocused.value = it.isFocused
+                            if (it.isFocused) {
+                                selectedIndex.value = index
+                            }
+                        }
+                        .focusRequester(channelFocusRequesters[index])
+                        .focusable()
+                        .onPreviewKeyEvent { keyEvent ->
+                            if (keyEvent.type == KeyEventType.KeyDown &&
+                                keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                            ) {
+                                channelFocusRequesters[selectedIndex.value].let { requester ->
+                                    scope.launch {
+                                        delay(50)
+                                        requester.requestFocus()
+                                    }
+                                }
+                                true
+                            } else false
+                        }
+
                     ChannelCard(
                         epgDataItem = item,
-                        modifier = Modifier.focusRequester(focusRequesters[item.channelId]!!),
-                        onFocus = { onChannelFocused(it) }
-                    )
-                }
-            }
-        }
+                        isFocused = isSelected,
+                        modifier= modifier
 
-        // Global LaunchedEffect: when the overlay becomes visible or the current channel changes,
-        // scroll to that channel and then request focus.
-        LaunchedEffect(currentChannel?.channelId, isOverlayVisible) {
-            if (isOverlayVisible) {
-                currentChannel?.channelId?.let { channelId ->
-                    // Scroll the channel into view.
-                    val index = epgList.indexOfFirst { it.channelId == channelId }
-                    if (index >= 0) {
-                        listState.animateScrollToItem(index)
-                    }
-                    // Wait until the next frame.
-                    withFrameNanos { }
-                    // Optionally, wait a little extra time.
-                    kotlinx.coroutines.delay(100)
-                    // Finally, request focus.
-                    focusRequesters[channelId]?.requestFocus()
+                    )
                 }
             }
         }
     }
 }
 
+
 @Composable
 fun ChannelCard(
     epgDataItem: EPGDataItem,
-    modifier: Modifier = Modifier,
-    onFocus: (EPGDataItem) -> Unit = {} // New onFocus callback
+    isFocused: Boolean,
+    modifier: Modifier
 ) {
     val now = System.currentTimeMillis()
     val programList = epgDataItem.currentPrograms ?: epgDataItem.tv?.programme
@@ -131,30 +194,14 @@ fun ChannelCard(
 
     val minutesLeft = currentProgram?.endTime?.let { ((it - now) / 60000).toInt() } ?: 0
 
-    var isFocused by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .width(260.dp)
             .height(160.dp)
             .padding(4.dp)
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    isFocused = true
-                    // Invoke callback when focused
-                    onFocus(epgDataItem)
-                } else {
-                    isFocused = false
-                }
-            }
-            .focusable() // Makes the card focusable
-            .border(
-                width = if (isFocused) 2.5.dp else 0.dp,
-                color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
-                shape = MaterialTheme.shapes.medium
-            )
             .background(Color(0xFF1C1C1E), shape = MaterialTheme.shapes.medium)
-            .padding(12.dp)
+            .padding(10.dp)
     ) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {

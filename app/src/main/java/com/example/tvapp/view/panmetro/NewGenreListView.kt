@@ -187,9 +187,9 @@ fun NewCategoryMenuItem(
 ) {
     val scale by animateFloatAsState(targetValue = if (isFocused) 1.1f else 1f)
     val contentColor = if (categoryName == "All") {
-        if (isFocused) Color.Green else Color.White
+        if (isFocused) Color(0xFF49FEDD) else Color.White
     } else {
-        if (isFocused) Color.Green else Color.White
+        if (isFocused) Color(0xFF49FEDD) else Color.White
     }
     val borderWidth = 1.5.dp
 

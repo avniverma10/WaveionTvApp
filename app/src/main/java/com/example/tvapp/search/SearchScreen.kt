@@ -52,7 +52,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
     val firstThumbnailFocusRequester = remember { FocusRequester() }
 
     var searchText by remember { mutableStateOf("") }
-    val epgData by sharedViewModel.epgDataList.collectAsState()
+    val epgData by sharedViewModel.wtvEPGList.collectAsState()
     Log.d("SEARCH", "All Channels coming ---> ${epgData}")// Fetch all channels initially
     val searchResults by sharedViewModel.searchResults.collectAsState()  // Fetch search results
     Log.d("SEARCH","Searched ones ---> $searchResults")

@@ -81,9 +81,9 @@ fun EPGContent(
     navController: NavController,
     sharedViewModel: SharedViewModel,
     firstChannelFocusRequester: FocusRequester,
-    languageFocusRequesters: MutableMap<Int, FocusRequester>,
+    languageFocusRequesters: List<FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
-    categoryFocusRequesters: MutableMap<Int, FocusRequester>,
+    categoryFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
@@ -265,7 +265,7 @@ fun EPGContent(
     if (wishlistPopupProgram != null) {
         Dialog(onDismissRequest = { sharedViewModel.clearWishlistPopup() }) {
             Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-                val channelName = channelMap?.get(wishlistPopupProgram?.channelId)?.displayName ?: "Unknown Channel"
+                val channelName = channelMap.get(wishlistPopupProgram?.channelId)?.displayName ?: "Unknown Channel"
                 Column(modifier = Modifier.align(Alignment.Center)) {
                     Text(text = "Channel: $channelName", color = Color.White)
                     Text(text = "Start: ${wishlistPopupProgram!!.startTime}", color = Color.White)
@@ -354,9 +354,9 @@ fun ChannelInfo(
     onPlayClicked: (String?) -> Unit,
     hasInitiallyFocused: MutableState<Boolean>,
     focusRequester: FocusRequester? = null,
-    languageFocusRequesters: Map<Int, FocusRequester>,
+    languageFocusRequesters: List<FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
-    categoryFocusRequesters: Map<Int, FocusRequester>,
+    categoryFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
     val actualFocusRequester = focusRequester ?: remember { FocusRequester() }

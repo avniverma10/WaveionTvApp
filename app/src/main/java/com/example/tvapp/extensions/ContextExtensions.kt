@@ -1,6 +1,7 @@
 package com.example.tvapp.extensions
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
@@ -11,6 +12,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
@@ -153,7 +155,13 @@ fun Context.findMyDeviceId(): String {
         return ""
     }
 }
-
+// Extension function for Activity context
+fun Activity.hideKeyboard() {
+    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    currentFocus?.let { view ->
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+}
 
 
 /**

@@ -35,6 +35,8 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.example.tvapp.extensions.appGenreLiveData
+import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
@@ -55,13 +57,30 @@ fun ChannelScreen(
     bannerList: List<Banner> = emptyList()
 ) {
     val context = LocalContext.current
+    val categories = sharedViewModel.provideApplicationContext()
+        .appGenreLiveData().value.orEmpty()
+    val languages = sharedViewModel.provideApplicationContext()
+        .appLanguageLiveData().value.orEmpty()
+    val filterState by sharedViewModel.filterState.collectAsState()
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
-    val categoryFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
-    val languageFocusRequesters = remember { mutableStateOf(mutableMapOf<Int, FocusRequester>()) }.value
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
+    // A FocusRequester per item
+    val categoryFocusRequesters = remember(categories) {
+        List(categories.size) { FocusRequester() }
+    }
+    val languageFocusRequesters = remember(languages) {
+        List(languages.size) { FocusRequester() }
+    }
+
+    LaunchedEffect(filterState, categories, languages) {
+        categorySelectedIndex.value = categories.indexOfFirst { it.name == filterState.genre }
+            .takeIf { it >= 0 } ?: 0
+        languageSelectedIndex.value = languages.indexOfFirst { it.name == filterState.language }
+            .takeIf { it >= 0 } ?: 0
+    }
 
     BackHandler {
         navController.navigate(Destination.homeScreen) {
@@ -129,7 +148,7 @@ fun ChannelScreen(
                                 isFirstChannel = isFirstChannel,
                                 isLastChannel = isLastChannel,
                                 onClick = { clickedChannel ->
-                                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
+                                    sharedViewModel.wtvEPGList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen)
                                     }
@@ -151,7 +170,7 @@ fun ChannelScreen(
                                 sharedViewModel= sharedViewModel,
                                 channel = channel,
                                 onClick = { clickedChannel ->
-                                    sharedViewModel.epgDataList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
+                                    sharedViewModel.wtvEPGList.value.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen)
                                     }
@@ -184,9 +203,9 @@ fun ChannelList(
     onClick: (Channel) -> Unit = {},
     isFirstChannel: Boolean,
     isLastChannel: Boolean,
-    languageFocusRequesters: Map<Int, FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
-    categoryFocusRequesters: Map<Int, FocusRequester>,
+    categoryFocusRequesters: List<FocusRequester>,
+    languageFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
     val interactionSource = remember { MutableInteractionSource() }

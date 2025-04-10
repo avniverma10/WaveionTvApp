@@ -36,6 +36,8 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.example.tvapp.extensions.appGenreLiveData
+import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.showToastS
@@ -59,9 +61,10 @@ import kotlinx.coroutines.launch
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
 
+
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    var menuItems by remember { mutableStateOf<List<EPGCategory>>(Constants.manifest?.tab?.get(0)?.categories ?: emptyList()) }
-    val tabItems by remember { mutableStateOf<List<TabInfo>>(Constants.manifest?.tab ?: emptyList()) }
+    var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
@@ -69,10 +72,29 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    val categories = sharedViewModel.provideApplicationContext()
+        .appGenreLiveData().value.orEmpty()
+    val languages = sharedViewModel.provideApplicationContext()
+        .appLanguageLiveData().value.orEmpty()
+    val filterState by sharedViewModel.filterState.collectAsState()
+
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
-    val categoryFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
-    val languageFocusRequesters = remember { mutableMapOf<Int, FocusRequester>() }
+    // A FocusRequester per item
+    val categoryFocusRequesters = remember(categories) {
+        List(categories.size) { FocusRequester() }
+    }
+    val languageFocusRequesters = remember(languages) {
+        List(languages.size) { FocusRequester() }
+    }
+
+    LaunchedEffect(filterState, categories, languages) {
+        categorySelectedIndex.value = categories.indexOfFirst { it.name == filterState.genre }
+            .takeIf { it >= 0 } ?: 0
+        languageSelectedIndex.value = languages.indexOfFirst { it.name == filterState.language }
+            .takeIf { it >= 0 } ?: 0
+    }
+
 
 
     val genreSelectedIndex = remember { mutableStateOf(0) }

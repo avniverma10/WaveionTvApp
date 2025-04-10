@@ -66,7 +66,8 @@ fun ExpandableNavigationMenu(
         BackHandler { expanded = false }
     }
 
-    val profileTab = tabs?.firstOrNull()
+    val profileTab = tabs?.find { it.name == "profile" }
+    val profileTabIndex = tabs?.indexOf(profileTab)?:0
     val otherTabs = tabs?.drop(1) ?: emptyList()
 
     val profileFocusRequester = remember { FocusRequester() }

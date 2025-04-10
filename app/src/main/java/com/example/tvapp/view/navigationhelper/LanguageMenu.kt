@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -48,8 +49,8 @@ fun LanguageMenu(
     sharedViewModel: SharedViewModel,
     selectedIndex: MutableState<Int>,
     firstChannelFocusRequester: FocusRequester,
-    languageFocusRequesters: MutableMap<Int, FocusRequester>,
-    categoryFocusRequesters: MutableMap<Int, FocusRequester>,
+    categoryFocusRequesters: List<FocusRequester>,
+    languageFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
 
@@ -64,10 +65,14 @@ fun LanguageMenu(
         .appLanguageLiveData()
         .observeAsState(initial = emptyList())
     val languageItems: List<WTVLanguage> = appLanguageData ?: emptyList()
-    val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
+    val allLanguageItems =  languageItems
 
     if (allLanguageItems.isEmpty()) {
         return
+    }
+
+    LaunchedEffect(selectedIndex.value) {
+        languageFocusRequesters[selectedIndex.value].requestFocus()
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -81,8 +86,6 @@ fun LanguageMenu(
         verticalAlignment = Alignment.CenterVertically
     ) {
         itemsIndexed(allLanguageItems) { index, item ->
-            val focusRequester = remember { FocusRequester() }
-            languageFocusRequesters[index] = focusRequester
             val isSelected = selectedIndex.value == index
             val isFocused = remember { mutableStateOf(false) }
 
@@ -103,13 +106,13 @@ fun LanguageMenu(
                         sharedViewModel.updateLanguage(languageName)
                     }
                 }
-                .focusRequester(focusRequester)
+                .focusRequester(languageFocusRequesters[index])
                 .focusable()
                 .onPreviewKeyEvent { keyEvent ->
                     when {
                         keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP -> {
-                            categoryFocusRequesters[categorySelectedIndex.value]?.let { requester ->
+                            categoryFocusRequesters[categorySelectedIndex.value].let { requester ->
                                 coroutineScope.launch {
                                     delay(50)
                                     requester.requestFocus()
