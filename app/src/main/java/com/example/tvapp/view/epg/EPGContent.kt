@@ -374,7 +374,13 @@ fun ChannelInfo(
                         }
                         KeyEvent.KEYCODE_DPAD_UP -> {
                             if (isFirstChannel) {
-                                languageFocusRequesters[languageSelectedIndex.value]?.requestFocus()
+                                languageFocusRequesters.getOrNull(languageSelectedIndex.value)?.let { requester ->
+                                    try {
+                                        requester.requestFocus()
+                                    } catch (e: IllegalStateException) {
+                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                    }
+                                }
                                 true
                             } else false
                         }

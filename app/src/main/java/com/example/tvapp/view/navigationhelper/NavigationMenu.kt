@@ -8,6 +8,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -129,15 +130,15 @@ fun CategoryMenu(
                                         requester.requestFocus()
                                     }
                                 }
-                           // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
+                            // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }
                 Box(
                     modifier = Modifier
                         .wrapContentWidth()
+                        .defaultMinSize(100.dp)
                         .height(60.dp)
-                        .padding(5.dp)
                         .then(modifier),
                     contentAlignment = Alignment.Center
                 ) {
@@ -150,7 +151,7 @@ fun CategoryMenu(
                             fontFamily = FontFamily(Font(R.font.figtree_light)),
                             fontWeight = FontWeight(400)
                         ),
-                        modifier = Modifier.align(Alignment.Center).padding(5.dp)
+                        modifier = Modifier.align(Alignment.Center).padding(start = 10.dp, end = 10.dp)
                     )
                 }
             }

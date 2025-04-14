@@ -49,6 +49,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.view.navigationhelper.CategoryMenu
@@ -65,10 +66,9 @@ fun ChannelScreen(
     bannerList: List<Banner> = emptyList()
 ) {
     val context = LocalContext.current
-    val categories = sharedViewModel.provideApplicationContext()
-        .appGenreLiveData().value.orEmpty()
-    val languages = sharedViewModel.provideApplicationContext()
-        .appLanguageLiveData().value.orEmpty()
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val categories = appManifestData.value?.genre?: arrayListOf()
+    val languages = appManifestData.value?.language?: arrayListOf()
     val filterState by sharedViewModel.filterState.collectAsState()
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
 

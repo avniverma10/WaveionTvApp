@@ -236,8 +236,8 @@ fun NewCategoryMenuItem(
                     color = contentColor,
                     modifier = Modifier
                         .weight(1f)
-                        .background(Color(0xFF2F2A2A), shape = RoundedCornerShape( 6.dp))
-                        .padding(start = 16.dp, end = 4.dp)
+                        .background(Color(0xFF2F2A2A), shape = RoundedCornerShape( bottomStart = 6.dp, topStart = 6.dp))
+                        .padding(start = 16.dp)
                         .fillMaxHeight()
                         .wrapContentHeight(Alignment.CenterVertically)
                 )
@@ -245,7 +245,7 @@ fun NewCategoryMenuItem(
                     modifier = Modifier
                         .width(40.dp)
                         .fillMaxHeight()
-                        .background(Color(0xFF2F2A2A)),
+                        .background(Color(0xFF2F2A2A), shape = RoundedCornerShape( bottomEnd = 6.dp, topEnd  = 6.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     androidx.compose.material3.Icon(
