@@ -56,6 +56,7 @@ import com.example.tvapp.view.playeroverlay.NewPlayerOverlay
 //import com.example.tvapp.view.uicomponent.rememberClockTick
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -97,8 +98,28 @@ fun PanMetroVideoPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
+
+    // State management
     var isOverlayVisible by remember { mutableStateOf(true) }
-    var isProgramOverlayVisible by remember { mutableStateOf(true) }
+    var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    var overlayHideJob by remember { mutableStateOf<Job?>(null) }
+
+    // Function to handle overlay visibility
+    fun showOverlay() {
+        isOverlayVisible = true
+        lastInteractionTime = System.currentTimeMillis()
+
+        // Cancel existing hide job if any
+        overlayHideJob?.cancel()
+
+        // Start new hide job
+        overlayHideJob = scope.launch {
+            delay(10000) // 10 seconds
+            if (System.currentTimeMillis() - lastInteractionTime >= 10000) {
+                isOverlayVisible = false
+            }
+        }
+    }
 
 // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
@@ -137,13 +158,6 @@ fun PanMetroVideoPlayer(
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
     }
-    // Auto-hide overlay after 5 sec
-    LaunchedEffect(isOverlayVisible) {
-        delay(10_000)
-        if(System.currentTimeMillis() - lastInteraction >= 10){
-            isOverlayVisible = false
-        }
-    }
 
     BackHandler {
         navController.navigate(Destination.epgScreen) {
@@ -172,10 +186,7 @@ fun PanMetroVideoPlayer(
             .background(Color.Black)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
-                // Cancel any existing countdown
-                // on any tap, restart the timer
-                lastInteraction = System.currentTimeMillis()
-                isOverlayVisible = true
+                showOverlay()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BACK -> {
@@ -209,14 +220,12 @@ fun PanMetroVideoPlayer(
                             if (selectedChannelIndex.value < (epgList.size)) {
                                 sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.value])
                             }
-                            isOverlayVisible = true
                             true
                         }
 
                         KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                            focusManager.moveFocus(FocusDirection.Down)
-
                             if (selectedChannelIndex.value > 0) {
+                                focusManager.moveFocus(FocusDirection.Down)
                                 selectedChannelIndex.value--
                                 scope.launch {
                                     delay(200)
@@ -224,14 +233,11 @@ fun PanMetroVideoPlayer(
                                     listState.animateScrollToItem(selectedChannelIndex.value)
                                 }
                             }
-                           // playPreviousChannel()
-                            isOverlayVisible = true
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            focusManager.moveFocus(FocusDirection.Up)
-
                             if (selectedChannelIndex.value < (epgList.size )) {
+                                focusManager.moveFocus(FocusDirection.Up)
                                 selectedChannelIndex.value++
                                 scope.launch {
                                     delay(200)
@@ -239,8 +245,6 @@ fun PanMetroVideoPlayer(
                                     listState.animateScrollToItem(selectedChannelIndex.value)
                                 }
                             }
-                            //playNextChannel()
-                            isOverlayVisible = true
                             true
                         }
                         else -> false
@@ -291,6 +295,7 @@ fun PanMetroVideoPlayer(
         DisposableEffect(Unit) {
             onDispose {
                 exoPlayer.release()
+                overlayHideJob?.cancel()
             }
         }
 
