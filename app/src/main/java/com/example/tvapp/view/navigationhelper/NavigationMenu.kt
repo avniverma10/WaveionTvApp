@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +43,7 @@ import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -58,25 +61,16 @@ fun CategoryMenu(
 ) {
 
     val coroutineScope = rememberCoroutineScope()
-    val appGenreData by sharedViewModel
-        .provideApplicationContext()
-        .appGenreLiveData()
-        .observeAsState(initial = emptyList())
-    val menuItems: List<WTVGenre> = appGenreData?: emptyList()
+    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
-
-    val appLanguageData by sharedViewModel
-        .provideApplicationContext()
-        .appLanguageLiveData()
-        .observeAsState(initial = emptyList())
-    val languageItems: List<WTVLanguage> = appLanguageData ?: emptyList()
-    val allLanguageItems = listOf(WTVLanguage(name = "All")) + languageItems
+    val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
 
 
     if (menuItems.isEmpty()) {
         return
     }
 
+    // When requesting focus on enter:
     LaunchedEffect(selectedIndex.value) {
         categoryFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
             try {
@@ -127,32 +121,36 @@ fun CategoryMenu(
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                         ) {
-                            languageFocusRequesters[languageSelectedIndex.value].let { requester ->
-                                coroutineScope.launch {
-                                    delay(50)
-                                    requester.requestFocus()
+                            languageFocusRequesters
+                                .getOrNull(languageSelectedIndex.value)
+                                ?.let { requester ->
+                                    coroutineScope.launch {
+                                        delay(50)
+                                        requester.requestFocus()
+                                    }
                                 }
-                            }
                            // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }
                 Box(
                     modifier = Modifier
-                        .width(100.dp)
+                        .wrapContentWidth()
                         .height(60.dp)
+                        .padding(5.dp)
                         .then(modifier),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = item.name ?: "",
+                        maxLines = 1,
                         color = Color.White,
                         style = TextStyle(
                             fontSize = 17.sp,
                             fontFamily = FontFamily(Font(R.font.figtree_light)),
                             fontWeight = FontWeight(400)
                         ),
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center).padding(5.dp)
                     )
                 }
             }

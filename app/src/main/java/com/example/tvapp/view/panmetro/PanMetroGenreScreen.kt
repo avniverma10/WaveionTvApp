@@ -34,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ExitDialog
@@ -48,16 +49,19 @@ fun PanmetroGenreScreen(
     val context = LocalContext.current
     val epgList by sharedViewModel.wtvEPGList.collectAsState()
 
-    val availableGenre by sharedViewModel.availableGenre.collectAsState()
+    val availableGenre = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
 
+    // Lift the selected genre index state.
+    var channelToGenreFocus = remember { mutableStateOf(false) }
+    // Lift the selected genre index state.
+    var selectedGenreIndex = remember { mutableStateOf(0) }
     // Track currently selected indices
     var selectedChannelIndex by remember { mutableIntStateOf(0) }
     // FocusRequester for the channel list area.
     var genreListFocusRequester = remember { FocusRequester() }
     var channelListFocusRequester = remember { FocusRequester() }
-    // Lift the selected genre index state.
-    var selectedGenreIndex by remember { mutableIntStateOf(0) }
+
 
     // Create a list of FocusRequesters for the genre items.
     val genreFocusRequesters = remember(availableGenre) { List(availableGenre.size) { FocusRequester() } }
@@ -129,11 +133,13 @@ fun PanmetroGenreScreen(
                         // Left: Categories
                         NewCategoryMenu(
                             genres = availableGenre,
-                            selectedIndex = selectedGenreIndex,
+                            genreSelectedIndex = selectedGenreIndex,
+                            channelToGenreFocus = channelToGenreFocus,
                             focusRequesters = genreFocusRequesters,
                             // On selection, update the index, filter channels, and move focus to the channel list.
                             onCategoryForward = { index, selectedGenre ->
-                                selectedGenreIndex = index
+                                selectedGenreIndex.value = index
+                                channelToGenreFocus.value = false
                                 val genreName = selectedGenre.name ?: "All"
                                 sharedViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
@@ -145,10 +151,12 @@ fun PanmetroGenreScreen(
                         NewChannelListScreen(
                             sharedViewModel = sharedViewModel,
                             channelListFocusRequester = channelListFocusRequester,
+                            channelToGenreFocus = channelToGenreFocus,
                             onNavigateToGenre = {
                                 // Request focus on the genre item that was last selected.
-                                genreFocusRequesters.getOrNull(selectedGenreIndex)?.let { requester ->
+                                genreFocusRequesters.getOrNull(selectedGenreIndex.value)?.let { requester ->
                                     try {
+                                        channelToGenreFocus.value = true
                                         requester.requestFocus()
                                     } catch (e: IllegalStateException) {
                                         Log.e("FocusError", "FocusRequester not initialized", e)
@@ -156,7 +164,7 @@ fun PanmetroGenreScreen(
                                 }
                             },
                             onVideoChange =  onVideoChange,
-                            onDoubleClickIntent = { channelInfo ->
+                            onPlayerScreenIntent = { channelInfo ->
                                 epgList.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
                                     ?.let { channelItem ->
                                         sharedViewModel.updateSelectedChannel(channelItem)

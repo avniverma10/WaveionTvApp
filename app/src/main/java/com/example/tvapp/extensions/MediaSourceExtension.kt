@@ -1,7 +1,9 @@
 package com.example.tvapp.extensions
 
 import android.content.Context
+import android.os.Build
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
@@ -110,6 +112,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
 }
 
 //for Cryptoguard DRM
+@RequiresApi(Build.VERSION_CODES.M)
 @OptIn(UnstableApi::class)
 fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): MediaItem {
     // Build URL with query parameters using OkHttp's HttpUrl builder.
@@ -119,7 +122,7 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         ?.addQueryParameter("LoginName", "josip".toBase64Encoded())
         ?.addQueryParameter("Password", "cryptoguard".toBase64Encoded())
         ?.addQueryParameter("KeyId", contentId?.toBase64Encoded())
-        ?.addQueryParameter("UniqueDeviceId", findMyDeviceId().toBase64Encoded())
+        ?.addQueryParameter("UniqueDeviceId",  findMyDeviceId().toBase64Encoded())
         ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
         ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         ?.build()

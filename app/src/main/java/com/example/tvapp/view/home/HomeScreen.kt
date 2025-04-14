@@ -103,8 +103,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             }
             // For each dynamic category, map channel IDs to detailed Channel objects from epgChannels.
             items(homeCategories) { category ->
-                val epgList = epgChannels.filter { it.channelId != null && it.channelId in category.channels }
-                val channelsForCategory = epgList.mapNotNull { epgItem ->
+                val epgList = epgChannels?.filter { it.channelId != null && it.channelId in category.channels }
+                val channelsForCategory = epgList?.mapNotNull { epgItem ->
                     epgItem.tv?.channel?.copy(
                         logoUrl = epgItem.content?.thumbnailUrl,
                         videoUrl = epgItem.content?.videoUrl,
@@ -112,10 +112,10 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                     )
                 }
 
-                if (epgList.isNotEmpty()) {
+                if (epgList?.isNotEmpty() == true) {
                     CategorySection(
                         title = category.name,
-                        channels = channelsForCategory,
+                        channels = channelsForCategory?: arrayListOf(),
                         navController = navController,
                         sharedViewModel= sharedViewModel
                     )
@@ -150,7 +150,7 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
         ) {
             items(channels) { channel ->
                 ChannelBox(channel = channel) { videoUrl ->
-                    sharedViewModel.wtvEPGList.value.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
+                    sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
                         sharedViewModel.updateSelectedChannel(channelItem)
                         navController.navigate(Destination.panMetroScreen)
                     }

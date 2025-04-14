@@ -67,8 +67,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
     val wtvEPGList: StateFlow<List<EPGDataItem>> = _wtvEPGList.asStateFlow()
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
-    private val _availableGenre = MutableStateFlow<List<WTVGenre>>(emptyList())
-    val availableGenre: StateFlow<List<WTVGenre>> = _availableGenre.asStateFlow()
 
 
 
@@ -110,77 +108,69 @@ open class WTVViewModel @Inject constructor(private val application: Application
 
     init {
 
-        viewModelScope.launch {
-            // This scope will suspend until ALL async children complete
-            coroutineScope {
-                val manifestDeferred = async {
-                    networkApiCallInterfaceImpl
-                        .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
-                        .firstOrNullSuccess()
-                        ?.also {
-                            application.applyAppManifest(it)
-
-                        }
-                }
-
-                val epgDeferred = async {
-                    networkApiCallInterfaceImpl
-                        .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
-                        .firstOrNullSuccess()
-                        ?.also { data ->
-                            _wtvEPGList.value = data
-
-                            data.find { it.channelId == application.appManifestLiveData().value?.landingChannel?.ChannelID }
-                                ?.let(::updateSelectedChannel)?:kotlin.run {
-                                _selectedChannel.value =  data.getOrNull(0)!!
-                            }
-                        }
-                }
-
-                val genreDeferred = async {
-                    networkApiCallInterfaceImpl
-                        .provideWTVGenreData("https://nextwave.waveiontechnologies.com:5000/api/genres/")
-                        .firstOrNullSuccess()
-                        ?.let { list ->
-                            val full = mutableListOf(WTVGenre("all", "All")) + list
-                            _availableGenre.value = full
-                            application.applyAppGenre(full)
-                        }
-                }
-
-                val languageDeferred = async {
-                    networkApiCallInterfaceImpl
-                        .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
-                        .firstOrNullSuccess()
-                        ?.also {list->
-                            val full = mutableListOf(WTVLanguage("all", "All")) + list
-                            application.applyAppLanguage(full) }
-                }
-
-                val homeDeferred = async {
-                    networkApiCallInterfaceImpl
-                        .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
-                        .firstOrNullSuccess()
-                        ?.also { application.applyAppHome(it) }
-                }
-
-                // Wait for all to complete (success or failure)
-                awaitAll(
-                    manifestDeferred,
-                    epgDeferred,
-                    genreDeferred,
-                    languageDeferred,
-                   // homeDeferred
-                )
-
-                // **This line runs only after all of the above finish.**
-                _isInitializeData.value = true
-            }
-
-        }
-
         // Start the SSE connection globally.
      //   startSSE()
+    }
+
+    fun initializeAppRequiredData(){
+        viewModelScope.launch {
+            // This scope will suspend until ALL async children complete
+            val manifestDeferred = async {
+                networkApiCallInterfaceImpl
+                    .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
+                    .firstOrNullSuccess()
+                    ?.let {
+                        val manifest = it
+                        manifest
+                    }
+            }.await()
+            val genreDeferred = async {
+                networkApiCallInterfaceImpl
+                    .provideWTVGenreData("https://nextwave.waveiontechnologies.com:5000/api/genres/")
+                    .firstOrNullSuccess()
+                    ?.let { list ->
+                        val genre = mutableListOf(WTVGenre("all", "All")) + list
+                        genre
+                    }
+            }.await()
+            val languageDeferred = async {
+                networkApiCallInterfaceImpl
+                    .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
+                    .firstOrNullSuccess()
+                    ?.let {list->
+                        val language = mutableListOf(WTVLanguage("all", "All")) + list
+                        language
+                    }
+            }.await()
+            val epgDeferred = async {
+                networkApiCallInterfaceImpl
+                    .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
+                    .firstOrNullSuccess()
+                    ?.let { epgData ->
+                        epgData
+                    }
+            }.await()
+            // Wait for all to complete (success or failure)
+            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null){
+                // **This line runs only after all of the above finish.**
+                val manifestData = manifestDeferred.copy(genre = genreDeferred, language = languageDeferred)
+                application.applyAppManifest(manifestData)
+                val epgData = dedupeKeepFirst(epgDeferred)
+                _wtvEPGList.value = epgData
+                application.applyEPGData(epgData)
+                epgData.find { it.channelId == manifestData.landingChannel?.ChannelID }
+                    ?.let(::updateSelectedChannel)?:kotlin.run {
+                    _selectedChannel.value =  epgData.getOrNull(0)!!
+                }
+                logReport("manifestData",manifestData.toString())
+                logReport("epgDeferred",epgData.toString())
+                _isInitializeData.value = true
+            }else{
+                // **This line runs only after all of the above finish.**
+                _isInitializeData.value = false
+                _errorLoadingData.value = "Server not responding yet ${manifestDeferred?:"manifest api"}/${genreDeferred?:"gerne api"}/${languageDeferred?:"language api"}/${epgDeferred?:"epg api"}"
+            }
+        }
     }
 
 
@@ -288,4 +278,11 @@ open class WTVViewModel @Inject constructor(private val application: Application
     }
 
 
+}
+
+
+fun dedupeKeepFirst(items: List<EPGDataItem>): List<EPGDataItem> {
+    return items
+        .filter { it.channelId != null }       // optional: drop null IDs
+        .distinctBy { it.channelId }            // keep first of each channelId
 }

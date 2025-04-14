@@ -108,9 +108,9 @@ open class SharedViewModel @Inject constructor(
         }*/
 
         // load banners
-        viewModelScope.launch {
+        /*viewModelScope.launch {
             provideBanners()
-        }
+        }*/
     }
 
 
@@ -228,10 +228,10 @@ open class SharedViewModel @Inject constructor(
 
 
     private fun applyFilters() {
-        val fullList = wtvEPGList.value
+        val fullList = wtvEPGList.value?: provideApplicationContext().coreEPGLiveData().value
         val filter = _filterState.value
 
-        val filtered = fullList.filter { epgItem ->
+        val filtered = fullList?.filter { epgItem ->
             val genreList = epgItem.content?.genre.orEmpty()
             val language = epgItem.content?.language.orEmpty()
 
@@ -241,7 +241,7 @@ open class SharedViewModel @Inject constructor(
             genreMatch && languageMatch
         }
 
-        _filteredEPGList.value = filtered
+        _filteredEPGList.value = filtered?: arrayListOf()
     }
 
     fun searchChannels(context: Context, query: String) {
@@ -266,28 +266,45 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-
-    fun providePlayableProgramData(programs: List<Programme>):List<Programme>{
-        val currentTime = System.currentTimeMillis()
-        return programs.filter { program ->
-                val startMillis = program.startTime ?: 0L
-                val endMillis = program.endTime ?: 0L
-                // A program is playable if it is either currently running or upcoming:
-                // (i.e. its end time is in the future)
-                endMillis > currentTime
+    fun providePlayableProgramData(programs: List<Programme>): List<Programme> {
+        val now = System.currentTimeMillis()
+        return programs
+            .filter { program ->
+                val start = program.startTime
+                val end   = program.endTime
+                // Only include if both times are non-null and end is strictly in the future:
+                if (start == null || end == null) return@filter false
+                // 1) Currently running: start <= now < end
+                // 2) Upcoming: now < start
+                (start <= now && now < end) || (now < start)
             }
-            .sortedBy { it.startTime } // sort programs by their start time
+            .sortedBy { it.startTime }
     }
 
+    fun provideVideoPlayerProgramInfo(programs: List<Programme>): List<Programme> {
+        val now = System.currentTimeMillis()
+        return programs
+            .filter { program ->
+                val start = program.startTime
+                val end   = program.endTime
+                // Only include if both times are non-null and end is strictly in the future:
+                if (start == null || end == null) return@filter false
+                // 1) Currently running: start <= now < end
+                // 2) Upcoming: now < start
+                (start <= now && now < end) || (now < start)
+            }.take(2)
+            .sortedBy { it.startTime }
+    }
 
     fun filterPanMetroChannelsByGenre(genre:String?=null) {
+         val epgData = wtvEPGList.value?: provideApplicationContext().coreEPGLiveData().value
           genre?.let {
-              _filteredPanMetroChannels.value =    wtvEPGList.value.filter { epgItem ->
+              _filteredPanMetroChannels.value = epgData?.filter { epgItem ->
                   val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
                   genreMatch
-              }
+              }?: arrayListOf()
           }?:kotlin.run {
-              _filteredPanMetroChannels.value = wtvEPGList.value
+              _filteredPanMetroChannels.value = epgData?: arrayListOf()
           }
 
     }

@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -23,6 +24,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,13 +55,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun NewCategoryMenu(
     genres: List<WTVGenre>,
-    selectedIndex: Int,
+    genreSelectedIndex: MutableState<Int>,
+    channelToGenreFocus: MutableState<Boolean>,
     focusRequesters: List<FocusRequester>,
     onCategoryForward: (Int, WTVGenre) -> Unit
 ) {
     // Track which item is focused or selected.
     var focusedIndex by remember { mutableStateOf(0) }
-    var selectedIndex by remember { mutableStateOf(0) }
     // LazyListState to manage scrolling.
     val listState = rememberLazyListState()
     // Coroutine scope for launching suspend functions.
@@ -70,6 +73,15 @@ fun NewCategoryMenu(
     }
     val bottomArrowHighlighted by remember {
         mutableStateOf(false)
+    }
+    LaunchedEffect(genreSelectedIndex) {
+        focusRequesters.getOrNull(genreSelectedIndex.value)?.let { requester ->
+            try {
+                requester.requestFocus()
+            } catch (e: IllegalStateException) {
+                Log.e("FocusError", "FocusRequester not initialized", e)
+            }
+        }
     }
 
     Column(
@@ -105,10 +117,12 @@ fun NewCategoryMenu(
                 NewCategoryMenuItem(
                     categoryName = genre.name ?: "",
                     isFocused = (index == focusedIndex),
-                    onSelectedIndex = (index == selectedIndex),
+                    channelToGenreFocus= channelToGenreFocus,
+                    onSelectedIndex = (index == genreSelectedIndex.value),
                     focusRequester = focusRequesters[index],
                     onFocus = { onCategoryForward(index, genre) },
                     onKeyEvent = { keyEvent ->
+                        channelToGenreFocus.value = false
                         if (keyEvent.type == KeyEventType.KeyDown) {
                             when (keyEvent.nativeKeyEvent.keyCode) {
                                 KeyEvent.KEYCODE_DPAD_UP -> {
@@ -142,8 +156,8 @@ fun NewCategoryMenu(
                                     true
                                 }
                                 KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    selectedIndex = focusedIndex
-                                    genres.getOrNull(selectedIndex)?.let { onCategoryForward(selectedIndex, it) }
+                                    genreSelectedIndex.value = focusedIndex
+                                    genres.getOrNull(genreSelectedIndex.value)?.let { onCategoryForward(genreSelectedIndex.value, it) }
                                     true
                                 }
 
@@ -180,12 +194,14 @@ fun NewCategoryMenu(
 fun NewCategoryMenuItem(
     categoryName: String,
     isFocused: Boolean,
+    channelToGenreFocus: MutableState<Boolean>,
     onSelectedIndex: Boolean,
     focusRequester: FocusRequester,
     onFocus: () -> Unit,
     onKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean
 ) {
-    val scale by animateFloatAsState(targetValue = if (isFocused) 1.1f else 1f)
+    val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
+    val scale by animateFloatAsState(targetValue = if (isFocused && channelToGenreFocus.value) 1.3f else if (isFocused) 1.1f else 1f)
     val contentColor = if (categoryName == "All") {
         if (isFocused) Color(0xFF49FEDD) else Color.White
     } else {
@@ -220,7 +236,7 @@ fun NewCategoryMenuItem(
                     color = contentColor,
                     modifier = Modifier
                         .weight(1f)
-                        .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(topStart = 6.dp))
+                        .background(Color(0xFF2F2A2A), shape = RoundedCornerShape( 6.dp))
                         .padding(start = 16.dp, end = 4.dp)
                         .fillMaxHeight()
                         .wrapContentHeight(Alignment.CenterVertically)
@@ -242,7 +258,8 @@ fun NewCategoryMenuItem(
                 Text(
                     text = categoryName,
                     color = contentColor,
-                    fontSize = 18.sp,
+                    fontSize = 15.sp,
+                    maxLines = 1,
                     fontFamily = FontFamily(Font(R.font.figtree_medium)),
                     fontWeight = FontWeight(400),
                     modifier = Modifier

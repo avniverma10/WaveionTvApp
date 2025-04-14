@@ -1,9 +1,10 @@
 package com.example.tvapp.view.panmetro
 
 import android.app.Activity
+import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,20 +17,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Button
-import androidx.compose.material.Checkbox
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -53,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,12 +64,9 @@ import com.example.tvapp.extensions.getTvMacId
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.LoginViewModel
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun PanmetroLoginScreen(
@@ -100,6 +97,22 @@ fun PanmetroLoginScreen(
             rememberMe = true
         }
     }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    BackHandler {
+        showExitDialog = true
+    }
+
+
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finish()
+        }, onDismiss = {
+            showExitDialog = false
+        })
+    }
+
 
     // Outer Box with dark blue background
     Box(
@@ -173,10 +186,6 @@ fun PanmetroLoginScreen(
                                 onValueChange = {
                                     username = it
                                     usernameError = it.isBlank()
-
-                                    if (it.isNotBlank()) {
-                                        passwordFocusRequester.requestFocus()
-                                    }
                                 },
                                 label = { Text("UserName") },
                                 leadingIcon = {
@@ -191,17 +200,19 @@ fun PanmetroLoginScreen(
                                     .fillMaxWidth()
                                     .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
                                     .padding(4.dp),
-                                  //  .focusRequester(usernameFocusRequester),
-                                /*keyboardOptions = KeyboardOptions(
-                                    imeAction = ImeAction.Next
+                                keyboardOptions = KeyboardOptions(
+                                    imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(
                                     onNext = {
-                                        // Move focus to password field when "Next" is pressed
-                                       // passwordFocusRequester.requestFocus()
+                                        try {
+                                            passwordFocusRequester.requestFocus()
+                                        } catch (e: IllegalStateException) {
+                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                        }
                                     }
                                 ),
-*/
+
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = Color.Green,
                                     unfocusedBorderColor = Color.White,
@@ -232,16 +243,20 @@ fun PanmetroLoginScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
-                                    .padding(4.dp),
-                                  /*  .focusRequester(passwordFocusRequester),
+                                    .padding(4.dp)
+                                    .focusRequester(passwordFocusRequester),
                                 keyboardOptions = KeyboardOptions(
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(
                                     onNext = {
-                                        loginFocusRequester.requestFocus()
+                                        try {
+                                            loginFocusRequester.requestFocus()
+                                        } catch (e: IllegalStateException) {
+                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                        }
                                     }
-                                ),*/
+                                ),
 
                                 colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = Color.Green,

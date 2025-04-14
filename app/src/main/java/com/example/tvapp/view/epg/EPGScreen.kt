@@ -72,14 +72,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
-    val categories = sharedViewModel.provideApplicationContext()
-        .appGenreLiveData().value.orEmpty()
-    val languages = sharedViewModel.provideApplicationContext()
-        .appLanguageLiveData().value.orEmpty()
+    val categories = appManifestData.value?.genre?: arrayListOf()
+    val languages = appManifestData.value?.language?: arrayListOf()
     val filterState by sharedViewModel.filterState.collectAsState()
 
-    val categorySelectedIndex = remember { mutableStateOf(0) }
-    val languageSelectedIndex = remember { mutableStateOf(0) }
+    if (categories.isEmpty() || languages.isEmpty()) {
+        return
+    }
+
     // A FocusRequester per item
     val categoryFocusRequesters = remember(categories) {
         List(categories.size) { FocusRequester() }
@@ -87,6 +87,10 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val languageFocusRequesters = remember(languages) {
         List(languages.size) { FocusRequester() }
     }
+
+
+    val categorySelectedIndex = remember { mutableStateOf(0) }
+    val languageSelectedIndex = remember { mutableStateOf(0) }
 
     LaunchedEffect(filterState, categories, languages) {
         categorySelectedIndex.value = categories.indexOfFirst { it.name == filterState.genre }

@@ -29,13 +29,13 @@ import com.example.tvapp.R
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.ui.res.painterResource
+import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
-fun TopOverlayInfo(dataItem: EPGDataItem?) {
+fun TopOverlayInfo(sharedViewModel: SharedViewModel,dataItem: EPGDataItem?) {
     val now = System.currentTimeMillis()
-
-    val programList = dataItem?.currentPrograms ?: dataItem?.tv?.programme
+    val programList = dataItem?.tv?.programme?.let { sharedViewModel.provideVideoPlayerProgramInfo(it) }//dataItem?.currentPrograms ?: dataItem?.tv?.programme
 
     val currentProgram = programList
         ?.sortedBy { it.startTime }

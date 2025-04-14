@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -62,9 +63,10 @@ import kotlinx.coroutines.launch
 fun NewChannelListScreen(
     sharedViewModel: SharedViewModel,
     channelListFocusRequester: FocusRequester,
+    channelToGenreFocus: MutableState<Boolean>,
     onNavigateToGenre: () -> Unit,
     onVideoChange: (EPGDataItem, Int) -> Unit,
-    onDoubleClickIntent: (EPGDataItem) -> Unit,
+    onPlayerScreenIntent: (EPGDataItem) -> Unit,
 ) {
 
     var focusedIndex by remember { mutableStateOf(0) }
@@ -135,12 +137,15 @@ fun NewChannelListScreen(
                             KeyEvent.KEYCODE_DPAD_LEFT -> {
                                 // Switch focus to the genre list.
                                 onNavigateToGenre()
-                                true
+                                false
                             }
                             KeyEvent.KEYCODE_DPAD_DOWN -> {
                                 if (focusedIndex < filteredChannels.size - 1) {
                                     focusedIndex++
-                                    previewChannelIndex = focusedIndex
+                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
+                                        previewChannelIndex = focusedIndex
+                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
+                                    }
                                     // Scroll if needed.
                                     val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
                                     if (focusedIndex !in visibleIndices) {
@@ -154,20 +159,26 @@ fun NewChannelListScreen(
                             KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (focusedIndex > 0) {
                                     focusedIndex--
-                                    previewChannelIndex = focusedIndex
+                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
+                                        previewChannelIndex = focusedIndex
+                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
+                                    }
                                     val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
                                     if (focusedIndex !in visibleIndices) {
                                         coroutineScope.launch {
                                             listState.animateScrollToItem(focusedIndex)
                                         }
                                     }
+
                                 }
                                 true
                             }
                             KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                val currentTime = System.currentTimeMillis()
-                                val currentKey = keyEvent.key
-                                if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
+                               // val currentTime = System.currentTimeMillis()
+                               // val currentKey = keyEvent.key
+                                onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                true
+                                /*if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
                                     if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
                                         onDoubleClickIntent(filteredChannels[focusedIndex])
                                     }
@@ -180,7 +191,7 @@ fun NewChannelListScreen(
                                         onVideoChange(filteredChannels[focusedIndex], focusedIndex)
                                     }
                                     false
-                                }
+                                }*/
                             }
                             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {

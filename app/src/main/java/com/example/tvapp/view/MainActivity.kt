@@ -22,6 +22,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen
         super.onCreate(savedInstanceState)
+        //init app data
+        sharedViewModel.initializeAppRequiredData()
         setContent {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {

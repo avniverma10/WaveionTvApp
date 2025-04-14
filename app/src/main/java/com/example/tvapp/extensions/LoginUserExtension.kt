@@ -43,7 +43,7 @@ fun Context.getAndroidTvDrmInfo(): AndroidTvDrmInfo? {
             drmScheme = "Widevine",
             widevineSecurityLevel = securityLevel,
             deviceUniqueId = deviceIdBase64,
-            macId= this.getTvMacId()?:"",
+            macId= C.WIDEVINE_UUID.toString(),
             manufacturer = Build.MANUFACTURER,
             model = Build.MODEL,
             androidVersion = Build.VERSION.RELEASE,

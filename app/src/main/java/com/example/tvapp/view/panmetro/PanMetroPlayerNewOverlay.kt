@@ -73,28 +73,16 @@ fun PanMetroNewOverlay(
     val focusManager = LocalFocusManager.current
 
     // 1) Request initial focus into the first card
-    LaunchedEffect(selectedIndex) {
+    LaunchedEffect(epgList, selectedIndex) {
         selectedIndex.value = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
             .takeIf { it >= 0 } ?: 0
         // Delay a frame to ensure row is in composition
-        channelFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
-            try {
-                requester.requestFocus()
-            } catch (e: IllegalStateException) {
-                Log.e("FocusError", "FocusRequester not initialized", e)
-            }
+        scope.launch {
+            delay(200)
+            // Scroll into view
+            lazyListState.animateScrollToItem(selectedIndex.value)
         }
-        /* withFrameNanos {
-             channelFocusRequesters[selectedIndex.value].requestFocus()
-         }*/
     }
-
-    // Whenever focusedIndex changes, scroll & focus
-    /*LaunchedEffect(focusedIndex) {
-        listState.animateScrollToItem(focusedIndex)
-        channelRequesters[focusedIndex].requestFocus()
-        onChannelFocused(epgList[focusedIndex])
-    }*/
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Top overlay for program info.
@@ -111,7 +99,7 @@ fun PanMetroNewOverlay(
                 .background(topBarGradient)
                 .padding(horizontal = 24.dp, vertical = 13.dp)
         ) {
-            TopOverlayInfo(dataItem = selectedChannel)
+            TopOverlayInfo(sharedViewModel=sharedViewModel,dataItem = selectedChannel)
         }
 
         // Bottom channel strip
@@ -119,7 +107,7 @@ fun PanMetroNewOverlay(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(24.dp, 13.dp)
+                .padding(10.dp, 10.dp)
                 .focusTarget()   // enable focus movement inside
 
         ) {
@@ -165,6 +153,7 @@ fun PanMetroNewOverlay(
                         }
 
                     ChannelCard(
+                        sharedViewModel= sharedViewModel,
                         epgDataItem = item,
                         isFocused = isSelected,
                         modifier= modifier
@@ -179,20 +168,15 @@ fun PanMetroNewOverlay(
 
 @Composable
 fun ChannelCard(
+    sharedViewModel: SharedViewModel,
     epgDataItem: EPGDataItem,
     isFocused: Boolean,
     modifier: Modifier
 ) {
     val now = System.currentTimeMillis()
-    val programList = epgDataItem.currentPrograms ?: epgDataItem.tv?.programme
+    val programList = epgDataItem.tv?.programme?.let { sharedViewModel.provideVideoPlayerProgramInfo(it) }//epgDataItem.currentPrograms ?: epgDataItem.tv?.programme
 
-    val currentProgram = programList
-        ?.sortedBy { it.startTime }
-        ?.firstOrNull { (it.startTime ?: 0) <= now && (it.endTime ?: 0) > now }
-    val nextProgram = programList
-        ?.firstOrNull { (it.startTime ?: 0) > now }
-
-    val minutesLeft = currentProgram?.endTime?.let { ((it - now) / 60000).toInt() } ?: 0
+    val minutesLeft = programList?.getOrNull(0)?.endTime?.let { ((it - now) / 60000).toInt() } ?: 0
 
 
     Box(
@@ -226,24 +210,24 @@ fun ChannelCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = currentProgram?.title ?: "No Info",
+                text = programList?.getOrNull(0)?.title ?: "No Info",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White,
                 maxLines = 1
             )
             Text(
-                text = "${formatTime(currentProgram?.startTime)} - ${formatTime(currentProgram?.endTime)} • $minutesLeft MIN LEFT",
+                text = "${formatTime(programList?.getOrNull(0)?.startTime)} - ${formatTime(programList?.getOrNull(0)?.endTime)} • $minutesLeft MIN LEFT",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Next at ${formatTime(nextProgram?.startTime)}",
+                text = "Next at ${formatTime(programList?.getOrNull(1)?.startTime)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
             Text(
-                text = nextProgram?.title ?: "N/A",
+                text = programList?.getOrNull(1)?.title ?: "N/A",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White,
                 maxLines = 1

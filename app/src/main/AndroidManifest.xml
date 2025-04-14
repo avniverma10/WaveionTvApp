@@ -33,6 +33,7 @@
             android:name=".view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

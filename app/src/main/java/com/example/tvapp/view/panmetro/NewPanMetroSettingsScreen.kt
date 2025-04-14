@@ -1,5 +1,7 @@
 package com.example.tvapp.view.panmetro
 
+
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,53 +33,59 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
-import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
-fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
+fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF1F3A6B))
+            .background(Color(0xFF14161A))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PermettoTopBar()
-            GradientBackground {
-                MainSettingsContent(
+//            PermettoTopBar()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF14161A))
+            ) {
+                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
+
+                NewMainSettingsContent(
                     onInfoClick = { showInfo = true },
                     onLogoutClick = { showExitDialog = true }
 
                 )
-            }
+                }
+
         }
     }
     if (showInfo) {
         NewPanMetroInfoScreen(
-            username = loginInfo?.username?:"WTV",
             onOkClick = { showInfo = false }
         )
     }
     if (showExitDialog) {
         PanMetroLogoutDialog (
             onConfirmExit = {
-                sharedViewModel.clearLogin()
                 showExitDialog = false
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(0)
-                }
+                android.os.Process.killProcess(android.os.Process.myPid())
             },
             onDismiss = {
                 showExitDialog = false
@@ -88,7 +95,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
 }
 
 @Composable
-fun MainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) {
+fun NewMainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) {
     val menuItems = listOf(
         "Info", "Logout"
     )
@@ -104,8 +111,8 @@ fun MainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) 
 
     Row(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
+            .fillMaxSize().background(Color(0xFF2A2D32)),
+//            .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -113,15 +120,10 @@ fun MainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) 
 
         Box(
             modifier = Modifier
-                .width(500.dp)
-                .height(250.dp)
+                .width(700.dp)
+                .height(400.dp)
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF7F00FF),
-                            Color(0xFFE100FF)
-                        )
-                    ),
+                  Color(0xFF364154),
                     shape = RoundedCornerShape(8.dp)
                 )
                 .padding(padding)
@@ -130,10 +132,10 @@ fun MainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) 
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 verticalArrangement = Arrangement.spacedBy(itemSpacing),
-                modifier = Modifier.fillMaxSize().fillMaxWidth().padding(vertical = 20.dp)
+                modifier = Modifier.fillMaxSize().fillMaxWidth().padding(vertical = 90.dp)
             ) {
                 items(menuData) { item ->
-                    MenuItemCard(
+                    NewMenuItemCard(
                         title = item.first,
                         iconResId = item.second,
                         onClick = {
@@ -154,7 +156,7 @@ fun MainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) 
 }
 
 @Composable
-fun MenuItemCard(
+fun NewMenuItemCard(
     title: String,
     iconResId: Int,
     onClick: () -> Unit = {}
@@ -163,26 +165,26 @@ fun MenuItemCard(
 
     Card(
         modifier = Modifier
-            .size(width = 100.dp, height = 150.dp)
+            .size(width = 100.dp, height = 160.dp)
             .onFocusChanged { isFocused = it.isFocused } // detect focus
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }
             .then(
-                if (isFocused) Modifier.background(Color.Yellow)
+                if (isFocused) Modifier.background(Color(0xFF49FEDD),shape = RoundedCornerShape(8.dp))
                     .border(
                         width = 3.dp,
-                        color = Color.Yellow,
+                        color = Color(0xFF49FEDD),
                         shape = RoundedCornerShape(8.dp)
                     ) else Modifier
             ),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2D32)),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
+                .fillMaxSize(),
+//                .padding(8.dp),
             verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -191,14 +193,19 @@ fun MenuItemCard(
                 painter = painterResource(id = iconResId),
                 contentDescription = "$title Icon",
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(55.dp)
                     .clip(CircleShape)
             )
             Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = 18.sp,
                 textAlign = TextAlign.Center,
-                color = Color.Black
+                color = Color.White,
+                fontFamily = androidx.compose.ui.text.font.FontFamily(
+                    androidx.compose.ui.text.font.Font(R.font.figtree_medium)
+                ),
+
+
             )
         }
     }

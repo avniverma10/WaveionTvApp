@@ -15,13 +15,14 @@ import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import org.json.JSONObject
 import org.threeten.bp.Duration
-import org.threeten.bp.Instant
-import org.threeten.bp.ZoneId
 import org.threeten.bp.ZonedDateTime
 import org.threeten.bp.format.DateTimeFormatter
+import java.io.File
+import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.math.BigDecimal
 import java.math.BigInteger
+import java.net.NetworkInterface
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.security.MessageDigest
@@ -517,4 +518,83 @@ fun Date.formatToCustom(): String {
 
 fun String.toBase64Encoded(): String {
     return Base64.encodeToString(this.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+}
+
+
+fun playerErrorHandling(errorCode:Int):String{
+  return  when(errorCode){
+        400->"Bad input to server!"
+        403->"User does not have permission, or invalid login data"
+        404->"Invalid content id"
+        429->"Too many requests - max concurrent streams reached"
+        451->"Unavailable for legal reasons - geo blocking"
+        500->"Internal error"
+        else -> ""
+  }
+}
+
+
+// Usage:
+val wifiMac = "wlan0".getMacAddress()      // Wi‑Fi
+val ethMac  = "eth0".getMacAddress()       // Ethernet
+fun String.getMacAddress(): String? {
+    return try {
+        val nif = NetworkInterface.getByName(this) ?: return null
+        val macBytes = nif.hardwareAddress ?: return null
+        macBytes.joinToString(separator = ":") { byte ->
+            String.format("%02X", byte)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+//provide interfaceName like "wlan0"/"eth0" to get specific macAddress
+fun String.readMacFromSysfs(): String? {
+    return try {
+        val path = "/sys/class/net/$this/address"
+        val mac = File(path).readText().toUpperCase(Locale.ROOT).substring(0, 17)
+        mac.ifEmpty { null }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+
+/*
+private fun getMacAddress(): String? {
+    try {
+        return loadFileAsString("/sys/class/net/eth0/address").toUpperCase().substring(0, 17)
+    } catch (e: IOException) {
+        e.printStackTrace()
+        return null
+    }
+}*/
+
+
+
+/**
+ * Reads the entire contents of this String (treated as a file path) into a String,
+ * or throws IOException if it fails.
+ */
+@Throws(IOException::class)
+private fun String.readFile(): String =
+    File(this).bufferedReader().use { it.readText() }
+
+/**
+ * Attempts to read the MAC address from the given interface path,
+ * e.g. "/sys/class/net/eth0/address" or "/sys/class/net/wlan0/address".
+ *
+ * @receiver the interface path to read
+ * @return the MAC address in upper‑case "XX:XX:XX:XX:XX:XX" format, or null if it fails
+ */
+fun String.macAddress(): String? = try {
+    this
+        .readFile()
+        .trim()                    // remove newline
+        .uppercase()               // upper‑case
+        .takeIf { it.length >= 17 }
+        ?.substring(0, 17)         // "XX:XX:XX:XX:XX:XX"
+} catch (e: IOException) {
+    e.printStackTrace()
+    null
 }

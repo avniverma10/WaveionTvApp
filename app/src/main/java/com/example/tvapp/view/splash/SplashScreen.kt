@@ -43,7 +43,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             if(isInitializeData){
                 if(loginInfo?.username?.isNotEmpty() == true){
                     navController.navigate(Destination.genreScreen) {
-                        //popUpTo(Destination.loginScreen) { inclusive = true }
+                        popUpTo(Destination.splashScreen) { inclusive = true }
                     }
                 }else{
                     navController.navigate(Destination.loginScreen) {
@@ -51,16 +51,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                     }
                 }
             }
-
-            /*if (authToken.isNullOrEmpty()) {
-                navController.navigate(Destination.panMetroScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            } else {
-                navController.navigate(Destination.epgScreen) { // Navigate to EPG or Player Screen
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }*/
         },3000)
     }
 

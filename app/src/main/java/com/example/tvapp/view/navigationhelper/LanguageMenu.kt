@@ -1,5 +1,6 @@
 package com.example.tvapp.view.navigationhelper
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +38,7 @@ import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -54,25 +56,23 @@ fun LanguageMenu(
     categorySelectedIndex: MutableState<Int>
 ) {
 
-    val appGenreData by sharedViewModel
-        .provideApplicationContext()
-        .appGenreLiveData()
-        .observeAsState(initial = emptyList())
-    val menuItems: List<WTVGenre> = appGenreData?: emptyList()
+    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
-    val appLanguageData by sharedViewModel
-        .provideApplicationContext()
-        .appLanguageLiveData()
-        .observeAsState(initial = emptyList())
-    val languageItems: List<WTVLanguage> = appLanguageData ?: emptyList()
-    val allLanguageItems =  languageItems
+    val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
 
-    if (allLanguageItems.isEmpty()) {
+
+    if (languageItems.isEmpty()) {
         return
     }
 
-    LaunchedEffect(selectedIndex.value) {
-        languageFocusRequesters[selectedIndex.value].requestFocus()
+    LaunchedEffect(selectedIndex) {
+        languageFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
+            try {
+                requester.requestFocus()
+            } catch (e: IllegalStateException) {
+                Log.e("FocusError", "FocusRequester not initialized", e)
+            }
+        }
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -85,7 +85,7 @@ fun LanguageMenu(
         horizontalArrangement = Arrangement.spacedBy(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        itemsIndexed(allLanguageItems) { index, item ->
+        itemsIndexed(languageItems) { index, item ->
             val isSelected = selectedIndex.value == index
             val isFocused = remember { mutableStateOf(false) }
 
@@ -112,12 +112,18 @@ fun LanguageMenu(
                     when {
                         keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP -> {
-                            categoryFocusRequesters[categorySelectedIndex.value].let { requester ->
-                                coroutineScope.launch {
-                                    delay(50)
-                                    requester.requestFocus()
+                            categoryFocusRequesters
+                                .getOrNull(categorySelectedIndex.value)
+                                ?.let { requester ->
+                                    coroutineScope.launch {
+                                        delay(50)
+                                        try {
+                                            requester.requestFocus()
+                                        } catch (e: IllegalStateException) {
+                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                        }
+                                    }
                                 }
-                            }
                             true
                         }
 

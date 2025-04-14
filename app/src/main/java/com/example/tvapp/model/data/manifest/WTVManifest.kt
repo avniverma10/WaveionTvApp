@@ -1,6 +1,8 @@
 package com.example.tvapp.model.data.manifest
 
 import android.util.Log
+import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.language.WTVLanguage
 import com.google.gson.annotations.SerializedName
 
 data class WTVManifest(
@@ -9,10 +11,11 @@ data class WTVManifest(
     var splashUrl:String?="https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
     var baseUrl:String? = "https://nextwave.waveiontechnologies.com:5000/api/",
     var styleNavigation:StyleNavigation?=null,
-    var language: HashMap<String,String>?=null,
     var tab:List<TabInfo>?= null,
     var contact:Contact?=null,
-    var landingChannel:LandingChannel?=null
+    var landingChannel:LandingChannel?=null,
+    var language:List<WTVLanguage>?=null,
+    var genre:List<WTVGenre>?=null
 ){
     fun shouldBannerVisible(tabName:String): Boolean {
         return tab?.find { it.name == tabName }?.components?.getOrNull(0)?.name.equals("Banner",true)
