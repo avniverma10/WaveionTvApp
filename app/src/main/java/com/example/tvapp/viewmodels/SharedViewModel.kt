@@ -14,7 +14,7 @@ import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
 import com.example.tvapp.model.data.epgdata.Channel
-import com.example.tvapp.model.data.epgdata.ChannelWithDRM
+//import com.example.tvapp.model.data.epgdata.ChannelWithDRM
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme

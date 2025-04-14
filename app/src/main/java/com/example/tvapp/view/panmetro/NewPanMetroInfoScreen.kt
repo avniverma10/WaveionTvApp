@@ -22,7 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tvapp.extensions.findMyDeviceId
-import com.example.tvapp.extensions.getActiveMacAddress
+//import com.example.tvapp.extensions.getActiveMacAddress
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.macAddress
 import com.example.tvapp.extensions.readMacFromSysfs

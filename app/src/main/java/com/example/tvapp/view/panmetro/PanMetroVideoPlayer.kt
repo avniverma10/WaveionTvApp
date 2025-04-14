@@ -53,7 +53,7 @@ import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.view.playeroverlay.NewPlayerOverlay
-import com.example.tvapp.view.uicomponent.rememberClockTick
+//import com.example.tvapp.view.uicomponent.rememberClockTick
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 import kotlinx.coroutines.delay
@@ -69,7 +69,7 @@ fun PanMetroVideoPlayer(
 ) {
     val context = LocalContext.current
     // 1) Get a ticking clock (updates every minute)
-    val now by rememberClockTick(tickMillis = 60_000L)
+//    val now by rememberClockTick(tickMillis = 60_000L)
     val epgList by sharedViewModel.wtvEPGList.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     // 1️⃣ Remember the last interaction time (ms since epoch)

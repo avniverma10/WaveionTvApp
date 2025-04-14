@@ -1,6 +1,7 @@
 package com.example.tvapp.view.home
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -54,6 +55,8 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
+
+    Log.d("AVNI","home categories --> $homeCategories")
     val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current

@@ -68,8 +68,8 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             contentDescription = "Default Background",
             contentScale = ContentScale.FillBounds,
             modifier = Modifier.align(Alignment.Center),
-            error = painterResource(R.drawable.panmetro_logo_t),        // Error state
-            placeholder = painterResource(R.drawable.panmetro_logo_t)   // Loading state
+            error = painterResource(R.drawable.gtpl_logo),        // Error state
+            placeholder = painterResource(R.drawable.gtpl_logo)   // Loading state
         )
        /* AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)

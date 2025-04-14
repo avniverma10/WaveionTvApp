@@ -1,10 +1,15 @@
 package com.example.tvapp.model.home
 
+import com.google.gson.annotations.SerializedName
+
 data class WTVHomeCategory(
-    val __v: Int,
-    val _id: String,
-    val channels: List<String>,
-    val createdAt: String,
+    @SerializedName("_id")
+    val id: String,
     val name: String,
-    val updatedAt: String
+    val channels: List<String>,
+    val order: Int,
+    val createdAt: String,
+    val updatedAt: String,
+    @SerializedName("__v")
+    val version: Int
 )

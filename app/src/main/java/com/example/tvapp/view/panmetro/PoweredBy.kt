@@ -39,7 +39,7 @@ fun PoweredBy() {
             .fillMaxWidth()
             .height(40.dp)
             .padding(top = 10.dp)
-            .background(Color(0xFF1F3A6B)),
+            .background(Color.Black),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -56,7 +56,7 @@ fun PoweredBy() {
 
         // Dynamic date/time
         Text(
-            text = "Powered by PANMETRO",
+            text = "Powered by GTPL",
             color = Color(0xFF49FEDD),
             style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
                 fontWeight = FontWeight.Bold

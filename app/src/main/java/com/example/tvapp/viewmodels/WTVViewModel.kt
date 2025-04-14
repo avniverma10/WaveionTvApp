@@ -19,12 +19,13 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.sse.TabItem
+import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
-import com.example.tvapp.utils.network.heper.ConnectivityObserver
-import com.example.tvapp.utils.network.heper.NetworkStatus
+//import com.example.tvapp.utils.network.heper.ConnectivityObserver
+//import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.utils.sealed.firstOrNullSuccess
@@ -54,7 +55,7 @@ import javax.inject.Inject
 @HiltViewModel
 open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
-    private val observer = ConnectivityObserver(application.applicationContext)
+//    private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
     val userIdeal: StateFlow<Boolean> = _userIdeal.asStateFlow()
 
@@ -75,15 +76,15 @@ open class WTVViewModel @Inject constructor(private val application: Application
     val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    val networkStatus: StateFlow<NetworkStatus> =
-        observer.observe()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = NetworkStatus.Unavailable
-            )
+//
+//    @RequiresApi(Build.VERSION_CODES.M)
+//    val networkStatus: StateFlow<NetworkStatus> =
+//        observer.observe()
+//            .stateIn(
+//                scope = viewModelScope,
+//                started = SharingStarted.WhileSubscribed(5_000),
+//                initialValue = NetworkStatus.Unavailable
+//            )
 
     val loginInfo = loginPrefsRepository?.loginInfoFlow?.stateIn(
         viewModelScope,
@@ -133,6 +134,15 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         genre
                     }
             }.await()
+            val homeDeferred = async {
+                networkApiCallInterfaceImpl
+                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+                    .firstOrNullSuccess()
+                    ?.let {
+                        val home = it
+                        home
+                    }
+            }.await()
             val languageDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
@@ -151,7 +161,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     }
             }.await()
             // Wait for all to complete (success or failure)
-            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null){
+            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null && homeDeferred!=null){
                 // **This line runs only after all of the above finish.**
                 val manifestData = manifestDeferred.copy(genre = genreDeferred, language = languageDeferred)
                 application.applyAppManifest(manifestData)

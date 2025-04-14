@@ -40,7 +40,7 @@ fun ExpandableNavigationMenu(
     sharedViewModel: SharedViewModel,
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit
 ) {
-    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile") }
+    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all") }
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -53,8 +53,9 @@ fun ExpandableNavigationMenu(
     LaunchedEffect(currentBackStackEntry) {
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
-            // Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
-            //  Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
+            Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1
+             Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+              Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
             Destination.genreScreen -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
             Destination.settings -> tabs?.indexOfFirst { it.name == "settings" } ?: -1
@@ -195,7 +196,9 @@ fun ExpandableNavigationMenu(
                         selectedIndex = index + 1
                         expanded = false
                         when (tab.name) {
-                            //"home" -> navController.navigate(Destination.homeScreen)
+                            "all" -> navController.navigate(Destination.channel)
+                            "home" -> navController.navigate(Destination.homeScreen)
+                            "search" -> navController.navigate(Destination.searchScreen)
                             "channels" -> navController.navigate(Destination.genreScreen)
                             "settings" -> navController.navigate(Destination.settings)
                             "epg" -> navController.navigate(Destination.epgScreen) {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +57,7 @@ fun PermettoTopBar(topBGColor:Color?=Color.Black) {
     }
 
     TopAppBar(
-        backgroundColor = Color(0xFF1F3A6B),
+        backgroundColor = Color.Black,
         elevation = 0.dp,
         modifier = Modifier.padding(bottom = 10.dp)
     ) {
@@ -79,16 +81,19 @@ fun PermettoTopBar(topBGColor:Color?=Color.Black) {
                 // Logo or brand text
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        //.data("https://nextwave.waveiontechnologies.com:5000/uploads/banner/news5.jpg")
+                        // .data("https://nextwave.waveiontechnologies.com:5000/uploads/banner/news5.jpg")
                         .diskCachePolicy(CachePolicy.ENABLED)    // cache image on disk
                         .memoryCachePolicy(CachePolicy.ENABLED)  // cache image in memory
                         .build(),
                     contentDescription = "Default Background",
-                    contentScale = ContentScale.Fit,
-                    error = painterResource(R.drawable.top_logo),        // Error state
-                    placeholder = painterResource(R.drawable.top_logo),  // Loading state
-
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(200.dp)               // take full available width
+                        .height(200.dp),
+                    error = painterResource(R.drawable.gtpl_banner_transparent),      // Error state
+                    placeholder = painterResource(R.drawable.gtpl_banner_transparent) // Loading state
                 )
+
                 // Thin green line below
                 Box(
                     modifier = Modifier
