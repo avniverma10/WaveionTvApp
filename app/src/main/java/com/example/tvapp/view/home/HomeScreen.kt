@@ -87,7 +87,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            if(appManifestData.value?.tab?.find { it.name =="home" }?.components?.get(0)?.isVisible == true || tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true) {
+            if(appManifestData.value?.tab?.find { it.name =="home" }?.components?.getOrNull(0)?.isVisible == true || tabItemsData.find{it.name == "home"}?.components?.getOrNull( 0)?.isVisible == true) {
                 item {
                     if (banners.isNotEmpty()) {
                         HeroCarousel(bannerList = banners, navController = navController)

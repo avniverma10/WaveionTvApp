@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -125,7 +126,7 @@ fun PanmetroLoginScreen(
             PermettoTopBar()
 
             // Gradient background placed directly under the top header
-            GradientBackground {
+//            GradientBackground {
                 // The login UI is placed within the gradient background
                 // Center the login UI elements in a Row
                 Row(
@@ -433,19 +434,19 @@ fun PanmetroLoginScreen(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(13.dp)
                         ) {
                             // Panmetro logo
                             Image(
-                                painter = painterResource(id = R.drawable.panlogin),
+                                painter = painterResource(id = R.drawable.gtpl_banner_transparent),
                                 contentDescription = "Panmetro Logo",
-                                modifier = Modifier.size(150.dp),
+                                modifier = Modifier.size(200.dp),
                                 contentScale = ContentScale.Fit
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             // Main title
                             Text(
-                                text = "Panmetro-IPTV",
+                                text = "GTPL-KCBPL",
                                 color = Color.Black,
                                 fontSize = MaterialTheme.typography.h5.fontSize,
                                 fontFamily = figtreeMedium
@@ -453,8 +454,9 @@ fun PanmetroLoginScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             // Subtitle/tagline
                             Text(
-                                text = "Future of entertainment",
+                                text = "Digital Cable TV & Broadband",
                                 color = Color.White,
+                                textAlign = TextAlign.Center,
                                 fontSize = 18.sp,
                                 fontFamily = figtreeLight
                             )
@@ -464,5 +466,5 @@ fun PanmetroLoginScreen(
             }
         }
     }
-}
+
 

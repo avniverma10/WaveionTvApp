@@ -134,15 +134,15 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         genre
                     }
             }.await()
-            val homeDeferred = async {
-                networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
-                    .firstOrNullSuccess()
-                    ?.let {
-                        val home = it
-                        home
-                    }
-            }.await()
+//            val homeDeferred = async {
+//                networkApiCallInterfaceImpl
+//                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+//                    .firstOrNullSuccess()
+//                    ?.let {
+//                        val home = it
+//                        home
+//                    }
+//            }.await()
             val languageDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
@@ -161,7 +161,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     }
             }.await()
             // Wait for all to complete (success or failure)
-            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null && homeDeferred!=null){
+            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null){
                 // **This line runs only after all of the above finish.**
                 val manifestData = manifestDeferred.copy(genre = genreDeferred, language = languageDeferred)
                 application.applyAppManifest(manifestData)
@@ -180,7 +180,30 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 _isInitializeData.value = false
                 _errorLoadingData.value = "Server not responding yet ${manifestDeferred?:"manifest api"}/${genreDeferred?:"gerne api"}/${languageDeferred?:"language api"}/${epgDeferred?:"epg api"}"
             }
+
+
+            viewModelScope.launch {
+                networkApiCallInterfaceImpl.provideWTVHomeData(homeUrl = "https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory").collect{response ->
+                    when (response) {
+                        is WTVListResponse.Success -> {
+                            // Handle successful response
+                            application.applicationContext.applyAppHome(response.data)
+                            logReport("applyAppLanguage:${ response.data}")
+
+                        }
+                        is WTVListResponse.Failure -> {
+                            // Handle error state
+                            // _errorLoadingData.value = response.error.message
+                            logReport("applyAppLanguage:${ response.error.message}")
+
+                        }
+                    }
+                }
+                _isInitializeData.value = true
+            }
+
         }
+
     }
 
 

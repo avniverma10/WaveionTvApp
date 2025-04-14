@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.view.panmetro.TopOverlayInfo
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -73,6 +74,15 @@ fun NewPlayerOverlay(
         )
 
         // Channel carousel at bottom
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .background(topBarGradient)
+                .padding(horizontal = 24.dp, vertical = 13.dp)
+        ) {
+            TopOverlayInfo(sharedViewModel=sharedViewModel,dataItem = selectedChannel)
+        }
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

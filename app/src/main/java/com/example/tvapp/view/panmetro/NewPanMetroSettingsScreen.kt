@@ -58,14 +58,14 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             .background(Color(0xFF14161A))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-//            PermettoTopBar()
+            PermettoTopBar()
 
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF14161A))
             ) {
-                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
+//                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
                 NewMainSettingsContent(
                     onInfoClick = { showInfo = true },

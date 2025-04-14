@@ -9,8 +9,11 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
+import com.example.tvapp.view.panmetro.PanmetroLoginScreen
+import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -28,6 +31,9 @@ class MainActivity : ComponentActivity() {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
+
+//                    val navController = rememberNavController()
+//                    PanmetroLoginScreen(loginViewModel, navController)
 
                     // Overlay the network banner at the top
                     /*Column {

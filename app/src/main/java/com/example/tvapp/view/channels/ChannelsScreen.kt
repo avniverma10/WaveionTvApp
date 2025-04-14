@@ -1,5 +1,6 @@
 package com.example.tvapp.view.channels
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
@@ -30,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -69,23 +71,31 @@ fun ChannelScreen(
         .appLanguageLiveData().value.orEmpty()
     val filterState by sharedViewModel.filterState.collectAsState()
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
+
+    Log.d("AVNI", "Channel List --> $filteredContent")
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
-    // A FocusRequester per item
-    val categoryFocusRequesters = remember(categories) {
-        List(categories.size) { FocusRequester() }
-    }
-    val languageFocusRequesters = remember(languages) {
-        List(languages.size) { FocusRequester() }
-    }
 
+    // Create one FocusRequester per item for categories and languages.
+    val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
+    val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
+
+    // Set selected index only if there is data
     LaunchedEffect(filterState, categories, languages) {
-        categorySelectedIndex.value = categories.indexOfFirst { it.name == filterState.genre }
-            .takeIf { it >= 0 } ?: 0
-        languageSelectedIndex.value = languages.indexOfFirst { it.name == filterState.language }
-            .takeIf { it >= 0 } ?: 0
+        if (categories.isNotEmpty()) {
+            categorySelectedIndex.value =
+                categories.indexOfFirst { it.name == filterState.genre }.takeIf { it >= 0 } ?: 0
+        } else {
+            categorySelectedIndex.value = -1
+        }
+        if (languages.isNotEmpty()) {
+            languageSelectedIndex.value =
+                languages.indexOfFirst { it.name == filterState.language }.takeIf { it >= 0 } ?: 0
+        } else {
+            languageSelectedIndex.value = -1
+        }
     }
 
     BackHandler {
@@ -103,8 +113,7 @@ fun ChannelScreen(
         ExpandableNavigationMenu(
             navController = navController,
             sharedViewModel = sharedViewModel,
-            onNavMenuIntent = { tabInfo, _ ->
-            }
+            onNavMenuIntent = { tabInfo, _ -> }
         )
         Column(
             modifier = Modifier
@@ -113,87 +122,92 @@ fun ChannelScreen(
                 .zIndex(1f)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                CategoryMenu(
-                    sharedViewModel = sharedViewModel,
-                    selectedIndex = categorySelectedIndex,
-                    categoryFocusRequesters = categoryFocusRequesters,
-                    languageFocusRequesters = languageFocusRequesters,
-                    languageSelectedIndex = languageSelectedIndex
-                )
-                LanguageMenu(
-                    sharedViewModel = sharedViewModel,
-                    selectedIndex = languageSelectedIndex,
-                    firstChannelFocusRequester = firstChannelFocusRequester,
-                    languageFocusRequesters = languageFocusRequesters,
-                    categoryFocusRequesters = categoryFocusRequesters,
-                    categorySelectedIndex = categorySelectedIndex
-                )
+                // Render navigation menus only when data exists.
+                if (categories.isNotEmpty() && languages.isNotEmpty()) {
+                    CategoryMenu(
+                        sharedViewModel = sharedViewModel,
+                        selectedIndex = categorySelectedIndex,
+                        categoryFocusRequesters = categoryFocusRequesters,
+                        languageFocusRequesters = languageFocusRequesters,
+                        languageSelectedIndex = languageSelectedIndex
+                    )
+                    LanguageMenu(
+                        sharedViewModel = sharedViewModel,
+                        selectedIndex = languageSelectedIndex,
+                        firstChannelFocusRequester = firstChannelFocusRequester,
+                        languageFocusRequesters = languageFocusRequesters,
+                        categoryFocusRequesters = categoryFocusRequesters,
+                        categorySelectedIndex = categorySelectedIndex
+                    )
+                }
+                // Process channel list
                 val channelList = filteredContent.mapNotNull { epgItem ->
                     epgItem.tv?.channel?.copy(
                         videoUrl = epgItem.content?.videoUrl,
                         logoUrl = epgItem.content?.thumbnailUrl,
                         genreId = epgItem.content?.genreId ?: ""
                     )
-                }.ifEmpty { emptyList() }
+                }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(5),
-                    contentPadding = PaddingValues(16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFF14161A))
-                ) {
-                    itemsIndexed(channelList) { index, channel ->
-                        val isFirstChannel = (index == 0)
-                        val isLastChannel = (index == channelList.size - 1)
-                        if (index == 0) {
-                            ChannelList(
-                                sharedViewModel= sharedViewModel,
-                                channel = channel,
-                                focusRequester = firstChannelFocusRequester,
-                                isFirstChannel = isFirstChannel,
-                                isLastChannel = isLastChannel,
-                                onClick = { clickedChannel ->
-                                    sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
-                                        sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen)
-                                    }
-
-                                   /* navController.navigate(
-                                        "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
-                                                "?categoryIds="
-                                    )*/
-
-
-                                },
-                                languageFocusRequesters = languageFocusRequesters,
-                                languageSelectedIndex = languageSelectedIndex,
-                                categoryFocusRequesters = categoryFocusRequesters,
-                                categorySelectedIndex = categorySelectedIndex
-                            )
-                        } else {
-                            ChannelList(
-                                sharedViewModel= sharedViewModel,
-                                channel = channel,
-                                onClick = { clickedChannel ->
-                                    sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
-                                        sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen)
-                                    }
-                                    /*navController.navigate(
-                                        "homeplayer/${URLEncoder.encode(channel.videoUrl ?: "", StandardCharsets.UTF_8.toString())}" +
-                                                "?categoryIds="
-                                    )*/
-
-                                },
-                                isFirstChannel = isFirstChannel,
-                                isLastChannel = isLastChannel,
-                                languageFocusRequesters = languageFocusRequesters,
-                                languageSelectedIndex = languageSelectedIndex,
-                                categoryFocusRequesters = categoryFocusRequesters,
-                                categorySelectedIndex = categorySelectedIndex
-                            )
+                // Render channel list only when non-empty; otherwise, show a loading placeholder.
+                if (channelList.isNotEmpty()) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(5),
+                        contentPadding = PaddingValues(16.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF14161A))
+                    ) {
+                        itemsIndexed(channelList) { index, channel ->
+                            val isFirstChannel = (index == 0)
+                            val isLastChannel = (index == channelList.size - 1)
+                            if (index == 0) {
+                                ChannelList(
+                                    sharedViewModel = sharedViewModel,
+                                    channel = channel,
+                                    focusRequester = firstChannelFocusRequester,
+                                    isFirstChannel = isFirstChannel,
+                                    isLastChannel = isLastChannel,
+                                    onClick = { clickedChannel ->
+                                        sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
+                                            ?.let { channelItem ->
+                                                sharedViewModel.updateSelectedChannel(channelItem)
+                                                navController.navigate(Destination.panMetroScreen)
+                                            }
+                                    },
+                                    languageFocusRequesters = languageFocusRequesters,
+                                    languageSelectedIndex = languageSelectedIndex,
+                                    categoryFocusRequesters = categoryFocusRequesters,
+                                    categorySelectedIndex = categorySelectedIndex
+                                )
+                            } else {
+                                ChannelList(
+                                    sharedViewModel = sharedViewModel,
+                                    channel = channel,
+                                    onClick = { clickedChannel ->
+                                        sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
+                                            ?.let { channelItem ->
+                                                sharedViewModel.updateSelectedChannel(channelItem)
+                                                navController.navigate(Destination.panMetroScreen)
+                                            }
+                                    },
+                                    isFirstChannel = isFirstChannel,
+                                    isLastChannel = isLastChannel,
+                                    languageFocusRequesters = languageFocusRequesters,
+                                    languageSelectedIndex = languageSelectedIndex,
+                                    categoryFocusRequesters = categoryFocusRequesters,
+                                    categorySelectedIndex = categorySelectedIndex
+                                )
+                            }
                         }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Placeholder when channels are loading
+                        androidx.tv.material3.Text("Loading Channels...", color = Color.White)
                     }
                 }
             }
@@ -241,7 +255,10 @@ fun ChannelList(
                         }
                         KeyEvent.KEYCODE_DPAD_UP -> {
                             if (isFirstChannel) {
-                                languageFocusRequesters[languageSelectedIndex.value]?.requestFocus()
+                                // Safely request focus on the language list (if available)
+                                if (languageFocusRequesters.isNotEmpty() && languageSelectedIndex.value >= 0) {
+                                    languageFocusRequesters.getOrNull(languageSelectedIndex.value)?.requestFocus()
+                                }
                                 true
                             } else false
                         }
@@ -249,8 +266,7 @@ fun ChannelList(
                         else -> false
                     }
                 } else false
-            }
-        ,
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -278,4 +294,3 @@ fun ChannelList(
         }
     }
 }
-

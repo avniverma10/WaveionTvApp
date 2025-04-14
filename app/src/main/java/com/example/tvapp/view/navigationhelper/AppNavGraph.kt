@@ -17,6 +17,7 @@ import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
+import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.PanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.PanmetroLoginScreen
@@ -54,7 +55,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             PanmetroGenreScreen(navController,sharedViewModel)
         }
         composable(Destination.settings) {
-            PanMetroSettingsScreen(navController,sharedViewModel)
+            NewPanMetroSettingsScreen(navController,sharedViewModel)
         }
         composable(Destination.panMetroScreen) {backStackEntry ->
             //val channelId = backStackEntry.arguments?.getString("channelId")
