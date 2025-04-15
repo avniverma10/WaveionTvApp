@@ -108,7 +108,8 @@ fun PanmetroLoginScreen(
     // Exit confirmation dialog
     if (showExitDialog) {
         ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finish()
+            (context as? Activity)?.finishAffinity()
+            android.os.Process.killProcess(android.os.Process.myPid())
         }, onDismiss = {
             showExitDialog = false
         })

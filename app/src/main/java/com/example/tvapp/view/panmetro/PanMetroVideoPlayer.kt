@@ -271,15 +271,15 @@ fun PanMetroVideoPlayer(
 
             }
         )
-        // Overlay logo in the top-right corner with fixed width and height.
-        Image(
-            painter = painterResource(id = R.drawable.panmetro_logo_t),
-            contentDescription = "Panmetro Logo",
-            modifier = Modifier
-                .size(width = 200.dp, height = 150.dp)
-                .align(Alignment.TopEnd)
-                .padding(16.dp) // optional padding from the top/right edges
-        )
+//        // Overlay logo in the top-right corner with fixed width and height.
+//        Image(
+//            painter = painterResource(id = R.drawable.panmetro_logo_t),
+//            contentDescription = "Panmetro Logo",
+//            modifier = Modifier
+//                .size(width = 200.dp, height = 150.dp)
+//                .align(Alignment.TopEnd)
+//                .padding(16.dp) // optional padding from the top/right edges
+//        )
 
         // Show Loading Indicator if Buffering
         /*Column(

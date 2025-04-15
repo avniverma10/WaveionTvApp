@@ -207,7 +207,7 @@ fun ChannelScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         // Placeholder when channels are loading
-                        androidx.tv.material3.Text("Loading Channels...", color = Color.White)
+                        androidx.tv.material3.Text("Channels not found...", color = Color.White)
                     }
                 }
             }

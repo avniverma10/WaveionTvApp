@@ -19,6 +19,7 @@ import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
 import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.PanMetroSettingsScreen
+import com.example.tvapp.view.panmetro.PanMetroVideoPlayer
 import com.example.tvapp.view.panmetro.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.PanmetroLoginScreen
 import com.example.tvapp.view.playeroverlay.NewPanMetroVideoPlayer
@@ -59,7 +60,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.panMetroScreen) {backStackEntry ->
             //val channelId = backStackEntry.arguments?.getString("channelId")
-            NewPanMetroVideoPlayer(navController,sharedViewModel)
+            PanMetroVideoPlayer(navController,sharedViewModel)
         }
         /*
         composable(

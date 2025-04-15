@@ -4,6 +4,7 @@ package com.example.tvapp.viewmodels
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
@@ -250,18 +251,30 @@ open class SharedViewModel @Inject constructor(
                 _searchResults.value = _epgChannels.value
                 return@launch
             }
-            val epgList = fetchEPGList(context)
+
+            // Use cached epg data if available to maintain consistency.
+            val epgList = wtvEPGList.value ?: fetchEPGList(context)
+
+            epgList.forEach { epgItem ->
+                val channelName = epgItem.tv?.channel?.displayName ?: "Unknown"
+                val genreField = epgItem.content?.genreId ?: ""
+                Log.d("SEARCH", "Channel: $channelName, Genre Field: $genreField")
+            }
+
             val filteredChannels = epgList.mapNotNull { epgItem ->
                 epgItem.tv?.channel?.takeIf { channel ->
                     val name = channel.displayName ?: ""
+                    // You could use epgItem.content?.genre instead if that's the actual field that contains the genres list.
                     val genre = epgItem.content?.genreId ?: ""
-                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
+                    name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true)
                 }?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
                 )
             }
+
+
             _searchResults.value = filteredChannels
         }
     }

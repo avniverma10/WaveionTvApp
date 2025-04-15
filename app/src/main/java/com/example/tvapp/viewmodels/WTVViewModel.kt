@@ -181,7 +181,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 _errorLoadingData.value = "Server not responding yet ${manifestDeferred?:"manifest api"}/${genreDeferred?:"gerne api"}/${languageDeferred?:"language api"}/${epgDeferred?:"epg api"}"
             }
 
-
             viewModelScope.launch {
                 networkApiCallInterfaceImpl.provideWTVHomeData(homeUrl = "https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory").collect{response ->
                     when (response) {
@@ -199,9 +198,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         }
                     }
                 }
-                _isInitializeData.value = true
             }
-
         }
 
     }

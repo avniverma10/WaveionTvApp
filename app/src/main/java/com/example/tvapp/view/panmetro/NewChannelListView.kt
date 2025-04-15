@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

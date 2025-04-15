@@ -48,6 +48,7 @@ fun PanmetroGenreScreen(
 ) {
     val context = LocalContext.current
     val epgList by sharedViewModel.wtvEPGList.collectAsState()
+//    val epgList by sharedViewModel.filteredPanMetroChannels.collectAsState()
 
     val availableGenre = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
@@ -95,7 +96,8 @@ fun PanmetroGenreScreen(
     // Exit confirmation dialog
     if (showExitDialog) {
         ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finish()
+            (context as? Activity)?.finishAffinity()
+            android.os.Process.killProcess(android.os.Process.myPid())
         }, onDismiss = {
             showExitDialog = false
         })
