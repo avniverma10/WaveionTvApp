@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,11 +75,13 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     if (showExitDialog) {
         PanMetroLogoutDialog (
             onConfirmExit = {
+                Log.d("AVNI","onConfirmExit")
                 sharedViewModel.clearLogin()
                 showExitDialog = false
                 navController.navigate(Destination.loginScreen) {
                     popUpTo(0)
                 }
+                Log.d("AVNI","Navigated to login screen")
             },
             onDismiss = {
                 showExitDialog = false
