@@ -64,7 +64,7 @@ fun NewPlayerOverlay(
                 Color.Transparent
             )
         )
-        
+
         // Bottom gradient overlay
         val bottomBarGradient = Brush.verticalGradient(
             colors = listOf(
@@ -73,7 +73,6 @@ fun NewPlayerOverlay(
             )
         )
 
-        // Channel carousel at bottom
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -83,6 +82,8 @@ fun NewPlayerOverlay(
         ) {
             TopOverlayInfo(sharedViewModel=sharedViewModel,dataItem = selectedChannel)
         }
+
+        // Channel carousel at bottom
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -101,7 +102,7 @@ fun NewPlayerOverlay(
                 ) { index, item ->
                     val isFocused = remember { mutableStateOf(false) }
                     val isSelected = selectedIndex.value == index
-                    
+
                     // Calculate distance from center for scaling
                     val itemOffset = index - selectedIndex.value
                     val scale = when {
@@ -111,7 +112,7 @@ fun NewPlayerOverlay(
                             scaleFactor.coerceIn(minScale, maxScale)
                         }
                     }
-                    
+
                     val animatedScale by animateFloatAsState(
                         targetValue = scale,
                         label = "scale"
@@ -153,11 +154,11 @@ private fun ChannelCard(
     modifier: Modifier
 ) {
     val now = System.currentTimeMillis()
-    val programList = epgDataItem.tv?.programme?.let { 
-        sharedViewModel.provideVideoPlayerProgramInfo(it) 
+    val programList = epgDataItem.tv?.programme?.let {
+        sharedViewModel.provideVideoPlayerProgramInfo(it)
     }
-    val minutesLeft = programList?.getOrNull(0)?.endTime?.let { 
-        ((it - now) / 60000).toInt() 
+    val minutesLeft = programList?.getOrNull(0)?.endTime?.let {
+        ((it - now) / 60000).toInt()
     } ?: 0
 
     Box(
@@ -197,23 +198,23 @@ private fun ChannelCard(
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = epgDataItem.content?.title 
-                        ?: epgDataItem.displayName 
+                    text = epgDataItem.content?.title
+                        ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color(0xFF49FEDD)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = programList?.getOrNull(0)?.title ?: "No Info",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White,
                 maxLines = 1
             )
-            
+
             Text(
                 text = buildString {
                     append(formatTime(programList?.getOrNull(0)?.startTime))
@@ -226,15 +227,15 @@ private fun ChannelCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.LightGray
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "Next at ${formatTime(programList?.getOrNull(1)?.startTime)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
-            
+
             Text(
                 text = programList?.getOrNull(1)?.title ?: "N/A",
                 style = MaterialTheme.typography.bodySmall,

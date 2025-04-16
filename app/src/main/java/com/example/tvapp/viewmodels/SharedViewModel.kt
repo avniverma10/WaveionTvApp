@@ -200,7 +200,7 @@ open class SharedViewModel @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
     fun updateGenre(genre: String?) {
-        val newGenre = if (genre == "All") null else genre
+        val newGenre = if (genre.equals("All",true) ) null else genre
         _filterState.value = _filterState.value.copy(genre = newGenre)
         saveFilters()
         applyFilters()
@@ -210,7 +210,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun updateLanguage(language: String?) {
-        val newLanguage = if (language == "All") null else language
+        val newLanguage = if (language.equals("All",true) ) null else language
         _filterState.value = _filterState.value.copy(language = newLanguage)
         saveFilters()
         applyFilters()
@@ -252,32 +252,27 @@ open class SharedViewModel @Inject constructor(
                 return@launch
             }
 
-            // Use cached epg data if available to maintain consistency.
+            // Get the current EPG list.
             val epgList = wtvEPGList.value ?: fetchEPGList(context)
 
-            epgList.forEach { epgItem ->
-                val channelName = epgItem.tv?.channel?.displayName ?: "Unknown"
-                val genreField = epgItem.content?.genreId ?: ""
-                Log.d("SEARCH", "Channel: $channelName, Genre Field: $genreField")
+            // Filter only by content title.
+            val filteredEPGItems = epgList.filter { epgItem ->
+                epgItem.content?.title?.contains(query, ignoreCase = true) == true
             }
 
-            val filteredChannels = epgList.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.takeIf { channel ->
-                    val name = channel.displayName ?: ""
-                    // You could use epgItem.content?.genre instead if that's the actual field that contains the genres list.
-                    val genre = epgItem.content?.genreId ?: ""
-                    name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true)
-                }?.copy(
+            // Map the EPGDataItems to Channels.
+            val filteredChannels = filteredEPGItems.mapNotNull { epgItem ->
+                epgItem.tv?.channel?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
                 )
             }
 
-
             _searchResults.value = filteredChannels
         }
     }
+
 
     fun providePlayableProgramData(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()
@@ -313,7 +308,7 @@ open class SharedViewModel @Inject constructor(
          val epgData = wtvEPGList.value?: provideApplicationContext().coreEPGLiveData().value
           genre?.let {
               _filteredPanMetroChannels.value = epgData?.filter { epgItem ->
-                  val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
+                  val genreMatch = genre.equals("ALL", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
                   genreMatch
               }?: arrayListOf()
           }?:kotlin.run {

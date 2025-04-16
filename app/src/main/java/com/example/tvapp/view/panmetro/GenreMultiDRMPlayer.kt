@@ -19,12 +19,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -35,6 +39,7 @@ import com.example.tvapp.R
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
+import kotlinx.coroutines.Job
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -45,6 +50,10 @@ fun GenreMultiDRMPlayer(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
+
+    var overlayHideJob by remember { mutableStateOf<Job?>(null) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // Mutable state for UI updates
     val isBuffering = remember { mutableStateOf(false) }
@@ -127,12 +136,19 @@ fun GenreMultiDRMPlayer(
 
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            exoPlayer.run {
-                stop()
-                release()
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                exoPlayer.pause()
+            }else if (event == Lifecycle.Event.ON_RESUME) {
+                exoPlayer.play()
             }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            exoPlayer.release()
+            overlayHideJob?.cancel()
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 }

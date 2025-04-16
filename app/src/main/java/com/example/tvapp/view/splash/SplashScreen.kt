@@ -2,6 +2,7 @@ package com.example.tvapp.view.splash
 
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,35 +25,44 @@ import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.delay
 
 
 @Composable
-fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
+fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController,) {
     val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
     val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(errorLoadingData,isInitializeData) {
-        if (errorLoadingData != null) {
-            context.showToastS(errorLoadingData)
+
+    Log.d("AVNI", "loginInfo in splash: $loginInfo")
+
+    LaunchedEffect(loginInfo, errorLoadingData, isInitializeData) {
+        // Wait until initialization is complete so we know we have the correct login state.
+        if (!isInitializeData) return@LaunchedEffect
+
+        errorLoadingData?.let {
+            context.showToastS(it)
             return@LaunchedEffect
         }
-        Handler(Looper.getMainLooper()).postDelayed({
-            if(isInitializeData){
-                if(loginInfo?.username?.isNotEmpty() == true){
-                    navController.navigate(Destination.genreScreen) {
-                        popUpTo(Destination.splashScreen) { inclusive = true }
-                    }
-                }else{
-                    navController.navigate(Destination.loginScreen) {
-                        popUpTo(Destination.splashScreen) { inclusive = true }
-                    }
-                }
+
+        // Check that valid credentials exist and that the user chose "Remember me"
+        if (
+            loginInfo!!.username.isNotEmpty()) {
+            navController.navigate(Destination.genreScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
             }
-        },3000)
+        } else {
+            navController.navigate(Destination.loginScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+        }
     }
+
+
 
     Box(
         modifier = Modifier

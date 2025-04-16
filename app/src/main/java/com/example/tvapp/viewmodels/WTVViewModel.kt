@@ -76,15 +76,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
     val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
-//
-//    @RequiresApi(Build.VERSION_CODES.M)
-//    val networkStatus: StateFlow<NetworkStatus> =
-//        observer.observe()
-//            .stateIn(
-//                scope = viewModelScope,
-//                started = SharingStarted.WhileSubscribed(5_000),
-//                initialValue = NetworkStatus.Unavailable
-//            )
 
     val loginInfo = loginPrefsRepository?.loginInfoFlow?.stateIn(
         viewModelScope,
@@ -125,33 +116,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
                         manifest
                     }
             }.await()
-            val genreDeferred = async {
-                networkApiCallInterfaceImpl
-                    .provideWTVGenreData("https://nextwave.waveiontechnologies.com:5000/api/genres/")
-                    .firstOrNullSuccess()
-                    ?.let { list ->
-                        val genre = mutableListOf(WTVGenre("all", "All")) + list
-                        genre
-                    }
-            }.await()
-//            val homeDeferred = async {
-//                networkApiCallInterfaceImpl
-//                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
-//                    .firstOrNullSuccess()
-//                    ?.let {
-//                        val home = it
-//                        home
-//                    }
-//            }.await()
-            val languageDeferred = async {
-                networkApiCallInterfaceImpl
-                    .provideWTVLanguageData("https://nextwave.waveiontechnologies.com:5000/api/languages/")
-                    .firstOrNullSuccess()
-                    ?.let {list->
-                        val language = mutableListOf(WTVLanguage("all", "All")) + list
-                        language
-                    }
-            }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
@@ -161,24 +125,21 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     }
             }.await()
             // Wait for all to complete (success or failure)
-            if(manifestDeferred != null && genreDeferred != null && languageDeferred != null && epgDeferred != null){
+            if(manifestDeferred != null && epgDeferred != null){
                 // **This line runs only after all of the above finish.**
-                val manifestData = manifestDeferred.copy(genre = genreDeferred, language = languageDeferred)
-                application.applyAppManifest(manifestData)
+                application.applyAppManifest(manifestDeferred)
                 val epgData = dedupeKeepFirst(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
-                epgData.find { it.channelId == manifestData.landingChannel?.ChannelID }
+                epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
                     ?.let(::updateSelectedChannel)?:kotlin.run {
                     _selectedChannel.value =  epgData.getOrNull(0)!!
                 }
-                logReport("manifestData",manifestData.toString())
-                logReport("epgDeferred",epgData.toString())
                 _isInitializeData.value = true
             }else{
                 // **This line runs only after all of the above finish.**
                 _isInitializeData.value = false
-                _errorLoadingData.value = "Server not responding yet ${manifestDeferred?:"manifest api"}/${genreDeferred?:"gerne api"}/${languageDeferred?:"language api"}/${epgDeferred?:"epg api"}"
+                _errorLoadingData.value = "Server not responding yet"
             }
 
             viewModelScope.launch {

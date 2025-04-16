@@ -30,6 +30,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -92,6 +93,11 @@ fun PanmetroGenreScreen(
 
     }
 
+    // Get the keyboard controller
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        keyboardController?.hide()
+    }
 
     // Exit confirmation dialog
     if (showExitDialog) {
@@ -204,7 +210,7 @@ fun PanmetroGenreScreen(
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.alliance_logo),
+                                    painter = painterResource(id = R.drawable.banner1),
                                     contentDescription = "Panmetro Logo",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier

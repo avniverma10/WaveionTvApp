@@ -37,10 +37,13 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -53,7 +56,6 @@ import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.view.playeroverlay.NewPlayerOverlay
-//import com.example.tvapp.view.uicomponent.rememberClockTick
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 import kotlinx.coroutines.Job
@@ -70,10 +72,10 @@ fun PanMetroVideoPlayer(
 ) {
     val context = LocalContext.current
     // 1) Get a ticking clock (updates every minute)
-//    val now by rememberClockTick(tickMillis = 60_000L)
+
     val epgList by sharedViewModel.wtvEPGList.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
-    // 1️⃣ Remember the last interaction time (ms since epoch)
+    // Remember the last interaction time (ms since epoch)
     var lastInteraction by remember { mutableStateOf(System.currentTimeMillis()) }
     // 2) How long have we been idle? (ms)
     var idleDurationMs by remember { mutableStateOf(0L) }
@@ -98,6 +100,11 @@ fun PanMetroVideoPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
+    // Get the keyboard controller
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        keyboardController?.hide()
+    }
 
     // State management
     var isOverlayVisible by remember { mutableStateOf(true) }
@@ -236,7 +243,7 @@ fun PanMetroVideoPlayer(
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            if (selectedChannelIndex.value < (epgList.size )) {
+                            if (selectedChannelIndex.value < (epgList.size - 1)) {
                                 focusManager.moveFocus(FocusDirection.Up)
                                 selectedChannelIndex.value++
                                 scope.launch {
@@ -247,6 +254,7 @@ fun PanMetroVideoPlayer(
                             }
                             true
                         }
+
                         else -> false
                     }
                 } else false
@@ -292,21 +300,30 @@ fun PanMetroVideoPlayer(
             }
         }*/
 
-        DisposableEffect(Unit) {
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) {
+                    exoPlayer.pause()
+                }else if (event == Lifecycle.Event.ON_RESUME) {
+                    exoPlayer.play()
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
                 exoPlayer.release()
                 overlayHideJob?.cancel()
+                lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }
 
         if (isOverlayVisible) {
             NewPlayerOverlay(
-                    selectedIndex =  selectedChannelIndex,
-                    lazyListState = listState,
-                    sharedViewModel = sharedViewModel,
-                    channelFocusRequesters = channelRequesters,
-                    onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
-                )
+                selectedIndex =  selectedChannelIndex,
+                lazyListState = listState,
+                sharedViewModel = sharedViewModel,
+                channelFocusRequesters = channelRequesters,
+                onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
+            )
 
         }
     }

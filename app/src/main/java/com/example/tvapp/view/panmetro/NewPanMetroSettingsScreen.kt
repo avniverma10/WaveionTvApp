@@ -2,6 +2,7 @@ package com.example.tvapp.view.panmetro
 
 
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -84,8 +86,11 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     if (showExitDialog) {
         PanMetroLogoutDialog (
             onConfirmExit = {
+                sharedViewModel.clearLogin()
                 showExitDialog = false
-                android.os.Process.killProcess(android.os.Process.myPid())
+                navController.navigate(Destination.loginScreen) {
+                    popUpTo(0)
+                }
             },
             onDismiss = {
                 showExitDialog = false

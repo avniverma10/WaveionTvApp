@@ -32,14 +32,6 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
 
-//                    val navController = rememberNavController()
-//                    PanmetroLoginScreen(loginViewModel, navController)
-
-                    // Overlay the network banner at the top
-                    /*Column {
-                        Spacer(modifier = Modifier.weight(1f))
-                        NetworkStatusBanner(sharedViewModel)
-                    }*/
                 }
 //                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)
