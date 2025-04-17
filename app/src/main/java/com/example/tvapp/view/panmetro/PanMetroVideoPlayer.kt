@@ -11,12 +11,24 @@ import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -28,9 +40,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -39,19 +54,29 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.addWatermarkToPlayer
@@ -106,6 +131,11 @@ fun PanMetroVideoPlayer(
         keyboardController?.hide()
     }
 
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorCodeState by remember { mutableStateOf(0) }
+    var errorMessageState by remember { mutableStateOf("") }
+
+
     // State management
     var isOverlayVisible by remember { mutableStateOf(true) }
     var lastInteractionTime by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -144,8 +174,90 @@ fun PanMetroVideoPlayer(
                         }
                     }
                 })
+                // Add a listener to handle playback errors.
+                addListener(object : Player.Listener {
+                    override fun onPlayerError(error: PlaybackException) {
+                        // Try to extract an HTTP status code from the underlying exception:
+                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                            ?.responseCode
+
+                        // If we got one, use it; otherwise fall back to ExoPlayer’s errorCode
+                        val displayCode = httpCode ?: error.errorCode
+
+                        val message = playerErrorHandling(displayCode)
+                        Log.e("PLAYER_ERROR", "Error ($displayCode): $message")
+
+                        // Update your Compose state so the dialog shows the real code:
+                        errorCodeState = displayCode
+                        errorMessageState = message
+                        showErrorDialog = true
+                    }
+                })
             }
     }
+    // Condition to display the error dialog if an error is encountered.
+
+
+    val borderColor = remember(errorCodeState) {
+        if (errorCodeState in 500..599) Color(0xFF6B2828)
+        else Color.Green
+    }
+
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+            modifier = Modifier
+                .shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(8.dp),
+                    ambientColor = borderColor,
+                    spotColor = borderColor
+                )
+                .graphicsLayer {
+                    shadowElevation = 20.dp.toPx()
+                    shape = RoundedCornerShape(8.dp)
+                    clip = true
+                }
+                .border(
+                    width = 1.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .width(300.dp)
+                .height(120.dp),
+            backgroundColor = Color(0xFF191B1F),
+            title = {
+                Text(
+                    text = "Playback Error",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.CenterHorizontally)
+                        .padding(top = 40.dp),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = FontFamily(Font(R.font.figtree_medium)),
+                    color = Color(0xFFE0E0E0)
+                ) },
+
+            text = {
+                Text(
+                    text = "The video cannot be played.\nError code: $errorCodeState ($errorMessageState)",
+                    modifier = Modifier
+                        .fillMaxWidth(),
+//                               .padding(horizontal = 24.dp, vertical = 12.dp),
+                    fontSize = 14.sp,
+                    color = Color(0xFFB5B5B5),
+                    textAlign = TextAlign.Center
+                )
+                   },
+                    confirmButton = {
+                        // … your OK button …
+                    }
+
+        )
+    }
+
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
@@ -155,12 +267,8 @@ fun PanMetroVideoPlayer(
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-            val mediaItem = if (selectedChannel.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedChannel.content?.videoUrl, contentId = selectedChannel.content?.assetId)
-            } else {
-                MediaItem.fromUri(url)
-            }
-            exoPlayer.setMediaItem(mediaItem)
+            val item = MediaItem.fromUri("https://httpstat.us/500")
+            exoPlayer.setMediaItem(item)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
