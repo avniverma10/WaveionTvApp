@@ -529,6 +529,7 @@ fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
         429 -> 604 to "Too many request– max concurrent streams reached"
         451 -> 605 to "Unavailable for legal reasons– geo blocking"
         500 -> 606 to "Internal error"
+        2001 -> 607 to "Source error"
         else -> errorCode to "An unknown error occurred"
     }
 

@@ -24,7 +24,7 @@ fun PlaybackErrorCard(
     errorMessage: String,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (errorCode in 606..700) Color(0xFF6B2828) else Color.Green
+    val borderColor = if (errorCode in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
 
     Surface(
         shape = RoundedCornerShape(8.dp),
