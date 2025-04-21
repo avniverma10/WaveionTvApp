@@ -30,13 +30,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import com.example.tvapp.R
+import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
+import com.example.tvapp.view.player.PlaybackErrorCard
+import com.example.tvapp.view.player.PlaybackErrorDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
 import kotlinx.coroutines.Job
@@ -57,6 +62,10 @@ fun GenreMultiDRMPlayer(
 
     // Mutable state for UI updates
     val isBuffering = remember { mutableStateOf(false) }
+
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorCodeState by remember { mutableStateOf(0) }
+    var errorMessageState by remember { mutableStateOf("") }
 
     // Set FLAG_SECURE if desired.
     (context as? Activity)?.window?.setFlags(
@@ -81,8 +90,23 @@ fun GenreMultiDRMPlayer(
                         }
                     }
                 })
+                // Add a listener to handle playback errors.
+                addListener(object : Player.Listener {
+                    override fun onPlayerError(error: PlaybackException) {
+                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                            ?.responseCode
+                        val rawCode = httpCode ?: error.errorCode
+                        val (displayCode, message) = playerErrorHandling(rawCode)
+                        errorCodeState = displayCode
+                        errorMessageState = message
+                        showErrorDialog = true
+                    }
+                })
             }
     }
+
+
+
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
@@ -132,6 +156,13 @@ fun GenreMultiDRMPlayer(
             if (isBuffering.value) {
                 CircularProgressIndicator()
             }
+        }
+        if (showErrorDialog) {
+            PlaybackErrorCard(
+                errorCode    = errorCodeState,
+                errorMessage = errorMessageState,
+                modifier     = Modifier.align(Alignment.Center)
+            )
         }
 
     }

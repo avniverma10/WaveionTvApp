@@ -9,6 +9,7 @@ import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,7 +17,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +33,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -79,6 +86,7 @@ import com.example.tvapp.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.PlaybackErrorDialog
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.view.playeroverlay.NewPlayerOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -177,17 +185,13 @@ fun PanMetroVideoPlayer(
                 // Add a listener to handle playback errors.
                 addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        // Try to extract an HTTP status code from the underlying exception:
                         val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
                             ?.responseCode
 
-                        // If we got one, use it; otherwise fall back to ExoPlayer’s errorCode
-                        val displayCode = httpCode ?: error.errorCode
+                        val rawCode = httpCode ?: error.errorCode
 
-                        val message = playerErrorHandling(displayCode)
-                        Log.e("PLAYER_ERROR", "Error ($displayCode): $message")
+                        val (displayCode, message) = playerErrorHandling(rawCode)
 
-                        // Update your Compose state so the dialog shows the real code:
                         errorCodeState = displayCode
                         errorMessageState = message
                         showErrorDialog = true
@@ -198,65 +202,13 @@ fun PanMetroVideoPlayer(
     // Condition to display the error dialog if an error is encountered.
 
 
-    val borderColor = remember(errorCodeState) {
-        if (errorCodeState in 500..599) Color(0xFF6B2828)
-        else Color.Green
-    }
-
-    if (showErrorDialog) {
-        AlertDialog(
-            onDismissRequest = { showErrorDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-            modifier = Modifier
-                .shadow(
-                    elevation = 20.dp,
-                    shape = RoundedCornerShape(8.dp),
-                    ambientColor = borderColor,
-                    spotColor = borderColor
-                )
-                .graphicsLayer {
-                    shadowElevation = 20.dp.toPx()
-                    shape = RoundedCornerShape(8.dp)
-                    clip = true
-                }
-                .border(
-                    width = 1.dp,
-                    color = borderColor,
-                    shape = RoundedCornerShape(8.dp)
-                )
-                .width(300.dp)
-                .height(120.dp),
-            backgroundColor = Color(0xFF191B1F),
-            title = {
-                Text(
-                    text = "Playback Error",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentWidth(Alignment.CenterHorizontally)
-                        .padding(top = 40.dp),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily(Font(R.font.figtree_medium)),
-                    color = Color(0xFFE0E0E0)
-                ) },
-
-            text = {
-                Text(
-                    text = "The video cannot be played.\nError code: $errorCodeState ($errorMessageState)",
-                    modifier = Modifier
-                        .fillMaxWidth(),
-//                               .padding(horizontal = 24.dp, vertical = 12.dp),
-                    fontSize = 14.sp,
-                    color = Color(0xFFB5B5B5),
-                    textAlign = TextAlign.Center
-                )
-                   },
-                    confirmButton = {
-                        // … your OK button …
-                    }
-
+        PlaybackErrorDialog(
+            showDialog   = showErrorDialog,
+            errorCode    = errorCodeState,
+            errorMessage = errorMessageState,
+            onDismiss    = { showErrorDialog = false }
         )
-    }
+
 
 
     // Whenever the selected channel changes, load its media

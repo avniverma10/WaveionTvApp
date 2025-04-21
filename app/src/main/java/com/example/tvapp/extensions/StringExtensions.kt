@@ -521,17 +521,16 @@ fun String.toBase64Encoded(): String {
 }
 
 
-fun playerErrorHandling(errorCode:Int):String{
-  return  when(errorCode){
-        400->"Bad input to server!"
-        403->"User does not have permission, or invalid login data"
-        404->"Invalid content id"
-        429->"Too many requests - max concurrent streams reached"
-        451->"Unavailable for legal reasons - geo blocking"
-        500->"Internal error"
-        else -> ""
-  }
-}
+fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
+    when (errorCode) {
+        400 -> 601 to "Bad input to server!"
+        403 -> 602 to "User does not have permission, or invalid login data"
+        404 -> 603 to "Invalid content id"
+        429 -> 604 to "Too many request– max concurrent streams reached"
+        451 -> 605 to "Unavailable for legal reasons– geo blocking"
+        500 -> 606 to "Internal error"
+        else -> errorCode to "An unknown error occurred"
+    }
 
 
 // Usage:
