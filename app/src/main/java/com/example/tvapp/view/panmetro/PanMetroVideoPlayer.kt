@@ -219,8 +219,12 @@ fun PanMetroVideoPlayer(
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-            val item = MediaItem.fromUri("https://httpstat.us/500")
-            exoPlayer.setMediaItem(item)
+            val mediaItem = if (selectedChannel.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
+                context.provideCryptoGuardMediaSource(contentUrl = selectedChannel.content?.videoUrl, contentId = selectedChannel.content?.assetId)
+            } else {
+                MediaItem.fromUri(url)
+            }
+            exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
