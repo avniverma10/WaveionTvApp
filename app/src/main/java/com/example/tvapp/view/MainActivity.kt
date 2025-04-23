@@ -9,11 +9,16 @@ import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
 import com.example.tvapp.view.panmetro.PanmetroLoginScreen
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -21,6 +26,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
+
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +39,19 @@ class MainActivity : ComponentActivity() {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
+
+//                    CommonDialog(
+//                        showDialog = true,
+//                        title = "Playback Error",
+//                        message = "The video cannot be played",
+//                        errorCode = 606,
+//                        errorMessage = "Critical DRM failure",
+//                        borderColor = Color(0xFF6B2828),
+//                        confirmButtonText = "Yes",
+//                        onConfirm = { /* handle exit */  },
+//                        dismissButtonText = "No",
+//                        onDismiss = { }
+//                    )
 
                 }
 //                val navController = rememberNavController()

@@ -127,6 +127,8 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         ?.build()
     val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?&","https://cryptoguard.waveiontechnologies.com:4443?")
 
+
+
     return MediaItem.Builder()
         .setUri(contentUrl)
         .setDrmConfiguration(

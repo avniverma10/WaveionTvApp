@@ -1,20 +1,23 @@
 package com.example.tvapp.viewmodels
 
-
 import android.app.Application
+import android.app.DownloadManager
+import android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
 import android.content.ContentValues
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
+import android.content.Context.DOWNLOAD_SERVICE
+import android.net.Uri
+import android.os.Environment.DIRECTORY_DOWNLOADS
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.applyAppGenre
 import com.example.tvapp.extensions.applyAppHome
 import com.example.tvapp.extensions.applyAppLanguage
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyEPGData
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.model.data.appupdate.AppUpdateData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -24,8 +27,6 @@ import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
-//import com.example.tvapp.utils.network.heper.ConnectivityObserver
-//import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.utils.sealed.firstOrNullSuccess
@@ -34,9 +35,6 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -69,9 +67,17 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
 
+    // ─── App‑Update state ───
+    private val _appUpdateData = MutableStateFlow<AppUpdateData?>(null)
+    val appUpdateData: StateFlow<AppUpdateData?> = _appUpdateData.asStateFlow()
 
+    private val _showUpdateDialog = MutableStateFlow(false)
+    val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
 
-    // Expose the latest list of TabItems
+    // add at top of class
+    private val _downloadId = MutableStateFlow<Long?>(null)
+    val downloadId: StateFlow<Long?> = _downloadId.asStateFlow()
+
     private val _tabItemsFlow = MutableStateFlow<List<TabItem>>(emptyList())
     val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
     // Flag to ensure we start the SSE connection only once.
@@ -89,40 +95,28 @@ open class WTVViewModel @Inject constructor(private val application: Application
         }
     }
 
-    /*fun updateEPGData(epgList: List<EPGDataItem>) {
-        viewModelScope.launch {
-            saveEPGList(application, epgList)
-        }
-    }*/
-
     private val _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
     init {
-
-        // Start the SSE connection globally.
-     //   startSSE()
+        // Check for update as soon as ViewModel is created
+        checkForAppUpdate()
+        // Start SSE if needed
+        // startSSE()
     }
 
-    fun initializeAppRequiredData(){
+    fun initializeAppRequiredData() {
         viewModelScope.launch {
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
                     .firstOrNullSuccess()
-                    ?.let {
-                        val manifest = it
-                        manifest
-                    }
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
                     .firstOrNullSuccess()
-                    ?.let { epgData ->
-                        epgData
-                    }
             }.await()
             // Wait for all to complete (success or failure)
             if(manifestDeferred != null && epgDeferred != null){
@@ -142,27 +136,112 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 _errorLoadingData.value = "Server not responding yet"
             }
 
-            viewModelScope.launch {
-                networkApiCallInterfaceImpl.provideWTVHomeData(homeUrl = "https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory").collect{response ->
-                    when (response) {
-                        is WTVListResponse.Success -> {
-                            // Handle successful response
-                            application.applicationContext.applyAppHome(response.data)
-                            logReport("applyAppLanguage:${ response.data}")
-
-                        }
-                        is WTVListResponse.Failure -> {
-                            // Handle error state
-                            // _errorLoadingData.value = response.error.message
-                            logReport("applyAppLanguage:${ response.error.message}")
-
+            launch {
+                networkApiCallInterfaceImpl
+                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+                    .collect { response ->
+                        if (response is WTVListResponse.Success) {
+                            application.applyAppHome(response.data)
+                            logReport("applyAppHome:${response.data}")
+                        } else if (response is WTVListResponse.Failure) {
+                            logReport("applyAppHome error:${response.error.message}")
                         }
                     }
-                }
             }
         }
-
     }
+
+
+    fun clearDownloadId() {
+        _downloadId.value = null
+    }
+    private fun checkForAppUpdate() = viewModelScope.launch {
+        _isProgress.value = true
+        val resp = networkApiCallInterfaceImpl
+            .provideAppUpdateInfo("https://apipanmetro.waveiontechnologies.com/api/app/appUpdate")
+            .firstOrNullSuccess()
+        _isProgress.value = false
+
+        resp?.data?.let { update ->
+            // 1. grab the currently installed version
+            val current = application.packageManager
+                .getPackageInfo(application.packageName, 0)
+                .versionName
+                .orEmpty()
+
+            // 2. only if the server’s version is higher do we prompt or download
+            if (isVersionHigher(update.appVersion, current)) {
+                _appUpdateData.value = update
+                handleAppUpdate(update)
+            } else {
+                // 3. otherwise clear any stale state so we never re‐show
+                _appUpdateData.value    = null
+                _showUpdateDialog.value = false
+            }
+        }
+    }
+
+
+    private fun handleAppUpdate(update: AppUpdateData) {
+        val current = application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName
+            .orEmpty()
+        Log.d("AVNI","current version: $current, new version: ${update.appVersion}")
+        if (isVersionHigher(update.appVersion, current)) {
+            if (update.forceUpdate == 1) {
+                Log.d("AVNI","Force update")
+                downloadApk(update.apkUrl)
+            }
+            else {
+                Log.d("AVNI","SHow Dialog")
+                _showUpdateDialog.value = true
+            }
+
+        }
+    }
+
+    private fun isVersionHigher(newVer: String, oldVer: String): Boolean {
+        Log.d("AVNI","Inside isVersionHigher")
+        val n = newVer.split(".").map { it.toIntOrNull() ?: 0 }
+        val o = oldVer.split(".").map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(n.size, o.size)) {
+            val ni = n.getOrNull(i) ?: 0
+            val oi = o.getOrNull(i) ?: 0
+            if (ni > oi) return true
+            if (ni < oi) return false
+        }
+        return false
+    }
+
+
+    private fun downloadApk(apkUrl: String): Long {
+        val dm = application.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
+            setTitle("Downloading v${_appUpdateData.value?.appVersion}")
+            setDestinationInExternalPublicDir(
+                DIRECTORY_DOWNLOADS,
+                "tvapp_${_appUpdateData.value?.appVersion}.apk"
+            )
+            setNotificationVisibility(VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        }
+        val id = dm.enqueue(req)
+        _downloadId.value = id
+        return id
+    }
+
+    /** Called from “Yes” button on dialog */
+    fun onUserAcceptedUpdate() {
+        _showUpdateDialog.value = false
+        _appUpdateData.value?.apkUrl?.let(::downloadApk)
+    }
+
+    /** Called from “No” button on dialog */
+    fun onUserDeclinedUpdate() {
+        _showUpdateDialog.value = false
+    }
+
+
 
 
 
@@ -176,8 +255,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
                     put(EPGContract.EPGEntry.COLUMN_LAST_UPDATED, item.lastUpdated)
                     put(EPGContract.EPGEntry.COLUMN_DATA, Gson().toJson(item))
                 }
-
-                // Try to update the row with the given channelId.
                 val rowsUpdated = context.contentResolver.update(
                     EPGContract.EPGEntry.CONTENT_URI,
                     values,

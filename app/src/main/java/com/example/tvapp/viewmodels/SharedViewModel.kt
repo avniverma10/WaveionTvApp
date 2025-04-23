@@ -4,11 +4,9 @@ package com.example.tvapp.viewmodels
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
-import com.example.tvapp.model.api.ApiServiceForDeviceInfo
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.DataStoreManager
@@ -21,7 +19,6 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.filter.PanMetroGenreFilter
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
-import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,17 +26,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.observeOn
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

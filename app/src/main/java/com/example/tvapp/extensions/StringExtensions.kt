@@ -530,6 +530,7 @@ fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
         451 -> 605 to "Unavailable for legal reasons– geo blocking"
         500 -> 606 to "Internal error"
         2001 -> 607 to "Source error"
+        6004 -> 608 to "DRM license acquisition failed "
         else -> errorCode to "An unknown error occurred"
     }
 
