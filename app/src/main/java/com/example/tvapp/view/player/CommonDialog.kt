@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.example.tvapp.R
 
 @Composable
@@ -35,22 +37,27 @@ fun CommonDialog(
     onConfirm: (() -> Unit)? = null,
     dismissButtonText: String? = null,
     onDismiss: (() -> Unit)? = null,
-    containerColor: Color = Color(0xFF191B1F),
-    titleColor: Color = Color.White,
-    contentColor: Color = Color.LightGray
 ) {
     if (!showDialog) return
 
     val noButtons = confirmButtonText == null && dismissButtonText == null
 
-    Dialog(onDismissRequest = { onDismiss?.invoke() }) {
+    Popup(
+        alignment = Alignment.Center,
+        properties = PopupProperties(
+            focusable             = !noButtons,
+            dismissOnBackPress    = false,
+            dismissOnClickOutside = false
+        )
+    ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
             tonalElevation = 8.dp,
-            color = containerColor,
+            color =  Color(0xFF191B1F),
             modifier = Modifier
                 .padding(24.dp)
-                .wrapContentWidth()
+                .widthIn(min = 200.dp, max = 400.dp)
+                .wrapContentHeight()
                 .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(16.dp))
         ) {
             Column(
@@ -58,10 +65,12 @@ fun CommonDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 title?.let {
+                    var titleFontSize  by remember { mutableStateOf(18.sp) }
+                    var titleLineCount by remember { mutableStateOf(1) }
                     Row(
                         modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier,
                         horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment     = if (titleLineCount > 1) Alignment.Top else Alignment.CenterVertically
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.error),
@@ -69,28 +78,35 @@ fun CommonDialog(
                             modifier = Modifier.size(24.dp),
                             colorFilter = ColorFilter.tint(Color.White)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+//                        Spacer(modifier = Modifier.width(7.dp))
                         Text(
-                            text = it,
-                            fontSize = 19.sp,
-                            color = titleColor,
-                            textAlign = TextAlign.Center
+                            text         = it,
+                            fontSize     = titleFontSize,
+                            color        = Color.White,
+                            textAlign    = TextAlign.Center,
+                            modifier     = Modifier.fillMaxWidth(),
+                            maxLines = 2,
+                            onTextLayout = { layout ->
+                                if (layout.lineCount > 1 && titleFontSize != 16.sp) {
+                                    titleFontSize = 17.sp
+                                }
+                            }
                         )
                     }
-                    Spacer(modifier = Modifier.height(17.dp))
+                    Spacer(modifier = Modifier.height(22.dp))
                 }
 
                 // Main message
                 message?.let {
-                    val msgFontSize = if (errorCode == null && errorMessage == null) 19.sp else 14.sp
+                    val msgFontSize = if (errorCode == null && errorMessage == null) 19.sp else 16.sp
                     Text(
                         text = it,
                         fontSize = msgFontSize,
-                        color = contentColor,
+                        color = Color.White,
                         textAlign =  TextAlign.Center ,
                         modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
 
                 // Error details
@@ -99,12 +115,12 @@ fun CommonDialog(
                     val msgText = errorMessage.orEmpty()
                     Text(
                         text = "Error $codeText: $msgText",
-                        fontSize = 13.sp,
-                        color = contentColor,
+                        fontSize = 14.sp,
+                        color = Color.White,
                         textAlign =  TextAlign.Center,
-                        modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier
+                        modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(38.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
                 if ((errorCode == null && errorMessage == null) && !noButtons) {
                     Spacer(modifier = Modifier.height(30.dp))
@@ -170,4 +186,5 @@ fun CommonDialog(
             }
         }
     }
+
 }
