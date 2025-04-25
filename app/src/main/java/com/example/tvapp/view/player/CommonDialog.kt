@@ -78,7 +78,6 @@ fun CommonDialog(
                             modifier = Modifier.size(24.dp),
                             colorFilter = ColorFilter.tint(Color.White)
                         )
-//                        Spacer(modifier = Modifier.width(7.dp))
                         Text(
                             text         = it,
                             fontSize     = titleFontSize,
