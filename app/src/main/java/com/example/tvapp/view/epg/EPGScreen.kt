@@ -3,6 +3,7 @@ package com.example.tvapp.view.epg
 
 
 import android.app.Activity
+import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
@@ -112,12 +114,23 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
 
     Row(

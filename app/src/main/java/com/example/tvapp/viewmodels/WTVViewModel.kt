@@ -158,7 +158,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://apipanmetro.waveiontechnologies.com/api/app/appUpdate")
+            .provideAppUpdateInfo("https://api-demo.caastv.com/api/app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 
@@ -240,8 +240,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
     fun onUserDeclinedUpdate() {
         _showUpdateDialog.value = false
     }
-
-
 
 
 

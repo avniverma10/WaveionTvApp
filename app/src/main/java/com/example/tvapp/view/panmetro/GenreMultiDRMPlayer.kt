@@ -110,6 +110,9 @@ fun GenreMultiDRMPlayer(
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
+        showErrorDialog    = false
+        errorCodeState     = 0
+        errorMessageState  = ""
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()

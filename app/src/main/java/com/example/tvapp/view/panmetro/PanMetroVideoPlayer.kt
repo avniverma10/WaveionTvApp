@@ -86,6 +86,7 @@ import com.example.tvapp.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.player.PlaybackErrorDialog
 import com.example.tvapp.view.player.addWatermarkToPlayer
 import com.example.tvapp.view.playeroverlay.NewPlayerOverlay
@@ -142,6 +143,7 @@ fun PanMetroVideoPlayer(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorCodeState by remember { mutableStateOf(0) }
     var errorMessageState by remember { mutableStateOf("") }
+    var errorTitleState by remember { mutableStateOf("") }
 
 
     // State management
@@ -187,14 +189,15 @@ fun PanMetroVideoPlayer(
                     override fun onPlayerError(error: PlaybackException) {
                         val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
                             ?.responseCode
-
                         val rawCode = httpCode ?: error.errorCode
 
-                        val (displayCode, message) = playerErrorHandling(rawCode)
+                        // now returns (appCode, title, message)
+                        val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
 
-                        errorCodeState = displayCode
-                        errorMessageState = message
-                        showErrorDialog = true
+                        errorCodeState    = errorCode
+                        errorTitleState   = errorTitle
+                        errorMessageState = errorMessage
+                        showErrorDialog   = true
                     }
                 })
             }
@@ -202,17 +205,30 @@ fun PanMetroVideoPlayer(
     // Condition to display the error dialog if an error is encountered.
 
 
-        PlaybackErrorDialog(
-            showDialog   = showErrorDialog,
-            errorCode    = errorCodeState,
-            errorMessage = errorMessageState,
-            onDismiss    = { showErrorDialog = false }
+    if (showErrorDialog) {
+        val borderColor = remember(errorCodeState) {
+            if (errorCodeState in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+        }
+
+        CommonDialog(
+            showDialog         = true,
+            title              = errorTitleState,
+            message            = null,
+            errorCode          = errorCodeState,
+            errorMessage       = errorMessageState,
+            borderColor        = borderColor,
+            confirmButtonText  = null,
+            onConfirm          = null,
+            dismissButtonText  = null,
+            onDismiss          = null,
         )
-
-
+    }
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
+        showErrorDialog    = false
+        errorCodeState     = 0
+        errorMessageState  = ""
         selectedChannelIndex.value = epgList.indexOfFirst {
             it.content?.videoUrl == (selectedChannel.content?.videoUrl ?: "")
         }
@@ -343,15 +359,6 @@ fun PanMetroVideoPlayer(
 
             }
         )
-//        // Overlay logo in the top-right corner with fixed width and height.
-//        Image(
-//            painter = painterResource(id = R.drawable.panmetro_logo_t),
-//            contentDescription = "Panmetro Logo",
-//            modifier = Modifier
-//                .size(width = 200.dp, height = 150.dp)
-//                .align(Alignment.TopEnd)
-//                .padding(16.dp) // optional padding from the top/right edges
-//        )
 
         // Show Loading Indicator if Buffering
         /*Column(

@@ -39,20 +39,6 @@ class MainActivity : ComponentActivity() {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
-
-//                    CommonDialog(
-//                        showDialog = true,
-//                        title = "Playback Error",
-//                        message = "The video cannot be played",
-//                        errorCode = 606,
-//                        errorMessage = "Critical DRM failure",
-//                        borderColor = Color(0xFF6B2828),
-//                        confirmButtonText = "Yes",
-//                        onConfirm = { /* handle exit */  },
-//                        dismissButtonText = "No",
-//                        onDismiss = { }
-//                    )
-
                 }
 //                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)

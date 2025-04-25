@@ -1,6 +1,7 @@
 package com.example.tvapp.view.panmetro
 
 import android.app.Activity
+import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -38,6 +39,7 @@ import com.example.tvapp.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -101,12 +103,23 @@ fun PanmetroGenreScreen(
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
     /*BackHandler {
         navController.navigate(Destination.homeScreen) {

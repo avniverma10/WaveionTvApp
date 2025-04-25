@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -34,6 +36,7 @@ import coil3.request.ImageRequest
 import com.example.tvapp.R
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.UpdateDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -64,10 +67,17 @@ fun SplashScreen(
 
     // — show the update dialog —
     if (showDialog && updateData != null) {
-        UpdateDialog(
-            version = updateData!!.appVersion,
-            onYes   = { sharedViewModel.onUserAcceptedUpdate() },
-            onNo    = { sharedViewModel.onUserDeclinedUpdate() }
+        CommonDialog(
+            showDialog = showDialog,
+            title = "Update available",
+            message = "Do you want to update the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = { sharedViewModel.onUserAcceptedUpdate() },
+            dismissButtonText = "No",
+            onDismiss = { sharedViewModel.onUserDeclinedUpdate() },
         )
     }
 
@@ -177,7 +187,11 @@ fun SplashScreen(
         )
 
         if (isUpdating) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 32.dp)
+            )
         }
     }
 

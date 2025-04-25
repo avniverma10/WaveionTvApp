@@ -25,15 +25,20 @@ fun PlaybackErrorCard(
     modifier: Modifier = Modifier
 ) {
     val borderColor = if (errorCode in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+    val firstSentence = errorMessage
+        .let { msg ->
+            val idx = msg.indexOf('.')
+            if (idx >= 0) msg.substring(0, idx + 1) else msg
+        }
 
     Surface(
         shape = RoundedCornerShape(8.dp),
         shadowElevation = 30.dp,
         color = Color(0xFF191B1F),
         modifier = modifier
-            .border(BorderStroke(2.dp, borderColor), RoundedCornerShape(8.dp))
+            .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(8.dp))
             .width(200.dp)
-            .height(83.dp)
+            .height(85.dp)
     ) {
         Column(
             Modifier
@@ -64,19 +69,10 @@ fun PlaybackErrorCard(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "The video cannot be played",
-                fontSize = 11.sp,
-                color = Color.LightGray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(1.dp))
-
-            Text(
-                text = "Error $errorCode : $errorMessage",
-                fontSize = 10.sp,
-                color = Color.LightGray,
+                text = "Error $errorCode : $firstSentence",
+                fontSize = 12.sp,
+                color = Color.White,
+                maxLines = 2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
