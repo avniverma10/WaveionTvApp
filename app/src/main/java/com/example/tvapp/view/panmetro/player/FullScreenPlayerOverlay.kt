@@ -4,41 +4,63 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.view.panmetro.TopOverlayInfo
+import com.example.tvapp.view.panmetro.common.TopOverlayInfo
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
-fun NewPlayerOverlay(
+fun FullScreenPlayerOverlay(
     selectedIndex: MutableState<Int>,
     lazyListState: LazyListState,
     sharedViewModel: SharedViewModel,
+    playerViewModel: PlayerViewModel,
     channelFocusRequesters: List<FocusRequester>,
     onChannelFocused: (EPGDataItem) -> Unit
 ) {
-    val epgList by sharedViewModel.wtvEPGList.collectAsState()
+    HideKeyboardOnEnter()
+    val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -47,9 +69,9 @@ fun NewPlayerOverlay(
     val maxScale = 1f
     val minScale = 0.7f
 
-    LaunchedEffect(epgList, selectedIndex) {
+    LaunchedEffect(selectedIndex) {
         selectedIndex.value = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
-            .takeIf { it >= 0 } ?: 0
+        playerViewModel.updateSelectedPProgramInfo(selectedChannel)
         scope.launch {
             delay(200)
             lazyListState.animateScrollToItem(selectedIndex.value)
@@ -60,7 +82,7 @@ fun NewPlayerOverlay(
         // Top gradient overlay
         val topBarGradient = Brush.verticalGradient(
             colors = listOf(
-                Color.Black.copy(alpha = 0.8f),
+                Color.Black.copy(alpha = 0.6f),
                 Color.Transparent
             )
         )
@@ -80,7 +102,7 @@ fun NewPlayerOverlay(
                 .background(topBarGradient)
                 .padding(horizontal = 24.dp, vertical = 13.dp)
         ) {
-            TopOverlayInfo(sharedViewModel=sharedViewModel,dataItem = selectedChannel)
+            TopOverlayInfo(sharedViewModel= sharedViewModel,playerViewModel = playerViewModel)
         }
 
         // Channel carousel at bottom
@@ -88,13 +110,14 @@ fun NewPlayerOverlay(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(bottomBarGradient)
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(10.dp, 10.dp)
+                .focusTarget()   // enable focus movement inside
+
         ) {
             LazyRow(
                 state = lazyListState,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
             ) {
                 itemsIndexed(
                     items = epgList,
@@ -119,7 +142,7 @@ fun NewPlayerOverlay(
                     )
 
                     ChannelCard(
-                        sharedViewModel = sharedViewModel,
+                        playerViewModel = playerViewModel,
                         epgDataItem = item,
                         isFocused = isSelected,
                         scale = animatedScale,
@@ -147,7 +170,7 @@ fun NewPlayerOverlay(
 
 @Composable
 private fun ChannelCard(
-    sharedViewModel: SharedViewModel,
+    playerViewModel: PlayerViewModel,
     epgDataItem: EPGDataItem,
     isFocused: Boolean,
     scale: Float,
@@ -155,11 +178,19 @@ private fun ChannelCard(
 ) {
     val now = System.currentTimeMillis()
     val programList = epgDataItem.tv?.programme?.let {
-        sharedViewModel.provideVideoPlayerProgramInfo(it)
+        playerViewModel.provideAvailablePrograms(
+            it
+        )
     }
-    val minutesLeft = programList?.getOrNull(0)?.endTime?.let {
-        ((it - now) / 60000).toInt()
-    } ?: 0
+    var currentProgram = programList?.getOrNull(0)
+    var nextProgram = programList?.getOrNull(1)
+
+    LaunchedEffect(programList) {
+        currentProgram = programList?.getOrNull(0)
+        nextProgram = programList?.getOrNull(1)
+        currentProgram?.let { playerViewModel.updateCurrentRunningProgramTimings(it) }
+    }
+
 
     Box(
         modifier = modifier
@@ -173,12 +204,12 @@ private fun ChannelCard(
                 if (isFocused) {
                     Modifier.border(
                         width = 2.dp,
-                        color = base_color,
+                        color = Color(0xFF49FEDD),
                         shape = RoundedCornerShape(12.dp)
                     )
                 } else Modifier
             )
-            .padding(16.dp)
+            .padding(10.dp)
     ) {
         Column {
             Row(
@@ -187,8 +218,9 @@ private fun ChannelCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .background(color = base_color, RoundedCornerShape(4.dp))
+                        .background(Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .align(Alignment.CenterVertically)
                 ) {
                     Text(
                         text = epgDataItem.content?.channelNo?.toString() ?: "--",
@@ -196,20 +228,29 @@ private fun ChannelCard(
                         color = Color.Black
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
+                // Channel Logo
+                AsyncImage(
+                    model = epgDataItem.content?.thumbnailUrl,
+                    contentDescription = "Channel Logo",
+                    modifier = Modifier
+                        .background(Color.Transparent, RoundedCornerShape(4.dp))
+                        .width(50.dp)
+                        .height(50.dp)
+                        .padding(start = 5.dp)
+                )
+                /*Text(
                     text = epgDataItem.content?.title
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,
-                    color = base_color
-                )
+                    color = Color(0xFF49FEDD)
+                )*/
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = programList?.getOrNull(0)?.title ?: "No Info",
+                text = currentProgram?.title ?: "No Info",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White,
                 maxLines = 1
@@ -217,11 +258,11 @@ private fun ChannelCard(
 
             Text(
                 text = buildString {
-                    append(formatTime(programList?.getOrNull(0)?.startTime))
+                    append(formatTime(currentProgram?.startTime))
                     append(" - ")
-                    append(formatTime(programList?.getOrNull(0)?.endTime))
+                    append(formatTime(currentProgram?.endTime))
                     append(" • ")
-                    append(minutesLeft)
+                    append(playerViewModel.provideCurrentRunningProgramTimings(currentProgram))
                     append(" MIN LEFT")
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -231,13 +272,13 @@ private fun ChannelCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Next at ${formatTime(programList?.getOrNull(1)?.startTime)}",
+                text = "Next at ${nextProgram?.startFormatedTime}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
 
             Text(
-                text = programList?.getOrNull(1)?.title ?: "N/A",
+                text = nextProgram?.title ?: "N/A",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White,
                 maxLines = 1

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.tvapp.view.uicomponent.GradientBackground
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -31,15 +32,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.ui.theme.screen_bg_color
-import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -52,17 +55,17 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = screen_bg_color)
+            .background(Color(0xFF14161A))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PermettoTopBar()
+//            PermettoTopBar()
 
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color = screen_bg_color)
+                    .background(Color(0xFF14161A))
             ) {
-//                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
+                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
                 NewMainSettingsContent(
                     onInfoClick = { showInfo = true },
@@ -79,23 +82,14 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         )
     }
     if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Logout App",
-            message = "Are you sure you want to logout?",
-            errorCode = null,
-            errorMessage = null,
-            borderColor = Color.Transparent,
-            confirmButtonText ="Yes" ,
-            onConfirm =  {
-                sharedViewModel.clearLogin()
+        PanMetroLogoutDialog (
+            onConfirmExit = {
                 showExitDialog = false
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(0)
-                }
+                android.os.Process.killProcess(android.os.Process.myPid())
             },
-            dismissButtonText = "No",
-            onDismiss = { showExitDialog = false }
+            onDismiss = {
+                showExitDialog = false
+            }
         )
     }
 }
@@ -176,10 +170,10 @@ fun NewMenuItemCard(
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }
             .then(
-                if (isFocused) Modifier.background(color = base_color,shape = RoundedCornerShape(8.dp))
+                if (isFocused) Modifier.background(Color(0xFF49FEDD),shape = RoundedCornerShape(8.dp))
                     .border(
                         width = 3.dp,
-                        color = base_color,
+                        color = Color(0xFF49FEDD),
                         shape = RoundedCornerShape(8.dp)
                     ) else Modifier
             ),

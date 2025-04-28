@@ -45,6 +45,7 @@ import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun CategoryMenu(
@@ -124,7 +125,7 @@ fun CategoryMenu(
                                         requester.requestFocus()
                                     }
                                 }
-                            // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
+                           // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }
@@ -137,7 +138,7 @@ fun CategoryMenu(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = item.name ?: "",
+                        text = item.name?.toUpperCase(Locale.ROOT) ?: "",
                         maxLines = 1,
                         color = Color.White,
                         style = TextStyle(

@@ -3,23 +3,25 @@ package com.example.tvapp.viewmodels
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import android.database.ContentObserver
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
-import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
+import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
-//import com.example.tvapp.model.data.epgdata.ChannelWithDRM
-import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.filter.PanMetroGenreFilter
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
+import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.viewmodels.player.PlayerViewModel
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +38,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import androidx.core.content.edit
+import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.uistate.PreferenceManager
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -74,8 +79,6 @@ open class SharedViewModel @Inject constructor(
     private val _panMetroGenreState = MutableStateFlow(PanMetroGenreFilter())
     val panMetroGenreState: StateFlow<PanMetroGenreFilter> = _panMetroGenreState.asStateFlow()
 
-    private val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
-    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
@@ -123,8 +126,6 @@ open class SharedViewModel @Inject constructor(
 
     fun clearWishlistAlert() { _wishlistAlertProgram.value = null }
 
-    private val _selectedVideoUrl = MutableStateFlow<EPGDataItem?>(null)
-    val selectedVideoUrl: StateFlow<EPGDataItem?> = _selectedVideoUrl.asStateFlow()
 
     val authToken = dataStoreManager.authToken
 
@@ -143,10 +144,6 @@ open class SharedViewModel @Inject constructor(
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")
             }
         }
-    }
-
-    fun onChannelVideoSelected(channel:EPGDataItem, program: Programme?) {
-        _selectedVideoUrl.value = channel
     }
 
 
@@ -222,7 +219,7 @@ open class SharedViewModel @Inject constructor(
 
 
     private fun applyFilters() {
-        val fullList = wtvEPGList.value?: provideApplicationContext().coreEPGLiveData().value
+        val fullList = provideApplicationContext().coreEPGLiveData().value?:wtvEPGList.value
         val filter = _filterState.value
 
         val filtered = fullList?.filter { epgItem ->
@@ -244,28 +241,21 @@ open class SharedViewModel @Inject constructor(
                 _searchResults.value = _epgChannels.value
                 return@launch
             }
-
-            // Get the current EPG list.
-            val epgList = wtvEPGList.value ?: fetchEPGList(context)
-
-            // Filter only by content title.
-            val filteredEPGItems = epgList.filter { epgItem ->
-                epgItem.content?.title?.contains(query, ignoreCase = true) == true
-            }
-
-            // Map the EPGDataItems to Channels.
-            val filteredChannels = filteredEPGItems.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.copy(
+            val epgList = fetchEPGList(context)
+            val filteredChannels = epgList.mapNotNull { epgItem ->
+                epgItem.tv?.channel?.takeIf { channel ->
+                    val name = channel.displayName ?: ""
+                    val genre = epgItem.content?.genreId ?: ""
+                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
+                }?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
                 )
             }
-
             _searchResults.value = filteredChannels
         }
     }
-
 
     fun providePlayableProgramData(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()
@@ -282,32 +272,20 @@ open class SharedViewModel @Inject constructor(
             .sortedBy { it.startTime }
     }
 
-    fun provideVideoPlayerProgramInfo(programs: List<Programme>): List<Programme> {
-        val now = System.currentTimeMillis()
-        return programs
-            .filter { program ->
-                val start = program.startTime
-                val end   = program.endTime
-                // Only include if both times are non-null and end is strictly in the future:
-                if (start == null || end == null) return@filter false
-                // 1) Currently running: start <= now < end
-                // 2) Upcoming: now < start
-                (start <= now && now < end) || (now < start)
-            }.take(2)
-            .sortedBy { it.startTime }
+    /** Persist into SharedPreferences on minimize */
+    fun persistToGenrePrefs(prefs: PreferenceManager,selectedGenreIndex:Int,selectedChannelIndex:Int) {
+        prefs.selectedGenreIndex = selectedGenreIndex
+        prefs.selectedChannelIndex = selectedChannelIndex
+    }
+   // Persist into SharedPreferences on minimize
+    fun persistToPlayerPrefs(prefs: PreferenceManager,selectedChannel:EPGDataItem) {
+       prefs.lastEpgDataItem = selectedChannel
     }
 
-    fun filterPanMetroChannelsByGenre(genre:String?=null) {
-         val epgData = wtvEPGList.value?: provideApplicationContext().coreEPGLiveData().value
-          genre?.let {
-              _filteredPanMetroChannels.value = epgData?.filter { epgItem ->
-                  val genreMatch = genre.equals("ALL", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
-                  genreMatch
-              }?: arrayListOf()
-          }?:kotlin.run {
-              _filteredPanMetroChannels.value = epgData?: arrayListOf()
-          }
 
+    /** Persist into SharedPreferences on minimize */
+    fun restorePlayerPrefs(prefs: PreferenceManager) {
+        prefs.lastEpgDataItem?.let { updateSelectedChannel(it) }
     }
 
     override fun onCleared() {

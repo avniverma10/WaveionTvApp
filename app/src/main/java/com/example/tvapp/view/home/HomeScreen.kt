@@ -1,8 +1,6 @@
 package com.example.tvapp.view.home
 
 import android.app.Activity
-import android.os.Process
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -44,12 +42,10 @@ import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
-import com.example.tvapp.ui.theme.bg_card_color
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.ui.theme.screen_bg_color
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -58,8 +54,6 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
-
-    Log.d("AVNI","home categories --> $homeCategories")
     val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current
@@ -72,20 +66,15 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         showExitDialog = true
     }
 
+
+    // Exit confirmation dialog
     if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Exit App",
-            message = "Are you sure you want to exit the app?",
-            borderColor = Color.Transparent,
-            confirmButtonText = "Yes",
-            onConfirm = {
-                (context as? Activity)?.finishAffinity()
-                Process.killProcess(Process.myPid())
-            },
-            dismissButtonText = "No",
-            onDismiss = { showExitDialog = false }
-        )
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finishAffinity()
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }, onDismiss = {
+            showExitDialog = false
+        })
     }
 
     Row(

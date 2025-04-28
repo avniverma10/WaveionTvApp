@@ -1,6 +1,7 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.settings
 
-import android.util.Log
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,23 +34,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.panmetro.common.PermettoTopBar
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
 fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
 
+    HideKeyboardOnEnter()
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -67,7 +70,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
         }
     }
     if (showInfo) {
-        NewPanMetroInfoScreen(
+        PanMetroInfoScreen(
             username = loginInfo?.username?:"WTV",
             onOkClick = { showInfo = false }
         )
@@ -75,13 +78,11 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     if (showExitDialog) {
         PanMetroLogoutDialog (
             onConfirmExit = {
-                Log.d("AVNI","onConfirmExit")
                 sharedViewModel.clearLogin()
                 showExitDialog = false
                 navController.navigate(Destination.loginScreen) {
                     popUpTo(0)
                 }
-                Log.d("AVNI","Navigated to login screen")
             },
             onDismiss = {
                 showExitDialog = false

@@ -18,6 +18,7 @@ class WTVApp : Application(), CoreComponentProvider{
     private var wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
     private var wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private var wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
+    private var macAddr: MutableLiveData<String> = MutableLiveData()
 
     override fun onCreate() {
         super.onCreate()
@@ -52,5 +53,11 @@ class WTVApp : Application(), CoreComponentProvider{
 
     override fun initializeHome(data: List<WTVHomeCategory>) {
         this.wtvHome.postValue(data)
+    }
+
+    override fun provideMacAddr(): LiveData<String> = macAddr
+
+    override fun initializeMacAddr(data: String) {
+        this.macAddr.value = data
     }
 }

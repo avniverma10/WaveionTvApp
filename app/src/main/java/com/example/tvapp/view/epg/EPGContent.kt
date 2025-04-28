@@ -63,9 +63,10 @@ import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -82,6 +83,8 @@ fun EPGContent(
     categoryFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
+
+    HideKeyboardOnEnter()
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
 
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -150,6 +153,9 @@ fun EPGContent(
                                     epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen) {
+                                            PreferenceManager.selectedGenreIndex = 0
+                                            PreferenceManager.selectedChannelIndex = 0
+                                            PreferenceManager.lastEpgDataItem = null
                                             // popUpTo(Destination.epgScreen) { inclusive = true }
                                         }
                                     }
@@ -183,7 +189,7 @@ fun EPGContent(
                                             .then(
                                                 if (isFocused.value)
                                                     Modifier
-                                                        .border(1.dp, color = base_color, RoundedCornerShape(4.dp))
+                                                        .border(1.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                                                         .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
                                                 else Modifier
                                             )
@@ -197,6 +203,9 @@ fun EPGContent(
                                                             epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                                                 sharedViewModel.updateSelectedChannel(channelItem)
                                                                 navController.navigate(Destination.panMetroScreen) {
+                                                                    PreferenceManager.selectedGenreIndex = 0
+                                                                    PreferenceManager.selectedChannelIndex = 0
+                                                                    PreferenceManager.lastEpgDataItem = null
                                                                     // popUpTo(Destination.epgScreen) { inclusive = true }
                                                                 }
                                                             }
@@ -237,7 +246,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp)
                             .fillMaxHeight()
                             .width(1.dp)
-                            .background(color = base_color)
+                            .background(Color(0xFF49FEDD))
                     )
                     Box(
                         modifier = Modifier
@@ -245,7 +254,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(color = base_color, style = Stroke(width = 1.dp.toPx()))
+                            drawCircle(color = Color(0xFF49FEDD), style = Stroke(width = 1.dp.toPx()))
                         }
                         Image(
                             painter = painterResource(id = R.drawable.vector_271),
@@ -285,6 +294,9 @@ fun EPGContent(
                         epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen) {
+                                PreferenceManager.selectedGenreIndex = 0
+                                PreferenceManager.selectedChannelIndex = 0
+                                PreferenceManager.lastEpgDataItem = null
                                 // popUpTo(Destination.epgScreen) { inclusive = true }
                             }
                         }
@@ -407,7 +419,7 @@ fun ChannelInfo(
                 .height(125.dp)
                 .then(
                     if (isFocused.value)
-                        Modifier.border(2.dp, base_color, RoundedCornerShape(4.dp))
+                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }

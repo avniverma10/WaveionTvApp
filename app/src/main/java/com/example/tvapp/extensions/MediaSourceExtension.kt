@@ -1,7 +1,9 @@
 package com.example.tvapp.extensions
 
 import android.content.Context
+import android.net.Uri
 import android.os.Build
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.media3.common.C
@@ -16,7 +18,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import org.json.JSONObject
+import androidx.core.net.toUri
 
 /**
  * Returns a MediaSourceFactory configured with a DRM session manager if needed.
@@ -80,7 +82,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
         ?.addQueryParameter("LoginName", "josip".toBase64Encoded())
         ?.addQueryParameter("Password", "cryptoguard".toBase64Encoded())
         ?.addQueryParameter("KeyId", contentId?.toBase64Encoded())
-        ?.addQueryParameter("UniqueDeviceId", findMyDeviceId().toBase64Encoded())
+        ?.addQueryParameter("UniqueDeviceId", findMyDeviceId()?.toBase64Encoded())
         ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
         ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         ?.build()
@@ -111,21 +113,24 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
 }
 
 //for Cryptoguard DRM
-@RequiresApi(Build.VERSION_CODES.M)
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): MediaItem {
+fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
+
+    val macAddress = provideMacAddress()
     // Build URL with query parameters using OkHttp's HttpUrl builder.
-    val httpUrl = defaultLicenseUrl.toHttpUrlOrNull()?.newBuilder()
-        ?.addQueryParameter("PlayState", "1")
-        ?.addQueryParameter("DrmSystem", "Widevine")
-        ?.addQueryParameter("LoginName", "josip".toBase64Encoded())
-        ?.addQueryParameter("Password", "cryptoguard".toBase64Encoded())
-        ?.addQueryParameter("KeyId", contentId?.toBase64Encoded())
-        ?.addQueryParameter("UniqueDeviceId",  findMyDeviceId().toBase64Encoded())
-        ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
-        ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
-        ?.build()
+    val httpUrl = defaultLicenseUrl.toUri().buildUpon()
+        .appendQueryParameter("PlayState",      "1")
+        .appendQueryParameter("DrmSystem",      "Widevine")
+        .appendQueryParameter("LoginName",      "josip".toBase64Encoded())
+        .appendQueryParameter("Password",       "cryptoguard".toBase64Encoded())
+        .appendQueryParameter("KeyId",          contentId?.toBase64Encoded())
+        .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64Encoded())
+        .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())
+        .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
+        .build()
+        .toString()
     val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?&","https://cryptoguard.waveiontechnologies.com:4443?")
+    logData?.put("licenseUrl",licenseUrl)
 
 
 
@@ -133,7 +138,7 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         .setUri(contentUrl)
         .setDrmConfiguration(
             MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                .setLicenseUri(licenseUrl) // Base license URL (will be modified in callback)
+                .setLicenseUri(httpUrl) // Base license URL (will be modified in callback)
                 .build()
         )
         .build()

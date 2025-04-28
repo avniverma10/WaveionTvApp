@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import android.view.KeyEvent
@@ -52,9 +52,10 @@ import com.example.tvapp.R
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.ui.theme.base_color
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
-fun NewCategoryMenu(
+fun GenreListMenu(
     genres: List<WTVGenre>,
     genreSelectedIndex: MutableState<Int>,
     channelToGenreFocus: MutableState<Boolean>,
@@ -68,14 +69,11 @@ fun NewCategoryMenu(
     // Coroutine scope for launching suspend functions.
     val coroutineScope = rememberCoroutineScope()
 
-    // Derived states for arrow highlighting if needed.
-    val topArrowHighlighted by remember {
-        mutableStateOf(listState.firstVisibleItemIndex > 0)
-    }
     val bottomArrowHighlighted by remember {
         mutableStateOf(false)
     }
     LaunchedEffect(genreSelectedIndex) {
+        focusedIndex = if(genreSelectedIndex.value >0) genreSelectedIndex.value else 0
         focusRequesters.getOrNull(genreSelectedIndex.value)?.let { requester ->
             try {
                 requester.requestFocus()
@@ -230,7 +228,7 @@ fun NewCategoryMenuItem(
         ) {
             if (categoryName == "All") {
                 Text(
-                    text = categoryName,
+                    text = categoryName.toUpperCase(Locale.ROOT),
                     fontSize = 18.sp,
                     fontFamily = FontFamily(Font(R.font.figtree_medium)),
                     fontWeight = FontWeight(400),
@@ -257,7 +255,7 @@ fun NewCategoryMenuItem(
                 }
             } else {
                 Text(
-                    text = categoryName,
+                    text = categoryName.toUpperCase(Locale.ROOT),
                     color = contentColor,
                     fontSize = 15.sp,
                     maxLines = 1,

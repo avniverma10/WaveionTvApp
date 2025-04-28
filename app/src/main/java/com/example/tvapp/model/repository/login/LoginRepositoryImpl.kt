@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 
 class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
-
-    suspend fun provideUserLogin(loginUrl: String,loginData:HashMap<String,String>): Flow<WTVResponse<WTVLogin>> = flow {
+    suspend fun provideUserLogin(
+        loginUrl: String,
+        headers: Map<String, String>,
+        requestBody: HashMap<String, String>
+    ): Flow<WTVResponse<WTVLogin>> = flow {
         try {
-            val response = networkApiCallInterface.makeHttpPostRequest(loginUrl,loginData).execute()
+            val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,headers= headers, body = requestBody).execute()
             if (response.isSuccessful && response.body() != null) {
                 val manifest = response.body()?.toJSONObject()?.toString()
                     .convertIntoModel(WTVLogin::class.java)

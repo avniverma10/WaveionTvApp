@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import android.view.KeyEvent
@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -42,7 +41,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
@@ -58,12 +56,14 @@ import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun NewChannelListScreen(
+fun ChannelListMenuScreen(
     sharedViewModel: SharedViewModel,
+    genreViewModel: GenreViewModel,
+    selectedChannelIndex : MutableState<Int>,
     channelListFocusRequester: FocusRequester,
     channelToGenreFocus: MutableState<Boolean>,
     onNavigateToGenre: () -> Unit,
@@ -73,11 +73,14 @@ fun NewChannelListScreen(
 
     var focusedIndex by remember { mutableStateOf(0) }
     var previewChannelIndex by remember { mutableStateOf(0) }
-    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val selectedChannelIndex by remember { mutableStateOf( selectedChannelIndex) }
 
     LaunchedEffect(filteredChannels) {
-        focusedIndex = 0
-        previewChannelIndex = 0
+        focusedIndex = if(selectedChannelIndex.value >0) selectedChannelIndex.value else 0
+        previewChannelIndex = if(selectedChannelIndex.value >0) selectedChannelIndex.value else 0
+        filteredChannels.getOrNull(selectedChannelIndex.value)
+            ?.let { sharedViewModel.updateSelectedChannel(it) }
     }
 
     LaunchedEffect(Unit) {
@@ -178,7 +181,9 @@ fun NewChannelListScreen(
                             KeyEvent.KEYCODE_DPAD_CENTER -> {
                                // val currentTime = System.currentTimeMillis()
                                // val currentKey = keyEvent.key
-                                onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                if(filteredChannels.size > focusedIndex) {
+                                    onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                }
                                 true
                                 /*if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
                                     if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {

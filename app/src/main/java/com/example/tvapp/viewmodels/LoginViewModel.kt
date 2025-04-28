@@ -1,24 +1,16 @@
 package com.example.tvapp.viewmodels
 
 import android.app.Application
-import androidx.lifecycle.ViewModel
+import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.AndroidTvDrmInfo
-import com.example.tvapp.extensions.logReport
-import com.example.tvapp.extensions.toHashMap
-import com.example.tvapp.model.data.DataStoreManager
-import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.login.WTVLogin
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
-import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.repository.login.LoginRepositoryImpl
 import com.example.tvapp.utils.sealed.LoginResponse
-import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,7 +28,23 @@ class LoginViewModel @Inject constructor(
 
     fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(WTVLogin?,String?)->Unit){
         viewModelScope.launch {
-            loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
+            // 3. Prepare headers and body
+            val headers = mapOf(
+                "Authorization" to "56fdsr237df325fv454v3v4532drferh",
+                "Content-Type"  to "application/json"
+            )
+            // "uname":"PAN000014","paswrd":"1234566","macaddr":"123456789"
+            Log.e("MAC ID", "$androidTvDrmInfo.macId")
+            val requestBody = hashMapOf(
+                "uname" to (androidTvDrmInfo.userName ?: ""),
+                "paswrd" to (androidTvDrmInfo.userPassword ?: ""),
+                "macaddr" to (androidTvDrmInfo.macId)
+            )
+            //loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
+            loginRepositoryImpl.provideUserLogin(
+                loginUrl = "https://iptvtest.panmetro.in/osmsapi/cryptodrm/logincheck",
+                headers = headers,
+                requestBody = requestBody).collect { response ->
                 when (response) {
                     is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data
                     is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")

@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

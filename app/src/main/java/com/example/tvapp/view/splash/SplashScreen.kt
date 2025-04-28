@@ -1,59 +1,49 @@
 package com.example.tvapp.view.splash
 
-import android.app.Activity
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.net.Uri
-import android.os.Environment
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import com.example.tvapp.R
-import com.example.tvapp.extensions.showToastS
+import com.example.tvapp.extensions.getIptvDeviceInfo
+import com.example.tvapp.extensions.logAllDrmInfo
+import com.example.tvapp.extensions.provideMacAddrLiveData
+import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
-import com.example.tvapp.view.uicomponent.UpdateDialog
+import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
+
 @Composable
-fun SplashScreen(
-    sharedViewModel: SharedViewModel,
-    navController: NavController
-) {
+fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
+    val macAddress = sharedViewModel.provideApplicationContext()?.provideMacAddrLiveData()
     val context   = LocalContext.current
     val activity  = (context as? Activity)
 
-    // 1) App‑init & login state
-    val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
+    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
-    val loginInfo        = sharedViewModel.loginInfo?.collectAsState()?.value
-
-    // 2) Update dialog state
+    val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
+    val context = LocalContext.current
+    var showExitDialog by remember { mutableStateOf(false) }
+// 2) Update dialog state
     val showDialog by sharedViewModel.showUpdateDialog.collectAsState()
     val updateData by sharedViewModel.appUpdateData.collectAsState()
 
@@ -69,6 +59,27 @@ fun SplashScreen(
 
     LaunchedEffect(Unit) {
         sharedViewModel.checkForAppUpdate()
+    }
+
+
+
+    LaunchedEffect(errorLoadingData,isInitializeData) {
+        if (errorLoadingData != null) {
+            //context.showToastS(errorLoadingData)
+            showExitDialog = true
+        }
+        if(isInitializeData){
+            showExitDialog = false
+            if(loginInfo?.username?.isNotEmpty() == true){
+                navController.navigate(Destination.genreScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
+            }else{
+                navController.navigate(Destination.loginScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
+            }
+        }
     }
     // — show the update dialog —
     if (showDialog && updateData != null) {
@@ -172,12 +183,25 @@ fun SplashScreen(
         }
     }
 
-    // — UI: splash image + spinner while downloading —
+    // Exit confirmation dialog
+    if (showExitDialog) {
+        ErrorDialog(errorLoadingData?:"Server Error", onConfirmExit = {
+            sharedViewModel._errorLoadingData.value = null
+            showExitDialog = false
+            sharedViewModel.initializeAppRequiredData()
+        }, onDismiss = {
+            showExitDialog = false
+        })
+    }
+
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
+        val device = context.getIptvDeviceInfo().toJSONObject()
         AsyncImage(
             model = ImageRequest.Builder(context)
                 // .data(yourSplashUrlHere)
@@ -190,7 +214,6 @@ fun SplashScreen(
             error       = painterResource(R.drawable.gtpl_logo),
             placeholder = painterResource(R.drawable.gtpl_logo)
         )
-
         if (isUpdating) {
             CircularProgressIndicator(
                 modifier = Modifier
@@ -199,6 +222,4 @@ fun SplashScreen(
             )
         }
     }
-
 }
-

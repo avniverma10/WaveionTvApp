@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.settings
 
 
 import androidx.compose.foundation.layout.*

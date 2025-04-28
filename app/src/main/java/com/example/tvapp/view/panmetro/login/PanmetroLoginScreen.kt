@@ -1,9 +1,10 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.login
 
 import android.app.Activity
-import android.os.Process
+import android.os.Build
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -55,18 +56,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.tvapp.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
-import com.example.tvapp.extensions.getTvMacId
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
+import com.example.tvapp.extensions.toResponseMessage
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.LoginViewModel
@@ -75,18 +76,19 @@ import com.example.tvapp.viewmodels.LoginViewModel
 fun PanmetroLoginScreen(
     loginViewModel: LoginViewModel?= hiltViewModel(),navController: NavController
 ) {
+    val context = LocalContext.current
+    val macAddress = context.provideMacAddress()
 
     val loginInfo = loginViewModel?.loginInfo?.collectAsState()?.value
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
-    var username by remember { mutableStateOf("ajaya") }
-    var password by remember { mutableStateOf("123") }
-    var macId by remember { mutableStateOf(context.getTvMacId()?:"12:34:56:78:9A:BC") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var macId by remember { mutableStateOf(macAddress) }
     var macUser by remember { mutableStateOf("MacUserId1") }
     var rememberMe by remember { mutableStateOf(false) }
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
@@ -109,23 +111,12 @@ fun PanmetroLoginScreen(
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Exit App",
-            message = "Are you sure you want to exit the app?",
-            errorCode = null,
-            errorMessage = null,
-            borderColor = Color.Transparent,
-            confirmButtonText = "Yes",
-            onConfirm = {
-                (context as? Activity)?.finishAffinity()
-                Process.killProcess(Process.myPid())
-            },
-            dismissButtonText = "No",
-            onDismiss = {
-                showExitDialog = false
-            }
-        )
+        ExitDialog(onConfirmExit = {
+            (context as? Activity)?.finishAffinity()
+            android.os.Process.killProcess(android.os.Process.myPid())
+        }, onDismiss = {
+            showExitDialog = false
+        })
     }
 
 
@@ -214,7 +205,8 @@ fun PanmetroLoginScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
-                                    .padding(4.dp),
+                                    .padding(4.dp)
+                                    .focusRequester(usernameFocusRequester),
                                 keyboardOptions = KeyboardOptions(
                                     imeAction = ImeAction.Done
                                 ),
@@ -284,7 +276,7 @@ fun PanmetroLoginScreen(
                             )
                             Spacer(modifier = Modifier.height(5.dp))
                             OutlinedTextField(
-                                value = macId,
+                                value = macId?:"",
                                 onValueChange = {
                                     macId = it
                                 },
@@ -312,47 +304,11 @@ fun PanmetroLoginScreen(
                                 enabled = false
 
                             )
-                            /*OutlinedTextField(
-                                value = macUser,
-                                onValueChange = {
-                                    macUser = it
-                                },
-                                label = { Text("Mac User") },
-                                leadingIcon = {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.mac),
-                                        contentDescription = "MacId Icon",
-                                        tint = Color.Unspecified
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
-                                    .padding(start = 4.dp)
-                                    .focusable(false), // hides from D-pad navigation and disables focus highlighting
-                                enabled = false // optional if you also want to prevent input completely
-                            )*/
-
                             Row(
                                 modifier = Modifier
                                     .wrapContentWidth()
                                     .padding(top = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
-                               /* Row(
-                                    modifier = Modifier
-                                        .weight(1f) // Takes remaining space so button shifts to right
-                                        .wrapContentHeight(),
-                                    verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(
-                                        checked = rememberMe,
-                                        onCheckedChange = { rememberMe = it },
-                                        modifier = Modifier.align(Alignment.CenterVertically)
-                                    )
-                                    Text("Remember Me", color = Color.White,
-                                        fontSize = 12.sp, // set your desired font size here
-                                        fontWeight = FontWeight.Light, // make the text bold
-                                        modifier = Modifier.align(Alignment.CenterVertically))
-                                }*/
 
                                 // Next Button with Arrow
                                 Button(
@@ -370,7 +326,8 @@ fun PanmetroLoginScreen(
                                             (context as? Activity)?.hideKeyboard()
                                             context.getAndroidTvDrmInfo()?.copy(
                                                 userName = username,
-                                                userPassword = password
+                                                userPassword = password,
+                                                macId = macId?:""
                                             )?.let {deviceLoginInfo->
                                                 loginViewModel?.validateUserLogin(androidTvDrmInfo = deviceLoginInfo,onLoginResponse={response,errorMsg->
                                                     // Optionally handle click for navigation
@@ -457,7 +414,7 @@ fun PanmetroLoginScreen(
                                 modifier = Modifier.size(200.dp),
                                 contentScale = ContentScale.Fit
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
                             // Main title
                             Text(
                                 text = "GTPL-KCBPL",

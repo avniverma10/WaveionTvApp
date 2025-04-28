@@ -53,10 +53,8 @@ import javax.inject.Inject
 @HiltViewModel
 open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
-//    private val observer = ConnectivityObserver(application.applicationContext)
+    private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
-    val userIdeal: StateFlow<Boolean> = _userIdeal.asStateFlow()
-
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
     val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
@@ -74,6 +72,8 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private val _showUpdateDialog = MutableStateFlow(false)
     val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
 
+
+    // Expose the latest list of TabItems
     // add at top of class
     private val _downloadId = MutableStateFlow<Long?>(null)
     val downloadId: StateFlow<Long?> = _downloadId.asStateFlow()
@@ -96,6 +96,13 @@ open class WTVViewModel @Inject constructor(private val application: Application
     }
 
     private val _errorLoadingData = MutableStateFlow<String?>(null)
+    /*fun updateEPGData(epgList: List<EPGDataItem>) {
+        viewModelScope.launch {
+            saveEPGList(application, epgList)
+        }
+    }*/
+
+    var _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
 //    init {
@@ -112,17 +119,26 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 networkApiCallInterfaceImpl
                     .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
                     .firstOrNullSuccess()
+                    ?.let {
+                        val manifest = it
+                        manifest
+                    }
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
                     .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
                     .firstOrNullSuccess()
+                    ?.let { epgData ->
+                        epgData
+                    }
             }.await()
+
+
             // Wait for all to complete (success or failure)
             if(manifestDeferred != null && epgDeferred != null){
                 // **This line runs only after all of the above finish.**
                 application.applyAppManifest(manifestDeferred)
-                val epgData = dedupeKeepFirst(epgDeferred)
+                val epgData = removeDuplicateEPG(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
                 epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
@@ -131,25 +147,21 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 }
                 _isInitializeData.value = true
             }else{
+                var errorMsg = ""
                 // **This line runs only after all of the above finish.**
+                if(manifestDeferred==null){
+                    errorMsg = "manifest api"
+                }else if(epgDeferred==null){
+                    errorMsg = "epg api"
+                }
+                _errorLoadingData.value = "Server api ${errorMsg} not responding yet!"
                 _isInitializeData.value = false
-                _errorLoadingData.value = "Server not responding yet"
-            }
-
-            launch {
-                networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
-                    .collect { response ->
-                        if (response is WTVListResponse.Success) {
-                            application.applyAppHome(response.data)
-                            logReport("applyAppHome:${response.data}")
-                        } else if (response is WTVListResponse.Failure) {
-                            logReport("applyAppHome error:${response.error.message}")
-                        }
-                    }
+                Log.e("_errorLoadingData","${_errorLoadingData}")
             }
         }
     }
+
+
 
 
     fun clearDownloadId() {
@@ -244,6 +256,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
 
 
 
+
     suspend fun saveEPGList(context: Context, epgList: List<EPGDataItem>) {
         withContext(Dispatchers.IO) {
             epgList.forEach { item ->
@@ -325,18 +338,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
 
 
     fun updateSelectedChannel(selectedChannel:EPGDataItem){
-        val programs = selectedChannel.tv?.programme
-        val currentTime = System.currentTimeMillis()
         _selectedChannel.value =  selectedChannel
-        /*_selectedChannel.value =  selectedChannel.copy(
-            currentPrograms = programs?.filter { program ->
-                    // Convert _start and _stop to epoch milliseconds
-                    val startMillis = program.startTime?:0L
-                    val endMillis = program.endTime?:0L
-                    // Keep the program if it hasn't ended yet
-                    endMillis > currentTime
-                }
-        )*/
     }
 
     //is user ideal since 10 sec
@@ -348,7 +350,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
 }
 
 
-fun dedupeKeepFirst(items: List<EPGDataItem>): List<EPGDataItem> {
+fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
     return items
         .filter { it.channelId != null }       // optional: drop null IDs
         .distinctBy { it.channelId }            // keep first of each channelId

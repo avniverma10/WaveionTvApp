@@ -4,9 +4,12 @@ package com.example.tvapp.viewmodels
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
@@ -19,7 +22,7 @@ import com.example.tvapp.extensions.findMyDeviceId
 import com.example.tvapp.extensions.toBase64Encoded
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
-import com.example.tvapp.view.player.generateWatermark
+import com.example.tvapp.view.uicomponent.generateWatermark
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +45,14 @@ open class WTVPlayerViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl) {
     // Mutable StateFlow to store the mobile number
     private var _mobileNumber = MutableLiveData<String?>(null)
+    companion object {
+        private const val KEY_GENRE = "selectedGenreIndex"
+        private const val KEY_CHANNEL = "selectedChannelIndex"
+        private const val SELECTED_CHANNEL = "selectedChannel"
+    }
+
+
+
 
     // State to trigger video playback for a particular channel.
     private val _selectedVideoUrl = MutableStateFlow<String?>(null)
@@ -56,6 +67,8 @@ open class WTVPlayerViewModel @Inject constructor(
             }
         }
     }
+
+
 
     @OptIn(UnstableApi::class)
     fun provideMediaSourceFactory(context: Context,defaultLicenseUrl:String="https://license-staging.sigmadrm.com/license/verify/widevine"):DefaultMediaSourceFactory{
@@ -94,7 +107,8 @@ open class WTVPlayerViewModel @Inject constructor(
         return generateWatermark(_mobileNumber.value, deviceId)
     }
 
-    fun provideMediaSourceFactory(contentUrl:String,context: Context){
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun provideMediaSourceFactory(contentUrl:String, context: Context){
             // Base URL without the trailing '?' because HttpUrl.Builder will add it
             val baseUrl = "https://cryptoguard.waveiontechnologies.com:4443"
 
@@ -105,7 +119,7 @@ open class WTVPlayerViewModel @Inject constructor(
                 ?.addQueryParameter("LoginName", "am9zaXA=".toBase64Encoded())
                 ?.addQueryParameter("Password", "Y3J5cHRvZ3VhcmQ=".toBase64Encoded())
                 ?.addQueryParameter("KeyId", "NTQ2NDY1ZjEtYTU0Yy00MTQ2LWI0MTctYzVkNWFjMGQwODAy".toBase64Encoded())
-                ?.addQueryParameter("UniqueDeviceId", context.findMyDeviceId().toBase64Encoded())
+                ?.addQueryParameter("UniqueDeviceId", (context.findMyDeviceId()?:"").toBase64Encoded())
                 ?.addQueryParameter("ContentUrl", contentUrl.toBase64Encoded())
                 ?.addQueryParameter("DeviceTypeName", "android".toBase64Encoded())
                 ?.build()

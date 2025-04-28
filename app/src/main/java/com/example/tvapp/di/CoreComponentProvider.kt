@@ -20,4 +20,6 @@ interface CoreComponentProvider {
     fun initializeLanguage(data: List<WTVLanguage>)
     fun provideHomeLiveData(): LiveData<List<WTVHomeCategory>>
     fun initializeHome(data: List<WTVHomeCategory>)
+    fun provideMacAddr(): LiveData<String>
+    fun initializeMacAddr(data: String)
 }

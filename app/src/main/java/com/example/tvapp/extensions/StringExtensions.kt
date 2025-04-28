@@ -521,7 +521,22 @@ fun String.toBase64Encoded(): String {
 }
 
 
-/*fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
+/**
+ * Maps common API status codes to user‐friendly messages.
+ */
+fun String.toResponseMessage(): String = when (this) {
+    "0"   -> "Login Successfully"
+    "405" -> "Method Not Allowed"
+    "401" -> "Unauthorized Data"
+    "103" -> "Missing mandatory fields"
+    "102" -> "Operation failed: Account is locked by Admin"
+    "101" -> "Invalid Password"
+    "100" -> "User Not Present on System"
+    else -> "Unknown response code: $this"
+}
+
+/*
+fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
     when (errorCode) {
         400 -> 601 to "Bad request - Bad input to server"
         403 -> 602 to "Forbidden - user does not have permission, or invalid login data"

@@ -14,11 +14,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
@@ -40,28 +41,27 @@ import androidx.media3.ui.PlayerView
 import com.example.tvapp.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
-import com.example.tvapp.view.player.PlaybackErrorCard
-import com.example.tvapp.view.player.PlaybackErrorDialog
+import com.example.tvapp.extensions.toJSONObject
+import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.viewmodels.SharedViewModel
-import com.example.tvapp.viewmodels.WTVPlayerViewModel
-import kotlinx.coroutines.Job
+import com.example.tvapp.viewmodels.genre.GenreViewModel
 
 @OptIn(UnstableApi::class)
 @Composable
 fun GenreMultiDRMPlayer(
-    sharedViewModel: SharedViewModel,
-    wtvPlayerViewModel:WTVPlayerViewModel= hiltViewModel()
+    selectedChannelIndex : MutableState<Int>,
+                        sharedViewModel: SharedViewModel,
+                        genreViewModel: GenreViewModel
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
+    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
 
-    var overlayHideJob by remember { mutableStateOf<Job?>(null) }
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-
     // Mutable state for UI updates
-    val isBuffering = remember { mutableStateOf(false) }
+    val isBuffering = rememberSaveable { mutableStateOf(false) }
+
 
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorCodeState by remember { mutableStateOf(0) }
@@ -72,6 +72,8 @@ fun GenreMultiDRMPlayer(
         WindowManager.LayoutParams.FLAG_SECURE,
         WindowManager.LayoutParams.FLAG_SECURE
     )
+
+
 
 
     // Remember the player and recreate it when the DRM type changes
@@ -105,26 +107,28 @@ fun GenreMultiDRMPlayer(
             }
     }
 
-
-
-
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
-        showErrorDialog    = false
-        errorCodeState     = 0
-        errorMessageState  = ""
+        Log.e("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
-            val mediaItem = if (selectedVideoUrl?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId)
+            showErrorDialog = false
+            val drmData = HashMap<String,String>()
+            drmData.put("DRMType",selectedVideoUrl.content?.drmType?:"")
+            drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
+            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
+            val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
+                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
             } else {
                 MediaItem.fromUri(url)
             }
+            Log.e("Requested Data>",drmData.toJSONObject().toString())
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
+
     }
 
 
@@ -160,8 +164,9 @@ fun GenreMultiDRMPlayer(
                 CircularProgressIndicator()
             }
         }
+
         if (showErrorDialog) {
-            PlaybackErrorCard(
+            PlaybackErrorPreview(
                 errorCode    = errorCodeState,
                 errorMessage = errorMessageState,
                 modifier     = Modifier.align(Alignment.Center)
@@ -174,14 +179,15 @@ fun GenreMultiDRMPlayer(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
                 exoPlayer.pause()
-            }else if (event == Lifecycle.Event.ON_RESUME) {
+            }else if (event == Lifecycle.Event.ON_START) {
                 exoPlayer.play()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            exoPlayer.release()
-            overlayHideJob?.cancel()
+            exoPlayer.run {
+                stop()
+            }
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }

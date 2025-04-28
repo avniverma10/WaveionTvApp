@@ -17,18 +17,15 @@ import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
-import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
-import com.example.tvapp.view.panmetro.PanMetroSettingsScreen
-import com.example.tvapp.view.panmetro.PanMetroVideoPlayer
-import com.example.tvapp.view.panmetro.PanmetroGenreScreen
-import com.example.tvapp.view.panmetro.PanmetroLoginScreen
-import com.example.tvapp.view.playeroverlay.NewPanMetroVideoPlayer
+import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
+import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
+import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
+import com.example.tvapp.view.panmetro.settings.PanMetroSettingsScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
@@ -38,7 +35,6 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("ContextCastToActivity")
 @Composable
 fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedViewModel) {

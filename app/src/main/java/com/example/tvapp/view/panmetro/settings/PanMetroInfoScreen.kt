@@ -1,12 +1,28 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.settings
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -20,32 +36,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
+import com.example.tvapp.extensions.provideMacAddress
 
 @Composable
 fun PanMetroInfoScreen(
     username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
-    validity: String = "03/04/2025",
-    appVersion: String = "1.2",
+    validity: String = "25/05/2025",
+    appVersion: String = "1.3",
     androidVersion: String = "11",
     ram: String = "2 GB",
     storage: String = "32.0 GB",
-    ota: String = "N/A",
+    ota: String = "Lasted",
     stbModel: String = "DTP1731",
-    networkId: String = "N/A",
-    networkName: String = "Panmetro Convergence Pvt Ltd",
+    networkId: String = "1",
+    networkName: String = "GTPLKCBPL Digital Cable TV & Broadband",
     drmId: String = "102",
     drmVersion: String = "2024.01",
     onOkClick: () -> Unit = {}
 ) {
-
     val context = LocalContext.current
+    val systemInfo = context.getAndroidTvDrmInfo()
+
     BackHandler {
         onOkClick()
     }
     val okButtonFocusRequester = remember { FocusRequester() }
-
-    val systemInfo = context.getAndroidTvDrmInfo()
 
     LaunchedEffect(Unit) {
         okButtonFocusRequester.requestFocus()
@@ -53,7 +69,7 @@ fun PanMetroInfoScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0x80000000)), // semi-transparent black
+            .background(Color(0x80BBB7B7)), // semi-transparent black
         contentAlignment = Alignment.Center
     ) {
         // Centered Card
@@ -61,7 +77,7 @@ fun PanMetroInfoScreen(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             modifier = Modifier
-                .widthIn(min = 300.dp, max = 400.dp)
+                .widthIn(min = 350.dp, max = 450.dp)
                 .heightIn(max = 600.dp)
                 .wrapContentHeight()
         ) {
@@ -84,24 +100,25 @@ fun PanMetroInfoScreen(
 
                 // Info rows
                 InfoRow(label = "Username", value = username)
-                InfoRow(label = "MAC ID", value = systemInfo?.macId?:macId)
+                InfoRow(label = "MAC ID", value = context.provideMacAddress()?:"")
                 InfoRow(label = "Validity", value = validity)
                 InfoRow(label = "App version", value = appVersion)
-                InfoRow(label = "Android Version", value = systemInfo?.androidVersion?:androidVersion)
+                InfoRow(label = "Android Version", value = Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
                 InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
                 InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
                 InfoRow(label = "OTA", value = ota)
-                InfoRow(label = "STB Model", value = systemInfo?.model?:stbModel)
+                InfoRow(label = "STB Model", value = Build.MODEL)
                 InfoRow(label = "Network ID", value = networkId)
                 InfoRow(label = "Network Name", value = networkName)
-                InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
-                InfoRow(label = "DRM VERSION", value = drmVersion)
+              //  InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
+              //  InfoRow(label = "DRM VERSION", value = drmVersion)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // OK button
                 Button(
                     onClick = { onOkClick() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5CAD5C)),
                     modifier = Modifier
                         .focusRequester(okButtonFocusRequester) // this will get focus automatically
                         .align(Alignment.CenterHorizontally)
@@ -128,15 +145,15 @@ fun InfoRow(label: String, value: String) {
     ) {
         // Label remains black
         Text(
-            text = label,
+            text = label.uppercase(),
             fontSize = 16.sp,
             color = Color.Black,
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = value,
+            text = value.uppercase(),
             fontSize = 16.sp,
-            color = if (label == "Username" || label == "MAC ID") Color.Black else Color(0xFF5CAD5C),
+            color = Color.Black,
             textAlign = TextAlign.Start,
             modifier = Modifier.weight(1f)
         )
