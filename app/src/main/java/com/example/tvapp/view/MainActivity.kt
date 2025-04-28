@@ -21,6 +21,7 @@ import com.example.tvapp.view.panmetro.PanmetroLoginScreen
 import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.viewmodels.WTVViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

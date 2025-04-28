@@ -16,6 +16,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,31 +67,34 @@ fun CommonDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 title?.let {
-                    var titleFontSize  by remember { mutableStateOf(18.sp) }
+                    var titleFontSize  by remember { mutableStateOf(19.sp) }
                     var titleLineCount by remember { mutableStateOf(1) }
                     Row(
                         modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier,
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                         verticalAlignment     = if (titleLineCount > 1) Alignment.Top else Alignment.CenterVertically
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.error),
                             contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                            modifier = Modifier.size(24.dp)
+                                .alignBy(FirstBaseline),
                             colorFilter = ColorFilter.tint(Color.White)
                         )
+                        Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text         = it,
                             fontSize     = titleFontSize,
                             color        = Color.White,
                             textAlign    = TextAlign.Center,
-                            modifier     = Modifier.fillMaxWidth(),
-                            maxLines = 2,
-                            onTextLayout = { layout ->
-                                if (layout.lineCount > 1 && titleFontSize != 16.sp) {
-                                    titleFontSize = 17.sp
-                                }
-                            }
+                            modifier     = Modifier.wrapContentWidth().alignBy(FirstBaseline),
+//                            maxLines = 2,
+//                            onTextLayout = { layout ->
+//                                if (layout.lineCount > 1 && titleFontSize != 16.sp) {
+//                                    titleFontSize = 17.sp
+//                                }
+//                                titleLineCount = layout.lineCount
+//                            }
                         )
                     }
                     Spacer(modifier = Modifier.height(22.dp))

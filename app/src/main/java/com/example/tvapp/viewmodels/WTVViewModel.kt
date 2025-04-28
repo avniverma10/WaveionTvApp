@@ -98,12 +98,12 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private val _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
-    init {
-        // Check for update as soon as ViewModel is created
-        checkForAppUpdate()
-        // Start SSE if needed
-        // startSSE()
-    }
+//    init {
+//        // Check for update as soon as ViewModel is created
+//        checkForAppUpdate()
+//        // Start SSE if needed
+//        // startSSE()
+//    }
 
     fun initializeAppRequiredData() {
         viewModelScope.launch {
@@ -155,7 +155,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
     fun clearDownloadId() {
         _downloadId.value = null
     }
-    private fun checkForAppUpdate() = viewModelScope.launch {
+    fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
             .provideAppUpdateInfo("https://api-demo.caastv.com/api/app/appupdate")
@@ -195,6 +195,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }
             else {
                 Log.d("AVNI","SHow Dialog")
+                Log.d("AVNI","APK url ---> ${update.apkUrl}")
                 _showUpdateDialog.value = true
             }
 

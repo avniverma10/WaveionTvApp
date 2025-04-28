@@ -61,10 +61,15 @@ fun SplashScreen(
     val downloadId by sharedViewModel.downloadId.collectAsState()
     val isUpdating = downloadId != null
     Log.d("Splash", "downloadId = $downloadId")
+    Log.d("Splash","show dialog in splash = $showDialog")
+    Log.d("Splash","App update data ----> $updateData")
     val dm = remember {
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
+    LaunchedEffect(Unit) {
+        sharedViewModel.checkForAppUpdate()
+    }
     // — show the update dialog —
     if (showDialog && updateData != null) {
         CommonDialog(
