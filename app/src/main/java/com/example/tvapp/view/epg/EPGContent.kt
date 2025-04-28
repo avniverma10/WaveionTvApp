@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -63,13 +62,11 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.extensions.calculateProgramWidth
-import com.example.tvapp.extensions.provideTimeInMillis
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
-import com.example.tvapp.view.navigationhelper.parseFixedTime
-import com.example.tvapp.view.wtvplayer.WTVVideoPlayer
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -86,6 +83,8 @@ fun EPGContent(
     categoryFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
+
+    HideKeyboardOnEnter()
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
 
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -154,6 +153,9 @@ fun EPGContent(
                                     epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen) {
+                                            PreferenceManager.selectedGenreIndex = 0
+                                            PreferenceManager.selectedChannelIndex = 0
+                                            PreferenceManager.lastEpgDataItem = null
                                             // popUpTo(Destination.epgScreen) { inclusive = true }
                                         }
                                     }
@@ -201,6 +203,9 @@ fun EPGContent(
                                                             epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                                                 sharedViewModel.updateSelectedChannel(channelItem)
                                                                 navController.navigate(Destination.panMetroScreen) {
+                                                                    PreferenceManager.selectedGenreIndex = 0
+                                                                    PreferenceManager.selectedChannelIndex = 0
+                                                                    PreferenceManager.lastEpgDataItem = null
                                                                     // popUpTo(Destination.epgScreen) { inclusive = true }
                                                                 }
                                                             }
@@ -289,6 +294,9 @@ fun EPGContent(
                         epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen) {
+                                PreferenceManager.selectedGenreIndex = 0
+                                PreferenceManager.selectedChannelIndex = 0
+                                PreferenceManager.lastEpgDataItem = null
                                 // popUpTo(Destination.epgScreen) { inclusive = true }
                             }
                         }

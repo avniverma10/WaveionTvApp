@@ -14,17 +14,25 @@ import android.provider.Settings
 import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
+import java.net.NetworkInterface
+import java.util.Locale
 
 
 fun Context.coreEPGLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideEPGLiveData()
         ?: throw IllegalStateException("EPG is null: $applicationContext")
+
+
+fun Context.provideMacAddrLiveData() =
+    (applicationContext as? CoreComponentProvider)?.provideMacAddr()
+        ?: throw IllegalStateException("provideMacAddr is null: $applicationContext")
 
 
 fun Context.applyEPGData(data: List<EPGDataItem>) =
@@ -145,7 +153,7 @@ fun Context.showSimpleDialog(title: String?, message: String?) {
 }
 
 @SuppressLint("HardwareIds")
-fun Context.findMyDeviceId(): String {
+fun Context.findMyDeviceId(): String? {
     try {
         return Settings.Secure.getString(
             contentResolver,
@@ -155,22 +163,12 @@ fun Context.findMyDeviceId(): String {
         return ""
     }
 }
+
+
 // Extension function for Activity context
 fun Activity.hideKeyboard() {
     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     currentFocus?.let { view ->
         imm.hideSoftInputFromWindow(view.windowToken, 0)
     }
-}
-
-
-/**
- * Extension function on Context to get the TV's MAC address.
- * Note: This method may return "02:00:00:00:00:00" on Android 6.0+ due to security restrictions.
- */
-@SuppressLint("HardwareIds")
-fun Context.getTvMacId(): String? {
-    val wifiManager = this.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-    val wifiInfo = wifiManager?.connectionInfo
-    return wifiInfo?.macAddress
 }

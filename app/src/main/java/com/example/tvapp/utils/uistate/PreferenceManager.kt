@@ -1,0 +1,52 @@
+package com.example.tvapp.utils.uistate
+
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.core.content.edit
+import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.google.gson.Gson
+
+object PreferenceManager {
+  private lateinit var prefs: SharedPreferences
+  private val gson = Gson()
+
+  // Keys
+  private const val KEY_GENRE          = "selectedGenreIndex"
+  private const val KEY_CHANNEL        = "selectedChannelIndex"
+  private const val KEY_PLAYER_CHANNEL = "playerChannelIndex"
+
+  /** Must be called once in your Application or Activity */
+  fun init(context: Context) {
+    prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+  }
+
+  var selectedGenreIndex: Int
+    get() = prefs.getInt(KEY_GENRE, 0)
+    set(v) = prefs.edit() { putInt(KEY_GENRE, v) }
+
+  var selectedChannelIndex: Int
+    get() = prefs.getInt(KEY_CHANNEL, 0)
+    set(v) = prefs.edit() { putInt(KEY_CHANNEL, v) }
+
+
+  /** Persist the last‐seen EPGDataItem as JSON */
+  var lastEpgDataItem: EPGDataItem?
+    get() {
+      val json = prefs.getString(KEY_PLAYER_CHANNEL, null) ?: return null
+      return try {
+        gson.fromJson(json, EPGDataItem::class.java)
+      } catch (e: Exception) {
+        null
+      }
+    }
+    set(item) {
+      val editor = prefs.edit()
+      if (item == null) {
+        editor.remove(KEY_PLAYER_CHANNEL)
+      } else {
+        val json = gson.toJson(item)
+        editor.putString(KEY_PLAYER_CHANNEL, json)
+      }
+      editor.apply()
+    }
+}

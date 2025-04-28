@@ -16,8 +16,8 @@ android {
         applicationId = "com.example.tvapp"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "1.0.3"
     }
 
     buildTypes {
@@ -64,7 +64,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.constraintlayout)

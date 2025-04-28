@@ -521,17 +521,75 @@ fun String.toBase64Encoded(): String {
 }
 
 
-fun playerErrorHandling(errorCode:Int):String{
-  return  when(errorCode){
-        400->"Bad input to server!"
-        403->"User does not have permission, or invalid login data"
-        404->"Invalid content id"
-        429->"Too many requests - max concurrent streams reached"
-        451->"Unavailable for legal reasons - geo blocking"
-        500->"Internal error"
-        else -> ""
-  }
+/**
+ * Maps common API status codes to user‐friendly messages.
+ */
+fun String.toResponseMessage(): String = when (this) {
+    "0"   -> "Login Successfully"
+    "405" -> "Method Not Allowed"
+    "401" -> "Unauthorized Data"
+    "103" -> "Missing mandatory fields"
+    "102" -> "Operation failed: Account is locked by Admin"
+    "101" -> "Invalid Password"
+    "100" -> "User Not Present on System"
+    else -> "Unknown response code: $this"
 }
+
+/*
+fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
+    when (errorCode) {
+        400 -> 601 to "Bad request - Bad input to server"
+        403 -> 602 to "Forbidden - user does not have permission, or invalid login data"
+        404 -> 603 to "This channel is temporarily unavailable.We apologize for the inconvenience.Please check back later or contact your service provider for assistance."
+        429 -> 604 to "Too many request– max concurrent streams reached"
+        451 -> 605 to "Unavailable for legal reasons– geo blocking"
+        500 -> 606 to "Internal error"
+        2001 -> 607 to "Source error"
+        6004 -> 608 to "You are not authorized to view this content.\nPlease contact your service provider for assistance."
+        4001 -> 609 to "This channel is temporarily unavailable.\nWe apologize for the inconvenience.Please check back later or contact your service provider for assistance."
+        2000 -> 610 to "This channel is temporarily unavailable.We apologize for the inconvenience. Please check back later or contact your service provider for assistance."
+        else -> errorCode to "An unknown error occurred"
+    }*/
+
+
+// from Pair<Int,String> to Triple<Int,String,String>
+fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
+    when (errorCode) {
+        400  -> Triple(601,
+            "Bad request",
+            "Bad input to server")
+        403  -> Triple(602,
+            "Forbidden",
+            "User does not have permission, or invalid login data")
+        404  -> Triple(603,
+            "This channel is temporarily unavailable.",
+            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        429  -> Triple(604,
+            "Too many requests",
+            "Max concurrent streams reached")
+        451  -> Triple(605,
+            "Unavailable for legal reasons",
+            "Geo-blocking")
+        500  -> Triple(606,
+            "Internal error",
+            "An internal server error occurred")
+        2001 -> Triple(607,
+            "Source error",
+            "The media source could not be loaded")
+        6004 -> Triple(608,
+            "You are not authorized to view this content.",
+            "Please contact your service provider for assistance.")
+        4001 -> Triple(609,
+            "This channel is temporarily unavailable.",
+            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2000 -> Triple(610,
+            "This channel is temporarily unavailable.",
+            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        else -> Triple(errorCode,
+            "Unknown error",
+            "An unknown error occurred")
+    }
+
 
 
 // Usage:

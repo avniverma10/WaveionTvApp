@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import kotlinx.coroutines.Job
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -47,8 +46,9 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.view.player.addWatermarkToPlayer
+import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

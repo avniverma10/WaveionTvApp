@@ -50,6 +50,7 @@ import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.uicomponent.ExitDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -59,6 +60,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
+
+    HideKeyboardOnEnter()
     val context = LocalContext.current
 
 
@@ -113,7 +116,8 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     // Exit confirmation dialog
     if (showExitDialog) {
         ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finish()
+            (context as? Activity)?.finishAffinity()
+            android.os.Process.killProcess(android.os.Process.myPid())
         }, onDismiss = {
             showExitDialog = false
         })

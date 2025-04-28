@@ -9,6 +9,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.HeaderMap
 import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Query
@@ -24,6 +25,19 @@ interface NetworkApiCallInterface {
 
     @POST
     fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>
+
+    /**
+     * Make a POST request to a dynamic URL, with a JSON body and custom headers.
+     * @param url the full endpoint URL
+     * @param headers a map of header names to values
+     * @param body a map of key/value pairs to send as JSON in the request body
+     */
+    @POST
+    fun makeHttpPostRequest(
+        @Url url: String,
+        @HeaderMap headers: Map<String, String>,
+        @Body body: HashMap<String, String>
+    ): Call<Any>
 
     @POST
     fun makeMultipartJsonResRequest(@Url url: String, @Body requestBody: RequestBody): Call<JsonObject>

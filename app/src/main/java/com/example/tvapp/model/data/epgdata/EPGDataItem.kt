@@ -40,7 +40,11 @@ data class Programme(
     val desc: String?="Covering the top highlight of day from across the globe.",
     val title: String?="News Panorama",
     var watchedAt: Long? = null, // Add timestamp to track when watched
-    var isVisible: Boolean = false // Add timestamp to check current watchableProgram
+    var isVisible: Boolean = false, // Add timestamp to check current watchableProgram
+    @Volatile
+    var startFormatedTime:String?=null,
+    @Volatile
+    var endFormatedTime:String?=null
 )
 
 data class Content(
