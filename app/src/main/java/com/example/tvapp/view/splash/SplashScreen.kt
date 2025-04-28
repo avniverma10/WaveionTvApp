@@ -1,10 +1,20 @@
 package com.example.tvapp.view.splash
 
+import android.app.Activity
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
@@ -26,8 +38,10 @@ import com.example.tvapp.extensions.getIptvDeviceInfo
 import com.example.tvapp.extensions.logAllDrmInfo
 import com.example.tvapp.extensions.provideMacAddrLiveData
 import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -41,7 +55,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
     val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
-    val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
 // 2) Update dialog state
     val showDialog by sharedViewModel.showUpdateDialog.collectAsState()
@@ -128,8 +141,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                                     if (installIntent.resolveActivity(context.packageManager) != null) {
                                         context.startActivity(installIntent)
                                     } else {
-                                        Toast.makeText(context,
-                                            "No installer found on device", Toast.LENGTH_LONG).show()
+                                        context.showToastS("No installer found on device")
                                     }
 
                                     // 3) Finish splash so old process ends
@@ -138,8 +150,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                                 } else {
                                     // failure case: also clear so spinner goes away
                                     sharedViewModel.clearDownloadId()
-                                    Toast.makeText(context,
-                                        "Download failed (status=$status)", Toast.LENGTH_SHORT).show()
+                                    context.showToastS("Download failed (status=$status)")
                                 }
                             }
                         }

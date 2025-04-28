@@ -42,6 +42,9 @@ import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.bg_card_color
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu

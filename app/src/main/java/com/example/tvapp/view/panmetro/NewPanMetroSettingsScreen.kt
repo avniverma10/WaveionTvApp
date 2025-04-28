@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
+import com.example.tvapp.view.panmetro.settings.PanMetroLogoutDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -77,7 +79,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         }
     }
     if (showInfo) {
-        NewPanMetroInfoScreen(
+        PanMetroInfoScreen(
             onOkClick = { showInfo = false }
         )
     }

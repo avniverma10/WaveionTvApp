@@ -38,8 +38,9 @@ import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.panmetro.GenreMultiDRMPlayer
+import com.example.tvapp.view.panmetro.PoweredBy
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
-import com.example.tvapp.view.panmetro.common.PoweredBy
 import com.example.tvapp.view.uicomponent.ZoomInOutSwitcher
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -198,15 +199,14 @@ fun PanmetroGenreScreen(
                                     .fillMaxSize() // Force the inner Box to fill the outer Box.
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
-                                ZoomInOutSwitcher()
-                                /*Image(
+                                Image(
                                     painter = painterResource(id = R.drawable.alliance_logo),
                                     contentDescription = "Panmetro Logo",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxSize() // Stretch the image to fill the inner Box.
                                         .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-                                )*/
+                                )
                             }
                         }
 

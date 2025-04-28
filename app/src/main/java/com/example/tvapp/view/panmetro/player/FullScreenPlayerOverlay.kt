@@ -168,6 +168,8 @@ fun FullScreenPlayerOverlay(
     }
 }
 
+
+
 @Composable
 private fun ChannelCard(
     playerViewModel: PlayerViewModel,
@@ -209,7 +211,7 @@ private fun ChannelCard(
                     )
                 } else Modifier
             )
-            .padding(10.dp)
+            .padding(16.dp)
     ) {
         Column {
             Row(
@@ -220,7 +222,6 @@ private fun ChannelCard(
                     modifier = Modifier
                         .background(Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .align(Alignment.CenterVertically)
                 ) {
                     Text(
                         text = epgDataItem.content?.channelNo?.toString() ?: "--",
@@ -228,23 +229,14 @@ private fun ChannelCard(
                         color = Color.Black
                     )
                 }
-                // Channel Logo
-                AsyncImage(
-                    model = epgDataItem.content?.thumbnailUrl,
-                    contentDescription = "Channel Logo",
-                    modifier = Modifier
-                        .background(Color.Transparent, RoundedCornerShape(4.dp))
-                        .width(50.dp)
-                        .height(50.dp)
-                        .padding(start = 5.dp)
-                )
-                /*Text(
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
                     text = epgDataItem.content?.title
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color(0xFF49FEDD)
-                )*/
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

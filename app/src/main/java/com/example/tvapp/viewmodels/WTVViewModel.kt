@@ -53,8 +53,7 @@ import javax.inject.Inject
 @HiltViewModel
 open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
-    private val observer = ConnectivityObserver(application.applicationContext)
-    private val _userIdeal = MutableStateFlow<Boolean>(false)
+   private val _userIdeal = MutableStateFlow<Boolean>(false)
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
     val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
@@ -95,7 +94,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
         }
     }
 
-    private val _errorLoadingData = MutableStateFlow<String?>(null)
     /*fun updateEPGData(epgList: List<EPGDataItem>) {
         viewModelScope.launch {
             saveEPGList(application, epgList)

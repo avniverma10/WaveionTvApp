@@ -17,6 +17,7 @@ import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
+import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
