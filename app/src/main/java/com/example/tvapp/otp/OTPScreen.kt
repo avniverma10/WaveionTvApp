@@ -1,6 +1,5 @@
 package com.example.tvapp.otp
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,22 +16,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.R
 import com.example.tvapp.components.GradientBackground
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.input.ImeAction
 import androidx.navigation.NavController
+import com.example.tvapp.ui.theme.base_color
+
 @Composable
 fun OtpScreen1(navController: NavController) {
     var otpValues by remember { mutableStateOf(List(6) { "" }) }
@@ -145,7 +141,7 @@ fun OtpScreen1(navController: NavController) {
                             .focusRequester(focusRequesters[index])
                             .border(
                                 width = 2.dp,
-                                color = if (otpValues[index].isNotEmpty()) Color(0xFF49FEDD) else Color.Gray,
+                                color = if (otpValues[index].isNotEmpty()) base_color else Color.Gray,
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable(enabled = false) {}, // Disable click to prevent long-press issue
@@ -163,8 +159,8 @@ fun OtpScreen1(navController: NavController) {
                             unfocusedContainerColor = Color.Transparent,
                             disabledContainerColor = Color.Transparent,
                             errorContainerColor = Color.Transparent,
-                            cursorColor = Color(0xFF49FEDD),
-                            focusedIndicatorColor = Color(0xFF49FEDD),
+                            cursorColor = base_color,
+                            focusedIndicatorColor = base_color,
                             unfocusedIndicatorColor = Color.Transparent
                         )
                     )

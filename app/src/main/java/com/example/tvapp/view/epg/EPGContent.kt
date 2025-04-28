@@ -38,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -63,13 +62,10 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.extensions.calculateProgramWidth
-import com.example.tvapp.extensions.provideTimeInMillis
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
-import com.example.tvapp.view.navigationhelper.parseFixedTime
-import com.example.tvapp.view.wtvplayer.WTVVideoPlayer
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -187,7 +183,7 @@ fun EPGContent(
                                             .then(
                                                 if (isFocused.value)
                                                     Modifier
-                                                        .border(1.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
+                                                        .border(1.dp, color = base_color, RoundedCornerShape(4.dp))
                                                         .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
                                                 else Modifier
                                             )
@@ -241,7 +237,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp)
                             .fillMaxHeight()
                             .width(1.dp)
-                            .background(Color(0xFF49FEDD))
+                            .background(color = base_color)
                     )
                     Box(
                         modifier = Modifier
@@ -249,7 +245,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(color = Color(0xFF49FEDD), style = Stroke(width = 1.dp.toPx()))
+                            drawCircle(color = base_color, style = Stroke(width = 1.dp.toPx()))
                         }
                         Image(
                             painter = painterResource(id = R.drawable.vector_271),
@@ -411,7 +407,7 @@ fun ChannelInfo(
                 .height(125.dp)
                 .then(
                     if (isFocused.value)
-                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
+                        Modifier.border(2.dp, base_color, RoundedCornerShape(4.dp))
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }

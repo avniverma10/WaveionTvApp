@@ -68,7 +68,7 @@ fun SplashScreen(
     // — show the update dialog —
     if (showDialog && updateData != null) {
         CommonDialog(
-            showDialog = showDialog,
+            showDialog = true,
             title = "Update available",
             message = "Do you want to update the app?",
             errorCode = null,

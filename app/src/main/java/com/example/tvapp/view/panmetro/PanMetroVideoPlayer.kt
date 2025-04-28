@@ -85,6 +85,7 @@ import androidx.navigation.NavController
 import com.example.tvapp.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.player.PlaybackErrorDialog
@@ -207,7 +208,7 @@ fun PanMetroVideoPlayer(
 
     if (showErrorDialog) {
         val borderColor = remember(errorCodeState) {
-            if (errorCodeState in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+            if (errorCodeState in 606..700) Color(0xFF6B2828) else base_color
         }
 
         CommonDialog(

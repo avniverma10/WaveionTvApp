@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tvapp.R  // adjust your package
+import com.example.tvapp.ui.theme.base_color
 
 @Composable
 fun PlaybackErrorCard(
@@ -24,7 +25,7 @@ fun PlaybackErrorCard(
     errorMessage: String,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (errorCode in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+    val borderColor = if (errorCode in 606..700) Color(0xFF6B2828) else base_color
     val firstSentence = errorMessage
         .let { msg ->
             val idx = msg.indexOf('.')

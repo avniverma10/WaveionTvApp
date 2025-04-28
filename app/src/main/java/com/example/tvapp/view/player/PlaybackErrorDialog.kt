@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.tvapp.R
+import com.example.tvapp.ui.theme.critical_error_color
+import com.example.tvapp.ui.theme.base_color
 
 @Composable
 fun PlaybackErrorDialog(
@@ -31,7 +33,7 @@ fun PlaybackErrorDialog(
 ) {
     if (!showDialog) return
     val borderColor = remember(errorCode) {
-        if (errorCode in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+        if (errorCode in 606..700) critical_error_color else base_color
     }
 
     Dialog(onDismissRequest = onDismiss) {

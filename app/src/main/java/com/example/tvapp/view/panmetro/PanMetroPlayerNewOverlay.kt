@@ -1,6 +1,5 @@
 package com.example.tvapp.view.panmetro
 
-import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,27 +27,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -126,7 +118,7 @@ fun PanMetroNewOverlay(
                         .then(
                             when {
                                 isSelected ->
-                                    Modifier.border(2.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(10.dp))
+                                    Modifier.border(2.dp, base_color, shape = RoundedCornerShape(10.dp))
                                 else -> Modifier
                             }
                         )
@@ -191,7 +183,7 @@ fun ChannelCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFF49FEDD), shape = MaterialTheme.shapes.small)
+                        .background(color = base_color, shape = MaterialTheme.shapes.small)
                         .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
@@ -205,7 +197,7 @@ fun ChannelCard(
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFF49FEDD)
+                    color = base_color
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))

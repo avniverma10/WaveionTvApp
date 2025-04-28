@@ -56,6 +56,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 
@@ -254,9 +255,9 @@ fun NewChannelRow(
     onFocus: (Int) -> Unit,
     onVideoChange: (EPGDataItem, Int) -> Unit
 ) {
-    val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
+    val borderColor = if (isFocused) base_color else Color.Transparent
 
-    val titleTextColor = if (isFocused || isPreview) Color(0xFF49FEDD) else Color.White
+    val titleTextColor = if (isFocused || isPreview) base_color else Color.White
 
     Box(
         modifier = Modifier

@@ -45,6 +45,7 @@ import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
@@ -136,7 +137,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF14161A))
+            .background(color = screen_bg_color)
     ) {
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, _ ->
             menuItems = tabInfo.categories ?: emptyList()

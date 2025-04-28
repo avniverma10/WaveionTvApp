@@ -53,6 +53,9 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.ui.theme.bg_card_color
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -89,7 +92,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF14161A)) // Background Color
+                .background(color = screen_bg_color) // Background Color
                 .padding(16.dp)
         ) {
             // Search Box
@@ -196,11 +199,11 @@ fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
             .padding(8.dp)
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)
-            .background(Color(0xFF262C36), shape = RoundedCornerShape(12.dp))
+            .background(color = bg_card_color, shape = RoundedCornerShape(12.dp))
             .padding(4.dp)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
-                color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
+                color = if (isFocused) base_color else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable {

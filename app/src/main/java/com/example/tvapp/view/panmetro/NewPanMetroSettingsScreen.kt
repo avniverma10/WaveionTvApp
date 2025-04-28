@@ -2,7 +2,6 @@ package com.example.tvapp.view.panmetro
 
 
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.tvapp.view.uicomponent.GradientBackground
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -33,18 +31,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -58,7 +52,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF14161A))
+            .background(color = screen_bg_color)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             PermettoTopBar()
@@ -66,7 +60,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF14161A))
+                    .background(color = screen_bg_color)
             ) {
 //                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
@@ -182,10 +176,10 @@ fun NewMenuItemCard(
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }
             .then(
-                if (isFocused) Modifier.background(Color(0xFF49FEDD),shape = RoundedCornerShape(8.dp))
+                if (isFocused) Modifier.background(color = base_color,shape = RoundedCornerShape(8.dp))
                     .border(
                         width = 3.dp,
-                        color = Color(0xFF49FEDD),
+                        color = base_color,
                         shape = RoundedCornerShape(8.dp)
                     ) else Modifier
             ),

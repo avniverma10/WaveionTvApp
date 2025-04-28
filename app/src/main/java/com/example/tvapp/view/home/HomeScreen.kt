@@ -44,7 +44,9 @@ import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.ui.theme.bg_card_color
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.player.CommonDialog
@@ -89,7 +91,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF14161A))
+            .background(color = screen_bg_color)
     ) {
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
@@ -139,7 +141,7 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF14161A))
+            .background(color = screen_bg_color)
             .padding(vertical = 10.dp)
     ) {
         Text(
@@ -188,10 +190,10 @@ fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
             }
             .focusable()
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF262C36))
+            .background(color = bg_card_color)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
-                color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
+                color = if (isFocused) base_color else Color.Transparent,
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable {
@@ -283,7 +285,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                     .focusable()
                     .border(
                         if (isButtonFocused) 2.dp else 0.dp,
-                        if (isButtonFocused) Color(0xFF49FEDD) else Color.Transparent,
+                        if (isButtonFocused) base_color else Color.Transparent,
                         shape = RoundedCornerShape(6.dp)
                     )
                     .clip(RoundedCornerShape(6.dp)),

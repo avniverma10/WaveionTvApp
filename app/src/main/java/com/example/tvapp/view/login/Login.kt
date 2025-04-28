@@ -2,34 +2,23 @@ package com.example.tvapp.view.login
 
 import android.graphics.Bitmap
 import android.util.Log
-import android.view.KeyEvent
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -40,16 +29,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.components.GradientBackground
-import com.example.tvapp.utils.Constants
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.LoginViewModel
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.WriterException
@@ -294,8 +281,8 @@ fun PhoneNumberSection(
                 unfocusedContainerColor = Color(0xFF2A2A2A), // Gray background when unfocused
                 disabledContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent,
-                cursorColor = Color(0xFF49FEDD),
-                focusedIndicatorColor = Color(0xFF49FEDD),
+                cursorColor = base_color,
+                focusedIndicatorColor = base_color,
                 unfocusedIndicatorColor = Color.Transparent
             ),
             onValueChange = { input ->

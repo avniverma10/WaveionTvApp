@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -23,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.view.panmetro.TopOverlayInfo
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -173,7 +173,7 @@ private fun ChannelCard(
                 if (isFocused) {
                     Modifier.border(
                         width = 2.dp,
-                        color = Color(0xFF49FEDD),
+                        color = base_color,
                         shape = RoundedCornerShape(12.dp)
                     )
                 } else Modifier
@@ -187,7 +187,7 @@ private fun ChannelCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .background(Color(0xFF49FEDD), RoundedCornerShape(4.dp))
+                        .background(color = base_color, RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
@@ -202,7 +202,7 @@ private fun ChannelCard(
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF49FEDD)
+                    color = base_color
                 )
             }
 

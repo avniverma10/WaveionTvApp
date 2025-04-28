@@ -11,15 +11,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,12 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.example.tvapp.R
-import com.example.tvapp.extensions.appGenreLiveData
-import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.extensions.isNotNullOrEmpty
-import com.example.tvapp.model.data.genre.WTVGenre
-import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.ui.theme.filter_selected_color
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -93,9 +87,9 @@ fun LanguageMenu(
                 .then(
                     if (isFocused.value) {
                         Modifier
-                            .border(1.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(30.dp),)
+                            .border(1.dp, color = base_color, shape = RoundedCornerShape(30.dp),)
                     } else if (isSelected) {
-                        Modifier.background(Color(0x1A49FEDD), shape = RoundedCornerShape(30.dp))
+                        Modifier.background(color = filter_selected_color, shape = RoundedCornerShape(30.dp))
                     } else Modifier
                 )
                 .onFocusChanged {

@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.example.tvapp.R
+import com.example.tvapp.ui.theme.base_color
 
 @Composable
 fun CommonDialog(
@@ -152,7 +153,7 @@ fun CommonDialog(
                                         .focusable(interactionSource = dismissInteraction),
                                     shape = RoundedCornerShape(8.dp),
                                     colors             = ButtonDefaults.textButtonColors(
-                                        containerColor = if (isDismissFocused) Color(0xFF49FEDD) else Color(0xFF414857),
+                                        containerColor = if (isDismissFocused) base_color else Color(0xFF414857),
                                         contentColor   = Color.Black
                                     )
                                 ) {
@@ -171,7 +172,7 @@ fun CommonDialog(
                                         .focusable(interactionSource = confirmInteraction),
                                     shape = RoundedCornerShape(8.dp),
                                     colors             = ButtonDefaults.textButtonColors(
-                                        containerColor = if (isConfirmFocused) Color(0xFF49FEDD) else Color(0xFF414857),
+                                        containerColor = if (isConfirmFocused) base_color else Color(0xFF414857),
                                         contentColor   = Color.Black
                                     )
                                 ) {

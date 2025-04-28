@@ -47,11 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.example.tvapp.extensions.appGenreLiveData
-import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
@@ -108,7 +108,7 @@ fun ChannelScreen(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF14161A))
+            .background(color = screen_bg_color)
     ) {
         ExpandableNavigationMenu(
             navController = navController,
@@ -156,7 +156,7 @@ fun ChannelScreen(
                         contentPadding = PaddingValues(16.dp),
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color(0xFF14161A))
+                            .background(color = screen_bg_color)
                     ) {
                         itemsIndexed(channelList) { index, channel ->
                             val isFirstChannel = (index == 0)
@@ -276,7 +276,7 @@ fun ChannelList(
                 .background(Color(0xFF262C36))
                 .border(
                     width = if (isFocused) 2.dp else 0.dp,
-                    color = if (isFocused) Color(0xFF49FEDD) else Color.Transparent,
+                    color = if (isFocused) base_color else Color.Transparent,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(4.dp)

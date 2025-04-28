@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.example.tvapp.R
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.ui.theme.base_color
 import kotlinx.coroutines.launch
 
 @Composable
@@ -200,12 +201,12 @@ fun NewCategoryMenuItem(
     onFocus: () -> Unit,
     onKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean
 ) {
-    val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
+    val borderColor = if (isFocused) base_color else Color.Transparent
     val scale by animateFloatAsState(targetValue = if (isFocused && channelToGenreFocus.value) 1.3f else if (isFocused) 1.1f else 1f)
     val contentColor = if (categoryName == "All") {
-        if (isFocused) Color(0xFF49FEDD) else Color.White
+        if (isFocused) base_color else Color.White
     } else {
-        if (isFocused) Color(0xFF49FEDD) else Color.White
+        if (isFocused) base_color else Color.White
     }
     val borderWidth = 1.5.dp
 

@@ -33,6 +33,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import com.example.tvapp.ui.theme.base_color
 
 @Composable
 fun ExpandableNavigationMenu(
@@ -162,7 +163,7 @@ fun ExpandableNavigationMenu(
                     contentDescription = profileTab?.displayName ?: "Profile",
                     modifier = Modifier.size(32.dp),
                     colorFilter = if (selectedIndex == 0) {
-                        androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
+                        androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                     } else {
                         null
                     }
@@ -213,7 +214,7 @@ fun ExpandableNavigationMenu(
                         contentDescription = tab.displayName,
                         modifier = Modifier.size(32.dp),
                         colorFilter = if (selectedIndex == index + 1) {
-                            androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
+                            androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                         } else {
                             null
                         }
@@ -284,7 +285,7 @@ fun FocusableRow(
             .background(if (selected && expanded) Color.White.copy(alpha = 0.2f) else Color.Transparent)
             .border(
                 width = if (selected && expanded) 2.dp else 0.dp,
-                color = if (selected && expanded) Color(0xFF49FEDD) else Color.Transparent,
+                color = if (selected && expanded) base_color else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
             .clickable { onClick() },
