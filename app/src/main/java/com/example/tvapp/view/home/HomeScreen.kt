@@ -1,6 +1,8 @@
 package com.example.tvapp.view.home
 
 import android.app.Activity
+import android.os.Process
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,6 +25,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -48,6 +53,7 @@ import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -65,6 +71,13 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
 
+    val firstChannelFocusRequester = remember { FocusRequester() }
+
+    Log.d("AVNI" ,"Home Categories are --> $homeCategories")
+
+    LaunchedEffect(Unit) {
+        firstChannelFocusRequester.requestFocus()
+    }
     BackHandler {
         showExitDialog = true
     }
@@ -72,12 +85,19 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = { showExitDialog = false }
+        )
     }
 
     Row(
@@ -88,48 +108,43 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            if(appManifestData.value?.tab?.find { it.name =="home" }?.components?.getOrNull(0)?.isVisible == true || tabItemsData.find{it.name == "home"}?.components?.getOrNull( 0)?.isVisible == true) {
-                item {
-                    if (banners.isNotEmpty()) {
-                        HeroCarousel(bannerList = banners, navController = navController)
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = Color.White)
-                        }
-                    }
-                }
-            }
-            // For each dynamic category, map channel IDs to detailed Channel objects from epgChannels.
-            items(homeCategories) { category ->
-                val epgList = epgChannels?.filter { it.channelId != null && it.channelId in category.channels }
-                val channelsForCategory = epgList?.mapNotNull { epgItem ->
-                    epgItem.tv?.channel?.copy(
-                        logoUrl = epgItem.content?.thumbnailUrl,
-                        videoUrl = epgItem.content?.videoUrl,
-                        genreId = epgItem.content?.genreId ?: "Unknown"
-                    )
-                }
+            // ③ Switch to itemsIndexed so we know when it's the first category
+            itemsIndexed(homeCategories) { catIndex, category ->
+                val epgList = epgChannels
+                    ?.filter { it.channelId in category.channels }
+                val channelsForCategory = epgList
+                    ?.mapNotNull { epgItem ->
+                        epgItem.tv?.channel?.copy(
+                            logoUrl  = epgItem.content?.thumbnailUrl,
+                            videoUrl = epgItem.content?.videoUrl,
+                            genreId  = epgItem.content?.genreId ?: "Unknown"
+                        )
+                    } ?: emptyList()
 
-                if (epgList?.isNotEmpty() == true) {
+                if (channelsForCategory.isNotEmpty()) {
                     CategorySection(
-                        title = category.name,
-                        channels = channelsForCategory?: arrayListOf(),
-                        navController = navController,
-                        sharedViewModel= sharedViewModel
+                        title                    = category.name,
+                        channels                 = channelsForCategory,
+                        navController            = navController,
+                        sharedViewModel          = sharedViewModel,
+                        // ④ Pass down our focusRequester only on the *very first* category
+                        firstChannelFocusRequester = if (catIndex == 0) firstChannelFocusRequester else null,
+                        isFirstCategory          = (catIndex == 0)
                     )
                 }
             }
         }
     }
 }
-
 @Composable
-fun CategorySection(title: String, channels: List<Channel>, navController: NavController,sharedViewModel: SharedViewModel) {
+fun CategorySection(
+    title: String,
+    channels: List<Channel>,
+    navController: NavController,
+    sharedViewModel: SharedViewModel,
+    firstChannelFocusRequester: FocusRequester? = null,
+    isFirstCategory: Boolean = false
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -148,61 +163,75 @@ fun CategorySection(title: String, channels: List<Channel>, navController: NavCo
         )
         Spacer(modifier = Modifier.height(10.dp))
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding       = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(channels) { channel ->
-                ChannelBox(channel = channel) { videoUrl ->
-                    sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == videoUrl }?.let {channelItem->
-                        sharedViewModel.updateSelectedChannel(channelItem)
-                        navController.navigate(Destination.panMetroScreen)
-                    }
+            // ⑤ Use itemsIndexed so we know when it's the first channel
+            itemsIndexed(channels) { idx, channel ->
+                // only the first item of the first category gets our focusRequester
+                val modifier = if (isFirstCategory && idx == 0 && firstChannelFocusRequester != null) {
+                    Modifier.focusRequester(firstChannelFocusRequester)
+                } else {
+                    Modifier
+                }
+
+                ChannelBox(
+                    channel  = channel,
+                    modifier = modifier,         // new slot
+                ) { videoUrl ->
+                    sharedViewModel.wtvEPGList.value
+                        ?.find { it.content?.videoUrl == videoUrl }
+                        ?.let { channelItem ->
+                            sharedViewModel.updateSelectedChannel(channelItem)
+                            navController.navigate(Destination.panMetroScreen)
+                        }
                 }
             }
         }
     }
 }
-
 @Composable
-fun ChannelBox(channel: Channel, onChannelClick: (String) -> Unit) {
+fun ChannelBox(
+    channel: Channel,
+    modifier: Modifier = Modifier,   // ← new
+    onChannelClick: (String) -> Unit
+) {
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.1f else 1f,
+        targetValue   = if (isFocused) 1.1f else 1f,
         animationSpec = tween(durationMillis = 150)
     )
+
     Box(
-        modifier = Modifier
+        modifier = modifier                 // ← apply before the rest
             .width(140.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .onFocusChanged { focusState ->
-                isFocused = focusState.isFocused
-            }
+            .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clip(RoundedCornerShape(8.dp))
-            .background(color = bg_card_color)
+            .background(bg_card_color)
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) base_color else Color.Transparent,
                 shape = RoundedCornerShape(8.dp)
             )
-            .clickable {
-                channel.videoUrl?.let { onChannelClick(it) }
-            }
+            .clickable { channel.videoUrl?.let(onChannelClick) }
     ) {
         AsyncImage(
-            model = channel.logoUrl,
+            model         = channel.logoUrl,
             contentDescription = channel.displayName,
-            modifier = Modifier
+            contentScale  = ContentScale.Fit,
+            modifier      = Modifier
                 .aspectRatio(16f / 9f)
                 .padding(10.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Fit
+                .clip(RoundedCornerShape(8.dp))
         )
     }
 }
+
 
 @Composable
 fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {

@@ -2,6 +2,7 @@ package com.example.tvapp.view.panmetro.login
 
 import android.app.Activity
 import android.os.Build
+import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
@@ -69,6 +70,7 @@ import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toResponseMessage
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.viewmodels.LoginViewModel
@@ -87,8 +89,8 @@ fun PanmetroLoginScreen(
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("avni") }
+    var password by remember { mutableStateOf("123") }
     var macId by remember { mutableStateOf(macAddress) }
     var macUser by remember { mutableStateOf("MacUserId1") }
     var rememberMe by remember { mutableStateOf(false) }
@@ -112,12 +114,23 @@ fun PanmetroLoginScreen(
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
 
 
@@ -206,8 +219,7 @@ fun PanmetroLoginScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
-                                    .padding(4.dp)
-                                    .focusRequester(usernameFocusRequester),
+                                    .padding(4.dp),
                                 keyboardOptions = KeyboardOptions(
                                     imeAction = ImeAction.Done
                                 ),
@@ -328,7 +340,7 @@ fun PanmetroLoginScreen(
                                             context.getAndroidTvDrmInfo()?.copy(
                                                 userName = username,
                                                 userPassword = password,
-                                                macId = macId?:""
+//                                                macId = macId?:""
                                             )?.let {deviceLoginInfo->
                                                 loginViewModel?.validateUserLogin(androidTvDrmInfo = deviceLoginInfo,onLoginResponse={response,errorMsg->
                                                     // Optionally handle click for navigation
@@ -411,7 +423,7 @@ fun PanmetroLoginScreen(
                             // Panmetro logo
                             Image(
                                 painter = painterResource(id = R.drawable.gtpl_banner_transparent),
-                                contentDescription = "Panmetro Logo",
+                                contentDescription = "Gtpl Logo",
                                 modifier = Modifier.size(200.dp),
                                 contentScale = ContentScale.Fit
                             )

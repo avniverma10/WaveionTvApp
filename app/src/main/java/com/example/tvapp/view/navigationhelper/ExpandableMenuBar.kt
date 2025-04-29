@@ -52,6 +52,7 @@ fun ExpandableNavigationMenu(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     LaunchedEffect(currentBackStackEntry) {
+        expanded = false
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
             Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1

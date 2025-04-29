@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.tvapp.view.uicomponent.GradientBackground
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -22,38 +21,47 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.example.tvapp.R
+import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
-import com.example.tvapp.view.panmetro.settings.PanMetroLogoutDialog
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
 fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
 
+    val firstMenuItemFocusRequester = remember { FocusRequester() }
+
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        firstMenuItemFocusRequester.requestFocus()
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -71,7 +79,8 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
 
                 NewMainSettingsContent(
                     onInfoClick = { showInfo = true },
-                    onLogoutClick = { showExitDialog = true }
+                    onLogoutClick = { showExitDialog = true },
+                    firstMenuItemFocusRequester = firstMenuItemFocusRequester
 
                 )
                 }
@@ -84,48 +93,54 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         )
     }
     if (showExitDialog) {
-        PanMetroLogoutDialog (
-            onConfirmExit = {
+        CommonDialog(
+            showDialog = true,
+            title = "Logout App",
+            message = "Are you sure you want to logout?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText ="Yes" ,
+            onConfirm =  {
+                sharedViewModel.clearLogin()
                 showExitDialog = false
-                android.os.Process.killProcess(android.os.Process.myPid())
+                navController.navigate(Destination.loginScreen) {
+                    popUpTo(0)
+                }
             },
-            onDismiss = {
-                showExitDialog = false
-            }
+            dismissButtonText = "No",
+            onDismiss = { showExitDialog = false }
         )
     }
 }
-
 @Composable
-fun NewMainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Unit) {
-    val menuItems = listOf(
-        "Info", "Logout"
-    )
-
-    val menuIcons = listOf(
-        R.drawable.info, R.drawable.logout
-    )
-
-    val menuData = menuItems.zip(menuIcons)
-
-    val itemSpacing = 16.dp
-    val padding = 25.dp
+fun NewMainSettingsContent(
+    onInfoClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    firstMenuItemFocusRequester: FocusRequester   // our injected requester
+) {
+    val menuItems = listOf("Info", "Logout")
+    val menuIcons = listOf(R.drawable.info, R.drawable.logout)
+    val menuData  = menuItems.zip(menuIcons)
 
     Row(
         modifier = Modifier
-            .fillMaxSize().background(Color(0xFF2A2D32)),
-//            .padding(12.dp),
+            .fillMaxSize()
+            .background(Color(0xFF2A2D32)),
         horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment   = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.weight(1f))
+
+        val padding   = 25.dp
+        val itemSpacing = 16.dp
 
         Box(
             modifier = Modifier
                 .width(700.dp)
                 .height(400.dp)
                 .background(
-                  Color(0xFF364154),
+                    Color(0xFF364154),
                     shape = RoundedCornerShape(8.dp)
                 )
                 .padding(padding)
@@ -133,16 +148,23 @@ fun NewMainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Uni
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-                verticalArrangement = Arrangement.spacedBy(itemSpacing),
-                modifier = Modifier.fillMaxSize().fillMaxWidth().padding(vertical = 90.dp)
+                verticalArrangement   = Arrangement.spacedBy(itemSpacing),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 90.dp)
             ) {
-                items(menuData) { item ->
+                itemsIndexed(menuData) { index, (title, iconRes) ->
                     NewMenuItemCard(
-                        title = item.first,
-                        iconResId = item.second,
-                        onClick = {
-                            when (item.first) {
-                                "Info" -> onInfoClick()
+                        title     = title,
+                        iconResId = iconRes,
+                        // only the very first card picks up focus on screen-open:
+                        modifier  = if (index == 0)
+                            Modifier.focusRequester(firstMenuItemFocusRequester)
+                        else
+                            Modifier,
+                        onClick   = {
+                            when (title) {
+                                "Info"   -> onInfoClick()
                                 "Logout" -> onLogoutClick()
                             }
                         }
@@ -153,44 +175,43 @@ fun NewMainSettingsContent(  onInfoClick: () -> Unit ,  onLogoutClick: () -> Uni
 
         Spacer(modifier = Modifier.weight(1f))
     }
-
-
 }
 
 @Composable
 fun NewMenuItemCard(
     title: String,
     iconResId: Int,
+    modifier: Modifier = Modifier,              // ← new
     onClick: () -> Unit = {}
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
+        modifier = modifier                         // ← apply it here
             .size(width = 100.dp, height = 160.dp)
-            .onFocusChanged { isFocused = it.isFocused } // detect focus
+            .onFocusChanged { isFocused = it.isFocused }
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }
             .then(
-                if (isFocused) Modifier.background(Color(0xFF49FEDD),shape = RoundedCornerShape(8.dp))
-                    .border(
-                        width = 3.dp,
-                        color = Color(0xFF49FEDD),
-                        shape = RoundedCornerShape(8.dp)
-                    ) else Modifier
+                if (isFocused)
+                    Modifier
+                        .background(color = base_color, shape = RoundedCornerShape(8.dp))
+                        .border(
+                            width = 3.dp,
+                            color = base_color,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                else Modifier
             ),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2D32)),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize(),
-//                .padding(8.dp),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.CenterHorizontally
+            Modifier.fillMaxSize(),
+            verticalArrangement   = Arrangement.SpaceEvenly,
+            horizontalAlignment   = Alignment.CenterHorizontally
         ) {
-            // Circular Image
             Image(
                 painter = painterResource(id = iconResId),
                 contentDescription = "$title Icon",
@@ -199,17 +220,12 @@ fun NewMenuItemCard(
                     .clip(CircleShape)
             )
             Text(
-                text = title,
-                fontSize = 18.sp,
+                text      = title,
+                fontSize  = 18.sp,
                 textAlign = TextAlign.Center,
-                color = Color.White,
-                fontFamily = androidx.compose.ui.text.font.FontFamily(
-                    androidx.compose.ui.text.font.Font(R.font.figtree_medium)
-                ),
-
-
+                color     = Color.White,
+                fontFamily = FontFamily(Font(R.font.figtree_medium))
             )
         }
     }
 }
-

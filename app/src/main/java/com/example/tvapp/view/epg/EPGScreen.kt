@@ -3,6 +3,7 @@ package com.example.tvapp.view.epg
 
 
 import android.app.Activity
+import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -50,6 +51,7 @@ import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
+import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -70,12 +72,18 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
+
+
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    LaunchedEffect(Unit) {
+        // Move focus to the first channel in your EPG content
+        firstChannelFocusRequester.requestFocus()
+    }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()
     val filterState by sharedViewModel.filterState.collectAsState()
@@ -116,12 +124,23 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
 
     Row(

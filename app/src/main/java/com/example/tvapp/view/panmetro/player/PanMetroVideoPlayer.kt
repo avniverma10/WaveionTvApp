@@ -324,7 +324,7 @@ fun PanMetroVideoPlayer(
                             }
 
                             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                                if (selectedChannelIndex.value < (epgList.size)) {
+                                if (selectedChannelIndex.value < (epgList.size-1)) {
                                     focusManager.moveFocus(FocusDirection.Up)
                                     selectedChannelIndex.intValue++
                                     scope.launch {

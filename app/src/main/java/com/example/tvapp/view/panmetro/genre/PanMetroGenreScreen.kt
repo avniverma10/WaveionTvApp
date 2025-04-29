@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro.genre
+   package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -200,7 +200,7 @@ fun PanmetroGenreScreen(
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.alliance_logo),
+                                    painter = painterResource(id = R.drawable.banner3),
                                     contentDescription = "Panmetro Logo",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier

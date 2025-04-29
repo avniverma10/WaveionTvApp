@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +78,12 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    LaunchedEffect(Unit) {
+        // only if there *is* at least one item
+        if ((searchResults.takeIf { searchText.isNotEmpty() } ?: epgData)?.isNotEmpty() == true) {
+            firstThumbnailFocusRequester.requestFocus()
+        }
+    }
 
     BackHandler {
         navController.navigate(Destination.homeScreen) {
@@ -83,6 +91,7 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
             launchSingleTop = true
         }
     }
+
 
     Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) { // Background Color
         ExpandableNavigationMenu(navController,sharedViewModel,  onNavMenuIntent = { tabInfo, selectedIndex ->
@@ -176,26 +185,40 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
                     )
                 }
                 val displayedChannels = if (searchText.isEmpty()) channelsForEmpty else searchResults
-                items(displayedChannels?: arrayListOf()) { channel ->
-                    ChannelThumbnail(channel){
-                        epgData?.find { it.content?.videoUrl == channel.videoUrl }?.let {channelItem->
-                            sharedViewModel.updateSelectedChannel(channelItem)
-                            navController.navigate(Destination.panMetroScreen)
+                itemsIndexed(displayedChannels ?: emptyList()) { index, channel ->
+                    ChannelThumbnail(
+                        channel,
+                        modifier = if (index == 0) {
+                            Modifier
+                                .focusRequester(firstThumbnailFocusRequester)
+                        } else {
+                            Modifier
+                        },
+                        onChannelClick = { url ->
+                            epgData?.find { it.content?.videoUrl == url }?.let { item ->
+                                sharedViewModel.updateSelectedChannel(item)
+                                navController.navigate(Destination.panMetroScreen)
+                            }
                         }
-                    }
+                    )
                 }
             }
+
         }
     }
 }
 
 @Composable
-fun ChannelThumbnail(channel: Channel, onChannelClick: (String) -> Unit) {
+fun ChannelThumbnail(
+    channel: Channel,
+    onChannelClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)

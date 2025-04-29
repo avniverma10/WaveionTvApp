@@ -156,11 +156,20 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 _isInitializeData.value = false
                 Log.e("_errorLoadingData","${_errorLoadingData}")
             }
+            launch {
+                networkApiCallInterfaceImpl
+                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+                    .collect { response ->
+                        if (response is WTVListResponse.Success) {
+                            application.applyAppHome(response.data)
+                            logReport("applyAppHome:${response.data}")
+                        } else if (response is WTVListResponse.Failure) {
+                            logReport("applyAppHome error:${response.error.message}")
+                        }
+                    }
+            }
         }
     }
-
-
-
 
     fun clearDownloadId() {
         _downloadId.value = null
@@ -251,7 +260,6 @@ open class WTVViewModel @Inject constructor(private val application: Application
     fun onUserDeclinedUpdate() {
         _showUpdateDialog.value = false
     }
-
 
 
 

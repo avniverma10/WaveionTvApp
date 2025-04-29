@@ -73,27 +73,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     LaunchedEffect(Unit) {
         sharedViewModel.checkForAppUpdate()
     }
-
-
-
-    LaunchedEffect(errorLoadingData,isInitializeData) {
-        if (errorLoadingData != null) {
-            //context.showToastS(errorLoadingData)
-            showExitDialog = true
-        }
-        if(isInitializeData){
-            showExitDialog = false
-            if(loginInfo?.username?.isNotEmpty() == true){
-                navController.navigate(Destination.genreScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }else{
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }
-        }
-    }
     // — show the update dialog —
     if (showDialog && updateData != null) {
         CommonDialog(
