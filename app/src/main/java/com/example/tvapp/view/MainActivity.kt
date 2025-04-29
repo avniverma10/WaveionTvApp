@@ -19,6 +19,7 @@ import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
 import com.example.tvapp.view.panmetro.PanmetroLoginScreen
 import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.NotificationCard
 import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.WTVViewModel
@@ -39,7 +40,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    WTVPlayerApp(sharedViewModel=sharedViewModel)
+//                   
+                    NotificationCard(
+                        message = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum ",
+                        onDismiss = {}
+                    ) 
                 }
 //                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)

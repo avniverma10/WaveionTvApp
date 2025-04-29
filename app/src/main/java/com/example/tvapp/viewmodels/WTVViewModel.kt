@@ -3,14 +3,23 @@ package com.example.tvapp.viewmodels
 import android.app.Application
 import android.app.DownloadManager
 import android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.Context.DOWNLOAD_SERVICE
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.tvapp.R
 import com.example.tvapp.extensions.applyAppGenre
 import com.example.tvapp.extensions.applyAppHome
 import com.example.tvapp.extensions.applyAppLanguage
@@ -21,6 +30,7 @@ import com.example.tvapp.model.data.appupdate.AppUpdateData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.notification.NotificationItem
 import com.example.tvapp.model.data.sse.TabItem
 import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
@@ -49,6 +59,13 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import javax.inject.Inject
+import android.Manifest
+import android.annotation.SuppressLint
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
+import java.util.concurrent.TimeUnit
+
 
 @HiltViewModel
 open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
@@ -83,6 +100,16 @@ open class WTVViewModel @Inject constructor(private val application: Application
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
 
+
+    // prevent double‐connecting
+    private var startedNotifSSE = false
+
+    companion object {
+        private const val SSE_NOTIF_URL     = "https://nextwave.waveiontechnologies.com:5000/api/app/getNotification-sse"
+        private const val NOTIF_CHANNEL_ID  = "tv_app_notifications"
+        private const val NOTIF_CHANNEL_NAME= "TV App Updates"
+    }
+
     val loginInfo = loginPrefsRepository?.loginInfoFlow?.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -104,6 +131,94 @@ open class WTVViewModel @Inject constructor(private val application: Application
 //        // Start SSE if needed
 //        // startSSE()
 //    }
+
+    init {
+        startNotificationSSE()
+    }
+
+
+    /** 1) Create the Android O+ channel */
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun createNotificationChannel() {
+        val mgr = application.getSystemService(NotificationManager::class.java)
+        if (mgr.getNotificationChannel(NOTIF_CHANNEL_ID) == null) {
+            mgr.createNotificationChannel(
+                NotificationChannel(
+                    NOTIF_CHANNEL_ID,
+                    NOTIF_CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Messages from server"
+                }
+            )
+        }
+    }
+
+    /** 2) Kick off the SSE connection to your notifications endpoint */
+
+    fun startNotificationSSE() {
+        if (startedNotifSSE) return
+        startedNotifSSE = true
+
+        createNotificationChannel()
+
+        // 1) disable read timeout so the SSE stays open
+        val client = OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+
+        // 2) explicit SSE header (optional but recommended)
+        val request = Request.Builder()
+            .url(SSE_NOTIF_URL)
+            .addHeader("Accept", "text/event-stream")
+            .build()
+
+        EventSources.createFactory(client).newEventSource(request, object : EventSourceListener() {
+            override fun onOpen(es: EventSource, response: Response) {
+                Log.d("WTVViewModel", "Notification SSE opened (HTTP ${response.code})")
+            }
+
+            override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
+                Log.d("WTVViewModel", "SSE event: $data")
+                // parse + notify
+                val listType = object : TypeToken<List<NotificationItem>>() {}.type
+                val items: List<NotificationItem> = Gson().fromJson(data, listType)
+                items.forEach { showPushNotification(it) }
+            }
+
+            override fun onFailure(es: EventSource, t: Throwable?, response: Response?) {
+                Log.e("WTVViewModel", "Notification SSE failed: ${t?.message}")
+                // you could retry here if you like
+            }
+        })
+    }
+    /** 3) Build and issue a local notification */
+    @SuppressLint("MissingPermission")
+    private fun showPushNotification(item: NotificationItem) {
+        // 1) Post the Toast on the main thread
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(application, "SSE message: ${item.message}", Toast.LENGTH_LONG).show()
+        }
+        Log.d("WTVViewModel", " showPushNotification: ${item.message}")
+
+        // 2) Check POST_NOTIFICATIONS permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(application, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("WTVViewModel", "Missing POST_NOTIFICATIONS permission!")
+            return
+        }
+        val builder = NotificationCompat.Builder(application, NOTIF_CHANNEL_ID)
+            .setSmallIcon(R.drawable.gtpl_logo)
+            .setContentTitle("New message")
+            .setContentText(item.message)
+            .setAutoCancel(true)
+
+        NotificationManagerCompat.from(application)
+            .notify(item.id.hashCode(), builder.build())
+    }
 
     fun initializeAppRequiredData() {
         viewModelScope.launch {
