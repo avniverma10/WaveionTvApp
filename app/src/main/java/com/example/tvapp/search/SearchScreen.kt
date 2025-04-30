@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -53,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.example.tvapp.R
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.base_color
@@ -63,24 +61,23 @@ import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 
-
 @Composable
-fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel) {
-
+fun SearchScreen(
+    navController: NavController,
+    sharedViewModel: SharedViewModel
+) {
     val searchFieldFocusRequester = remember { FocusRequester() }
     val firstThumbnailFocusRequester = remember { FocusRequester() }
 
     var searchText by remember { mutableStateOf("") }
     val epgData by sharedViewModel.wtvEPGList.collectAsState()
-    Log.d("SEARCH", "All Channels coming ---> ${epgData}")// Fetch all channels initially
-    val searchResults by sharedViewModel.searchResults.collectAsState()  // Fetch search results
-    Log.d("SEARCH","Searched ones ---> $searchResults")
+    val searchResults by sharedViewModel.searchResults.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        // only if there *is* at least one item
-        if ((searchResults.takeIf { searchText.isNotEmpty() } ?: epgData)?.isNotEmpty() == true) {
+        val listToFocus = if (searchText.isNotEmpty()) searchResults else epgData
+        if (listToFocus?.isNotEmpty() == true) {
             firstThumbnailFocusRequester.requestFocus()
         }
     }
@@ -92,17 +89,18 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
         }
     }
 
-
-    Row(modifier = Modifier.fillMaxSize().background(Color(0xFF14161A))) { // Background Color
-        ExpandableNavigationMenu(navController,sharedViewModel,  onNavMenuIntent = { tabInfo, selectedIndex ->
-            Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
-        })
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF14161A))
+    ) {
+        // Main content inset by collapsed menu width (70.dp)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = screen_bg_color) // Background Color
-                .padding(16.dp)
+                .background(screen_bg_color)
+                .padding(start = 70.dp)  // <-- inset so it never shifts
+                .padding(16.dp)         // your existing padding
         ) {
             // Search Box
             OutlinedTextField(
@@ -159,21 +157,21 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
             )
 
             Spacer(modifier = Modifier.height(18.dp))
+
             Text(
                 text = if (searchText.isEmpty()) "Trending in India" else "Search Results",
                 style = TextStyle(
                     fontSize = 18.sp,
                     lineHeight = 28.01.sp,
-                    fontFamily = FontFamily(Font(R.font.figtree_light)),
+                    fontFamily = FontFamily(Font(com.example.tvapp.R.font.figtree_light)),
                     fontWeight = FontWeight(600),
-                    color = Color(0xFFFFFFFF),
+                    color = Color.White
                 ),
                 modifier = Modifier.padding(start = 30.dp)
             )
 
-            // Display Channel Thumbnails in a Grid (All channels by default, filtered when searching)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(5), // Adjust grid columns as per UI reference
+                columns = GridCells.Fixed(5),
                 contentPadding = PaddingValues(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -187,13 +185,8 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
                 val displayedChannels = if (searchText.isEmpty()) channelsForEmpty else searchResults
                 itemsIndexed(displayedChannels ?: emptyList()) { index, channel ->
                     ChannelThumbnail(
-                        channel,
-                        modifier = if (index == 0) {
-                            Modifier
-                                .focusRequester(firstThumbnailFocusRequester)
-                        } else {
-                            Modifier
-                        },
+                        channel = channel,
+                        modifier = if (index == 0) Modifier.focusRequester(firstThumbnailFocusRequester) else Modifier,
                         onChannelClick = { url ->
                             epgData?.find { it.content?.videoUrl == url }?.let { item ->
                                 sharedViewModel.updateSelectedChannel(item)
@@ -203,8 +196,17 @@ fun SearchScreen(navController: NavController, sharedViewModel: SharedViewModel)
                     )
                 }
             }
-
         }
+
+        // Overlay navigation menu:
+        ExpandableNavigationMenu(
+            navController      = navController,
+            sharedViewModel    = sharedViewModel,
+            onNavMenuIntent    = { tabInfo, selectedIndex ->
+                Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
+            },
+            modifier = Modifier.align(Alignment.CenterStart)
+        )
     }
 }
 
@@ -229,9 +231,7 @@ fun ChannelThumbnail(
                 color = if (isFocused) base_color else Color.Transparent,
                 shape = RoundedCornerShape(12.dp)
             )
-            .clickable {
-                channel.videoUrl?.let { onChannelClick(it) }
-            },
+            .clickable { channel.videoUrl?.let(onChannelClick) }
     ) {
         AsyncImage(
             model = channel.logoUrl,
@@ -244,4 +244,3 @@ fun ChannelThumbnail(
         )
     }
 }
-

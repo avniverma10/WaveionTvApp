@@ -13,7 +13,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.android.gtpl"
+        applicationId = "com.example.tvapp"
         minSdk = 21
         targetSdk = 35
         versionCode = 1

@@ -109,7 +109,7 @@ fun PanmetroGenreScreen(
             modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
             // 1) Top bar with brand logo on left and date/time on right
-            PermettoTopBar()
+//            PermettoTopBar()
 //            GradientBackground(content = {
             // 2) Main content row
             Row(
@@ -214,7 +214,7 @@ fun PanmetroGenreScreen(
                 }
             }
             //powered by footer
-            PoweredBy()
+//            PoweredBy()
         }
     }
 

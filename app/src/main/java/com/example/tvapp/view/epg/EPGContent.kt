@@ -54,6 +54,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -225,6 +226,8 @@ fun EPGContent(
                                             text = program.title ?: "",
                                             color = Color.White,
                                             fontSize = 15.sp,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis,
                                             fontFamily = FontFamily(Font(R.font.figtree_light)),
                                             fontWeight = FontWeight(400),
                                             textAlign = TextAlign.Center
@@ -448,5 +451,7 @@ fun ChannelInfo(
         }
     }
 }
+
+
 
 

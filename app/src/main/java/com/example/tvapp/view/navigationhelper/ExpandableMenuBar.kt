@@ -39,7 +39,8 @@ import com.example.tvapp.ui.theme.base_color
 fun ExpandableNavigationMenu(
     navController: NavController,
     sharedViewModel: SharedViewModel,
-    onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit
+    onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all") }
     var expanded by remember { mutableStateOf(false) }
@@ -141,9 +142,11 @@ fun ExpandableNavigationMenu(
                     val gradient = Brush.horizontalGradient(
                         colors = listOf(
                             Color.Black,
+                            Color.Black,
                             Color.Black.copy(alpha = 0.9f),
+                            Color.Black.copy(alpha = 0.7f),
                             Color.Black.copy(alpha = 0.6f),
-                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.6f),
                             Color.Transparent
                         )
                     )

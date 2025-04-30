@@ -44,7 +44,12 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.viewmodels.SharedViewModel
-
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.ui.viewinterop.AndroidView
+import android.view.ViewGroup
+import androidx.compose.foundation.layout.size
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
@@ -153,6 +158,7 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
 
     // — only navigate away when not in “update?” dialog and not mid‑download —
     LaunchedEffect(isInitializeData, showDialog, errorLoadingData, loginInfo, isUpdating) {
+        delay(10000)
         if (!isInitializeData) return@LaunchedEffect
         if (showDialog)         return@LaunchedEffect
         if (isUpdating)         return@LaunchedEffect
@@ -189,20 +195,16 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color.Black)
     ) {
         val device = context.getIptvDeviceInfo().toJSONObject()
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                // .data(yourSplashUrlHere)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .build(),
-            contentDescription = "Splash background",
-            contentScale = ContentScale.FillBounds,
-            modifier = Modifier.align(Alignment.Center),
-            error       = painterResource(R.drawable.gtpl_logo),
-            placeholder = painterResource(R.drawable.gtpl_logo)
+        // center your animated logo
+        AnimatedSvgFromAssets(
+            assetFileName = "splash_logo.svg",
+            modifier = Modifier
+                .align(Alignment.Center)
+                // tweak size to taste
+                .size(600.dp)
         )
         if (isUpdating) {
             CircularProgressIndicator(
@@ -212,4 +214,35 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             )
         }
     }
+}
+
+
+@Composable
+fun AnimatedSvgFromAssets(
+    assetFileName: String,
+    modifier: Modifier = Modifier
+) {
+    AndroidView(
+        factory = { context ->
+            WebView(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                // ensure the SVG background is transparent
+                setBackgroundColor(0x00000000)
+
+                settings.apply {
+                    // you usually don’t need JS for SVG
+                    javaScriptEnabled = false
+                    useWideViewPort    = true
+                    loadWithOverviewMode = true
+                }
+                webViewClient = WebViewClient()
+                loadUrl("file:///android_asset/$assetFileName")
+            }
+        },
+        update = { it.loadUrl("file:///android_asset/$assetFileName") },
+        modifier = modifier
+    )
 }
