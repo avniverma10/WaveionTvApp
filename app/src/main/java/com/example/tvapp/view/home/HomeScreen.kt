@@ -100,14 +100,13 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         )
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = screen_bg_color)
+            .background(screen_bg_color)
     ) {
-        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
             // ③ Switch to itemsIndexed so we know when it's the first category
             itemsIndexed(homeCategories) { catIndex, category ->
                 val epgList = epgChannels
@@ -134,6 +133,12 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 }
             }
         }
+        ExpandableNavigationMenu(
+            navController      = navController,
+            sharedViewModel    = sharedViewModel,
+            onNavMenuIntent    = { _, _ -> },
+            modifier           = Modifier.align(Alignment.CenterStart)
+        )
     }
 }
 @Composable

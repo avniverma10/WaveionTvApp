@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -143,19 +144,16 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         )
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = screen_bg_color)
+            .background(screen_bg_color)
     ) {
-        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, _ ->
-            menuItems = tabInfo.categories ?: emptyList()
-        })
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF161D25))
+                .padding(start = 70.dp)
                 .zIndex(1f)
         ) {
             /*if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
@@ -193,6 +191,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 )
             }
         }
+        ExpandableNavigationMenu(
+            navController   = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { tabInfo, _ ->
+                menuItems = tabInfo.categories ?: emptyList()
+            },
+            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+        )
     }
 }
 

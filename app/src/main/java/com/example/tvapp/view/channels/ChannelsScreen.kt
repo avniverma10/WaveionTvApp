@@ -105,25 +105,20 @@ fun ChannelScreen(
         }
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = screen_bg_color)
+            .background(screen_bg_color)
     ) {
-        ExpandableNavigationMenu(
-            navController = navController,
-            sharedViewModel = sharedViewModel,
-            onNavMenuIntent = { tabInfo, _ -> }
-        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF161D25))
+                .padding(start = 70.dp)
                 .zIndex(1f)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Render navigation menus only when data exists.
-                if (categories.isNotEmpty() && languages.isNotEmpty()) {
+            // Render navigation menus only when data exists.
+            if (categories.isNotEmpty() && languages.isNotEmpty()) {
                     CategoryMenu(
                         sharedViewModel = sharedViewModel,
                         selectedIndex = categorySelectedIndex,
@@ -210,8 +205,16 @@ fun ChannelScreen(
                         androidx.tv.material3.Text("Channels not found...", color = Color.White)
                     }
                 }
-            }
+
         }
+        ExpandableNavigationMenu(
+            navController   = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { tabInfo, _ ->
+                // no-op or update categories if needed
+            },
+            modifier        = Modifier.align(Alignment.CenterStart)
+        )
     }
 }
 

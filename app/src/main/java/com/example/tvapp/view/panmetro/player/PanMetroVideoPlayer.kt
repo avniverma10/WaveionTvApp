@@ -285,24 +285,30 @@ fun PanMetroVideoPlayer(
                                 true
                             }
 
-                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                navController.navigate(Destination.genreScreen) {
-                                    PreferenceManager.selectedGenreIndex = 0
-                                    PreferenceManager.selectedChannelIndex = 0
-                                    PreferenceManager.lastEpgDataItem = null
-                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
-                                }
+//                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+//                                navController.navigate(Destination.genreScreen) {
+//                                    PreferenceManager.selectedGenreIndex = 0
+//                                    PreferenceManager.selectedChannelIndex = 0
+//                                    PreferenceManager.lastEpgDataItem = null
+//                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
+//                                }
+//                                true
+//                            }
+
+//                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+//                                navController.navigate(Destination.epgScreen) {
+//                                    PreferenceManager.lastEpgDataItem = null
+//                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
+//                                }
+//                                true
+//                            }
+
+                            KeyEvent.KEYCODE_DPAD_UP-> {
                                 true
                             }
-
-                            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                navController.navigate(Destination.epgScreen) {
-                                    PreferenceManager.lastEpgDataItem = null
-                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
-                                }
+                            KeyEvent.KEYCODE_DPAD_DOWN-> {
                                 true
                             }
-
                             KeyEvent.KEYCODE_DPAD_CENTER -> {
                                 if (selectedChannelIndex.intValue >= 0 && selectedChannelIndex.intValue < (epgList.size)) {
                                     sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
@@ -310,7 +316,7 @@ fun PanMetroVideoPlayer(
                                 true
                             }
 
-                            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT-> {
                                 if (selectedChannelIndex.intValue > 0) {
                                     focusManager.moveFocus(FocusDirection.Down)
                                     selectedChannelIndex.intValue--
@@ -323,7 +329,7 @@ fun PanMetroVideoPlayer(
                                 true
                             }
 
-                            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
+                            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_RIGHT -> {
                                 if (selectedChannelIndex.value < (epgList.size-1)) {
                                     focusManager.moveFocus(FocusDirection.Up)
                                     selectedChannelIndex.intValue++

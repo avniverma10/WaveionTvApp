@@ -67,25 +67,22 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             .fillMaxSize()
             .background(Color(0xFF14161A))
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-//            PermettoTopBar()
+        NewMainSettingsContent(
+            onInfoClick = { showInfo = true },
+            onLogoutClick = { showExitDialog = true },
+            firstMenuItemFocusRequester = firstMenuItemFocusRequester,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF2A2D32))
+                .padding(start = 70.dp)         // <<< inset so it never shifts
+        )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF14161A))
-            ) {
-                ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { _, _ -> })
-
-                NewMainSettingsContent(
-                    onInfoClick = { showInfo = true },
-                    onLogoutClick = { showExitDialog = true },
-                    firstMenuItemFocusRequester = firstMenuItemFocusRequester
-
-                )
-                }
-
-        }
+        ExpandableNavigationMenu(
+            navController   = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { _, _ -> },
+            modifier        = Modifier.align(Alignment.CenterStart)
+        )
     }
     if (showInfo) {
         PanMetroInfoScreen(
@@ -117,7 +114,8 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
 fun NewMainSettingsContent(
     onInfoClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    firstMenuItemFocusRequester: FocusRequester   // our injected requester
+    firstMenuItemFocusRequester: FocusRequester,
+    modifier: Modifier = Modifier  // our injected requester
 ) {
     val menuItems = listOf("Info", "Logout")
     val menuIcons = listOf(R.drawable.info, R.drawable.logout)

@@ -134,7 +134,7 @@ fun ExpandableNavigationMenu(
     ) {
         Column(
             modifier = Modifier
-                .width(if (expanded) 199.dp else 70.dp)
+                .width(if (expanded) 280.dp else 70.dp)
                 .fillMaxHeight()
                 .animateContentSize()
                 .focusable()
@@ -143,9 +143,6 @@ fun ExpandableNavigationMenu(
                         colors = listOf(
                             Color.Black,
                             Color.Black,
-                            Color.Black.copy(alpha = 0.9f),
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.6f),
                             Color.Black.copy(alpha = 0.6f),
                             Color.Transparent
                         )
@@ -165,7 +162,7 @@ fun ExpandableNavigationMenu(
                 AsyncImage(
                     model = profileTab?.iconUrl ?: "",
                     contentDescription = profileTab?.displayName ?: "Profile",
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                     colorFilter = if (selectedIndex == 0) {
                         androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                     } else {
@@ -173,9 +170,10 @@ fun ExpandableNavigationMenu(
                     }
                 )
                 if (expanded) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = profileTab?.displayName ?: "Profile",
+                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp),
                         color = Color.White,
                         fontSize = 14.sp
                     )
@@ -216,7 +214,7 @@ fun ExpandableNavigationMenu(
                     AsyncImage(
                         model = tab.iconUrl,
                         contentDescription = tab.displayName,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(36.dp).padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                         colorFilter = if (selectedIndex == index + 1) {
                             androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                         } else {
@@ -227,6 +225,7 @@ fun ExpandableNavigationMenu(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tab.displayName,
+                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp),
                             color = Color.White,
                             fontSize = 14.sp
                         )
@@ -254,7 +253,7 @@ fun FocusableRow(
 
     Row(
         modifier = modifier
-            .width(160.dp)
+            .width(150.dp)
             .height(50.dp)
             .padding(8.dp)
             .focusRequester(focusRequester)

@@ -158,7 +158,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
 
     // — only navigate away when not in “update?” dialog and not mid‑download —
     LaunchedEffect(isInitializeData, showDialog, errorLoadingData, loginInfo, isUpdating) {
-        delay(10000)
         if (!isInitializeData) return@LaunchedEffect
         if (showDialog)         return@LaunchedEffect
         if (isUpdating)         return@LaunchedEffect

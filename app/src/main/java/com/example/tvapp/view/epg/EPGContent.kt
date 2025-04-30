@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -223,14 +224,27 @@ fun EPGContent(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = program.title ?: "",
+                                            text = program.title.orEmpty(),
                                             color = Color.White,
                                             fontSize = 15.sp,
+                                            maxLines = 1,
                                             softWrap = false,
                                             overflow = TextOverflow.Ellipsis,
-                                            fontFamily = FontFamily(Font(R.font.figtree_light)),
-                                            fontWeight = FontWeight(400),
-                                            textAlign = TextAlign.Center
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .let { base ->
+                                                    if (isFocused.value) {
+                                                        // only when DPAD-focus lands here…
+                                                        base.basicMarquee(
+                                                            iterations  = Int.MAX_VALUE,
+                                                            initialDelayMillis  = 0,
+                                                            velocity    = 30.dp
+                                                        )
+                                                    } else {
+                                                        base
+                                                    }
+                                                }
                                         )
                                     }
                                     Box(

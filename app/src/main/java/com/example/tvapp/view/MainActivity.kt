@@ -10,9 +10,11 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
+import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,9 +39,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
+
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
+
                 }
-//                val navController = rememberNavController()
+                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)
             }
         }
