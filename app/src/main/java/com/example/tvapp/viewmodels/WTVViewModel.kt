@@ -106,7 +106,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
+                    .provideWTVManifest("https://api-panmetro.caastv.com/api/manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -115,13 +115,12 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
+                    .provideWTVEPGData("https://api-panmetro.caastv.com/api/epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
                     }
             }.await()
-
 
             // Wait for all to complete (success or failure)
             if(manifestDeferred != null && epgDeferred != null){

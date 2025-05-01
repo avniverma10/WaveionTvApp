@@ -74,7 +74,7 @@ fun Context.provideSigmaSourceFactory(defaultLicenseUrl:String="https://license-
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
+fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toHttpUrlOrNull()?.newBuilder()
         ?.addQueryParameter("PlayState", "1")
@@ -86,7 +86,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
         ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
         ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         ?.build()
-    val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?&","https://cryptoguard.waveiontechnologies.com:4443?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?&","https://drm.panmetroconvergence.com/?")
 
     // Create a default DataSource.Factory (Media3 version).
     val defaultDataSourceFactory = DefaultDataSource.Factory(this)
@@ -114,7 +114,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
+fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/?",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
 
     val macAddress = provideMacAddress()
     // Build URL with query parameters using OkHttp's HttpUrl builder.
@@ -129,7 +129,7 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         .build()
         .toString()
-    val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?&","https://cryptoguard.waveiontechnologies.com:4443?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?&","https://drm.panmetroconvergence.com/?")
     logData?.put("licenseUrl",licenseUrl)
 
     return MediaItem.Builder()
