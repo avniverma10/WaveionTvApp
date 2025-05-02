@@ -38,7 +38,8 @@ import androidx.compose.ui.input.key.type
 fun ExpandableNavigationMenu(
     navController: NavController,
     sharedViewModel: SharedViewModel,
-    onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit
+    onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile") }
     var expanded by remember { mutableStateOf(false) }
@@ -51,6 +52,7 @@ fun ExpandableNavigationMenu(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
 
     LaunchedEffect(currentBackStackEntry) {
+        expanded = false
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
             // Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
@@ -130,7 +132,7 @@ fun ExpandableNavigationMenu(
     ) {
         Column(
             modifier = Modifier
-                .width(if (expanded) 199.dp else 70.dp)
+                .width(if (expanded) 280.dp else 70.dp)
                 .fillMaxHeight()
                 .animateContentSize()
                 .focusable()
@@ -138,9 +140,8 @@ fun ExpandableNavigationMenu(
                     val gradient = Brush.horizontalGradient(
                         colors = listOf(
                             Color.Black,
-                            Color.Black.copy(alpha = 0.9f),
+                            Color.Black,
                             Color.Black.copy(alpha = 0.6f),
-                            Color.Black.copy(alpha = 0.4f),
                             Color.Transparent
                         )
                     )
@@ -159,7 +160,7 @@ fun ExpandableNavigationMenu(
                 AsyncImage(
                     model = profileTab?.iconUrl ?: "",
                     contentDescription = profileTab?.displayName ?: "Profile",
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                     colorFilter = if (selectedIndex == 0) {
                         androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
                     } else {
@@ -167,9 +168,10 @@ fun ExpandableNavigationMenu(
                     }
                 )
                 if (expanded) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = profileTab?.displayName ?: "Profile",
+                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp),
                         color = Color.White,
                         fontSize = 14.sp
                     )
@@ -208,7 +210,7 @@ fun ExpandableNavigationMenu(
                     AsyncImage(
                         model = tab.iconUrl,
                         contentDescription = tab.displayName,
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(36.dp).padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                         colorFilter = if (selectedIndex == index + 1) {
                             androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
                         } else {
@@ -219,6 +221,7 @@ fun ExpandableNavigationMenu(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = tab.displayName,
+                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp),
                             color = Color.White,
                             fontSize = 14.sp
                         )
@@ -246,7 +249,7 @@ fun FocusableRow(
 
     Row(
         modifier = modifier
-            .width(160.dp)
+            .width(150.dp)
             .height(50.dp)
             .padding(8.dp)
             .focusRequester(focusRequester)

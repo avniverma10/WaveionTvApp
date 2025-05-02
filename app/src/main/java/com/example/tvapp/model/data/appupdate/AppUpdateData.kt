@@ -1,0 +1,9 @@
+package com.example.tvapp.model.data.appupdate
+
+data class AppUpdateData(
+    val _id: String,
+    val appVersion: String,
+    val apkUrl: String,
+    val updateDate: String,
+    val forceUpdate: Int
+)

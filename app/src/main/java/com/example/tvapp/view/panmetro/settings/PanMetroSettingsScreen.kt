@@ -43,6 +43,7 @@ import androidx.navigation.NavController
 import com.example.tvapp.R
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
@@ -77,17 +78,23 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
         )
     }
     if (showExitDialog) {
-        PanMetroLogoutDialog (
-            onConfirmExit = {
+        CommonDialog(
+            showDialog = true,
+            title = "Logout App",
+            message = "Are you sure you want to logout?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText ="Yes" ,
+            onConfirm =  {
                 sharedViewModel.clearLogin()
                 showExitDialog = false
                 navController.navigate(Destination.loginScreen) {
                     popUpTo(0)
                 }
             },
-            onDismiss = {
-                showExitDialog = false
-            }
+            dismissButtonText = "No",
+            onDismiss = { showExitDialog = false }
         )
     }
 }

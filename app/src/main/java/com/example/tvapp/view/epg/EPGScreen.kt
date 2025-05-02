@@ -3,6 +3,7 @@ package com.example.tvapp.view.epg
 
 
 import android.app.Activity
+import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -50,6 +52,7 @@ import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.uicomponent.ExitDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
@@ -75,6 +78,9 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    LaunchedEffect(Unit) {
+        firstChannelFocusRequester.requestFocus()
+    }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()
     val filterState by sharedViewModel.filterState.collectAsState()
@@ -115,27 +121,35 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            errorCode = null,
+            errorMessage = null,
+            borderColor = Color.Transparent,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF14161A))
     ) {
-        ExpandableNavigationMenu(navController, sharedViewModel, onNavMenuIntent = { tabInfo, _ ->
-            menuItems = tabInfo.categories ?: emptyList()
-        })
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF161D25))
+                .padding(start = 70.dp)
                 .zIndex(1f)
         ) {
             /*if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
@@ -173,6 +187,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 )
             }
         }
+        ExpandableNavigationMenu(
+            navController   = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { tabInfo, _ ->
+                menuItems = tabInfo.categories ?: emptyList()
+            },
+            modifier = Modifier.align(Alignment.CenterStart)
+        )
     }
 }
 
