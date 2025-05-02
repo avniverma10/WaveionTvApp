@@ -241,13 +241,18 @@ open class SharedViewModel @Inject constructor(
                 _searchResults.value = _epgChannels.value
                 return@launch
             }
-            val epgList = fetchEPGList(context)
-            val filteredChannels = epgList.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.takeIf { channel ->
-                    val name = channel.displayName ?: ""
-                    val genre = epgItem.content?.genreId ?: ""
-                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
-                }?.copy(
+
+            // Get the current EPG list.
+            val epgList = wtvEPGList.value ?: fetchEPGList(context)
+
+            // Filter only by content title.
+            val filteredEPGItems = epgList.filter { epgItem ->
+                epgItem.content?.title?.contains(query, ignoreCase = true) == true
+            }
+
+            // Map the EPGDataItems to Channels.
+            val filteredChannels = filteredEPGItems.mapNotNull { epgItem ->
+                epgItem.tv?.channel?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
