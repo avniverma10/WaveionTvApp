@@ -1,7 +1,5 @@
 package com.example.tvapp.view.panmetro.settings
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.tvapp.view.uicomponent.GradientBackground
+import com.example.tvapp.view.uicomponent.panGradientBackground
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -34,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +57,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             PermettoTopBar()
-            GradientBackground {
+            panGradientBackground {
                 MainSettingsContent(
                     onInfoClick = { showInfo = true },
                     onLogoutClick = { showExitDialog = true }

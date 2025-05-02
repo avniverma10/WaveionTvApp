@@ -15,7 +15,10 @@ import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.epg.EPGScreen
+import com.example.tvapp.view.login.LoginScreen1
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
+import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
+import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -23,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
 
+    private val loginViewModel : LoginViewModel by viewModels()
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen
@@ -41,7 +45,6 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
 
                     WTVPlayerApp(sharedViewModel=sharedViewModel)
-
                 }
                 val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)

@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 @Composable
-fun GradientBackground(
+fun panGradientBackground(
     topColor: Color = Color(0xFF5B7AB0),  // Example top color (Deep Orange)
     bottomColor: Color = Color(0xFF94C2F3), // Example bottom color (Green)
     content: @Composable () -> Unit = {}
