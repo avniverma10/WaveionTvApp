@@ -116,6 +116,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/", contentUrl:String?=null, contentId:String?=null, loginInfo: LoginInfo?, logData:HashMap<String,String>?=null): MediaItem {
 
     val macAddress = provideMacAddress()
+    Log.e("loginInfo>>","${loginInfo?.username},${loginInfo?.password},>${macAddress}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
@@ -129,12 +130,14 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.
         .build()
     val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?","https://drm.panmetroconvergence.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
+    Log.e("contentUrl>",contentUrl.toString())
+    Log.e("licenseUrl>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)
         .setDrmConfiguration(
             MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                .setLicenseUri(httpUrl) // Base license URL (will be modified in callback)
+                .setLicenseUri(licenseUrl) // Base license URL (will be modified in callback)
                 .build()
         )
         .build()
