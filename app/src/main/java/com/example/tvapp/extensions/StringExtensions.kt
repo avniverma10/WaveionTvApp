@@ -577,8 +577,8 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
             "Source error",
             "The media source could not be loaded")
         6004 -> Triple(608,
-            "You are not authorized to view this content.",
-            "Please contact your service provider for assistance.")
+            "DRM licence server request failed",
+            "Please try again later.")
         4001 -> Triple(609,
             "This channel is temporarily unavailable.",
             "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
@@ -591,7 +591,9 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
         2002 -> Triple(612,
             "Timeout Error",
             "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-
+        3003 -> Triple(613,
+            "Video Source Error",
+            "Please try again later.")
         else -> Triple(errorCode,
             "Unknown error",
             "An unknown error occurred")

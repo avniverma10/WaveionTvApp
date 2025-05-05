@@ -73,7 +73,7 @@ fun Context.provideSigmaSourceFactory(defaultLicenseUrl:String="https://license-
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
+fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toHttpUrlOrNull()?.newBuilder()
         ?.addQueryParameter("PlayState", "1")
@@ -85,7 +85,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
         ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
         ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         ?.build()
-    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?&","https://drm.panmetroconvergence.com/?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?&","https://drm.panmetroconvergence.com:4443/?")
 
     // Create a default DataSource.Factory (Media3 version).
     val defaultDataSourceFactory = DefaultDataSource.Factory(this)
