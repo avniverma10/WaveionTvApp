@@ -5,6 +5,7 @@ import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.toJSONArray
 import com.example.tvapp.extensions.toJSONObject
+import com.example.tvapp.model.data.appupdate.AppUpdateResponse
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
@@ -138,5 +139,23 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             logReport("Banner", "Error fetching Banner content", e)
         }
     }.flowOn(Dispatchers.IO) // <-- This moves the emission to the IO thread
+
+
+    suspend fun provideAppUpdateInfo(updateUrl: String): Flow<WTVResponse<AppUpdateResponse>> = flow {
+        try {
+            val resp = networkApiCallInterface.makeHttpGetRequest(updateUrl).execute()
+            if (resp.isSuccessful && resp.body() != null) {
+                val body = resp.body()!!.toJSONObject().toString()
+                val parsed = body.convertIntoModel(AppUpdateResponse::class.java)
+                parsed?.let { emit(WTVResponse.Success(it)) }
+                    ?: emit(WTVResponse.Failure(Throwable("Parsing error")))
+            } else {
+                emit(WTVResponse.Failure(Throwable("HTTP ${resp.code()}")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
 
 }

@@ -8,6 +8,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkInfo
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
@@ -21,6 +22,7 @@ import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
+import java.io.File
 import java.net.NetworkInterface
 import java.util.Locale
 
@@ -170,5 +172,25 @@ fun Activity.hideKeyboard() {
     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     currentFocus?.let { view ->
         imm.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+}
+
+
+fun Context.createFile(extension: String=".apk"): File {
+    val storageDir = this.filesDir
+    return File.createTempFile("FILE_${System.currentTimeMillis()}_", ".${extension}", storageDir)
+}
+
+
+fun Context.provideFileFromUri(uri: Uri?): File? {
+    if (uri == null) return null
+    try {
+        val inputStream = contentResolver.openInputStream(uri) ?: return null
+        val file = createFile()
+        inputStream.copyTo(file.outputStream())
+        inputStream.close()
+        return file
+    } catch (ex: java.lang.Exception) {
+        return null
     }
 }

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar

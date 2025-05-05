@@ -22,7 +22,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun ErrorDialog(
-    message:String,
+    message:String?,
     onConfirmExit: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -60,7 +60,7 @@ fun ErrorDialog(
         text = {
             // Optional subtext or explanation
             Text(
-                text = "Error 601 : Server response timeout.",
+                text = message?:"Error 601 : Server response timeout.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Black
             )

@@ -21,6 +21,7 @@ okhttp = "4.11.0"
 accompanist_permissions ="0.30.0"
 pager ="0.32.0" #0.30.1
 media3 = "1.2.0"
+media3_version = "1.6.1"
 media3-ui = "1.2.0"
 kotlinx-coroutines = "1.7.3"
 coil = "3.0.4"
@@ -87,6 +88,8 @@ media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", versio
 media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+#datasource-cronet = { module = "androidx.media3:media3-datasource-cronet", version.ref = "$media3_version" }
+#datasource-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "$media3_version" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler-ksp = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
@@ -150,7 +153,7 @@ exoplayer = [
     "media3-exoplayer-hls",
     "media3-exoplayer-dash",
     "media3-session",
-    "media3-ui"
+    "media3-ui",
 ]
 security = [
     "security-crypto"

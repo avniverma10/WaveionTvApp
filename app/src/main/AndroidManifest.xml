@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="30"/>
+
 
     <uses-feature
         android:name="android.hardware.touchscreen"
@@ -20,7 +23,7 @@
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <application
-        android:name=".WTVApp"
+        android:name="com.example.tvapp.WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
         android:banner="@drawable/panmetro_app_icon"
@@ -30,7 +33,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
         <activity
-            android:name=".view.MainActivity"
+            android:name="com.example.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
@@ -44,8 +47,8 @@
         </activity>
 
         <provider
-            android:name=".model.wtvdatabase.EPGContentProvider"
-            android:authorities="com.example.tvapp.provider"
+            android:name="com.example.tvapp.model.wtvdatabase.EPGContentProvider"
+            android:authorities="com.android.panmetroiptv.provider"
             android:exported="false" />
     </application>
 

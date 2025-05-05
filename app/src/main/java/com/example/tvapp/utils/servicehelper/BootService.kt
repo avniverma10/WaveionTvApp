@@ -5,7 +5,7 @@ import android.content.*
 import android.os.*
 import android.provider.Settings
 import android.util.Log
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 
 class BootService : Service() {
     override fun onCreate() {

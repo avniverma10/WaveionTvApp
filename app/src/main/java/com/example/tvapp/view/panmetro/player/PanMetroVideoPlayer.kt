@@ -56,7 +56,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
@@ -71,6 +71,7 @@ import com.example.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.net.SocketTimeoutException
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -167,17 +168,29 @@ fun PanMetroVideoPlayer(
                 // Add a listener to handle playback errors.
                 addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                            ?.responseCode
-                        val rawCode = httpCode ?: error.errorCode
+                        if (error.cause is HttpDataSource.HttpDataSourceException) {
+                            // handle timeout: show a "Retry" UI
+                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(2002)
 
-                        // now returns (appCode, title, message)
-                        val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
+                            Log.e("rawCode","$errorCode")
+                            errorCodeState    = errorCode
+                            errorTitleState   = errorTitle
+                            errorMessageState = errorMessage
+                            showErrorDialog   = true
+                        } else {
+                            val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                                ?.responseCode
+                            var rawCode = httpCode ?: error.errorCode
+                            // now returns (appCode, title, message)
+                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
 
-                        errorCodeState    = errorCode
-                        errorTitleState   = errorTitle
-                        errorMessageState = errorMessage
-                        showErrorDialog   = true
+                            Log.e("rawCode","$errorCode")
+                            errorCodeState    = errorCode
+                            errorTitleState   = errorTitle
+                            errorMessageState = errorMessage
+                            showErrorDialog   = true
+
+                        }
                     }
                 })
             }
@@ -198,7 +211,7 @@ fun PanMetroVideoPlayer(
             drmData.put("contentId",selectedChannel?.content?.assetId?:"")
             drmData.put("contentUrl",selectedChannel?.content?.videoUrl?:""?:"")
             val mediaItem = if (selectedChannel?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
+                context.provideCryptoGuardMediaSource(loginInfo = sharedViewModel.loginInfo?.value, contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
             } else {
                 MediaItem.fromUri(url)
             }

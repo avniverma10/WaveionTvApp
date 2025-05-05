@@ -35,7 +35,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData

@@ -4,6 +4,7 @@ package com.example.tvapp.view.epg
 
 import android.app.Activity
 import android.os.Process
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -79,7 +80,12 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val firstChannelFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        firstChannelFocusRequester.requestFocus()
+        try {
+            firstChannelFocusRequester.requestFocus()
+        } catch (e: IllegalStateException) {
+            Log.e("FocusError", "FocusRequester not initialized", e)
+        }
+
     }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()

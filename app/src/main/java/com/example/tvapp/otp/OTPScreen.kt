@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.components.GradientBackground
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.input.ImeAction

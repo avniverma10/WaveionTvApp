@@ -1,5 +1,6 @@
 package com.example.tvapp.utils.network
 import android.util.Log
+import com.example.tvapp.extensions.toGson
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -9,7 +10,7 @@ class LoggingInterceptor:Interceptor {
        val request = chain.request()
         Log.e("Request::","${request}")
        val response = chain.proceed(request)
-        Log.e("Response::","${response}")
+       // Log.e("Response::", response.body?.string().toString())
       return response
     }
 }

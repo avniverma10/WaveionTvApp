@@ -47,7 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.tv.material3.Text
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.components.GradientBackground
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.viewmodels.LoginViewModel

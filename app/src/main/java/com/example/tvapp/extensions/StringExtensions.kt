@@ -588,6 +588,10 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
         6006 -> Triple(611,
             "License Error",
             "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2002 -> Triple(612,
+            "Timeout Error",
+            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+
         else -> Triple(errorCode,
             "Unknown error",
             "An unknown error occurred")

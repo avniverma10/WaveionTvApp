@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.tvapp"
+    namespace = "com.android.panmetroiptv"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.tvapp"
+        applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.3"
+        versionCode = 6
+        versionName = "1.0.6"
     }
 
     buildTypes {

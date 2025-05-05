@@ -31,6 +31,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -38,13 +39,14 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
+import java.net.SocketTimeoutException
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -73,7 +75,7 @@ fun GenreMultiDRMPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
-    
+
 
 
     // Remember the player and recreate it when the DRM type changes
@@ -81,7 +83,6 @@ fun GenreMultiDRMPlayer(
         ExoPlayer.Builder(context)
             .build()
             .apply {
-                playWhenReady = true
                 addAnalyticsListener(object : AnalyticsListener {
                     override fun onEvents(player: Player, events: AnalyticsListener.Events) {
                         if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
@@ -95,13 +96,28 @@ fun GenreMultiDRMPlayer(
                 // Add a listener to handle playback errors.
                 addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                            ?.responseCode
-                        val rawCode = httpCode ?: error.errorCode
-                        val (displayCode, message) = playerErrorHandling(rawCode)
-                        errorCodeState = displayCode
-                        errorMessageState = message
-                        showErrorDialog = true
+                        if (error.cause is HttpDataSource.HttpDataSourceException ) {
+                            // handle timeout: show a "Retry" UI
+                            val (displayCode, message) = playerErrorHandling(2002)
+                            errorCodeState = displayCode
+                            errorMessageState = message
+                            showErrorDialog = true
+                        } else {
+                            // handle other errors
+
+                            val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                                ?.responseCode
+                            var rawCode = httpCode ?: error.errorCode
+                            Log.e("rawCode","$rawCode")
+                            val (displayCode, message) = playerErrorHandling(rawCode)
+                            Log.e("rawCode","$displayCode")
+                            errorCodeState = displayCode
+                            errorMessageState = message
+                            showErrorDialog = true
+                        }
+
+
+
                     }
                 })
             }
@@ -119,9 +135,12 @@ fun GenreMultiDRMPlayer(
             drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
             drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
             val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
+                context.provideCryptoGuardMediaSource(loginInfo = sharedViewModel.loginInfo?.value, contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
             } else {
-                MediaItem.fromUri(url)
+                MediaItem.Builder()
+                    .setUri(url)
+                    .setMimeType(MimeTypes.APPLICATION_MPD) // DASH
+                    .build()
             }
             Log.e("Requested Data>",drmData.toJSONObject().toString())
             exoPlayer.setMediaItem(mediaItem)

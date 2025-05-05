@@ -1,6 +1,6 @@
 package com.example.tvapp.extensions
 
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import java.util.Locale
 
 

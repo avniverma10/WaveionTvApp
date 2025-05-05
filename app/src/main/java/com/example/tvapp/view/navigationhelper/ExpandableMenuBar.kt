@@ -70,10 +70,10 @@ fun ExpandableNavigationMenu(
 
     val profileTab = tabs?.find { it.name == "profile" }
     val profileTabIndex = tabs?.indexOf(profileTab)?:0
-    val otherTabs = tabs?.drop(1) ?: emptyList()
+    val otherTabs = profileTab?.let{tabs?.drop(1) ?: emptyList()}
 
     val profileFocusRequester = remember { FocusRequester() }
-    val focusRequesters = List(otherTabs.size) { FocusRequester() }
+    val focusRequesters = List(otherTabs?.size?:0) { FocusRequester() }
 
     LaunchedEffect(expanded) {
         if (expanded) {
@@ -180,7 +180,7 @@ fun ExpandableNavigationMenu(
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            otherTabs.forEachIndexed { index, tab ->
+            otherTabs?.forEachIndexed { index, tab ->
                 val isFirstItem = index == 0
                 val isLastItem = index == otherTabs.lastIndex
 

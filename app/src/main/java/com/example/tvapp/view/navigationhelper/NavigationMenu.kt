@@ -38,7 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay

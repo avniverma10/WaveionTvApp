@@ -1,24 +1,23 @@
 package com.example.tvapp.extensions
 
 import android.content.Context
-import android.net.Uri
-import android.os.Build
-import android.util.Log
 import androidx.annotation.OptIn
-import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
+import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import androidx.core.net.toUri
 
 /**
  * Returns a MediaSourceFactory configured with a DRM session manager if needed.
@@ -74,7 +73,7 @@ fun Context.provideSigmaSourceFactory(defaultLicenseUrl:String="https://license-
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
+fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/?",contentUrl:String?="https://nextwave.waveiontechnologies.com:8447/ottproxy/live/disk0/BHARAT_24/CG_DASH/BHARAT_24.mpd",contentId:String?="a9e277d2-7e1a-4bbb-9443-731a921d9ff0"): DefaultMediaSourceFactory {
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toHttpUrlOrNull()?.newBuilder()
         ?.addQueryParameter("PlayState", "1")
@@ -86,7 +85,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
         ?.addQueryParameter("ContentUrl", contentUrl?.toBase64Encoded())
         ?.addQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         ?.build()
-    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?&","https://drm.panmetroconvergence.com:4443/?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?&","https://drm.panmetroconvergence.com/?")
 
     // Create a default DataSource.Factory (Media3 version).
     val defaultDataSourceFactory = DefaultDataSource.Factory(this)
@@ -114,23 +113,25 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/?",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
+fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/", contentUrl:String?=null, contentId:String?=null, loginInfo: LoginInfo?, logData:HashMap<String,String>?=null): MediaItem {
 
     val macAddress = provideMacAddress()
+
+    Log.e("loginInfo>","$macAddress ::${loginInfo?.username}, ${loginInfo?.password}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
         .appendQueryParameter("DrmSystem",      "Widevine")
-        .appendQueryParameter("LoginName",      "josip".toBase64Encoded())
-        .appendQueryParameter("Password",       "cryptoguard".toBase64Encoded())
+        .appendQueryParameter("LoginName",      loginInfo?.username?.toBase64Encoded())
+        .appendQueryParameter("Password",       loginInfo?.password?.toBase64Encoded())
         .appendQueryParameter("KeyId",          contentId?.toBase64Encoded())
         .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64Encoded())
         .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())
         .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         .build()
-        .toString()
-    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?&","https://drm.panmetroconvergence.com:4443/?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?","https://drm.panmetroconvergence.com?")
     logData?.put("licenseUrl",licenseUrl)
+    Log.e("licenseUrl>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)

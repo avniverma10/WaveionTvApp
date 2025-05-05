@@ -102,7 +102,9 @@ fun PanMetroInfoScreen(
                 InfoRow(label = "Username", value = username)
                 InfoRow(label = "MAC ID", value = context.provideMacAddress()?:"")
                 InfoRow(label = "Validity", value = validity)
-                InfoRow(label = "App version", value = appVersion)
+                InfoRow(label = "App version", value = context.packageManager
+                    .getPackageInfo(context.packageName, 0)
+                    .versionName?:appVersion)
                 InfoRow(label = "Android Version", value = Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
                 InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
                 InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)

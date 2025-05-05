@@ -60,7 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
@@ -70,12 +70,14 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.LoginViewModel
 
 @Composable
 fun PanmetroLoginScreen(
     loginViewModel: LoginViewModel?= hiltViewModel(),navController: NavController
 ) {
+    HideKeyboardOnEnter()
     val context = LocalContext.current
     val macAddress = context.provideMacAddress()
 

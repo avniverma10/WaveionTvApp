@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 import java.text.SimpleDateFormat

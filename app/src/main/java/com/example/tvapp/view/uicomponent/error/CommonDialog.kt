@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.example.tvapp.R
+import com.android.panmetroiptv.R
 
 @Composable
 fun CommonDialog(
