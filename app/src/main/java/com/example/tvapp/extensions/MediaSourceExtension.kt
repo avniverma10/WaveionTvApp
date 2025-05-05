@@ -113,11 +113,9 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com/", contentUrl:String?=null, contentId:String?=null, loginInfo: LoginInfo?, logData:HashMap<String,String>?=null): MediaItem {
+fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/", contentUrl:String?=null, contentId:String?=null, loginInfo: LoginInfo?, logData:HashMap<String,String>?=null): MediaItem {
 
     val macAddress = provideMacAddress()
-
-    Log.e("loginInfo>","$macAddress ::${loginInfo?.username}, ${loginInfo?.password}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
@@ -129,9 +127,8 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.
         .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())
         .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
         .build()
-    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com/?","https://drm.panmetroconvergence.com?")
+    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?","https://drm.panmetroconvergence.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
-    Log.e("licenseUrl>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)
