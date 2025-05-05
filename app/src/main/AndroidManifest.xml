@@ -20,11 +20,14 @@
     <uses-feature
         android:name="android.software.leanback"
         android:required="true"/>
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
 
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <application
-        android:name=".WTVApp"
+        android:name="com.example.tvapp.WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
         android:banner="@mipmap/caastv_icon"
@@ -34,7 +37,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
         <activity
-            android:name=".view.MainActivity"
+            android:name="com.example.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
@@ -48,8 +51,8 @@
         </activity>
 
         <provider
-            android:name=".model.wtvdatabase.EPGContentProvider"
-            android:authorities="com.example.tvapp.provider"
+            android:name="com.example.tvapp.model.wtvdatabase.EPGContentProvider"
+            android:authorities="com.android.caastv.provider"
             android:exported="false" />
     </application>
 

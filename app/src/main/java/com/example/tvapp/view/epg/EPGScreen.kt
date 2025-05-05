@@ -4,11 +4,11 @@ package com.example.tvapp.view.epg
 
 import android.app.Activity
 import android.os.Process
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,22 +38,15 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import com.example.tvapp.extensions.appGenreLiveData
-import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.extensions.logReport
-import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.ui.theme.screen_bg_color
-import com.example.tvapp.utils.Constants
-import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.CategoryMenu
-import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.player.CommonDialog
-import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
@@ -83,7 +76,11 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     LaunchedEffect(Unit) {
         // Move focus to the first channel in your EPG content
-        firstChannelFocusRequester.requestFocus()
+        try {
+            firstChannelFocusRequester.requestFocus()
+        } catch (e: IllegalStateException) {
+            Log.e("FocusError", "FocusRequester not initialized", e)
+        }
     }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()

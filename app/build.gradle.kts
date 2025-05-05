@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.tvapp"
+    namespace = "com.android.caastv"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.tvapp"
+        applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.1"
+        versionCode = 2
+        versionName = "1.0.2"
     }
 
     buildTypes {

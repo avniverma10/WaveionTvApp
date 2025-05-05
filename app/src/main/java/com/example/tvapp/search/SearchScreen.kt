@@ -163,7 +163,7 @@ fun SearchScreen(
                 style = TextStyle(
                     fontSize = 18.sp,
                     lineHeight = 28.01.sp,
-                    fontFamily = FontFamily(Font(com.example.tvapp.R.font.figtree_light)),
+                    fontFamily = FontFamily(Font(com.android.caastv.R.font.figtree_light)),
                     fontWeight = FontWeight(600),
                     color = Color.White
                 ),

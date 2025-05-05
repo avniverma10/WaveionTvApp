@@ -138,7 +138,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners("https://nextwave.waveiontechnologies.com:5000/api/banners").collect { response ->
+        wtvNetworkRepositoryImpl.getBanners("https://api-panmetro.caastv.com/api/banners").collect { response ->
             when (response) {
                 is WTVListResponse.Success -> _bannerList.value = response.data
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")

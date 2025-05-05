@@ -115,16 +115,26 @@ open class WTVViewModel @Inject constructor(private val application: Application
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://nextwave.waveiontechnologies.com:5000/api/manifest")
+                    .provideWTVManifest("https://api-panmetro.caastv.com/api/manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
-                        manifest
+                        val genre = arrayListOf<WTVGenre>()
+                        it.genre?.let { c ->
+                            genre.add(WTVGenre(name = "All"))
+                            genre.addAll(c)
+                        }
+                        val language = arrayListOf<WTVLanguage>()
+                        it.language?.let { c ->
+                            language.add(WTVLanguage(name = "All"))
+                            language.addAll(c)
+                        }
+                        manifest.copy(genre= genre, language = language)
                     }
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://nextwave.waveiontechnologies.com:5000/api/epg-files/join-epg-content")
+                    .provideWTVEPGData("https://api-panmetro.caastv.com/api/epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
@@ -158,7 +168,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }
             launch {
                 networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://nextwave.waveiontechnologies.com:5000/api/homescreenCategory")
+                    .provideWTVHomeData("https://api-panmetro.caastv.com/api/homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
                             application.applyAppHome(response.data)
@@ -177,7 +187,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://api-demo.caastv.com/api/app/appupdate")
+            .provideAppUpdateInfo("https://api-panmetro.caastv.com/app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 
@@ -189,7 +199,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 .orEmpty()
 
             // 2. only if the server’s version is higher do we prompt or download
-            if (isVersionHigher(update.appVersion, current)) {
+            if (shouldUpdateRequired(update.appVersion, current)) {
                 _appUpdateData.value = update
                 handleAppUpdate(update)
             } else {
@@ -207,7 +217,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             .versionName
             .orEmpty()
         Log.d("AVNI","current version: $current, new version: ${update.appVersion}")
-        if (isVersionHigher(update.appVersion, current)) {
+        if (shouldUpdateRequired(update.appVersion, current)) {
             if (update.forceUpdate == 1) {
                 Log.d("AVNI","Force update")
                 downloadApk(update.apkUrl)
@@ -233,7 +243,15 @@ open class WTVViewModel @Inject constructor(private val application: Application
         }
         return false
     }
-
+    private fun shouldUpdateRequired(newVer: String, oldVer: String): Boolean {
+        try {
+            val new = newVer.replace(".","").trim().toInt()
+            val old = oldVer.replace(".","").trim().toInt()
+            return new>old
+        }catch (ex: Exception){
+            return  false
+        }
+    }
 
     private fun downloadApk(apkUrl: String): Long {
         val dm = application.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
@@ -297,7 +315,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
         startedSSE = true
 
         val request = Request.Builder()
-            .url("https://nextwave.waveiontechnologies.com:5000/api/tabs/sse-tabs") // replace with your endpoint URL
+            .url("https://api-panmetro.caastv.com/api/tabs/sse-tabs") // replace with your endpoint URL
             .build()
 
         val listener = object : EventSourceListener() {

@@ -33,7 +33,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.example.tvapp.R
+import com.android.caastv.R
 import com.example.tvapp.extensions.getIptvDeviceInfo
 import com.example.tvapp.extensions.logAllDrmInfo
 import com.example.tvapp.extensions.provideMacAddrLiveData
