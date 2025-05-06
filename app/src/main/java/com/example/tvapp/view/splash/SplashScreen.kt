@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -44,8 +46,10 @@ import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
+import java.util.concurrent.TimeUnit
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
     HideKeyboardOnEnter()
@@ -61,35 +65,43 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     val updateData by sharedViewModel.appUpdateData.collectAsState()
     //Download state
     val downloadId by sharedViewModel.downloadId.collectAsState()
+    val timeValid by sharedViewModel.isTimeValid.collectAsState()
     val isUpdating = downloadId != null
     val dm = remember {
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
+
     LaunchedEffect(Unit) {
-        sharedViewModel.checkForAppUpdate()
+        sharedViewModel.checkDeviceDateTime(thresholdMs = TimeUnit.HOURS.toMillis(24))
     }
 
-
-    LaunchedEffect(errorLoadingData,isInitializeData) {
-        if (errorLoadingData != null) {
-            //context.showToastS(errorLoadingData)
-            showExitDialog = true
-        }
-        if(isInitializeData && !showDialog){
-            showExitDialog = false
-            if(loginInfo?.username?.isNotEmpty() == true){
-                navController.navigate(Destination.genreScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }else{
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }
-        }
+    // 2) If the check completes and is invalid → show blocking dialog & return
+    if (timeValid == false) {
+        CommonDialog(
+            showDialog = true,
+            title = "Date & Time Error",
+            message = null,
+            painter =  painterResource(id = R.drawable.media_error),
+            errorCode = null,
+            errorMessage = "The date or time on your device appears incorrect. Please correct your system clock before continuing.",
+            borderColor = Color.Transparent,
+            confirmButtonText = "Exit",
+            onConfirm ={
+                (context as? Activity)?.finishAffinity()
+                android.os.Process.killProcess(android.os.Process.myPid())
+            },
+            dismissButtonText = null,
+            onDismiss = {}
+        )
     }
 
+    LaunchedEffect(timeValid) {
+        if (timeValid == true) {
+            sharedViewModel.initializeAppRequiredData()
+            sharedViewModel.checkForAppUpdate()
+        }
+    }
 
     // — show the update dialog —
     if (showDialog && updateData != null) {
@@ -175,7 +187,8 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
 
 
     // — only navigate away when not in “update?” dialog and not mid‑download —
-    LaunchedEffect(isInitializeData, showDialog, errorLoadingData, loginInfo, isUpdating) {
+    LaunchedEffect(timeValid,isInitializeData, showDialog, errorLoadingData, loginInfo, isUpdating) {
+        if (timeValid == false) return@LaunchedEffect
         if (!isInitializeData) return@LaunchedEffect
         if (showDialog)         return@LaunchedEffect
         if (isUpdating)         return@LaunchedEffect

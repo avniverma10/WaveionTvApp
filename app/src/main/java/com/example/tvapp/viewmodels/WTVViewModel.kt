@@ -47,10 +47,21 @@ import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
+import org.json.JSONObject
+import java.io.IOException
+import java.time.Instant
+import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.math.abs
 
 @HiltViewModel
-open class WTVViewModel @Inject constructor(private val application: Application,private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository?=null) : AndroidViewModel(application) {
+open class WTVViewModel @Inject constructor(
+    private val application: Application,
+    private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl,
+    private val loginPrefsRepository: LoginPrefsRepository?=null,
+    private val okHttpClient: OkHttpClient
+) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
     private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
@@ -64,6 +75,10 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
 
+    // ─── Date and time state ───
+    private val _isTimeValid = MutableStateFlow<Boolean?>(null)
+    val isTimeValid: StateFlow<Boolean?> = _isTimeValid.asStateFlow()
+
     // ─── App‑Update state ───
     private val _appUpdateData = MutableStateFlow<AppUpdateData?>(null)
     val appUpdateData: StateFlow<AppUpdateData?> = _appUpdateData.asStateFlow()
@@ -76,12 +91,12 @@ open class WTVViewModel @Inject constructor(private val application: Application
     private val _downloadId = MutableStateFlow<Long?>(null)
     val downloadId: StateFlow<Long?> = _downloadId.asStateFlow()
 
-
     // Expose the latest list of TabItems
     private val _tabItemsFlow = MutableStateFlow<List<TabItem>>(emptyList())
     val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
+    private val TAG = "TimeCheck"
 
     @RequiresApi(Build.VERSION_CODES.M)
     val networkStatus: StateFlow<NetworkStatus> =
@@ -183,7 +198,56 @@ open class WTVViewModel @Inject constructor(private val application: Application
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun fetchServerTimeMillis(): Long {
+        val req = Request.Builder()
+            .url("https://api-panmetro.caastv.com/api/app/health")
+            .get().build()
 
+        val resp = okHttpClient.newCall(req).execute()
+        if (!resp.isSuccessful) {
+            Log.e(TAG, "Health endpoint error: HTTP ${resp.code}")
+            throw IOException("Health check failed: ${resp.code}")
+        }
+        val bodyStr = resp.body!!.string()
+        Log.d(TAG, "Raw JSON response: $bodyStr")
+        val timestampStr = JSONObject(bodyStr).getString("timestamp")
+        Log.d(TAG, "Parsed timestamp string: $timestampStr")
+
+        val serverInst = try {
+            Instant.parse(timestampStr)
+        } catch (e: Exception) {
+            Log.e(TAG, "Instant.parse failed for $timestampStr", e)
+            throw e
+        }
+        val serverMs = serverInst.toEpochMilli()
+        Log.d(TAG, "Server epoch ms: $serverMs")
+        return serverMs
+    }
+
+    /**
+     * Checks that:
+     *  • server date == device date, AND
+     *  • |deviceTime – serverTime| ≤ thresholdMs
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
+        viewModelScope.launch {
+            val valid = withContext(Dispatchers.IO) {
+                val serverMs   = fetchServerTimeMillis()
+                val deviceMs   = System.currentTimeMillis()
+                val drift      = abs(deviceMs - serverMs)
+
+                // calendar‐date check
+                val zone       = ZoneId.systemDefault()
+                val serverDate = Instant.ofEpochMilli(serverMs).atZone(zone).toLocalDate()
+                val deviceDate = Instant.ofEpochMilli(deviceMs).atZone(zone).toLocalDate()
+
+                (serverDate == deviceDate) && (drift <= thresholdMs)
+            }
+            _isTimeValid.value = valid
+        }
+    }
 
     suspend fun saveEPGList(context: Context, epgList: List<EPGDataItem>) {
         withContext(Dispatchers.IO) {

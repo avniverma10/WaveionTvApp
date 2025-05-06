@@ -41,6 +41,7 @@ import javax.inject.Inject
 import androidx.core.content.edit
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.uistate.PreferenceManager
+import okhttp3.OkHttpClient
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -49,7 +50,7 @@ open class SharedViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager,
     private val filterPreferences: FilterPreferences,
     private val loginPrefsRepository: LoginPrefsRepository,
-) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository) {
+) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
 
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
