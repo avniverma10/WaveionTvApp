@@ -16,6 +16,7 @@ import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.datastore.preferences.preferencesDataStore
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
@@ -25,6 +26,10 @@ import com.example.tvapp.model.home.WTVHomeCategory
 import java.io.File
 import java.net.NetworkInterface
 import java.util.Locale
+
+
+val Context.dataStore by preferencesDataStore(name = "user_prefs")
+
 
 
 fun Context.coreEPGLiveData() =
@@ -192,5 +197,30 @@ fun Context.provideFileFromUri(uri: Uri?): File? {
         return file
     } catch (ex: java.lang.Exception) {
         return null
+    }
+}
+
+/**
+ * Hides the software keyboard if any view in the current Activity has focus.
+ */
+fun Context.hideKeyboard() {
+    // Try to get the InputMethodManager
+    val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        ?: return
+
+    // Find the currently focused view, or use a fallback token
+    val windowToken = (this as? Activity)
+        ?.currentFocus
+        ?.windowToken
+    // fallback to the window token of the Activity's root view
+        ?: (this as? Activity)
+            ?.window
+            ?.decorView
+            ?.rootView
+            ?.windowToken
+
+    // If we have a valid token, request the keyboard to hide
+    windowToken?.let { token ->
+        imm.hideSoftInputFromWindow(token, 0)
     }
 }

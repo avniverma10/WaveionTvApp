@@ -40,13 +40,13 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
-import java.net.SocketTimeoutException
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -133,9 +133,9 @@ fun GenreMultiDRMPlayer(
             val drmData = HashMap<String,String>()
             drmData.put("DRMType",selectedVideoUrl.content?.drmType?:"")
             drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
-            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
+            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:"")
             val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(loginInfo = sharedViewModel.loginInfo?.value, contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
+                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
             } else {
                 MediaItem.Builder()
                     .setUri(url)

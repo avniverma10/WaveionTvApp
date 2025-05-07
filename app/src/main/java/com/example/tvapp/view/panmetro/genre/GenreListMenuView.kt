@@ -1,9 +1,11 @@
 package com.example.tvapp.view.panmetro.genre
 
+import android.R.attr.spacing
 import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -42,13 +45,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.genre.WTVGenre
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -63,6 +69,7 @@ fun GenreListMenu(
 ) {
     // Track which item is focused or selected.
     var focusedIndex by remember { mutableStateOf(0) }
+    val context = LocalContext.current
     // LazyListState to manage scrolling.
     val listState = rememberLazyListState()
     // Coroutine scope for launching suspend functions.
@@ -70,6 +77,9 @@ fun GenreListMenu(
 
     val bottomArrowHighlighted by remember {
         mutableStateOf(false)
+    }
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
     }
     LaunchedEffect(genreSelectedIndex) {
         focusedIndex = if(genreSelectedIndex.value >0) genreSelectedIndex.value else 0
@@ -253,20 +263,28 @@ fun NewCategoryMenuItem(
                     )
                 }
             } else {
-                Text(
-                    text = categoryName.toUpperCase(Locale.ROOT),
-                    color = contentColor,
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    fontFamily = FontFamily(Font(R.font.figtree_medium)),
-                    fontWeight = FontWeight(400),
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF232020), shape = RoundedCornerShape(6.dp))
-                        .padding(start = 16.dp, end = 4.dp)
-                        .fillMaxHeight()
-                        .wrapContentHeight(Alignment.CenterVertically)
-                )
+                        .fillMaxWidth()                                      // ① fix the container width
+                        .background(Color(0xFF232020), RoundedCornerShape(6.dp))
+                        .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+                ) {
+                    Text(
+                        text = categoryName.toUpperCase(Locale.ROOT),
+                        color = contentColor,
+                        fontSize = 15.sp,
+                        maxLines = 1,
+                        fontFamily = FontFamily(Font(R.font.figtree_medium)),
+                        fontWeight = FontWeight(400),
+                        modifier = Modifier
+                            .basicMarquee(
+                            iterations         = Int.MAX_VALUE, // effectively infinite
+                        )
+                            .wrapContentWidth()
+                            .wrapContentHeight(Alignment.CenterVertically),
+                        overflow = TextOverflow.Clip
+                    )
+                }
             }
         }
     }

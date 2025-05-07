@@ -3,6 +3,8 @@ package com.example.tvapp.extensions
 import android.content.Context
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.Log
@@ -11,12 +13,13 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
-import androidx.media3.exoplayer.drm.HttpMediaDrmCallback
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
+import com.example.tvapp.viewmodels.WTVViewModel.DataStoreKeys
+import kotlinx.coroutines.flow.first
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /**
@@ -113,16 +116,19 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/", contentUrl:String?=null, contentId:String?=null, loginInfo: LoginInfo?, logData:HashMap<String,String>?=null): MediaItem {
+suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/", contentUrl:String?=null, contentId:String?=null, logData:HashMap<String,String>?=null): MediaItem {
+    val dataS = dataStore?.data?.first()
+    val uNamme = PreferenceManager.getUsername()?:""//dataS?.get(DataStoreKeys.USERNAME) ?: ""
+    val pwd = PreferenceManager.getPassword()//dataS?.get(DataStoreKeys.PASSWORD) ?: ""
 
     val macAddress = provideMacAddress()
-    Log.e("loginInfo>>","${loginInfo?.username},${loginInfo?.password},>${macAddress}")
+    Log.e("loginInfo>>","${uNamme},${pwd},>${macAddress}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
         .appendQueryParameter("DrmSystem",      "Widevine")
-        .appendQueryParameter("LoginName",      loginInfo?.username?.toBase64Encoded())
-        .appendQueryParameter("Password",       loginInfo?.password?.toBase64Encoded())
+        .appendQueryParameter("LoginName",      uNamme.toBase64Encoded())
+        .appendQueryParameter("Password",       pwd?.toBase64Encoded())
         .appendQueryParameter("KeyId",          contentId?.toBase64Encoded())
         .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64Encoded())
         .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())

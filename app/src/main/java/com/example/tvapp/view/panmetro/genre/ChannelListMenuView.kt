@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
@@ -69,6 +71,7 @@ fun ChannelListMenuScreen(
     onPlayerScreenIntent: (EPGDataItem) -> Unit,
 ) {
 
+    val context = LocalContext.current
     var focusedIndex by remember { mutableStateOf(0) }
     var previewChannelIndex by remember { mutableStateOf(0) }
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
@@ -82,6 +85,7 @@ fun ChannelListMenuScreen(
     }
 
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         channelListFocusRequester.requestFocus()
     }
 

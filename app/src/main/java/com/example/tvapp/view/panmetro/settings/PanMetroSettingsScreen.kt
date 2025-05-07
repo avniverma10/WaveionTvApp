@@ -1,6 +1,8 @@
 package com.example.tvapp.view.panmetro.settings
 
+import android.app.Activity
 import android.os.Build
+import android.os.Process
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -31,30 +33,41 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
-
-    HideKeyboardOnEnter()
+    val context = LocalContext.current
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
+    val scope = rememberCoroutineScope()
+
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+        }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -73,7 +86,6 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     }
     if (showInfo) {
         PanMetroInfoScreen(
-            username = loginInfo?.username?:"WTV",
             onOkClick = { showInfo = false }
         )
     }
@@ -81,17 +93,26 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
         CommonDialog(
             showDialog = true,
             title = "Logout App",
-            message = "Are you sure you want to logout?",
+            message = "Are you sure you want to logout and exit the App?",
             errorCode = null,
             errorMessage = null,
             borderColor = Color.Transparent,
             confirmButtonText ="Yes" ,
             onConfirm =  {
-                sharedViewModel.clearLogin()
-                showExitDialog = false
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(0)
+                scope.launch {
+                     if (async {PreferenceManager.clearLogin() }.await()){
+                         showExitDialog = false
+                         context.hideKeyboard()
+                         (context as? Activity)?.finishAffinity()
+                         android.os.Process.killProcess(Process.myPid())
+                         /*navController.navigate(Destination.loginScreen) {
+                             popUpTo(navController.graph.id) {
+                                 inclusive = true
+                             }
+                         }*/
+                     }
                 }
+
             },
             dismissButtonText = "No",
             onDismiss = { showExitDialog = false }

@@ -42,6 +42,7 @@ import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
@@ -65,7 +66,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
-    HideKeyboardOnEnter()
     val context = LocalContext.current
 
 
@@ -78,8 +78,10 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
 
     val firstChannelFocusRequester = remember { FocusRequester() }
-
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         try {
             firstChannelFocusRequester.requestFocus()
         } catch (e: IllegalStateException) {

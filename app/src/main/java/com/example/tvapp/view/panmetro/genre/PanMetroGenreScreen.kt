@@ -34,6 +34,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
@@ -51,7 +52,6 @@ fun PanmetroGenreScreen(
     sharedViewModel: SharedViewModel,
     genreViewModel: GenreViewModel= hiltViewModel()
 ) {
-    HideKeyboardOnEnter()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -91,8 +91,8 @@ fun PanmetroGenreScreen(
             popUpTo(Destination.genreScreen) { inclusive = true }
         }
     }
-
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         genreViewModel.filterPanMetroChannelsByGenre()
 
     }

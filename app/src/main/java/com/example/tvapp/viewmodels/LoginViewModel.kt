@@ -21,9 +21,9 @@ class LoginViewModel @Inject constructor(
     private val application: Application, private val loginRepositoryImpl: LoginRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     var verificationId: String? = "000000"
 
-    fun saveLogin(username: String, password: String, remember: Boolean) {
+    fun saveLogin(username: String, password: String) {
         viewModelScope.launch {
-            loginPrefsRepository.saveLoginInfo(username, password, remember)
+            loginPrefsRepository.saveLoginInfo(username, password)
         }
     }
 

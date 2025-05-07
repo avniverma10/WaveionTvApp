@@ -57,6 +57,7 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
@@ -81,7 +82,6 @@ fun PanMetroVideoPlayer(
     playerViewModel: PlayerViewModel= hiltViewModel()
 ) {
 
-    HideKeyboardOnEnter()
     val context = LocalContext.current
     val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
@@ -98,15 +98,11 @@ fun PanMetroVideoPlayer(
     var errorMessageState by remember { mutableStateOf("") }
     var errorTitleState by remember { mutableStateOf("") }
 
-    //Compute the initial value
-    /*
-    val initial = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
-        if(initial>-1){
-            mutableIntStateOf(initial)
-        }else{
-            mutableIntStateOf(0)
-        }
-     */
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
     //Finally return the MutableState
     val selectedChannelIndex = remember {mutableIntStateOf(0) }
 
@@ -211,7 +207,7 @@ fun PanMetroVideoPlayer(
             drmData.put("contentId",selectedChannel?.content?.assetId?:"")
             drmData.put("contentUrl",selectedChannel?.content?.videoUrl?:""?:"")
             val mediaItem = if (selectedChannel?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(loginInfo = sharedViewModel.loginInfo?.value, contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
+                context.provideCryptoGuardMediaSource( contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
             } else {
                 MediaItem.fromUri(url)
             }

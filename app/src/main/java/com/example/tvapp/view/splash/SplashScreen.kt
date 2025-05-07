@@ -1,14 +1,18 @@
 package com.example.tvapp.view.splash
 
+import android.Manifest
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import androidx.annotation.RequiresApi
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -38,26 +42,38 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.getIptvDeviceInfo
+import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.provideMacAddrLiveData
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toJSONObject
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.StateFlow
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
-    HideKeyboardOnEnter()
+    val context = LocalContext.current
+    // Launcher for WRITE_EXTERNAL_STORAGE on API <= 28
+    val writePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            if (granted) {
+                // Either permission already granted, or API >= 29
+                sharedViewModel.onUserAcceptedUpdate()
+            } else {
+               context.showToastS("Storage permission denied")
+            }
+        }
+    )
     val macAddress = sharedViewModel.provideApplicationContext()?.provideMacAddrLiveData()
-    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
     val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
-    val context = LocalContext.current
     val activity  = (context as? Activity)
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -71,9 +87,11 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
-
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
-        sharedViewModel.checkDeviceDateTime(thresholdMs = TimeUnit.HOURS.toMillis(24))
+        context.hideKeyboard()
+        sharedViewModel.checkForAppUpdate()
     }
 
     // 2) If the check completes and is invalid → show blocking dialog & return
@@ -103,6 +121,30 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
     }
 
+
+    LaunchedEffect(timeValid,isInitializeData, showDialog, errorLoadingData, isUpdating) {
+        if (timeValid == false) return@LaunchedEffect
+        if (!isInitializeData) return@LaunchedEffect
+        if (showDialog)         return@LaunchedEffect
+        if (isUpdating)         return@LaunchedEffect
+        if (errorLoadingData != null) {
+            //context.showToastS(errorLoadingData)
+            showExitDialog = true
+        }
+        if(isInitializeData){
+            showExitDialog = false
+            if(PreferenceManager.isLoggedIn()){
+                navController.navigate(Destination.genreScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
+            }else{
+                navController.navigate(Destination.loginScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
+            }
+        }
+    }
+
     // — show the update dialog —
     if (showDialog && updateData != null) {
         CommonDialog(
@@ -114,7 +156,20 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             borderColor = Color.Transparent,
             confirmButtonText = "Yes",
             onConfirm = {
-                sharedViewModel.onUserAcceptedUpdate()
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                    // Need to request WRITE_EXTERNAL_STORAGE
+                    val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    if (ContextCompat.checkSelfPermission(context, perm)
+                        != PackageManager.PERMISSION_GRANTED) {
+                        writePermissionLauncher.launch(perm)
+                    }else{
+                        // Either permission already granted, or API >= 29
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                }else{
+                    // Either permission already granted, or API >= 29
+                    sharedViewModel.onUserAcceptedUpdate()
+                }
             },
             dismissButtonText = "No",
             onDismiss = { sharedViewModel.onUserDeclinedUpdate() },
@@ -185,29 +240,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
     }
 
-
-    // — only navigate away when not in “update?” dialog and not mid‑download —
-    LaunchedEffect(timeValid,isInitializeData, showDialog, errorLoadingData, loginInfo, isUpdating) {
-        if (timeValid == false) return@LaunchedEffect
-        if (!isInitializeData) return@LaunchedEffect
-        if (showDialog)         return@LaunchedEffect
-        if (isUpdating)         return@LaunchedEffect
-
-        errorLoadingData?.let {
-            context.showToastS(it)
-            return@LaunchedEffect
-        }
-
-        if (loginInfo?.username?.isNotEmpty() == true) {
-            navController.navigate(Destination.genreScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
-            }
-        } else {
-            navController.navigate(Destination.loginScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
-            }
-        }
-    }
 
 
     // Exit confirmation dialog

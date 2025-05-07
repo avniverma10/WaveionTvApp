@@ -48,6 +48,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -64,6 +65,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.calculateProgramWidth
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -86,7 +88,7 @@ fun EPGContent(
     categorySelectedIndex: MutableState<Int>
 ) {
 
-    HideKeyboardOnEnter()
+    val context = LocalContext.current
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
 
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -97,7 +99,10 @@ fun EPGContent(
     val hasInitiallyFocused = remember { mutableStateOf(false) }
     val leftPanelWidth = 160.dp
 
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         while (true) {
             delay(1000)
             currentTimeMillis.value = System.currentTimeMillis()

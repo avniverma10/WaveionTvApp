@@ -1,10 +1,8 @@
 package com.example.tvapp.view.panmetro.login
 
 import android.app.Activity
-import android.os.Build
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -35,7 +33,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,6 +63,7 @@ import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toResponseMessage
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.ExitDialog
@@ -80,8 +78,6 @@ fun PanmetroLoginScreen(
     HideKeyboardOnEnter()
     val context = LocalContext.current
     val macAddress = context.provideMacAddress()
-
-    val loginInfo = loginViewModel?.loginInfo?.collectAsState()?.value
     val scope = rememberCoroutineScope()
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
@@ -96,14 +92,6 @@ fun PanmetroLoginScreen(
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
 
-    LaunchedEffect(Unit) {
-       // usernameFocusRequester.requestFocus()
-        if (loginInfo?.rememberMe == true) {
-            username = loginInfo.username
-            password = loginInfo.password
-            rememberMe = true
-        }
-    }
     var showExitDialog by remember { mutableStateOf(false) }
 
     BackHandler {
@@ -325,7 +313,7 @@ fun PanmetroLoginScreen(
                                             msg = "password should not be blank"
                                         }
                                         if(isValid) {
-                                            (context as? Activity)?.hideKeyboard()
+                                            context.hideKeyboard()
                                             context.getAndroidTvDrmInfo()?.copy(
                                                 userName = username,
                                                 userPassword = password,
@@ -335,9 +323,10 @@ fun PanmetroLoginScreen(
                                                     // Optionally handle click for navigation
                                                     if (response?.returncode?.equals("0",true) == true){
                                                         // On Login Success:
-                                                        loginViewModel.saveLogin(username, password, rememberMe)
+                                                        PreferenceManager.saveLogin(username, password)
+                                                        context.hideKeyboard()
                                                         navController.navigate(Destination.genreScreen) {
-                                                            //popUpTo(Destination.loginScreen) { inclusive = true }
+                                                            popUpTo(Destination.loginScreen) { inclusive = true }
                                                         }
                                                     }else {
                                                         context.showToastS(response?.returncode?.toResponseMessage())
@@ -355,16 +344,6 @@ fun PanmetroLoginScreen(
                                         .focusable()
                                         .padding(start =10.dp,end=10.dp)
                                         .focusRequester(loginFocusRequester),
-                                    /*keyboardOptions = KeyboardOptions(
-                                        imeAction = ImeAction.Done
-                                    ),
-                                    keyboardActions = KeyboardActions(
-                                        onDone = {
-                                            // Hide keyboard or submit form
-                                            LocalFocusManager.current.clearFocus()
-                                            // submitLogin()
-                                        }
-                                    ),*/
                                     shape = RoundedCornerShape(30.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Color(0xFF8223EC), // Green background

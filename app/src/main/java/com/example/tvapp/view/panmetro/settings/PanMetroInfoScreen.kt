@@ -25,7 +25,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -35,12 +38,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.tvapp.extensions.dataStore
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.utils.uistate.PreferenceManager
+import com.example.tvapp.viewmodels.WTVViewModel.DataStoreKeys
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun PanMetroInfoScreen(
-    username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
     validity: String = "25/05/2025",
     appVersion: String = "1.3",
@@ -57,13 +64,18 @@ fun PanMetroInfoScreen(
 ) {
     val context = LocalContext.current
     val systemInfo = context.getAndroidTvDrmInfo()
+    var uName by remember { mutableStateOf("PanMetro") }
 
     BackHandler {
         onOkClick()
     }
     val okButtonFocusRequester = remember { FocusRequester() }
 
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
+        uName = context.dataStore.data.first().get(DataStoreKeys.USERNAME) ?: ""
         okButtonFocusRequester.requestFocus()
     }
     Box(
@@ -99,7 +111,7 @@ fun PanMetroInfoScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Info rows
-                InfoRow(label = "Username", value = username)
+                InfoRow(label = "Username", value = PreferenceManager.getUsername()?:"Panmetro")
                 InfoRow(label = "MAC ID", value = context.provideMacAddress()?:"")
                 InfoRow(label = "Validity", value = validity)
                 InfoRow(label = "App version", value = context.packageManager

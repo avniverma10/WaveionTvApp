@@ -23,6 +23,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TVApp"
+rootProject.name = "Panmetro"
 include(":app")
  

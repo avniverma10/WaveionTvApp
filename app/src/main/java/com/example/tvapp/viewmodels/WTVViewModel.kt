@@ -12,10 +12,13 @@ import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyEPGData
+import com.example.tvapp.extensions.dataStore
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.model.data.appupdate.AppUpdateData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
@@ -23,7 +26,6 @@ import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.sse.TabItem
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
-import com.example.tvapp.model.repository.login.LoginInfo
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.utils.network.heper.ConnectivityObserver
@@ -38,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,6 +66,12 @@ open class WTVViewModel @Inject constructor(
     private val okHttpClient: OkHttpClient
 ) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
+    object DataStoreKeys {
+        val USERNAME = stringPreferencesKey("username")
+        val PASSWORD = stringPreferencesKey("password")
+        val ISLOGIN    = booleanPreferencesKey("islogin")
+    }
+
     private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
 
@@ -107,11 +116,9 @@ open class WTVViewModel @Inject constructor(
                 initialValue = NetworkStatus.Unavailable
             )
 
-    val loginInfo = loginPrefsRepository?.loginInfoFlow?.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        LoginInfo()
-    )
+    val uName: StateFlow<String> = application.dataStore.data
+        .map { prefs -> prefs[DataStoreKeys.USERNAME] ?: "" }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
 
     fun clearLogin() {
         viewModelScope.launch {
