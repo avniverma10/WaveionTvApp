@@ -69,7 +69,9 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     if (showInfo) {
         PanMetroInfoScreen(
             username = loginInfo?.username?:"WTV",
-            onOkClick = { showInfo = false }
+            sharedViewModel = sharedViewModel,
+            navController = navController
+//            onOkClick = { showInfo = false }
         )
     }
     if (showExitDialog) {

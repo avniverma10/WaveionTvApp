@@ -86,7 +86,9 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     }
     if (showInfo) {
         PanMetroInfoScreen(
-            onOkClick = { showInfo = false }
+            navController = navController,
+            sharedViewModel = sharedViewModel
+//            onOkClick = { showInfo = false }
         )
     }
     if (showExitDialog) {

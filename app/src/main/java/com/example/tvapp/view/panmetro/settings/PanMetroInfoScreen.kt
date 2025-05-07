@@ -1,8 +1,11 @@
 package com.example.tvapp.view.panmetro.settings
 
 import android.os.Build
+import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -22,118 +26,167 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.android.caastv.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun PanMetroInfoScreen(
     username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
-    validity: String = "25/05/2025",
-    appVersion: String = "1.3",
+    validity: String = "26/04/2025",
+    appVersion: String = "1.2",
     androidVersion: String = "11",
     ram: String = "2 GB",
-    storage: String = "32.0 GB",
-    ota: String = "Lasted",
+    storage: String = "32 GB",
     stbModel: String = "DTP1731",
-    networkId: String = "1",
-    networkName: String = "GTPLKCBPL Digital Cable TV & Broadband",
+    networkName: String = "CAASTV",
     drmId: String = "102",
-    drmVersion: String = "2024.01",
-    onOkClick: () -> Unit = {}
+    navController: NavController,
+    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
     val systemInfo = context.getAndroidTvDrmInfo()
 
+    /* 1) track whether to show the confirmation dialog */
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    Log.d("PanMetroInfoScreen", "showExitDialog: $showExitDialog")
+    // intercept back-press as “logout” as well
     BackHandler {
-        onOkClick()
+        navController.popBackStack()
     }
-    val okButtonFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
-        okButtonFocusRequester.requestFocus()
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x80BBB7B7)), // semi-transparent black
-        contentAlignment = Alignment.Center
-    ) {
-        // Centered Card
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            modifier = Modifier
-                .widthIn(min = 350.dp, max = 450.dp)
-                .heightIn(max = 600.dp)
-                .wrapContentHeight()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+    // 2) auto-focus the Logout button
+    val logoutRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { logoutRequester.requestFocus() }
+
+    Scaffold(
+        containerColor = Color(0xFF1A1A1D),
+        bottomBar = {
+            Box(
+                Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Title
-                Text(
-                    text = "System information",
-                    fontSize = 20.sp,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Info rows
-                InfoRow(label = "Username", value = username)
-                InfoRow(label = "MAC ID", value = context.provideMacAddress()?:"")
-                InfoRow(label = "Validity", value = validity)
-                InfoRow(label = "App version", value = appVersion)
-                InfoRow(label = "Android Version", value = Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
-                InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
-                InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
-                InfoRow(label = "OTA", value = ota)
-                InfoRow(label = "STB Model", value = Build.MODEL)
-                InfoRow(label = "Network ID", value = networkId)
-                InfoRow(label = "Network Name", value = networkName)
-              //  InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
-              //  InfoRow(label = "DRM VERSION", value = drmVersion)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // OK button
                 Button(
-                    onClick = { onOkClick() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5CAD5C)),
+                    onClick = { showExitDialog = true },            // ← fire dialog
                     modifier = Modifier
-                        .focusRequester(okButtonFocusRequester) // this will get focus automatically
-                        .align(Alignment.CenterHorizontally)
+                        .focusRequester(logoutRequester)
                         .width(200.dp)
-                        .height(38.dp),
+                        .height(40.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(text = "OK", fontSize = 18.sp)
+                    Text("Logout", color = Color.Black, fontSize = 16.sp)
                 }
-
-
             }
+        }
+    ) { innerPadding ->
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(vertical = 24.dp, horizontal = 16.dp)
+        ) {
+            // … your logo, title, info panel exactly as before …
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.app_logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("CAASTV", color = Color.White, fontSize = 18.sp)
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            Text(
+                "System Information",
+                color = Color.White,
+                fontSize = 20.sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(12.dp))
+
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2C2E)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    InfoRow("Username", username)
+                    InfoRow("MAC ID", context.provideMacAddress() ?: macId)
+                    InfoRow("Validity", validity)
+                    InfoRow("App version", appVersion)
+                    InfoRow("Android version", systemInfo?.androidVersion ?: androidVersion)
+                    InfoRow("RAM", systemInfo?.totalMemory ?: ram)
+                    InfoRow("Storage", systemInfo?.storageInfo ?: storage)
+                    InfoRow("STB Model", Build.MODEL)
+                    InfoRow("Network name", networkName)
+                    InfoRow("DRM ID", systemInfo?.drmScheme ?: drmId)
+                }
+            }
+        }
+
+        // 3) render the confirmation dialog over everything
+        if (showExitDialog) {
+            CommonDialog(
+                showDialog = true,
+                title = "Logout App",
+                message = "Are you sure you want to logout?",
+                errorCode = null,
+                errorMessage = null,
+                borderColor = Color.Transparent,
+                confirmButtonText = "Yes",
+                onConfirm = {
+                    sharedViewModel.clearLogin()
+                    showExitDialog = false
+                    navController.navigate(Destination.loginScreen) {
+                        popUpTo(0)
+                    }
+                },
+                dismissButtonText = "No",
+                onDismiss = { showExitDialog = false }
+            )
         }
     }
 }
+
 
 @Composable
 fun InfoRow(label: String, value: String) {
@@ -147,13 +200,13 @@ fun InfoRow(label: String, value: String) {
         Text(
             text = label.uppercase(),
             fontSize = 16.sp,
-            color = Color.Black,
+            color = Color.White,
             modifier = Modifier.weight(1f)
         )
         Text(
             text = value.uppercase(),
             fontSize = 16.sp,
-            color = Color.Black,
+            color = Color.White,
             textAlign = TextAlign.Start,
             modifier = Modifier.weight(1f)
         )
