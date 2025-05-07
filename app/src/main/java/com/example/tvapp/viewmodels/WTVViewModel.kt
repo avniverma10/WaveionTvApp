@@ -205,33 +205,6 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun fetchServerTimeMillis(): Long {
-        val req = Request.Builder()
-            .url("https://api-panmetro.caastv.com/api/app/health")
-            .get().build()
-
-        val resp = okHttpClient.newCall(req).execute()
-        if (!resp.isSuccessful) {
-            Log.e(TAG, "Health endpoint error: HTTP ${resp.code}")
-            throw IOException("Health check failed: ${resp.code}")
-        }
-        val bodyStr = resp.body!!.string()
-        Log.d(TAG, "Raw JSON response: $bodyStr")
-        val timestampStr = JSONObject(bodyStr).getString("timestamp")
-        Log.d(TAG, "Parsed timestamp string: $timestampStr")
-
-        val serverInst = try {
-            Instant.parse(timestampStr)
-        } catch (e: Exception) {
-            Log.e(TAG, "Instant.parse failed for $timestampStr", e)
-            throw e
-        }
-        val serverMs = serverInst.toEpochMilli()
-        Log.d(TAG, "Server epoch ms: $serverMs")
-        return serverMs
-    }
-
     /**
      * Checks that:
      *  • server date == device date, AND
@@ -241,9 +214,16 @@ open class WTVViewModel @Inject constructor(
     fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
         viewModelScope.launch {
             val valid = withContext(Dispatchers.IO) {
-                val serverMs   = fetchServerTimeMillis()
-                val deviceMs   = System.currentTimeMillis()
-                val drift      = abs(deviceMs - serverMs)
+                val resp = networkApiCallInterfaceImpl
+                    .provideServerTimeStamp("https://api-panmetro.caastv.com/api/app/health")
+                    .firstOrNullSuccess()
+                if (resp == null) {
+                    Log.e(TAG, "Failed to fetch server time")
+                    return@withContext false
+                }
+                val serverMs = resp
+                val deviceMs = System.currentTimeMillis()
+                val drift = abs(deviceMs - serverMs)
 
                 // calendar‐date check
                 val zone       = ZoneId.systemDefault()
