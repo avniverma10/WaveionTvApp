@@ -1,12 +1,15 @@
 package com.example.tvapp.view.splash
 
+import android.Manifest
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -48,6 +51,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.ui.viewinterop.AndroidView
 import android.view.ViewGroup
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.size
 import kotlinx.coroutines.delay
 
@@ -78,6 +83,20 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     LaunchedEffect(Unit) {
         sharedViewModel.checkForAppUpdate()
     }
+
+    // Launcher for WRITE_EXTERNAL_STORAGE on API <= 28
+    val writePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            if (granted) {
+                // Either permission already granted, or API >= 29
+                sharedViewModel.onUserAcceptedUpdate()
+            } else {
+                context.showToastS("Storage permission denied")
+            }
+        }
+    )
+
     // — show the update dialog —
     if (showDialog && updateData != null) {
         CommonDialog(
@@ -88,11 +107,27 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             errorMessage = null,
             borderColor = Color.Transparent,
             confirmButtonText = "Yes",
-            onConfirm = { sharedViewModel.onUserAcceptedUpdate() },
+            onConfirm = {
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                    // Need to request WRITE_EXTERNAL_STORAGE
+                    val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    if (ContextCompat.checkSelfPermission(context, perm)
+                        != PackageManager.PERMISSION_GRANTED) {
+                        writePermissionLauncher.launch(perm)
+                    }else{
+                        // Either permission already granted, or API >= 29
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                }else{
+                    // Either permission already granted, or API >= 29
+                    sharedViewModel.onUserAcceptedUpdate()
+                }
+                        },
             dismissButtonText = "No",
             onDismiss = { sharedViewModel.onUserDeclinedUpdate() },
         )
     }
+
 
     // — register for download‑complete only once downloadId is set —
     DisposableEffect(downloadId) {

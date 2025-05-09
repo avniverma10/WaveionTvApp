@@ -86,6 +86,7 @@ fun PanMetroVideoPlayer(
     val context = LocalContext.current
     val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
+    val loginInfo = sharedViewModel.loginInfo?.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
@@ -230,7 +231,7 @@ fun PanMetroVideoPlayer(
                         ignoreCase = true
                     )
                 ) {
-                    context.provideCryptoGuardMediaSource(
+                    context.provideCryptoGuardMediaSource(loginInfo= loginInfo?.value,
                         contentUrl = selectedChannel?.content?.videoUrl,
                         contentId = selectedChannel?.content?.assetId,
                         logData = drmData

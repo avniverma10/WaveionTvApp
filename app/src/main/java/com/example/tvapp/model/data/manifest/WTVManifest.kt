@@ -9,7 +9,7 @@ data class WTVManifest(
     var appName:String?="WaveTVApp",
     var logo:String?="https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
     var splashUrl:String?="https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
-    var baseUrl:String? = "https://api-panmetro.caastv.com/api/",
+    var baseUrl:String? = "https://api-demo.caastv.com/api/",
     var styleNavigation:StyleNavigation?=null,
     var tab:List<TabInfo>?= null,
     var contact:Contact?=null,

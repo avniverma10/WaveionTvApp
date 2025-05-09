@@ -29,21 +29,19 @@ class LoginViewModel @Inject constructor(
     fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(WTVLogin?,String?)->Unit){
         viewModelScope.launch {
            // 3. Prepare headers and body
-            val headers = mapOf(
+            /*val headers = mapOf(
                 "Authorization" to "56fdsr237df325fv454v3v4532drferh",
                 "Content-Type"  to "application/json"
-            )
+            )*/
             // "uname":"PAN000014","paswrd":"1234566","macaddr":"123456789"
             Log.e("MAC ID", "$androidTvDrmInfo.macId")
             val requestBody = hashMapOf(
-                "uname" to (androidTvDrmInfo.userName ?: ""),
-                "paswrd" to (androidTvDrmInfo.userPassword ?: ""),
-                "macaddr" to (androidTvDrmInfo.macId)
+                "userName" to (androidTvDrmInfo.userName ?: ""),
+                "userPassword" to (androidTvDrmInfo.userPassword ?: ""),
+                "macId" to (androidTvDrmInfo.macId)
             )
-            //loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
             loginRepositoryImpl.provideUserLogin(
-                loginUrl = "https://iptvtest.panmetro.in/osmsapi/cryptodrm/logincheck",
-                headers = headers,
+                loginUrl = "https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",
                 requestBody = requestBody).collect { response ->
                 when (response) {
                     is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data

@@ -138,12 +138,14 @@ open class WTVViewModel @Inject constructor(private val application: Application
 //    }
 
     init {
-        startNotificationSSE()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startNotificationSSE()
+        }
     }
 
 
     /** 1) Create the Android O+ channel */
-    @RequiresApi(Build.VERSION_CODES.M)
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel() {
         val mgr = application.getSystemService(NotificationManager::class.java)
         if (mgr.getNotificationChannel(NOTIF_CHANNEL_ID) == null) {
@@ -161,6 +163,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
 
     /** 2) Kick off the SSE connection to your notifications endpoint */
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun startNotificationSSE() {
         if (startedNotifSSE) return
         startedNotifSSE = true
@@ -230,7 +233,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://api-panmetro.caastv.com/api/manifest")
+                    .provideWTVManifest("https://api-demo.caastv.com/api/manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -249,7 +252,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://api-panmetro.caastv.com/api/epg-files/join-epg-content")
+                    .provideWTVEPGData("https://api-demo.caastv.com/api/epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
@@ -266,7 +269,11 @@ open class WTVViewModel @Inject constructor(private val application: Application
                 application.applyEPGData(epgData)
                 epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
                     ?.let(::updateSelectedChannel)?:kotlin.run {
-                    _selectedChannel.value =  epgData.getOrNull(0)!!
+                    epgData?.getOrNull(0)?.let {
+                        _selectedChannel.value =  it
+                    }?: run {
+                        _selectedChannel.value = EPGDataItem()
+                    }
                 }
                 _isInitializeData.value = true
             }else{
@@ -283,7 +290,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
             }
             launch {
                 networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://api-panmetro.caastv.com/api/homescreenCategory")
+                    .provideWTVHomeData("https://api-demo.caastv.com/api/homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
                             application.applyAppHome(response.data)
@@ -302,7 +309,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://api-panmetro.caastv.com/app/appupdate")
+            .provideAppUpdateInfo("https://api-demo.caastv.com/api/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 
@@ -430,7 +437,7 @@ open class WTVViewModel @Inject constructor(private val application: Application
         startedSSE = true
 
         val request = Request.Builder()
-            .url("https://api-panmetro.caastv.com/api/tabs/sse-tabs") // replace with your endpoint URL
+            .url("https://api-demo.caastv.com/api/tabs/sse-tabs") // replace with your endpoint URL
             .build()
 
         val listener = object : EventSourceListener() {

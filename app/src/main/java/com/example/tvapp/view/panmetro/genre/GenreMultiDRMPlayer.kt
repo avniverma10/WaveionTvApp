@@ -59,6 +59,8 @@ fun GenreMultiDRMPlayer(
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
 
+    val loginInfo = sharedViewModel.loginInfo?.collectAsState()
+
     // Mutable state for UI updates
     val isBuffering = rememberSaveable { mutableStateOf(false) }
 
@@ -119,7 +121,7 @@ fun GenreMultiDRMPlayer(
             drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
             drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
             val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
+                context.provideCryptoGuardMediaSource(loginInfo= loginInfo?.value,contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
             } else {
                 MediaItem.fromUri(url)
             }

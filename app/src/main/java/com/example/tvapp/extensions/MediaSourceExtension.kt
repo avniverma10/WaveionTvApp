@@ -19,6 +19,7 @@ import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import androidx.core.net.toUri
+import com.example.tvapp.model.repository.login.LoginInfo
 
 /**
  * Returns a MediaSourceFactory configured with a DRM session manager if needed.
@@ -114,31 +115,34 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://cr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443?",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
+fun Context.provideCryptoGuardMediaSource(loginInfo:LoginInfo?=null,defaultLicenseUrl:String="https://cryptoguard.waveiontechnologies.com:4443/",contentUrl:String?=null,contentId:String?=null,logData:HashMap<String,String>?=null): MediaItem {
 
     val macAddress = provideMacAddress()
+
+    Log.e("loginInfo>>","${loginInfo?.username},${loginInfo?.password},>${macAddress}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
         .appendQueryParameter("DrmSystem",      "Widevine")
-        .appendQueryParameter("LoginName",      "josip".toBase64Encoded())
-        .appendQueryParameter("Password",       "cryptoguard".toBase64Encoded())
-        .appendQueryParameter("KeyId",          contentId?.toBase64Encoded())
-        .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64Encoded())
-        .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())
-        .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
+        .appendQueryParameter("LoginName",      loginInfo?.username?.toBase64UrlSafe())
+        .appendQueryParameter("Password",       loginInfo?.password?.toBase64UrlSafe())
+        .appendQueryParameter("KeyId",          contentId?.toBase64UrlSafe())
+        .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64UrlSafe())
+        .appendQueryParameter("ContentUrl",     contentUrl?.toBase64UrlSafe())
+        .appendQueryParameter("DeviceTypeName", "Android TV".toBase64UrlSafe())
         .build()
-        .toString()
-    val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?&","https://cryptoguard.waveiontechnologies.com:4443?")
+    val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?","https://cryptoguard.waveiontechnologies.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
 
 
+    Log.e("contentUrl>",contentUrl.toString())
+    Log.e("licenseUrl>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)
         .setDrmConfiguration(
             MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
-                .setLicenseUri(httpUrl) // Base license URL (will be modified in callback)
+                .setLicenseUri(licenseUrl) // Base license URL (will be modified in callback)
                 .build()
         )
         .build()
