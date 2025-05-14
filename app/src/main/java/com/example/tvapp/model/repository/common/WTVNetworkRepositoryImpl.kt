@@ -12,15 +12,23 @@ import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
+import com.example.tvapp.model.data.notification.NotificationItem
 import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
+import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
 import javax.inject.Inject
 
 class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
@@ -42,6 +50,45 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
+
+    fun provideNotificationSSE(sseUrl: String): Flow<NotificationItem> = callbackFlow {
+        val client = OkHttpClient.Builder()
+            .readTimeout(0, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl)
+            .addHeader("Accept", "text/event-stream")
+            .build()
+
+        val gson = Gson()
+        val listener = object : EventSourceListener() {
+            override fun onEvent(
+                eventSource: okhttp3.sse.EventSource,
+                id: String?, type: String?, data: String
+            ) {
+                // parse JSON array of NotificationItem
+                val listType = object : TypeToken<List<NotificationItem>>() {}.type
+                val items: List<NotificationItem> = gson.fromJson(data, listType)
+                items.forEach { trySend(it).isSuccess }
+            }
+
+            override fun onFailure(
+                eventSource: okhttp3.sse.EventSource,
+                t: Throwable?, response: okhttp3.Response?
+            ) {
+                // close the flow on error
+                close(t ?: RuntimeException("SSE failure"))
+            }
+        }
+
+        val source = EventSources.createFactory(client)
+            .newEventSource(request, listener)
+
+        // tear down when the collector disappears
+        awaitClose { source.cancel() }
+    }.flowOn(Dispatchers.IO)
 
     suspend fun provideWTVEPGData(epgContentUrl: String): Flow<WTVListResponse<EPGDataItem>> = flow {
         try {

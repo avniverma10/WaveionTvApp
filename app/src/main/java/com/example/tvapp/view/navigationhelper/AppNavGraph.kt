@@ -1,16 +1,20 @@
 package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
-import android.os.Build
-import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.tvapp.NotificationBanner
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
 import com.example.tvapp.view.channels.ChannelScreen
@@ -21,7 +25,6 @@ import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
-import com.example.tvapp.view.panmetro.settings.PanMetroSettingsScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
@@ -30,10 +33,23 @@ import java.nio.charset.StandardCharsets
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
-    WTVPlayerNavHost(
-        navController = navController,
-        sharedViewModel = sharedViewModel
-    )
+    val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
+
+    Box(Modifier.fillMaxSize()) {
+        WTVPlayerNavHost(
+            navController = navController,
+            sharedViewModel = sharedViewModel
+        )
+        bannerMsg?.let { msg ->
+            NotificationBanner(
+                message = msg,
+                visible = true,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                // you can add paddingIfNeeded here
+            )
+        }
+    }
 }
 
 @SuppressLint("ContextCastToActivity")
