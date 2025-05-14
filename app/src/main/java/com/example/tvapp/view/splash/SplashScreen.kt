@@ -13,6 +13,7 @@ import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -56,6 +57,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.flow.StateFlow
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
     val context = LocalContext.current
@@ -91,9 +93,9 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
+        sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
     }
-
     // 2) If the check completes and is invalid → show blocking dialog & return
     if (timeValid == false) {
         CommonDialog(
