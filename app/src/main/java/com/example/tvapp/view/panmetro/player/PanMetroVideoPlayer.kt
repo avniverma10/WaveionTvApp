@@ -198,7 +198,6 @@ fun PanMetroVideoPlayer(
             it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
         }
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-            selectedChannel.tv?.programme?.let { playerViewModel.providePlayableProgramData(it) }
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false

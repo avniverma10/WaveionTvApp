@@ -1,5 +1,6 @@
 package com.example.tvapp.di
 
+import android.content.Context
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.utils.network.LoggingInterceptor
 import com.example.tvapp.utils.network.NetworkApiCallInterface
@@ -7,10 +8,17 @@ import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Cache
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
+import java.io.IOException
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
@@ -28,7 +36,46 @@ object NetworkModule {
 
     @Singleton
     @Provides
-    fun okHttpClient(): OkHttpClient {
+    fun okHttpClient(@ApplicationContext context: Context): OkHttpClient {
+        val cacheSize = 10L * 1024 * 1024
+        val cacheDir  = File(context.cacheDir, "http_cache")
+        val cache     = Cache(cacheDir, cacheSize)
+        //Network interceptor: tag fresh responses with max-age
+        val networkCacheInterceptor = Interceptor { chain ->
+            val response = chain.proceed(chain.request())
+            // If the server gave no caching headers, add one for 60s
+            response.newBuilder()
+                .header("Cache-Control", "public, max-age=60")
+                .build()
+        }
+        // Offline interceptor: on any IOException or 5xx, force only-if-cached
+        val offlineInterceptor = Interceptor { chain ->
+            var request = chain.request()
+            try {
+                val response = chain.proceed(request)
+                // If server error, drop that response and try cache instead
+                if (response.code in 500..599) {
+                    response.close()
+                    request = request.newBuilder()
+                        .header(
+                            "Cache-Control",
+                            "public, only-if-cached, max-stale=${7 * 24 * 60 * 60}"
+                        )
+                        .build()
+                    return@Interceptor chain.proceed(request)
+                }
+                return@Interceptor response
+            } catch (ioEx: IOException) {
+                // Network error or timeout => serve stale cache
+                request = request.newBuilder()
+                    .header(
+                        "Cache-Control",
+                        "public, only-if-cached, max-stale=${7 * 24 * 60 * 60}"
+                    )
+                    .build()
+                return@Interceptor chain.proceed(request)
+            }
+        }
         // Create a TrustManager that does not validate certificate chains , only for testing and development purpose only
         // TODO("Add trust manager that validate certificate chains")
         val trustAllCerts = arrayOf<TrustManager>(
@@ -50,8 +97,10 @@ object NetworkModule {
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(false)
-            .addInterceptor(LoggingInterceptor())
+            .retryOnConnectionFailure(true)
+            .cache(cache)                                    // enable on-disk LRU
+            .addInterceptor(offlineInterceptor)              // handles errors → cache
+            .addNetworkInterceptor(networkCacheInterceptor)  // caches fresh responses
             // Trust all SSL certificates (for debug/development only)
             .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
             .hostnameVerifier { _, _ -> true }

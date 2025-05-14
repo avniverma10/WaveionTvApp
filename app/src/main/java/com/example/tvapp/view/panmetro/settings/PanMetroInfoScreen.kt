@@ -43,7 +43,6 @@ import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.utils.uistate.PreferenceManager
-import com.example.tvapp.viewmodels.WTVViewModel.DataStoreKeys
 import kotlinx.coroutines.flow.first
 
 @Composable
@@ -64,7 +63,6 @@ fun PanMetroInfoScreen(
 ) {
     val context = LocalContext.current
     val systemInfo = context.getAndroidTvDrmInfo()
-    var uName by remember { mutableStateOf("PanMetro") }
 
     BackHandler {
         onOkClick()
@@ -75,7 +73,6 @@ fun PanMetroInfoScreen(
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
-        uName = context.dataStore.data.first().get(DataStoreKeys.USERNAME) ?: ""
         okButtonFocusRequester.requestFocus()
     }
     Box(

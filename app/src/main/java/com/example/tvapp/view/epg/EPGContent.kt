@@ -1,5 +1,6 @@
 package com.example.tvapp.view.epg
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.Canvas
@@ -65,18 +66,20 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.calculateProgramWidth
+import com.example.tvapp.extensions.calculateProgramsWidth
+import com.example.tvapp.extensions.formatTime
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
-import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun EPGContent(
     navController: NavController,
@@ -182,9 +185,11 @@ fun EPGContent(
                                         start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
                                     )
                             ) {
-                                val availableProgram = sharedViewModel.providePlayableProgramData(channelData.tv?.programme?: arrayListOf())
+                                val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
+                                Log.d("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
+                                    .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
-                                    val programWidth = calculateProgramWidth(program.startTime ?: 0, program.endTime ?: 0)
+                                    val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == availableProgram.lastIndex)

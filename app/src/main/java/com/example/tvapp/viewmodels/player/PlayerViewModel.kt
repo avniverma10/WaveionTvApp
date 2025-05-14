@@ -2,17 +2,24 @@ package com.example.tvapp.viewmodels.player
 
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tvapp.extensions.coreEPGLiveData
+import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import java.text.SimpleDateFormat
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.sequences.distinctBy
 
 @HiltViewModel
 open class PlayerViewModel @Inject constructor(
@@ -21,12 +28,24 @@ open class PlayerViewModel @Inject constructor(
     fun provideAvailableEPG() = application.coreEPGLiveData().value?: arrayListOf()
 
 
+    /**
+     * Emits System.currentTimeMillis() immediately, then once every [intervalMillis].
+     */
+
+    fun timestampFlow(intervalMillis: Long = 60_000L): Flow<Long> = flow {
+        // emit right away
+        emit(System.currentTimeMillis())
+        // then emit every interval
+        while (true) {
+            delay(intervalMillis)
+            emit(System.currentTimeMillis())
+        }
+    }.distinctUntilChanged()
+
+
     private var _channel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedPlayerChannel: StateFlow<EPGDataItem> = _channel.asStateFlow()
 
-
-    private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
-    val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
 
 
     private var _currentProgramMinutesLeft = MutableStateFlow<Int>(0)
@@ -42,53 +61,27 @@ open class PlayerViewModel @Inject constructor(
 
 
 
-    fun providePlayableProgramData(programs: List<Programme>){
-        val now = System.currentTimeMillis()
-        _filterAvailablePrograms.value =  programs
-            .filter { program ->
-                val start = program.startTime
-                val end   = program.endTime
-                // Only include if both times are non-null and end is strictly in the future:
-                if (start == null || end == null) return@filter false
-                // 1) Currently running: start <= now < end
-                // 2) Upcoming: now < start
-                (start <= now && now < end) || (now < start)
-            }
-            .sortedBy { it.startTime }
-            .take(3)
-            .map { program ->
-                program.copy(
-                    startFormatedTime = program.startTime
-                        ?.let { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it) }
-                        ?: "--",
-                    endFormatedTime = program.endTime
-                        ?.let { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it) }
-                        ?: "--"
-                )
-            }
-    }
 
     fun provideAvailablePrograms(programs: List<Programme>):List<Programme>{
         val now = System.currentTimeMillis()
+        val formatter = SimpleDateFormat("hh:mm a", Locale.US)
        return programs
             .filter { program ->
                 val start = program.startTime
                 val end   = program.endTime
-                // Only include if both times are non-null and end is strictly in the future:
                 if (start == null || end == null) return@filter false
-                // 1) Currently running: start <= now < end
-                // 2) Upcoming: now < start
                 (start <= now && now < end) || (now < start)
             }
+            .distinctBy { it.startTime to it.endTime }
             .sortedBy { it.startTime }
             .take(3)
             .map { program ->
                 program.copy(
                     startFormatedTime = program.startTime
-                        ?.let { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it) }
+                        ?.let { formatter.format(it) }
                         ?: "--",
                     endFormatedTime = program.endTime
-                        ?.let { SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it) }
+                        ?.let { formatter.format(it) }
                         ?: "--"
                 )
             }

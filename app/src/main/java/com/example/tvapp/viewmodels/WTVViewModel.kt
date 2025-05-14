@@ -20,26 +20,35 @@ import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyEPGData
 import com.example.tvapp.extensions.dataStore
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.appupdate.AppUpdateData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.sse.TabItem
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.network.heper.ConnectivityObserver
 import com.example.tvapp.utils.network.heper.NetworkStatus
+import com.example.tvapp.utils.sealed.WTVListResponse
+import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.utils.sealed.firstOrNullSuccess
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -52,8 +61,10 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import org.json.JSONObject
 import java.io.IOException
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
@@ -66,11 +77,6 @@ open class WTVViewModel @Inject constructor(
     private val okHttpClient: OkHttpClient
 ) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
-    object DataStoreKeys {
-        val USERNAME = stringPreferencesKey("username")
-        val PASSWORD = stringPreferencesKey("password")
-        val ISLOGIN    = booleanPreferencesKey("islogin")
-    }
 
     private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
@@ -83,6 +89,9 @@ open class WTVViewModel @Inject constructor(
     val wtvEPGList: StateFlow<List<EPGDataItem>> = _wtvEPGList.asStateFlow()
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
+
+    private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
+    val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
 
     // ─── Date and time state ───
     private val _isTimeValid = MutableStateFlow<Boolean?>(null)
@@ -116,9 +125,7 @@ open class WTVViewModel @Inject constructor(
                 initialValue = NetworkStatus.Unavailable
             )
 
-    val uName: StateFlow<String> = application.dataStore.data
-        .map { prefs -> prefs[DataStoreKeys.USERNAME] ?: "" }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
 
     fun clearLogin() {
         viewModelScope.launch {
@@ -146,7 +153,7 @@ open class WTVViewModel @Inject constructor(
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://api-panmetro.caastv.com/api/manifest")
+                    .provideWTVManifest(Constants.BASE_URL+"manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -167,7 +174,7 @@ open class WTVViewModel @Inject constructor(
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://api-panmetro.caastv.com/api/epg-files/join-epg-content")
+                    .provideWTVEPGData(Constants.BASE_URL+"epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         val epgList = epgData.filter { it.content?.published == true }
@@ -208,7 +215,7 @@ open class WTVViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun fetchServerTimeMillis(): Long {
         val req = Request.Builder()
-            .url("https://api-panmetro.caastv.com/api/app/health")
+            .url(Constants.BASE_URL+"app/health")
             .get().build()
 
         val resp = okHttpClient.newCall(req).execute()
@@ -340,6 +347,7 @@ open class WTVViewModel @Inject constructor(
 
     fun updateSelectedChannel(selectedChannel:EPGDataItem){
         _selectedChannel.value =  selectedChannel
+        selectedChannel.tv?.programme?.let { providePlayableProgramData(it) }
     }
 
     //is user ideal since 10 sec
@@ -356,7 +364,7 @@ open class WTVViewModel @Inject constructor(
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://api-panmetro.caastv.com/api/app/appupdate")
+            .provideAppUpdateInfo(Constants.BASE_URL+"app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 
@@ -450,6 +458,37 @@ open class WTVViewModel @Inject constructor(
     }
 
 
+
+
+    fun providePlayableProgramData(programs: List<Programme>){
+        val now = System.currentTimeMillis()
+        val formatter = SimpleDateFormat("hh:mm a", Locale.US)
+        _filterAvailablePrograms.value =  programs
+            .asSequence()
+            .filter { program ->
+                val start = program.startTime
+                val end   = program.endTime
+                Log.e("","start:${start} and end:${end}")
+                // Only include if both times are non-null and end is strictly in the future:
+                if (start == null || end == null) return@filter false
+                // 1) Currently running: start <= now < end
+                // 2) Upcoming: now < start
+                (start <= now && now < end) || (now < start)
+            }
+            .distinctBy { it.startTime to it.endTime }
+            .sortedBy { it.startTime }
+            .take(3)
+            .map { program ->
+                program.copy(
+                    startFormatedTime = program.startTime
+                        ?.let { formatter.format(it) }
+                        ?: "--",
+                    endFormatedTime = program.endTime
+                        ?.let { formatter.format(it) }
+                        ?: "--"
+                )
+            }.toList()
+    }
 
 }
 

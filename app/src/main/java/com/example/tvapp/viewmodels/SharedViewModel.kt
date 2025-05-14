@@ -42,6 +42,7 @@ import androidx.core.content.edit
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.uistate.PreferenceManager
 import okhttp3.OkHttpClient
+import kotlin.sequences.distinctBy
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -258,7 +259,7 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    fun providePlayableProgramData(programs: List<Programme>): List<Programme> {
+    fun provideAvailableProgram(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()
         return programs
             .filter { program ->
@@ -270,6 +271,7 @@ open class SharedViewModel @Inject constructor(
                 // 2) Upcoming: now < start
                 (start <= now && now < end) || (now < start)
             }
+            .distinctBy { it.startTime to it.endTime }
             .sortedBy { it.startTime }
     }
 

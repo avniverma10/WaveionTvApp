@@ -2,6 +2,7 @@ package com.example.tvapp.utils.network
 
 import com.example.tvapp.model.data.validation.SendOTPRequest
 import com.example.tvapp.model.data.validation.ValidateOtpRequest
+import com.example.tvapp.model.timestamp.ServerTimeStamp
 import com.google.gson.JsonObject
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -22,6 +23,9 @@ interface NetworkApiCallInterface {
 
     @GET
     fun makeHttpGetRequest(@Url url: String): Call<Any>
+
+    @GET
+    fun makeTimestampRequest(@Url url: String): ServerTimeStamp
 
     @POST
     fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>

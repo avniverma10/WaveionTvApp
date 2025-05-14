@@ -463,7 +463,7 @@ fun calculateProgramWidth(startTime:String, endTime:String,widthPerBlock: Dp = 5
     return (blocks.toFloat() * widthPerBlock.value).dp
 }
 
-fun calculateProgramWidth(startTime:Long, endTime:Long,widthPerBlock: Dp = 50.dp): Dp {
+fun calculateProgramsWidth(startTime:Long, endTime:Long,widthPerBlock: Dp = 50.dp): Dp {
     val durationMillis = endTime - startTime
     // Convert milliseconds to minutes
     val durationInMinutes = durationMillis / 60000.0
@@ -473,6 +473,23 @@ fun calculateProgramWidth(startTime:Long, endTime:Long,widthPerBlock: Dp = 50.dp
     return (blocks.toFloat() * widthPerBlock.value).dp
 }
 
+
+fun provideProgramWidth(startTime: String, endTime: String, widthPerBlock: Dp = 50.dp): Dp {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val start = format.parse(startTime)
+    val end = format.parse(endTime)
+
+    val durationInMinutes = (end.time - start.time) / (1000 * 60)
+    val blocks = durationInMinutes / 30.0f
+
+    return (blocks * widthPerBlock.value).dp
+}
+
+
+fun String.provideProgramTime(): Date {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    return format.parse(this)
+}
 
 fun String.decodeJwtToken(): String? {
     return try {
@@ -520,6 +537,12 @@ fun String.toBase64Encoded(): String {
     return Base64.encodeToString(this.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
 }
 
+
+fun String.toBase64UrlSafe(): String =
+    Base64.encodeToString(
+        this.toByteArray(Charsets.UTF_8),
+        Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+    )
 
 /**
  * Maps common API status codes to user‐friendly messages.
@@ -664,4 +687,40 @@ fun String.macAddress(): String? = try {
 } catch (e: IOException) {
     e.printStackTrace()
     null
+}
+
+
+fun String.isCurrentTimeAfter(): Boolean {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val now = Calendar.getInstance()
+    val target = Calendar.getInstance()
+
+    // Parse "16:20" and set to today
+    val parsed = format.parse(this)
+    target.time = parsed ?: return false
+
+    // Set target to today's date + parsed time
+    target.set(Calendar.YEAR, now.get(Calendar.YEAR))
+    target.set(Calendar.MONTH, now.get(Calendar.MONTH))
+    target.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
+
+    return now.after(target) || now.before(target)
+}
+fun currentProgramFilter(start:String?,end:String?): Boolean {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val now = Calendar.getInstance()
+    val target = Calendar.getInstance()
+
+    // Parse "16:20" and set to today
+    val parsed = format.parse(start)
+    target.time = parsed ?: return false
+
+    // Set target to today's date + parsed time
+    target.set(Calendar.YEAR, now.get(Calendar.YEAR))
+    target.set(Calendar.MONTH, now.get(Calendar.MONTH))
+    target.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
+
+    return target.before(now)
+
+   // (start <= now && now < end) || (now < start)
 }

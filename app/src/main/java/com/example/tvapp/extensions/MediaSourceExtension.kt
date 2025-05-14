@@ -3,8 +3,6 @@ package com.example.tvapp.extensions
 import android.content.Context
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.Log
@@ -18,7 +16,6 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
-import com.example.tvapp.viewmodels.WTVViewModel.DataStoreKeys
 import kotlinx.coroutines.flow.first
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
@@ -127,17 +124,17 @@ suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="http
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
         .appendQueryParameter("DrmSystem",      "Widevine")
-        .appendQueryParameter("LoginName",      uNamme.toBase64Encoded())
-        .appendQueryParameter("Password",       pwd?.toBase64Encoded())
-        .appendQueryParameter("KeyId",          contentId?.toBase64Encoded())
-        .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64Encoded())
-        .appendQueryParameter("ContentUrl",     contentUrl?.toBase64Encoded())
-        .appendQueryParameter("DeviceTypeName", "Android TV".toBase64Encoded())
+        .appendQueryParameter("LoginName",      uNamme.toBase64UrlSafe())
+        .appendQueryParameter("Password",       pwd?.toBase64UrlSafe())
+        .appendQueryParameter("KeyId",          contentId?.toBase64UrlSafe())
+        .appendQueryParameter("UniqueDeviceId", macAddress?.toBase64UrlSafe())
+        .appendQueryParameter("ContentUrl",     contentUrl?.toBase64UrlSafe())
+        .appendQueryParameter("DeviceTypeName", "Android TV".toBase64UrlSafe())
         .build()
     val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?","https://drm.panmetroconvergence.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
-    Log.e("contentUrl>",contentUrl.toString())
-    Log.e("licenseUrl>",licenseUrl)
+    Log.e("loginInfo>",contentUrl.toString())
+    Log.e("loginInfo>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)
@@ -145,8 +142,7 @@ suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="http
             MediaItem.DrmConfiguration.Builder(C.WIDEVINE_UUID)
                 .setLicenseUri(licenseUrl) // Base license URL (will be modified in callback)
                 .build()
-        )
-        .build()
+        ).build()
 }
 
 

@@ -7,13 +7,16 @@ import com.google.gson.JsonSerializer
 import java.lang.reflect.Type
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 class TimestampAdapter : JsonDeserializer<Long>, JsonSerializer<Long> {
 
-    private val dateFormat = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
+    private val dateFormat = SimpleDateFormat("yyyyMMdd", Locale.US)
+    private val dateTimeFormat = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
+
 
     override fun deserialize(
         json: JsonElement,
@@ -23,10 +26,10 @@ class TimestampAdapter : JsonDeserializer<Long>, JsonSerializer<Long> {
         val dateStr = json.asString
         return try {
             // Parse the date string into a Date object
-            val oldDate: Date = dateFormat.parse(dateStr) ?: return 0L
+            val oldDate: Date = dateTimeFormat.parse(dateStr) ?: return 0L
 
             // Create a Calendar instance for the parsed (old) date
-            val oldCalendar = Calendar.getInstance(Locale.getDefault())
+            val oldCalendar = Calendar.getInstance(Locale.US)
             oldCalendar.time = oldDate
 
             // Extract the time-of-day from the old timestamp.

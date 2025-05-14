@@ -313,7 +313,7 @@ fun PanmetroLoginScreen(
                                             msg = "password should not be blank"
                                         }
                                         if(isValid) {
-                                            context.hideKeyboard()
+                                           context.hideKeyboard()
                                             context.getAndroidTvDrmInfo()?.copy(
                                                 userName = username,
                                                 userPassword = password,
