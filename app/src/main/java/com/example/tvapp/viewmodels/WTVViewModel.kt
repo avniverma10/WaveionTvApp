@@ -395,18 +395,8 @@ open class WTVViewModel @Inject constructor(
             .orEmpty()
         Log.d("App version","current version: $current, new version: ${update.appVersion} and isVersionHigher:>${shouldUpdateRequired(update.appVersion, current)}")
 
-        if (shouldUpdateRequired(update.appVersion, current)) {
-            if (update.forceUpdate == 1) {
-                Log.d("AVNI","Force update")
-                downloadApk(update.apkUrl)
-            }
-            else {
-                Log.d("AVNI","SHow Dialog")
-                Log.d("AVNI","APK url ---> ${update.apkUrl}")
-                _showUpdateDialog.value = true
-            }
-
-        }
+        val needsUpdate = shouldUpdateRequired(update.appVersion, current)
+        _showUpdateDialog.value = needsUpdate
     }
 
     private fun isVersionHigher(newVer: String, oldVer: String): Boolean {

@@ -1,6 +1,7 @@
 package com.example.tvapp.view.splash
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -18,9 +19,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -57,6 +62,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.flow.StateFlow
 
 
+@SuppressLint("ContextCastToActivity")
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
@@ -149,34 +155,35 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
 
     // — show the update dialog —
     if (showDialog && updateData != null) {
-        CommonDialog(
-            showDialog = true,
-            title = "Update available",
-            message = "Do you want to update the app?",
-            errorCode = null,
-            errorMessage = null,
-            borderColor = Color.Transparent,
-            confirmButtonText = "Yes",
-            onConfirm = {
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                    // Need to request WRITE_EXTERNAL_STORAGE
-                    val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    if (ContextCompat.checkSelfPermission(context, perm)
-                        != PackageManager.PERMISSION_GRANTED) {
-                        writePermissionLauncher.launch(perm)
-                    }else{
-                        // Either permission already granted, or API >= 29
-                        sharedViewModel.onUserAcceptedUpdate()
-                    }
-                }else{
-                    // Either permission already granted, or API >= 29
-                    sharedViewModel.onUserAcceptedUpdate()
-                }
-            },
-            dismissButtonText = "No",
-            onDismiss = { sharedViewModel.onUserDeclinedUpdate() },
-        )
+        if (updateData?.forceUpdate == 1) {
+            // ────────── Forced ──────────
+            CommonDialog(
+                showDialog        = true,
+                title             = "Update Required",
+                message           = "A mandatory update is available. You must update to continue.",
+                confirmButtonText = "Yes",
+                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                dismissButtonText = "Exit",
+                onDismiss         = {
+                    activity?.finishAffinity()
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                },
+                initialFocusOnConfirm  = true
+
+            )
+        } else {
+            CommonDialog(
+                showDialog        = true,
+                title             = "Update Available",
+                message           = "There’s a new version. Would you like to update now?",
+                confirmButtonText = "Yes",
+                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                dismissButtonText = "No",
+                onDismiss         = { sharedViewModel.onUserDeclinedUpdate() }
+            )
+        }
     }
+
 
     Spacer(Modifier.height(16.dp))
 
@@ -279,7 +286,6 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             error = painterResource(R.drawable.panmetro_logo_t),        // Error state
             placeholder = painterResource(R.drawable.panmetro_logo_t)   // Loading state
         )
-
         if (isUpdating) {
             CircularProgressIndicator(
                 modifier = Modifier
