@@ -1,5 +1,6 @@
 package com.example.tvapp.view.playeroverlay
 
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.example.tvapp.extensions.formatTime
+import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.panmetro.common.TopOverlayInfo
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
@@ -63,6 +67,12 @@ fun FullScreenPlayerOverlay(
     val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
+
+    val timestamp by playerViewModel.timestampFlow()
+        .collectAsState(initial = System.currentTimeMillis())
+
+    val currentTimeStamp: MutableState<Long> = remember { mutableStateOf( timestamp) }
+
 
     // Constants for animations
     val scaleDownBy = 0.85f
@@ -144,6 +154,7 @@ fun FullScreenPlayerOverlay(
                     ChannelCard(
                         playerViewModel = playerViewModel,
                         epgDataItem = item,
+                        timestamp =  currentTimeStamp,
                         isFocused = isSelected,
                         scale = animatedScale,
                         modifier = Modifier
@@ -174,6 +185,7 @@ fun FullScreenPlayerOverlay(
 private fun ChannelCard(
     playerViewModel: PlayerViewModel,
     epgDataItem: EPGDataItem,
+    timestamp: MutableState<Long>,
     isFocused: Boolean,
     scale: Float,
     modifier: Modifier
@@ -184,15 +196,44 @@ private fun ChannelCard(
             it
         )
     }
-    var currentProgram = programList?.getOrNull(0)
-    var nextProgram = programList?.getOrNull(1)
 
-    LaunchedEffect(programList) {
+    var programIndex = remember { mutableIntStateOf(0) }
+
+    var currentProgram = remember(programIndex) {
+        var program = programList?.getOrNull(programIndex.intValue)
+        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
+        program
+    }
+
+    var nextProgram = remember(programIndex) {
+        val nextIndex = programIndex.intValue+1
+        var program = programList?.getOrNull(nextIndex)
+        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
+        program
+    }
+
+    // 2) Format it once per emission
+    val timeLeft = remember(timestamp) {
+        val diff = programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value) ?: 0
+        if( diff > 0){
+            val timeLeft = diff.div(60000).toInt()
+            if(timeLeft == 0){
+                1
+            }else{
+                timeLeft
+            }
+        }else{
+            ++programIndex.intValue
+            (programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value)?.div(60000))?.toInt()?:0
+        }
+    }
+
+    /*LaunchedEffect(programList) {
         currentProgram = programList?.getOrNull(0)
         nextProgram = programList?.getOrNull(1)
         currentProgram?.let { playerViewModel.updateCurrentRunningProgramTimings(it) }
     }
-
+*/
 
     Box(
         modifier = modifier
@@ -211,7 +252,7 @@ private fun ChannelCard(
                     )
                 } else Modifier
             )
-            .padding(16.dp)
+            .padding(10.dp)
     ) {
         Column {
             Row(
@@ -222,6 +263,7 @@ private fun ChannelCard(
                     modifier = Modifier
                         .background(Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .align(Alignment.CenterVertically)
                 ) {
                     Text(
                         text = epgDataItem.content?.channelNo?.toString() ?: "--",
@@ -229,14 +271,23 @@ private fun ChannelCard(
                         color = Color.Black
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
+                // Channel Logo
+                AsyncImage(
+                    model = epgDataItem.content?.thumbnailUrl,
+                    contentDescription = "Channel Logo",
+                    modifier = Modifier
+                        .background(Color.Transparent, RoundedCornerShape(4.dp))
+                        .width(50.dp)
+                        .height(50.dp)
+                        .padding(start = 5.dp)
+                )
+                /*Text(
                     text = epgDataItem.content?.title
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color(0xFF49FEDD)
-                )
+                )*/
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -250,11 +301,11 @@ private fun ChannelCard(
 
             Text(
                 text = buildString {
-                    append(formatTime(currentProgram?.startTime))
+                    append(currentProgram?.startTime?.formatTime())
                     append(" - ")
-                    append(formatTime(currentProgram?.endTime))
+                    append(currentProgram?.endTime?.formatTime())
                     append(" • ")
-                    append(playerViewModel.provideCurrentRunningProgramTimings(currentProgram))
+                    append(timeLeft)
                     append(" MIN LEFT")
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -264,7 +315,7 @@ private fun ChannelCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Next at ${nextProgram?.startFormatedTime}",
+                text = "Next at ${nextProgram?.startTime?.formatTime()}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )

@@ -41,6 +41,7 @@ import javax.inject.Inject
 import androidx.core.content.edit
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.uistate.PreferenceManager
+import okhttp3.OkHttpClient
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -49,7 +50,7 @@ open class SharedViewModel @Inject constructor(
     private val dataStoreManager: DataStoreManager,
     private val filterPreferences: FilterPreferences,
     private val loginPrefsRepository: LoginPrefsRepository,
-) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository) {
+) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
 
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
@@ -241,18 +242,13 @@ open class SharedViewModel @Inject constructor(
                 _searchResults.value = _epgChannels.value
                 return@launch
             }
-
-            // Get the current EPG list.
-            val epgList = wtvEPGList.value ?: fetchEPGList(context)
-
-            // Filter only by content title.
-            val filteredEPGItems = epgList.filter { epgItem ->
-                epgItem.content?.title?.contains(query, ignoreCase = true) == true
-            }
-
-            // Map the EPGDataItems to Channels.
-            val filteredChannels = filteredEPGItems.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.copy(
+            val epgList = fetchEPGList(context)
+            val filteredChannels = epgList.mapNotNull { epgItem ->
+                epgItem.tv?.channel?.takeIf { channel ->
+                    val name = channel.displayName ?: ""
+                    val genre = epgItem.content?.genreId ?: ""
+                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
+                }?.copy(
                     logoUrl = epgItem.content?.thumbnailUrl,
                     videoUrl = epgItem.content?.videoUrl,
                     genreId = epgItem.content?.genreId ?: "Unknown"
@@ -262,7 +258,7 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    fun providePlayableProgramData(programs: List<Programme>): List<Programme> {
+    fun provideAvailableProgram(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()
         return programs
             .filter { program ->
@@ -274,6 +270,7 @@ open class SharedViewModel @Inject constructor(
                 // 2) Upcoming: now < start
                 (start <= now && now < end) || (now < start)
             }
+            .distinctBy { it.startTime to it.endTime }
             .sortedBy { it.startTime }
     }
 

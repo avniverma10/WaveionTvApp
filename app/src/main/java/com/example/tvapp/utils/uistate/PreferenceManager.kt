@@ -14,6 +14,8 @@ object PreferenceManager {
   private const val KEY_GENRE          = "selectedGenreIndex"
   private const val KEY_CHANNEL        = "selectedChannelIndex"
   private const val KEY_PLAYER_CHANNEL = "playerChannelIndex"
+  private const val KEY_USERNAME   = "username"
+  private const val KEY_PASSWORD   = "password"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
@@ -49,4 +51,26 @@ object PreferenceManager {
       }
       editor.apply()
     }
+
+  /** Save username & password atomically */
+  fun saveLogin(username: String, password: String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_USERNAME, username)
+    editor.putString(KEY_PASSWORD, password)
+    editor.apply()
+  }
+
+  /** Clear only the login keys */
+  fun clearLogin(): Boolean {
+    val editor = prefs.edit()
+    editor.remove(KEY_USERNAME)
+    editor.remove(KEY_PASSWORD)
+    return editor.commit()
+  }
+
+
+  /** Helpers to read them back */
+  fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
+  fun getPassword(): String? = prefs.getString(KEY_PASSWORD, null)
+  fun isLoggedIn(): Boolean = getUsername() != null && getPassword() != null
 }

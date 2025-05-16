@@ -42,7 +42,7 @@ import javax.inject.Inject
 open class WTVPlayerViewModel @Inject constructor(
     private val wtvNetworkRepositoryImpl: WTVNetworkRepositoryImpl,
     private val application: Application,
-    private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl) {
+    private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl, okHttpClient = OkHttpClient()) {
     // Mutable StateFlow to store the mobile number
     private var _mobileNumber = MutableLiveData<String?>(null)
     companion object {

@@ -32,11 +32,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.android.caastv.R
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
@@ -45,11 +47,9 @@ import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
-
-    HideKeyboardOnEnter()
+    val context = LocalContext.current
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    val loginInfo = sharedViewModel.loginInfo?.collectAsState()?.value
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -68,7 +68,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
     }
     if (showInfo) {
         PanMetroInfoScreen(
-            username = loginInfo?.username?:"WTV",
+            username = PreferenceManager.getUsername()?:"CaasTV",
             sharedViewModel = sharedViewModel,
             navController = navController
 //            onOkClick = { showInfo = false }

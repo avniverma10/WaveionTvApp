@@ -57,15 +57,15 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.android.caastv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
-import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.playeroverlay.FullScreenPlayerOverlay
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.generateWatermark
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -73,20 +73,19 @@ import com.example.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.net.SocketTimeoutException
 
 @OptIn(UnstableApi::class)
 @Composable
 fun PanMetroVideoPlayer(
     navController: NavController,
     sharedViewModel: SharedViewModel,
-    playerViewModel: PlayerViewModel = hiltViewModel()
+    playerViewModel: PlayerViewModel= hiltViewModel()
 ) {
 
-    HideKeyboardOnEnter()
     val context = LocalContext.current
     val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
-    val loginInfo = sharedViewModel.loginInfo?.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
@@ -100,17 +99,13 @@ fun PanMetroVideoPlayer(
     var errorMessageState by remember { mutableStateOf("") }
     var errorTitleState by remember { mutableStateOf("") }
 
-    //Compute the initial value
-    /*
-    val initial = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
-        if(initial>-1){
-            mutableIntStateOf(initial)
-        }else{
-            mutableIntStateOf(0)
-        }
-     */
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
     //Finally return the MutableState
-    val selectedChannelIndex = remember { mutableIntStateOf(0) }
+    val selectedChannelIndex = remember {mutableIntStateOf(0) }
 
     // We’ll need the FocusManager to move focus programmatically
     val focusManager = LocalFocusManager.current
@@ -129,6 +124,7 @@ fun PanMetroVideoPlayer(
     var isOverlayVisible by remember { mutableStateOf(true) }
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var overlayHideJob by remember { mutableStateOf<Job?>(null) }
+
 
 
     // Function to handle overlay visibility
@@ -169,274 +165,258 @@ fun PanMetroVideoPlayer(
                 // Add a listener to handle playback errors.
                 addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                            ?.responseCode
-                        val rawCode = httpCode ?: error.errorCode
+                        if (error.cause is HttpDataSource.HttpDataSourceException) {
+                            // handle timeout: show a "Retry" UI
+                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(2002)
 
-                        // now returns (appCode, title, message)
-                        val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
+                            Log.e("rawCode","$errorCode")
+                            errorCodeState    = errorCode
+                            errorTitleState   = errorTitle
+                            errorMessageState = errorMessage
+                            showErrorDialog   = true
+                        } else {
+                            val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                                ?.responseCode
+                            var rawCode = httpCode ?: error.errorCode
+                            // now returns (appCode, title, message)
+                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
 
-                        errorCodeState = errorCode
-                        errorTitleState = errorTitle
-                        errorMessageState = errorMessage
-                        showErrorDialog = true
+                            Log.e("rawCode","$errorCode")
+                            errorCodeState    = errorCode
+                            errorTitleState   = errorTitle
+                            errorMessageState = errorMessage
+                            showErrorDialog   = true
+
+                        }
                     }
                 })
             }
     }
-    // Condition to display the error dialog if an error is encountered.
-
-
-    if (showErrorDialog) {
-        val borderColor = remember(errorCodeState) {
-            if (errorCodeState in 606..700) Color(0xFF6B2828) else base_color
-        }
-
-        CommonDialog(
-            showDialog = true,
-            title = errorTitleState,
-            message = null,
-            errorCode = errorCodeState,
-            errorMessage = errorMessageState,
-            borderColor = borderColor,
-            confirmButtonText = null,
-            onConfirm = null,
-            dismissButtonText = null,
-            onDismiss = null,
-        )
-    }
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
-            selectedChannelIndex.intValue = epgList.indexOfFirst {
-                it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
-            }
+        selectedChannelIndex.intValue = epgList.indexOfFirst {
+            it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
+        }
+        selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            exoPlayer.stop()
+            exoPlayer.clearMediaItems()
             showErrorDialog = false
-            errorCodeState = 0
-            errorMessageState = ""
-            selectedChannelIndex.value = epgList.indexOfFirst {
-                it.content?.videoUrl == (selectedChannel.content?.videoUrl ?: "")
+            val drmData = HashMap<String,String>()
+            drmData.put("DRMType",selectedChannel?.content?.drmType?:"")
+            drmData.put("contentId",selectedChannel?.content?.assetId?:"")
+            drmData.put("contentUrl",selectedChannel?.content?.videoUrl?:""?:"")
+            val mediaItem = if (selectedChannel?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
+                context.provideCryptoGuardMediaSource( contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
+            } else {
+                MediaItem.fromUri(url)
             }
-            selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-                selectedChannel.tv?.programme?.let { playerViewModel.providePlayableProgramData(it) }
-                exoPlayer.stop()
-                exoPlayer.clearMediaItems()
-                showErrorDialog = false
-                val drmData = HashMap<String, String>()
-                drmData.put("DRMType", selectedChannel?.content?.drmType ?: "")
-                drmData.put("contentId", selectedChannel?.content?.assetId ?: "")
-                drmData.put("contentUrl", selectedChannel?.content?.videoUrl ?: "" ?: "")
-                val mediaItem = if (selectedChannel?.content?.drmType.equals(
-                        "cryptoguard",
-                        ignoreCase = true
-                    )
-                ) {
-                    context.provideCryptoGuardMediaSource(loginInfo= loginInfo?.value,
-                        contentUrl = selectedChannel?.content?.videoUrl,
-                        contentId = selectedChannel?.content?.assetId,
-                        logData = drmData
-                    )
-                } else {
-                    MediaItem.fromUri(url)
-                }
-                Log.e("Requested Data>", drmData.toJSONObject().toString())
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
-            }
+            Log.e("Requested Data>",drmData.toJSONObject().toString())
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
         }
+    }
 
-        BackHandler {
-            navController.navigate(Destination.epgScreen) {
-                popUpTo(Destination.panMetroScreen) { inclusive = true }
-            }
+    BackHandler {
+        navController.navigate(Destination.epgScreen) {
+            popUpTo(Destination.panMetroScreen) { inclusive = true }
         }
+    }
 
-        fun playNextChannel() {
-            if (selectedChannelIndex.intValue < (epgList.lastIndex)) {
-                selectedChannelIndex.intValue++
-                sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
-            }
+    fun playNextChannel() {
+        if (selectedChannelIndex.intValue < (epgList.lastIndex )) {
+            selectedChannelIndex.intValue++
+            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
         }
+    }
 
-        fun playPreviousChannel() {
-            if (selectedChannelIndex.intValue > 0) {
-                selectedChannelIndex.intValue--
-                sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
-            }
-        }
-
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .focusable()
-                .onPreviewKeyEvent { keyEvent ->
-                    showOverlay()
-                    if (keyEvent.type == KeyEventType.KeyDown) {
-                        when (keyEvent.nativeKeyEvent.keyCode) {
-                            KeyEvent.KEYCODE_BACK -> {
-                                navController.navigate(Destination.epgScreen) {
-                                    PreferenceManager.selectedGenreIndex = 0
-                                    PreferenceManager.selectedChannelIndex = 0
-                                    PreferenceManager.lastEpgDataItem = null
-                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
-                                }
-                                true
-                            }
-
-//                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-//                                navController.navigate(Destination.genreScreen) {
-//                                    PreferenceManager.selectedGenreIndex = 0
-//                                    PreferenceManager.selectedChannelIndex = 0
-//                                    PreferenceManager.lastEpgDataItem = null
-//                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
-//                                }
-//                                true
-//                            }
-
-//                            KeyEvent.KEYCODE_DPAD_LEFT -> {
-//                                navController.navigate(Destination.epgScreen) {
-//                                    PreferenceManager.lastEpgDataItem = null
-//                                    popUpTo(Destination.panMetroScreen) { inclusive = true }
-//                                }
-//                                true
-//                            }
-
-                            KeyEvent.KEYCODE_DPAD_UP-> {
-                                true
-                            }
-                            KeyEvent.KEYCODE_DPAD_DOWN-> {
-                                true
-                            }
-                            KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                if (selectedChannelIndex.intValue >= 0 && selectedChannelIndex.intValue < (epgList.size)) {
-                                    sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
-                                }
-                                true
-                            }
-
-                            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT-> {
-                                if (selectedChannelIndex.intValue > 0) {
-                                    focusManager.moveFocus(FocusDirection.Down)
-                                    selectedChannelIndex.intValue--
-                                    scope.launch {
-                                        delay(200)
-                                        // Scroll into view
-                                        listState.animateScrollToItem(selectedChannelIndex.intValue)
-                                    }
-                                }
-                                true
-                            }
-
-                            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                if (selectedChannelIndex.value < (epgList.size-1)) {
-                                    focusManager.moveFocus(FocusDirection.Up)
-                                    selectedChannelIndex.intValue++
-                                    scope.launch {
-                                        delay(200)
-                                        // Scroll into view
-                                        listState.animateScrollToItem(selectedChannelIndex.intValue)
-                                    }
-                                }
-                                true
-                            }
-
-                            else -> false
-                        }
-                    } else false
-                }
-        ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                    val playerView = view.findViewById<PlayerView>(R.id.player_view)
-
-                    playerView.apply {
-                        player = exoPlayer
-                        useController = false
-                        keepScreenOn = true
-                        addWatermarkToPlayer(this, provideWatermarkHash(context))
-
-                        // addLogoToPlayer(this)
-                    }
-
-                    view
-
-                }
-            )
-
-            if (showErrorDialog) {
-                val borderColor = remember(errorCodeState) {
-                    if (errorCodeState in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
-                }
-
-                CommonDialog(
-                    showDialog = true,
-                    title = errorTitleState,
-                    message = null,
-                    errorCode = errorCodeState,
-                    errorMessage = errorMessageState,
-                    borderColor = borderColor,
-                    confirmButtonText = null,
-                    onConfirm = null,
-                    dismissButtonText = null,
-                    onDismiss = null,
-                )
-            }
-
-
-            DisposableEffect(lifecycleOwner) {
-                val observer = LifecycleEventObserver { _, event ->
-                    when (event) {
-                        Lifecycle.Event.ON_PAUSE -> {
-                            exoPlayer.pause()
-                        }
-
-                        Lifecycle.Event.ON_STOP -> {
-                            //context.showToastS("ON_STOP>${selectedChannel.displayName}")
-                            sharedViewModel.persistToPlayerPrefs(
-                                prefs = PreferenceManager,
-                                selectedChannel = selectedChannel
-                            )
-                        }
-
-                        Lifecycle.Event.ON_START -> {
-                            if (PreferenceManager.lastEpgDataItem != null) {
-                                //context.showToastS("ON_START>${PreferenceManager.lastEpgDataItem?.displayName}")
-                                sharedViewModel.updateSelectedChannel(PreferenceManager.lastEpgDataItem!!)
-                                PreferenceManager.lastEpgDataItem = null
-                            }
-
-                            exoPlayer.play()
-                        }
-
-                        else -> Unit
-                    }
-                }
-                lifecycleOwner.lifecycle.addObserver(observer)
-                onDispose {
-                    exoPlayer.release()
-                    overlayHideJob?.cancel()
-                    lifecycleOwner.lifecycle.removeObserver(observer)
-                }
-            }
-            if (isOverlayVisible && selectedChannelIndex.intValue >= 0) {
-                FullScreenPlayerOverlay(
-                    selectedIndex = selectedChannelIndex,
-                    lazyListState = listState,
-                    sharedViewModel = sharedViewModel,
-                    playerViewModel = playerViewModel,
-                    channelFocusRequesters = channelRequesters,
-                    onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
-                )
-            }
+    fun playPreviousChannel() {
+        if (selectedChannelIndex.intValue > 0) {
+            selectedChannelIndex.intValue--
+            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
         }
     }
 
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .focusable()
+            .onPreviewKeyEvent { keyEvent ->
+                showOverlay()
+                if (keyEvent.type == KeyEventType.KeyDown) {
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_BACK -> {
+                            navController.navigate(Destination.epgScreen) {
+                                PreferenceManager.selectedGenreIndex = 0
+                                PreferenceManager.selectedChannelIndex = 0
+                                PreferenceManager.lastEpgDataItem = null
+                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                            }
+                            true
+                        }
+
+//                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+//                            navController.navigate(Destination.genreScreen) {
+//                                PreferenceManager.selectedGenreIndex = 0
+//                                PreferenceManager.selectedChannelIndex = 0
+//                                PreferenceManager.lastEpgDataItem = null
+//                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+//                            }
+//                            true
+//                        }
+//                        KeyEvent.KEYCODE_DPAD_LEFT -> {
+//                            navController.navigate(Destination.epgScreen) {
+//                                PreferenceManager.lastEpgDataItem = null
+//                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+//                            }
+//                            true
+//                        }
+                        KeyEvent.KEYCODE_DPAD_UP-> {
+                            true
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN-> {
+                            true
+                        }
+                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            if (selectedChannelIndex.intValue>=0 && selectedChannelIndex.intValue < (epgList.size)) {
+                                sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
+                            }
+                            true
+                        }
+
+                        KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_DPAD_LEFT-> {
+                            if (selectedChannelIndex.intValue > 0) {
+                                focusManager.moveFocus(FocusDirection.Down)
+                                selectedChannelIndex.intValue--
+                                scope.launch {
+                                    delay(200)
+                                    // Scroll into view
+                                    listState.animateScrollToItem(selectedChannelIndex.intValue)
+                                }
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_RIGHT-> {
+                            if (selectedChannelIndex.intValue >= 0 && selectedChannelIndex.intValue < (epgList.size-1)) {
+                                focusManager.moveFocus(FocusDirection.Up)
+                                selectedChannelIndex.intValue++
+                                scope.launch {
+                                    delay(200)
+                                    // Scroll into view
+                                    listState.animateScrollToItem(selectedChannelIndex.intValue)
+                                }
+                            }
+                            true
+                        }
+                        else -> false
+                    }
+                } else false
+            }
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                val playerView = view.findViewById<PlayerView>(R.id.player_view)
+
+                playerView.apply {
+                    player = exoPlayer
+                    useController = false
+                    keepScreenOn = true
+                    addWatermarkToPlayer(this, provideWatermarkHash(context))
+
+                    // addLogoToPlayer(this)
+                }
+
+                view
+
+            }
+        )
+//        Row(
+//            verticalAlignment = Alignment.Top,
+//            modifier = Modifier.size(width = 150.dp, height = 100.dp)
+//                .align(Alignment.TopEnd)
+//        ){
+//            Image(
+//                painter = painterResource(R.drawable.player_logo),
+//                contentDescription = null,
+//                modifier = Modifier.padding(20.dp)
+//            )
+//        }
+        /*ZoomInOutSwitcher(
+            epgDataItem = sharedViewModel.selectedChannel, modifier = Modifier
+            .size(width = 200.dp, height = 150.dp)
+            .align(Alignment.TopEnd)
+            .padding(end = 16.dp))*/
+
+
+        if (showErrorDialog) {
+            val borderColor = remember(errorCodeState) {
+                if (errorCodeState in 606..700) Color(0xFF6B2828) else Color(0xFF49FEDD)
+            }
+
+            CommonDialog(
+                painter = painterResource(id = R.drawable.media_error),
+                showDialog         = true,
+                title              = errorTitleState,
+                message            = null,
+                errorCode          = errorCodeState,
+                errorMessage       = errorMessageState,
+                borderColor        = borderColor,
+                confirmButtonText  = null,
+                onConfirm          = null,
+                dismissButtonText  = null,
+                onDismiss          = null,
+            )
+        }
+
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_PAUSE-> {
+                        exoPlayer.pause()
+                    }
+                    Lifecycle.Event.ON_STOP-> {
+                        //context.showToastS("ON_STOP>${selectedChannel.displayName}")
+                        sharedViewModel.persistToPlayerPrefs(prefs = PreferenceManager,selectedChannel = selectedChannel)
+                    }
+                    Lifecycle.Event.ON_START-> {
+                        if(PreferenceManager.lastEpgDataItem != null) {
+                            //context.showToastS("ON_START>${PreferenceManager.lastEpgDataItem?.displayName}")
+                            sharedViewModel.updateSelectedChannel(PreferenceManager.lastEpgDataItem!!)
+                            PreferenceManager.lastEpgDataItem = null
+                        }
+
+                        exoPlayer.play()
+                    }
+                    else -> Unit
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                exoPlayer.release()
+                overlayHideJob?.cancel()
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+        if (isOverlayVisible && selectedChannelIndex.intValue >=0) {
+            FullScreenPlayerOverlay(
+                selectedIndex =  selectedChannelIndex,
+                lazyListState = listState,
+                sharedViewModel= sharedViewModel,
+                playerViewModel = playerViewModel,
+                channelFocusRequesters = channelRequesters,
+                onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
+            )
+        }
+    }
+
+
+}
 
 @SuppressLint("HardwareIds")
 fun provideWatermarkHash(context: Context):String{

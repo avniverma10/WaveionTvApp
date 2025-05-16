@@ -1,6 +1,7 @@
 package com.example.tvapp.view.panmetro.common
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,13 +40,32 @@ import java.util.Locale
 @Composable
 fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewModel) {
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
-    val programList by playerViewModel.filterAvailablePrograms.collectAsState()
-    val timeLeft by playerViewModel.currentProgramMinutesLeft.collectAsState()
-    var currentProgram = programList.getOrNull(0)
+    val programList by sharedViewModel.filterAvailablePrograms.collectAsState()
+    val timestamp by playerViewModel.timestampFlow()
+        .collectAsState(initial = System.currentTimeMillis())
 
-    LaunchedEffect(programList) {
-        currentProgram = programList.getOrNull(0)
-        //currentProgram?.let { playerViewModel.updateCurrentRunningProgramTimings(it) }
+
+
+    var programIndex = remember { 0 }
+
+    val currentProgram = remember(programIndex) {
+        programList.getOrNull(programIndex)
+    }
+
+    // 2) Format it once per emission
+    val timeLeft = remember(timestamp) {
+        val diff = programList.getOrNull(programIndex)?.endTime?.minus(timestamp) ?: 0
+        if( diff > 0){
+           val timeLeft = diff.div(60000).toInt()
+            if(timeLeft == 0){
+                1
+            }else{
+                timeLeft
+            }
+        }else{
+            programIndex +=1
+            (programList.getOrNull(programIndex)?.endTime?.minus(timestamp)?.div(60000))?.toInt()?:0
+        }
     }
 
 
@@ -80,8 +100,9 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
                 )
             )
             Spacer(modifier = Modifier.width(20.dp))
+            Log.d("AVNI","${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} ")
             Text(
-                text = "${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} • ${playerViewModel.provideCurrentRunningProgramTimings(currentProgram)} MIN LEFT",
+                text = "${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} • ${timeLeft} MIN LEFT",
                 color = Color.LightGray,
                 style = MaterialTheme.typography.bodyMedium
             )

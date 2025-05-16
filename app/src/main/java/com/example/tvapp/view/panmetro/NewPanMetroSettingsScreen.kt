@@ -47,7 +47,7 @@ import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
 

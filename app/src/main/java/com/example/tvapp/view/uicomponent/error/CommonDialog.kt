@@ -1,5 +1,6 @@
 package com.example.tvapp.view.uicomponent.error
 
+import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
@@ -30,7 +32,7 @@ fun CommonDialog(
     showDialog: Boolean,
     title: String? = null,
     message: String? = null,
-    painter: Painter?=null,
+    painter: Painter? = null,
     errorCode: Int? = null,
     errorMessage: String? = null,
     borderColor: Color = Color.Gray,
@@ -38,182 +40,161 @@ fun CommonDialog(
     onConfirm: (() -> Unit)? = null,
     dismissButtonText: String? = null,
     onDismiss: (() -> Unit)? = null,
+    initialFocusOnConfirm: Boolean = false
 ) {
     if (!showDialog) return
 
-    val noButtons = confirmButtonText == null && dismissButtonText == null
+    // Pre-compute shape and optional border stroke
+    val dialogShape = RoundedCornerShape(16.dp)
+    val borderStroke = borderColor
+        .takeIf { it != Color.Transparent }
+        ?.let { BorderStroke(1.dp, it) }
 
     Popup(
         alignment = Alignment.Center,
         properties = PopupProperties(
-            focusable             = !noButtons,
+            focusable             = (confirmButtonText != null || dismissButtonText != null),
             dismissOnBackPress    = false,
             dismissOnClickOutside = false
         )
     ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 8.dp,
-            color =  Color(0xFF191B1F),
+            shape = dialogShape,
+            border = borderStroke,
+            tonalElevation = if (borderStroke != null) 8.dp else 0.dp,
+            shadowElevation = 0.dp,
+            color = Color(0xFF191B1F),
             modifier = Modifier
                 .padding(24.dp)
                 .widthIn(min = 200.dp, max = 400.dp)
                 .wrapContentHeight()
-                .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(16.dp))
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if(painter == null){
-                    title?.let {
-                        var titleFontSize  by remember { mutableStateOf(18.sp) }
-                        Column(
-                            modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier
-                        ) {
-                            Image(
-                                painter = painter?:painterResource(id = R.drawable.error),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text         = it,
-                                fontSize     = titleFontSize,
-                                color        = Color.White,
-                                textAlign    = TextAlign.Center,
-                                modifier     = Modifier.fillMaxWidth(),
-                                maxLines = 2,
-                                onTextLayout = { layout ->
-                                    if (layout.lineCount > 1 && titleFontSize != 16.sp) {
-                                        titleFontSize = 17.sp
-                                    }
-                                }
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(22.dp))
+                // ─── Title + Icon ───────────────────────────────────────────
+                title?.let { text ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painter ?: painterResource(id = R.drawable.error),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            colorFilter = ColorFilter.tint(Color.White)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = text,
+                            fontSize = 18.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
-                }else {
-                    title?.let {
-                        var titleFontSize by remember { mutableStateOf(18.sp) }
-                        var titleLineCount by remember { mutableStateOf(1) }
-                        Row(
-                            modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier,
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = if (titleLineCount > 1) Alignment.Top else Alignment.CenterVertically
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.error),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                colorFilter = ColorFilter.tint(Color.White)
-                            )
-                            Text(
-                                text = it,
-                                fontSize = titleFontSize,
-                                color = Color.White,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth(),
-                                maxLines = 2,
-                                onTextLayout = { layout ->
-                                    if (layout.lineCount > 1 && titleFontSize != 16.sp) {
-                                        titleFontSize = 17.sp
-                                    }
-                                }
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(22.dp))
-                    }
+                    Spacer(modifier = Modifier.height(22.dp))
                 }
 
-                // Main message
+                // ─── Main message ───────────────────────────────────────────
                 message?.let {
                     val msgFontSize = if (errorCode == null && errorMessage == null) 19.sp else 16.sp
                     Text(
                         text = it,
                         fontSize = msgFontSize,
                         color = Color.White,
-                        textAlign =  TextAlign.Center ,
-                        modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier
+                        textAlign = TextAlign.Center,
+                        modifier = if (confirmButtonText == null && dismissButtonText == null)
+                            Modifier.fillMaxWidth() else Modifier
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
-                // Error details
+                // ─── Error details ──────────────────────────────────────────
                 if (errorCode != null || errorMessage != null) {
-                    val codeText = errorCode?.toString().orEmpty()
-                    val msgText = errorMessage.orEmpty()
                     Text(
-                        text = "Error $codeText: $msgText",
+                        text = "Error ${errorCode.orEmpty()}: ${errorMessage.orEmpty()}",
                         fontSize = 14.sp,
                         color = Color.White,
-                        textAlign =  TextAlign.Center,
-                        modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier.fillMaxWidth()
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                 }
-                if ((errorCode == null && errorMessage == null) && !noButtons) {
-                    Spacer(modifier = Modifier.height(30.dp))
-                }
 
-                // Buttons row
-                if (!noButtons) {
-                    val dismissRequester    = remember { FocusRequester() }
-                    val dismissInteraction  = remember { MutableInteractionSource() }
-                    val isDismissFocused    by dismissInteraction.collectIsFocusedAsState()
-                    val confirmInteraction  = remember { MutableInteractionSource() }
-                    val isConfirmFocused    by confirmInteraction.collectIsFocusedAsState()
+                // ─── Buttons ────────────────────────────────────────────────
+                if (confirmButtonText != null || dismissButtonText != null) {
+                    val dismissRequester   = remember { FocusRequester() }
+                    val dismissInteraction = remember { MutableInteractionSource() }
+                    val isDismissFocused   by dismissInteraction.collectIsFocusedAsState()
+
+                    val confirmRequester   = remember { FocusRequester() }
+                    val confirmInteraction = remember { MutableInteractionSource() }
+                    val isConfirmFocused   by confirmInteraction.collectIsFocusedAsState()
 
                     LaunchedEffect(showDialog) {
-                        if (showDialog) dismissRequester.requestFocus()
+                        if (initialFocusOnConfirm && confirmButtonText != null) {
+                            confirmRequester.requestFocus()
+                        } else if (dismissButtonText != null) {
+                            dismissRequester.requestFocus()
+                        } else {
+                            confirmRequester.requestFocus()
+                        }
                     }
 
+                    Spacer(modifier = Modifier.height( if (errorCode == null && errorMessage == null) 30.dp else 0.dp ))
+
                     Row(
-                        Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
-                        verticalAlignment   = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        dismissButtonText?.let { text ->
-                            onDismiss?.let { action ->
-                                TextButton(
-                                    onClick            = action,
-                                    interactionSource  = dismissInteraction,
-                                    modifier           = Modifier
-                                        .focusRequester(dismissRequester)
-                                        .focusable(interactionSource = dismissInteraction),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors             = ButtonDefaults.textButtonColors(
-                                        containerColor = if (isDismissFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                        contentColor   = Color.Black
-                                    )
-                                ) {
-                                    Text(text)
-                                }
-                                Spacer(Modifier.width(28.dp))
+                        // Dismiss button
+                        if (dismissButtonText != null && onDismiss != null) {
+                            TextButton(
+                                onClick           = onDismiss,
+                                interactionSource = dismissInteraction,
+                                modifier          = Modifier
+                                    .focusRequester(dismissRequester)
+                                    .focusable(interactionSource = dismissInteraction),
+                                shape  = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (isDismissFocused) Color(0xFF49FEDD) else Color(0xFF414857),
+                                    contentColor   = Color.Black
+                                )
+                            ) {
+                                Text(dismissButtonText)
                             }
+                            Spacer(Modifier.width(28.dp))
                         }
 
-                        confirmButtonText?.let { text ->
-                            onConfirm?.let { action ->
-                                TextButton(
-                                    onClick            = action,
-                                    interactionSource  = confirmInteraction,
-                                    modifier           = Modifier
-                                        .focusable(interactionSource = confirmInteraction),
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors             = ButtonDefaults.textButtonColors(
-                                        containerColor = if (isConfirmFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                        contentColor   = Color.Black
-                                    )
-                                ) {
-                                    Text(text)
-                                }
+                        // Confirm button
+                        if (confirmButtonText != null && onConfirm != null) {
+                            TextButton(
+                                onClick           = onConfirm,
+                                interactionSource = confirmInteraction,
+                                modifier          = Modifier
+                                    .focusRequester(confirmRequester)
+                                    .focusable(interactionSource = confirmInteraction),
+                                shape  = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (isConfirmFocused) Color(0xFF49FEDD) else Color(0xFF414857),
+                                    contentColor   = Color.Black
+                                )
+                            ) {
+                                Text(confirmButtonText)
                             }
                         }
                     }
                 }
-
             }
         }
     }
-
 }
+
+private fun Int?.orEmpty(): String = this?.toString() ?: ""

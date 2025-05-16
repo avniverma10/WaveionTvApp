@@ -53,8 +53,8 @@ import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
-import com.example.tvapp.view.player.CommonDialog
 import com.example.tvapp.view.uicomponent.ExitDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -89,7 +89,6 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             showDialog = true,
             title = "Exit App",
             message = "Are you sure you want to exit the app?",
-            borderColor = Color.Transparent,
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()

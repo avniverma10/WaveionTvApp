@@ -48,8 +48,9 @@ import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
@@ -149,7 +150,7 @@ fun PanMetroInfoScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    InfoRow("Username", username)
+                    InfoRow("Username", PreferenceManager.getUsername()?:"CaasTV")
                     InfoRow("MAC ID", context.provideMacAddress() ?: macId)
                     InfoRow("Validity", validity)
                     InfoRow("App version", appVersion)

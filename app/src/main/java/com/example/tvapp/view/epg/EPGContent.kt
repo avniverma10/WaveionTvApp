@@ -1,5 +1,6 @@
 package com.example.tvapp.view.epg
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.Canvas
@@ -48,6 +49,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -64,18 +66,20 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.calculateProgramWidth
+import com.example.tvapp.extensions.calculateProgramsWidth
+import com.example.tvapp.extensions.formatTime
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
-import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun EPGContent(
     navController: NavController,
@@ -87,7 +91,7 @@ fun EPGContent(
     categorySelectedIndex: MutableState<Int>
 ) {
 
-    HideKeyboardOnEnter()
+    val context = LocalContext.current
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
 
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
@@ -98,7 +102,10 @@ fun EPGContent(
     val hasInitiallyFocused = remember { mutableStateOf(false) }
     val leftPanelWidth = 160.dp
 
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         while (true) {
             delay(1000)
             currentTimeMillis.value = System.currentTimeMillis()
@@ -178,9 +185,11 @@ fun EPGContent(
                                         start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
                                     )
                             ) {
-                                val availableProgram = sharedViewModel.providePlayableProgramData(channelData.tv?.programme?: arrayListOf())
+                                val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
+                                Log.d("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
+                                    .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
-                                    val programWidth = calculateProgramWidth(program.startTime ?: 0, program.endTime ?: 0)
+                                    val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
                                     val focusRequester = remember { FocusRequester() }
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == availableProgram.lastIndex)
@@ -264,7 +273,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp)
                             .fillMaxHeight()
                             .width(1.dp)
-                            .background(base_color)
+                            .background(Color(0xFF49FEDD))
                     )
                     Box(
                         modifier = Modifier
@@ -272,7 +281,7 @@ fun EPGContent(
                             .offset(x = indicatorOffsetDp - 9.dp, y = (-18).dp)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(color = base_color, style = Stroke(width = 1.dp.toPx()))
+                            drawCircle(color = Color(0xFF49FEDD), style = Stroke(width = 1.dp.toPx()))
                         }
                         Image(
                             painter = painterResource(id = R.drawable.vector_271),
@@ -437,7 +446,7 @@ fun ChannelInfo(
                 .height(125.dp)
                 .then(
                     if (isFocused.value)
-                        Modifier.border(2.dp, base_color, RoundedCornerShape(4.dp))
+                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
@@ -465,7 +474,5 @@ fun ChannelInfo(
         }
     }
 }
-
-
 
 

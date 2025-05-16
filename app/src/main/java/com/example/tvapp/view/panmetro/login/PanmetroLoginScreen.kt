@@ -10,10 +10,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
@@ -49,8 +51,9 @@ import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.LoginViewModel
 
 @Composable
@@ -60,7 +63,6 @@ fun PanmetroLoginScreen(
 ) {
     val context    = LocalContext.current
     val macAddress = context.provideMacAddress()
-    val loginInfo  = loginViewModel.loginInfo?.collectAsState()?.value
 
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
@@ -78,15 +80,6 @@ fun PanmetroLoginScreen(
 
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
 
-    LaunchedEffect(Unit) {
-        loginInfo?.let {
-            if (it.rememberMe) {
-                username   = it.username
-                password   = it.password
-                rememberMe = true
-            }
-        }
-    }
 
     var showExitDialog by remember { mutableStateOf(false) }
     BackHandler { showExitDialog = true }
@@ -279,7 +272,9 @@ fun PanmetroLoginScreen(
                                         androidTvDrmInfo = info,
                                         onLoginResponse = { response, errorMsg ->
                                             if (response != null) {
-                                                loginViewModel.saveLogin(username, password, rememberMe)
+                                                // On Login Success:
+                                                PreferenceManager.saveLogin(username, password)
+                                                context.hideKeyboard()
                                                 navController.navigate(Destination.genreScreen)
                                             } else {
                                                 context.showToastS(errorMsg ?: "Login failed")

@@ -15,10 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(private val application: Application, private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl) : WTVViewModel(application= application,networkApiCallInterfaceImpl) {
+class HomeViewModel @Inject constructor(private val application: Application, private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl) : WTVViewModel(application= application,networkApiCallInterfaceImpl, okHttpClient = OkHttpClient()) {
     private val _homeContent = MutableStateFlow<List<HomeContent>>(emptyList())
     val homeContent: StateFlow<List<HomeContent>> get() = _homeContent
 

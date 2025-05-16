@@ -31,10 +31,10 @@ data class Programme(
     @SerializedName("_clumpidx")
     val clumpIdx: String?="0/1",
     @SerializedName("_start")
-    @JsonAdapter(TimestampAdapter::class)
+    @JsonAdapter(ProgramTimestampAdapter::class)
     val startTime: Long? = null,
     @SerializedName("_stop")
-    @JsonAdapter(TimestampAdapter::class)
+    @JsonAdapter(ProgramTimestampAdapter::class)
     val endTime: Long? = null,
     val date: String?="20250212",
     val desc: String?="Covering the top highlight of day from across the globe.",

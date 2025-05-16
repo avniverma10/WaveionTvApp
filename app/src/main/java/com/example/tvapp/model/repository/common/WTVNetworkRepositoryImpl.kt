@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import okhttp3.OkHttpClient
@@ -30,6 +31,7 @@ import okhttp3.Request
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import javax.inject.Inject
+import java.time.Instant
 
 class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
     suspend fun provideWTVManifest(manifestUrl: String): Flow<WTVResponse<WTVManifest>> = flow {
@@ -187,6 +189,25 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
+    suspend fun provideServerTimeStamp(healthUrl: String): Flow<WTVResponse<Long>> =
+        flow {
+            val response = networkApiCallInterface
+                .makeHttpGetRequest(healthUrl)
+                .execute()
+
+            if (response.isSuccessful && response.body() != null) {
+                val bodyStr      = response.body()!!.toJSONObject()?.getString("timestamp")
+                val serverMs     = Instant.parse(bodyStr).toEpochMilli()
+                emit(WTVResponse.Success(serverMs))
+            } else {
+                emit(WTVResponse.Failure(Throwable("Health check HTTP ${response.code()}")))
+            }
+        }
+            .catch { e ->
+                // Now we only catch *real* IO/parse errors, not the internal AbortFlowException
+                emit(WTVResponse.Failure(e))
+            }
+            .flowOn(Dispatchers.IO)
 
     suspend fun provideHomeContent(homeContentUrl:String): Flow<List<HomeData>> = flow {
         try {

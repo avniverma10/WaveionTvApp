@@ -12,19 +12,14 @@ import com.example.tvapp.utils.sealed.LoginResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val wtvNetworkRepositoryImpl: WTVNetworkRepositoryImpl,
-    private val application: Application, private val loginRepositoryImpl: LoginRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository) {
+    private val application: Application, private val loginRepositoryImpl: LoginRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     var verificationId: String? = "000000"
-
-    fun saveLogin(username: String, password: String, remember: Boolean) {
-        viewModelScope.launch {
-            loginPrefsRepository.saveLoginInfo(username, password, remember)
-        }
-    }
 
     fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(WTVLogin?,String?)->Unit){
         viewModelScope.launch {
@@ -41,7 +36,7 @@ class LoginViewModel @Inject constructor(
                 "macId" to (androidTvDrmInfo.macId)
             )
             loginRepositoryImpl.provideUserLogin(
-                loginUrl = "https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",
+                loginUrl = "https://api-demo.caastv.com/api/android/appLogin",
                 requestBody = requestBody).collect { response ->
                 when (response) {
                     is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data

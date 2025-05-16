@@ -46,7 +46,7 @@ import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
-import com.example.tvapp.view.player.CommonDialog
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
@@ -128,7 +128,6 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             message = "Are you sure you want to exit the app?",
             errorCode = null,
             errorMessage = null,
-            borderColor = Color.Transparent,
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()
