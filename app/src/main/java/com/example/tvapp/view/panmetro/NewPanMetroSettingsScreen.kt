@@ -2,6 +2,8 @@ package com.example.tvapp.view.panmetro
 
 
 
+import android.app.Activity
+import android.os.Process
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,11 +32,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -43,17 +47,22 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.android.caastv.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
-
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val firstMenuItemFocusRequester = remember { FocusRequester() }
 
     var showInfo by remember { mutableStateOf(false) }
@@ -95,17 +104,17 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         CommonDialog(
             showDialog = true,
             title = "Logout App",
-            message = "Are you sure you want to logout?",
+            message = "Are you sure you want to logout exit the app?",
+            painter = painterResource(id = R.drawable.logout_icon),
             errorCode = null,
             errorMessage = null,
             borderColor = Color.Transparent,
             confirmButtonText ="Yes" ,
             onConfirm =  {
-                sharedViewModel.clearLogin()
+                PreferenceManager.clearLogin()
                 showExitDialog = false
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(0)
-                }
+                context.hideKeyboard()
+                (context as? Activity)?.finishAffinity()
             },
             dismissButtonText = "No",
             onDismiss = { showExitDialog = false }

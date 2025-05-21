@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
@@ -38,6 +39,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
@@ -126,6 +128,8 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             showDialog = true,
             title = "Exit App",
             message = "Are you sure you want to exit the app?",
+            borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.exit_icon),
             errorCode = null,
             errorMessage = null,
             confirmButtonText = "Yes",

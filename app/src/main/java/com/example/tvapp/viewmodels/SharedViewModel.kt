@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.database.ContentObserver
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
@@ -236,27 +237,46 @@ open class SharedViewModel @Inject constructor(
         _filteredEPGList.value = filtered?: arrayListOf()
     }
 
-    fun searchChannels(context: Context, query: String) {
+    fun searchChannels(query: String) {
         viewModelScope.launch {
+            // 1) Grab the full EPGDataItem list
+            val epgList: List<EPGDataItem> = wtvEPGList.value ?: emptyList()
+
+            // 2) Shortcut: if blank, return everything (but map to program titles)
             if (query.isBlank()) {
-                _searchResults.value = _epgChannels.value
+                val all = epgList.mapNotNull { item ->
+                    val title = item.content?.title ?: return@mapNotNull null
+                    item.tv?.channel?.copy(
+                        displayName = title,
+                        logoUrl     = item.content.thumbnailUrl,
+                        videoUrl    = item.content.videoUrl,
+                        genreId     = item.content.genreId ?: "Unknown"
+                    )
+                }
+                _searchResults.value = all
                 return@launch
             }
-            val epgList = fetchEPGList(context)
-            val filteredChannels = epgList.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.takeIf { channel ->
-                    val name = channel.displayName ?: ""
-                    val genre = epgItem.content?.genreId ?: ""
-                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
-                }?.copy(
-                    logoUrl = epgItem.content?.thumbnailUrl,
-                    videoUrl = epgItem.content?.videoUrl,
-                    genreId = epgItem.content?.genreId ?: "Unknown"
+
+            // 3) Filter by program title only
+            val filtered = epgList.mapNotNull { item ->
+                val progTitle = item.content?.title.orEmpty()
+                val matches   = progTitle.contains(query, ignoreCase = true)
+                if (!matches) return@mapNotNull null
+                // 4) Build a Channel whose displayName is the program title
+                item.tv?.channel?.copy(
+                    displayName = progTitle,
+                    logoUrl     = item.content?.thumbnailUrl,
+                    videoUrl    = item.content?.videoUrl,
+                    genreId     = item.content?.genreId ?: "Unknown"
                 )
             }
-            _searchResults.value = filteredChannels
+            _searchResults.value = filtered
         }
     }
+
+
+
+
 
     fun provideAvailableProgram(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()

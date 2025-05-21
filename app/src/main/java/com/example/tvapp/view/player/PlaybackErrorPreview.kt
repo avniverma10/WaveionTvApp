@@ -54,7 +54,7 @@ fun PlaybackErrorCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.error),
+                    painter = painterResource(id = R.drawable.media_error),
                     contentDescription = "Error icon",
                     modifier = Modifier.size(17.dp),
                     colorFilter = ColorFilter.tint(Color.White)

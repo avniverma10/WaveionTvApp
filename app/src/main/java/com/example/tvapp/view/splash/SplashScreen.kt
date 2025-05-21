@@ -154,7 +154,9 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             CommonDialog(
                 showDialog        = true,
                 title             = "Update Required",
+                painter           = painterResource(id =R.drawable.updateicon),
                 message           = "A mandatory update is available. You must update to continue.",
+                borderColor       = Color.Transparent,
                 confirmButtonText = "Yes",
                 onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
                 dismissButtonText = "Exit",
@@ -169,7 +171,9 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
             CommonDialog(
                 showDialog        = true,
                 title             = "Update Available",
+                painter           = painterResource(id =R.drawable.updateicon),
                 message           = "There’s a new version. Would you like to update now?",
+                borderColor       = Color.Transparent,
                 confirmButtonText = "Yes",
                 onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
                 dismissButtonText = "No",

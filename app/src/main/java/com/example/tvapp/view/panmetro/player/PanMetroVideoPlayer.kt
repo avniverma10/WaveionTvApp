@@ -74,6 +74,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.SocketTimeoutException
+import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -148,49 +149,68 @@ fun PanMetroVideoPlayer(
     }
 // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build()
+        ExoPlayer.Builder(context)
+            .build()
             .apply {
-                prepare()
+                // optional: any static setup
                 playWhenReady = true
-                addAnalyticsListener(object : AnalyticsListener {
-                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                            Log.d("DRM", "Keys loaded successfully")
-                        }
-                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                            Log.e("DRM", "Session manager error")
-                        }
-                    }
-                })
-                // Add a listener to handle playback errors.
-                addListener(object : Player.Listener {
-                    override fun onPlayerError(error: PlaybackException) {
-                        if (error.cause is HttpDataSource.HttpDataSourceException) {
-                            // handle timeout: show a "Retry" UI
-                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(2002)
-
-                            Log.e("rawCode","$errorCode")
-                            errorCodeState    = errorCode
-                            errorTitleState   = errorTitle
-                            errorMessageState = errorMessage
-                            showErrorDialog   = true
-                        } else {
-                            val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                                ?.responseCode
-                            var rawCode = httpCode ?: error.errorCode
-                            // now returns (appCode, title, message)
-                            val (errorCode, errorTitle, errorMessage) = playerErrorHandling(rawCode)
-
-                            Log.e("rawCode","$errorCode")
-                            errorCodeState    = errorCode
-                            errorTitleState   = errorTitle
-                            errorMessageState = errorMessage
-                            showErrorDialog   = true
-
-                        }
-                    }
-                })
             }
+    }
+
+    DisposableEffect(exoPlayer) {
+        val analyticsListener = object : AnalyticsListener {
+            override fun onEvents(player: Player, events: AnalyticsListener.Events) {
+                if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                    Log.d("DRM", "Keys loaded successfully")
+                }
+                if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                    Log.e("DRM", "Session manager error")
+                }
+            }
+        }
+        // Error listener
+        val errorListener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                    ?.responseCode
+                val rawCode = httpCode ?: error.errorCode
+                val (code, title, message) = playerErrorHandling(rawCode)
+                errorCodeState    = code
+                errorTitleState   = title
+                errorMessageState = message
+                showErrorDialog   = true
+
+                // 2) Schedule a retry between 0ms and 120 000ms (i.e. 0–2 minutes)
+                scope.launch {
+                    val retryDelay = Random.nextLong(0L, 120_000L)
+                    Log.d("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                    delay(retryDelay)
+
+                    // re‐prepare the same live source
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+                }
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    // Video started playing successfully
+                    showErrorDialog = false
+                }
+            }
+        }
+
+        // Attach them
+        exoPlayer.addAnalyticsListener(analyticsListener)
+        exoPlayer.addListener(errorListener)
+
+        // Kick off the first playback
+        exoPlayer.prepare()
+
+        onDispose {
+            exoPlayer.removeAnalyticsListener(analyticsListener)
+            exoPlayer.removeListener(errorListener)
+            exoPlayer.release()
+        }
     }
 
     // Whenever the selected channel changes, load its media

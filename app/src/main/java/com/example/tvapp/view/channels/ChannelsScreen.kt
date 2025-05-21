@@ -99,7 +99,7 @@ fun ChannelScreen(
     }
 
     BackHandler {
-        navController.navigate(Destination.homeScreen) {
+        navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
             launchSingleTop = true
         }

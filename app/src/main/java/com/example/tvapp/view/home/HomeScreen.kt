@@ -88,6 +88,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         CommonDialog(
             showDialog = true,
             title = "Exit App",
+            borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.exit_icon),
             message = "Are you sure you want to exit the app?",
             confirmButtonText = "Yes",
             onConfirm = {

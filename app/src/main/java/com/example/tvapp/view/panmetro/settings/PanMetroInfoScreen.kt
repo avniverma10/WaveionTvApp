@@ -1,10 +1,17 @@
 package com.example.tvapp.view.panmetro.settings
 
+import android.app.Activity
 import android.os.Build
+import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,18 +55,21 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 @Composable
 fun PanMetroInfoScreen(
     username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
     validity: String = "26/04/2025",
-    appVersion: String = "1.2",
+    appVersion: String = "1.0.7",
     androidVersion: String = "11",
     ram: String = "2 GB",
     storage: String = "32 GB",
@@ -80,6 +91,12 @@ fun PanMetroInfoScreen(
         navController.popBackStack()
     }
 
+    // 2) track focus state
+    val logoutInteractionSource = remember { MutableInteractionSource() }
+    val isLogoutFocused by logoutInteractionSource.collectIsFocusedAsState()
+    val scope = rememberCoroutineScope()
+
+
     // 2) auto-focus the Logout button
     val logoutRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { logoutRequester.requestFocus() }
@@ -94,15 +111,27 @@ fun PanMetroInfoScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { showExitDialog = true },            // ← fire dialog
+                    onClick = { showExitDialog = true },
                     modifier = Modifier
                         .focusRequester(logoutRequester)
+                        .focusable(interactionSource = logoutInteractionSource)
+                        .then(
+                            if (isLogoutFocused) Modifier.border(
+                                BorderStroke(2.dp, Color(0xFF49FEDD)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) else Modifier
+                        )
                         .width(200.dp)
                         .height(40.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    interactionSource = logoutInteractionSource,
+                    colors = ButtonDefaults.buttonColors(
+                        // your custom background and content colors
+                        containerColor = if (isLogoutFocused) Color(0x1A49FEDD) else Color.White,
+                        contentColor   = if (isLogoutFocused) Color.White      else Color.Black
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Logout", color = Color.Black, fontSize = 16.sp)
+                    Text("Logout", fontSize = 16.sp)
                 }
             }
         }
@@ -169,17 +198,18 @@ fun PanMetroInfoScreen(
             CommonDialog(
                 showDialog = true,
                 title = "Logout App",
-                message = "Are you sure you want to logout?",
+                message = "Are you sure you want to logout and exit the app?",
+                painter = painterResource(id = R.drawable.logout_icon),
                 errorCode = null,
                 errorMessage = null,
                 borderColor = Color.Transparent,
-                confirmButtonText = "Yes",
-                onConfirm = {
-                    sharedViewModel.clearLogin()
+                confirmButtonText ="Yes" ,
+                onConfirm =  {
+                    PreferenceManager.clearLogin()
                     showExitDialog = false
-                    navController.navigate(Destination.loginScreen) {
-                        popUpTo(0)
-                    }
+                    context.hideKeyboard()
+                    (context as? Activity)?.finishAffinity()
+
                 },
                 dismissButtonText = "No",
                 onDismiss = { showExitDialog = false }

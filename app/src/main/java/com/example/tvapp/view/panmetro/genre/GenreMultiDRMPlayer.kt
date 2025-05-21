@@ -45,6 +45,9 @@ import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -54,6 +57,7 @@ fun GenreMultiDRMPlayer(
                         genreViewModel: GenreViewModel
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
@@ -75,38 +79,72 @@ fun GenreMultiDRMPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
-
-
-
-    // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
             .build()
             .apply {
+                // optional: any static setup
                 playWhenReady = true
-                addAnalyticsListener(object : AnalyticsListener {
-                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                            Log.d("DRM", "Keys loaded successfully")
-                        }
-                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                            Log.e("DRM", "Session manager error")
-                        }
-                    }
-                })
-                // Add a listener to handle playback errors.
-                addListener(object : Player.Listener {
-                    override fun onPlayerError(error: PlaybackException) {
-                        val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                            ?.responseCode
-                        val rawCode = httpCode ?: error.errorCode
-                        val (displayCode, message) = playerErrorHandling(rawCode)
-                        errorCodeState = displayCode
-                        errorMessageState = message
-                        showErrorDialog = true
-                    }
-                })
             }
+    }
+
+    // Remember the player and recreate it when the DRM type changes
+    // Remember the player and recreate it when the DRM type changes
+    DisposableEffect(exoPlayer) {
+        // Analytics listener (unchanged)
+        val analyticsListener = object : AnalyticsListener {
+            override fun onEvents(player: Player, events: AnalyticsListener.Events) {
+                if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                    Log.d("DRM", "Keys loaded successfully")
+                }
+                if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                    Log.e("DRM", "Session manager error")
+                }
+            }
+        }
+
+        // Error listener
+        val errorListener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                // 1) Show your dialog
+                val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                    ?.responseCode
+                val rawCode = httpCode ?: error.errorCode
+                val (code, title, message) = playerErrorHandling(rawCode)
+                errorCodeState    = code
+                errorMessageState = message
+                showErrorDialog   = true
+
+                // 2) Schedule a retry in 0-2 minutes
+                scope.launch {
+                    val retryDelay = Random.nextLong(0L, 120_000L)
+                    Log.d("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                    delay(retryDelay)
+
+                    // re‐prepare the same live source
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+                }
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    showErrorDialog = false
+                }
+            }
+        }
+        // Attach them
+        exoPlayer.addAnalyticsListener(analyticsListener)
+        exoPlayer.addListener(errorListener)
+
+        // Kick off the first playback
+        exoPlayer.prepare()
+
+
+        onDispose {
+            exoPlayer.removeAnalyticsListener(analyticsListener)
+            exoPlayer.removeListener(errorListener)
+            exoPlayer.release()
+        }
     }
 
     // Whenever the selected channel changes, load its media

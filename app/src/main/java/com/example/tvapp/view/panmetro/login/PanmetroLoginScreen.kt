@@ -16,14 +16,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.Icon
 import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +58,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.LoginViewModel
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PanmetroLoginScreen(
     loginViewModel: LoginViewModel = hiltViewModel(),
@@ -70,7 +73,6 @@ fun PanmetroLoginScreen(
     var username   by remember { mutableStateOf("avni") }
     var password   by remember { mutableStateOf("123") }
     var macId      by remember { mutableStateOf(macAddress) }
-    var rememberMe by remember { mutableStateOf(false) }
 
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester    = remember { FocusRequester() }
@@ -80,7 +82,6 @@ fun PanmetroLoginScreen(
 
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
 
-
     var showExitDialog by remember { mutableStateOf(false) }
     BackHandler { showExitDialog = true }
 
@@ -89,6 +90,7 @@ fun PanmetroLoginScreen(
             showDialog = true,
             title = "Exit App",
             message = "Are you sure you want to exit the app?",
+            painter = painterResource(id = R.drawable.exit_icon),
             errorCode = null,
             errorMessage = null,
             borderColor = Color.Transparent,
@@ -104,9 +106,12 @@ fun PanmetroLoginScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        GradientBackground()
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding()        // respect IME
+            .imeNestedScroll()   // allow nested scrolling
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -127,16 +132,15 @@ fun PanmetroLoginScreen(
                 fontWeight = FontWeight.Bold
             )
         }
-
-        // 3) Centered Content (Welcome + Form)
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .imePadding()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Welcome Text
             Text(
                 text = "Welcome to CAASTV",
                 color = Color.White,
@@ -145,9 +149,8 @@ fun PanmetroLoginScreen(
                 fontFamily = figtreeMedium
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Login Form
             Column(
                 modifier = Modifier
                     .width(350.dp)
@@ -155,7 +158,6 @@ fun PanmetroLoginScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Profile Icon
                 Box(
                     modifier = Modifier
                         .size(80.dp)
@@ -171,14 +173,14 @@ fun PanmetroLoginScreen(
                     )
                 }
 
-                // Username Field
+                // Username field
                 OutlinedTextField(
                     value = username,
                     onValueChange = {
                         usernameError = it.isBlank()
                         username = it
                     },
-                    label = { Text("Username") },
+                    label = { Text("Username",color = Color.White ) },
                     singleLine = true,
                     isError = usernameError,
                     shape = RoundedCornerShape(8.dp),
@@ -197,14 +199,14 @@ fun PanmetroLoginScreen(
                     )
                 )
 
-                // Password Field
+                // Password field
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
                         passwordError = it.isBlank()
                         password = it
                     },
-                    label = { Text("Password") },
+                    label = { Text("Password", color = Color.White  ) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     isError = passwordError,
@@ -226,11 +228,11 @@ fun PanmetroLoginScreen(
                     )
                 )
 
-                // MAC ID (Read-only)
+                // MAC ID read-only
                 OutlinedTextField(
-                    value = macId ?: "",
+                    value = macId.orEmpty(),
                     onValueChange = {},
-                    label = { Text("MAC ID") },
+                    label = { Text("MAC ID",color = Color.White) },
                     singleLine = true,
                     leadingIcon = {
                         Image(
@@ -256,13 +258,17 @@ fun PanmetroLoginScreen(
                 )
 
                 Spacer(Modifier.height(20.dp))
-                // Login Button
+
+                // **Login Button** with adaptive text color
                 Button(
                     onClick = {
                         var valid = true
                         var msg = ""
-                        if (username.isBlank()) { valid = false; msg = "Username should not be blank" }
-                        else if (password.isBlank()) { valid = false; msg = "Password should not be blank" }
+                        if (username.isBlank()) {
+                            valid = false; msg = "Username should not be blank"
+                        } else if (password.isBlank()) {
+                            valid = false; msg = "Password should not be blank"
+                        }
                         if (valid) {
                             (context as? Activity)?.hideKeyboard()
                             context.getAndroidTvDrmInfo()
@@ -272,7 +278,6 @@ fun PanmetroLoginScreen(
                                         androidTvDrmInfo = info,
                                         onLoginResponse = { response, errorMsg ->
                                             if (response != null) {
-                                                // On Login Success:
                                                 PreferenceManager.saveLogin(username, password)
                                                 context.hideKeyboard()
                                                 navController.navigate(Destination.genreScreen)
@@ -282,28 +287,34 @@ fun PanmetroLoginScreen(
                                         }
                                     )
                                 }
-                        } else context.showToastS(msg)
+                        } else {
+                            context.showToastS(msg)
+                        }
                     },
                     interactionSource = buttonInteractionSource,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
                         .border(
-                            BorderStroke(if (isButtonFocused) 2.dp else 0.dp, base_color),
+                            BorderStroke(
+                                width = if (isButtonFocused) 2.dp else 0.dp,
+                                color = Color(0xFF49FEDD)
+                            ),
                             shape = RoundedCornerShape(6.dp)
                         )
                         .focusRequester(loginFocusRequester),
                     shape = RoundedCornerShape(6.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isButtonFocused) base_color else Color.White,
-                        contentColor = if (isButtonFocused) Color.White else Color.Black
+                        containerColor = if (isButtonFocused) Color(0x1A49FEDD) else Color.White,
+                        contentColor   = if (isButtonFocused) Color.White       else Color.Black
                     )
                 ) {
                     Text(
-                        text = "Login",
-                        fontSize = 20.sp,
+                        text       = "Login",
+                        fontSize   = 20.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = figtreeMedium
+                        // no `color = …` here—Material-3 Text will use the Button’s contentColor
                     )
                 }
             }

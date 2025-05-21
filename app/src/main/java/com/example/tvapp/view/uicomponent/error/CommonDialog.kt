@@ -157,15 +157,24 @@ fun CommonDialog(
                         // Dismiss button
                         if (dismissButtonText != null && onDismiss != null) {
                             TextButton(
-                                onClick           = onDismiss,
+                                onClick = onDismiss,
                                 interactionSource = dismissInteraction,
-                                modifier          = Modifier
+                                modifier = Modifier
                                     .focusRequester(dismissRequester)
-                                    .focusable(interactionSource = dismissInteraction),
-                                shape  = RoundedCornerShape(8.dp),
+                                    .focusable(interactionSource = dismissInteraction)
+                                    // always reserve the 2.dp border, but toggle its color
+                                    .border(
+                                        BorderStroke(
+                                            width = 1.dp,
+                                            color = if (isDismissFocused) Color(0xFF49FEDD) else Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .defaultMinSize(minWidth = 68.dp, minHeight = 44.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.textButtonColors(
-                                    containerColor = if (isDismissFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                    contentColor   = Color.Black
+                                    containerColor = if (isDismissFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                                    contentColor = if (isDismissFocused) Color.White else Color.Black
                                 )
                             ) {
                                 Text(dismissButtonText)
@@ -176,21 +185,30 @@ fun CommonDialog(
                         // Confirm button
                         if (confirmButtonText != null && onConfirm != null) {
                             TextButton(
-                                onClick           = onConfirm,
+                                onClick = onConfirm,
                                 interactionSource = confirmInteraction,
-                                modifier          = Modifier
+                                modifier = Modifier
                                     .focusRequester(confirmRequester)
-                                    .focusable(interactionSource = confirmInteraction),
-                                shape  = RoundedCornerShape(8.dp),
+                                    .focusable(interactionSource = confirmInteraction)
+                                    .border(
+                                        BorderStroke(
+                                            width = 1.dp,
+                                            color = if (isConfirmFocused) Color(0xFF49FEDD) else Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .defaultMinSize(minWidth = 68.dp, minHeight = 44.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.textButtonColors(
-                                    containerColor = if (isConfirmFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                    contentColor   = Color.Black
+                                    containerColor = if (isConfirmFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                                    contentColor = if (isConfirmFocused) Color.White else Color.Black
                                 )
                             ) {
                                 Text(confirmButtonText)
                             }
                         }
                     }
+
                 }
             }
         }
