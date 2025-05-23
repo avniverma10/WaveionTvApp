@@ -37,6 +37,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,14 +95,46 @@ fun EPGContent(
 
     val context = LocalContext.current
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
-
+    val noChannels = epgList.isEmpty()
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
 
+
+    var hasDoneInitialFocus by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(epgList.isNotEmpty()) {
+        if (epgList.isNotEmpty() && !hasDoneInitialFocus) {
+            delay(100)                                     // wait a frame
+            firstChannelFocusRequester.requestFocus()      // focus first channel
+            hasDoneInitialFocus = true
+        }
+    }
+
+    if (noChannels) {
+        languageFocusRequesters
+            .getOrNull(languageSelectedIndex.value)
+            ?.requestFocus()
+    }
+
+    if (epgList.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF2A3139)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No channels available",
+                color = Color.White,
+                fontSize = 25.sp,
+                textAlign = TextAlign.Center
+            )
+        }
+        return
+    }
     val wishlistPopupProgram by sharedViewModel.wishlistPopupProgram.collectAsState()
     val wishlistAlertProgram by sharedViewModel.wishlistAlertProgram.collectAsState()
     val channelMap = epgList.associateBy { it.channelId }
     val hasInitiallyFocused = remember { mutableStateOf(false) }
-    val leftPanelWidth = 160.dp
+    val leftPanelWidth = 180.dp
 
     //hide keyboard forcefully
     //HideKeyboardOnEnter()
@@ -160,17 +194,18 @@ fun EPGContent(
                                 isFirstChannel = isFirstChannel,
                                 isLastChannel = isLastChannel,
                                 onPlayClicked = { videoUrl ->
+                                    sharedViewModel.updateLastFocusedChannel(channelIndex)
                                     epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen) {
-                                            PreferenceManager.selectedGenreIndex = 0
-                                            PreferenceManager.selectedChannelIndex = 0
+//                                            PreferenceManager.selectedGenreIndex = 0
+//                                            PreferenceManager.selectedChannelIndex = 0
                                             PreferenceManager.lastEpgDataItem = null
                                             // popUpTo(Destination.epgScreen) { inclusive = true }
                                         }
                                     }
                                 },
-                                hasInitiallyFocused = hasInitiallyFocused,
+//                                hasInitiallyFocused = hasInitiallyFocused,
                                 focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
                                 languageFocusRequesters = languageFocusRequesters,
                                 languageSelectedIndex = languageSelectedIndex,
@@ -387,7 +422,7 @@ fun ChannelInfo(
     isFirstChannel: Boolean,
     isLastChannel: Boolean,
     onPlayClicked: (String?) -> Unit,
-    hasInitiallyFocused: MutableState<Boolean>,
+//    hasInitiallyFocused: MutableState<Boolean>,
     focusRequester: FocusRequester? = null,
     languageFocusRequesters: List<FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
@@ -455,12 +490,12 @@ fun ChannelInfo(
                 .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }
         ) {
-            if (channelIndex == 0 && !hasInitiallyFocused.value) {
-                LaunchedEffect(Unit) {
-                    actualFocusRequester.requestFocus()
-                    hasInitiallyFocused.value = true
-                }
-            }
+//            if (channelIndex == 0 && !hasInitiallyFocused.value) {
+//                LaunchedEffect(Unit) {
+//                    actualFocusRequester.requestFocus()
+//                    hasInitiallyFocused.value = true
+//                }
+//            }
             AsyncImage(
                 model = channel.content?.thumbnailUrl,
                 contentDescription = "Channel Logo",

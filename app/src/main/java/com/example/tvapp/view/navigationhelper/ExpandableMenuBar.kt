@@ -180,7 +180,7 @@ fun ExpandableNavigationMenu(
                 }
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             otherTabs.forEachIndexed { index, tab ->
                 val isFirstItem = index == 0

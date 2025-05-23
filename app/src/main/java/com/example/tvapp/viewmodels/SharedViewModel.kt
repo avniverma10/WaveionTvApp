@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.database.ContentObserver
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
@@ -84,6 +85,8 @@ open class SharedViewModel @Inject constructor(
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
+    var lastFocusedChannelIndex = mutableStateOf(0)
+        private set
 
     init {
         // only load once, no continuous observation to avoid overriding
@@ -148,7 +151,9 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-
+    fun updateLastFocusedChannel(index: Int) {
+        lastFocusedChannelIndex.value = index
+    }
 
     suspend fun fetchEPGList(context: Context): List<EPGDataItem> {
         return withContext(Dispatchers.IO) {

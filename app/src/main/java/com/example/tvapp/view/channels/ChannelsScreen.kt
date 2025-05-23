@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,6 +45,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -83,21 +85,34 @@ fun ChannelScreen(
     val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
 
     // Set selected index only if there is data
+    // 1) Keep the old effect for updating your indices:
     LaunchedEffect(filterState, categories, languages) {
         if (categories.isNotEmpty()) {
             categorySelectedIndex.value =
-                categories.indexOfFirst { it.name == filterState.genre }.takeIf { it >= 0 } ?: 0
+                categories.indexOfFirst { it.name == filterState.genre }
+                    .takeIf { it >= 0 } ?: 0
         } else {
             categorySelectedIndex.value = -1
         }
         if (languages.isNotEmpty()) {
             languageSelectedIndex.value =
-                languages.indexOfFirst { it.name == filterState.language }.takeIf { it >= 0 } ?: 0
+                languages.indexOfFirst { it.name == filterState.language }
+                    .takeIf { it >= 0 } ?: 0
         } else {
             languageSelectedIndex.value = -1
         }
     }
 
+    // 2) A separate “one-shot” effect for that initial focus move:
+    var hasDoneInitialFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(filteredContent.isNotEmpty()) {
+        if (filteredContent.isNotEmpty() && !hasDoneInitialFocus) {
+            // give Compose one frame to attach the modifier
+            kotlinx.coroutines.delay(100)
+            firstChannelFocusRequester.requestFocus()
+            hasDoneInitialFocus = true
+        }
+    }
     BackHandler {
         navController.navigate(Destination.epgScreen) {
             popUpTo(0) { inclusive = true }
@@ -202,7 +217,7 @@ fun ChannelScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         // Placeholder when channels are loading
-                        androidx.tv.material3.Text("Channels not found...", color = Color.White)
+                        androidx.tv.material3.Text("No channels available", color = Color.White, fontSize = 25.sp)
                     }
                 }
 

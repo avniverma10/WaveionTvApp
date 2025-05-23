@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,29 +50,26 @@ fun LanguageMenu(
     languageFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
-
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
     val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
-
 
     if (languageItems.isEmpty()) {
         return
     }
 
-    LaunchedEffect(selectedIndex) {
-        languageFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
-            try {
-                requester.requestFocus()
-            } catch (e: IllegalStateException) {
-                Log.e("FocusError", "FocusRequester not initialized", e)
-            }
+    LaunchedEffect(selectedIndex.value) {
+        coroutineScope.launch {
+            listState.animateScrollToItem(selectedIndex.value)
+            delay(50)
+//            languageFocusRequesters.getOrNull(selectedIndex.value)?.requestFocus()
         }
     }
 
-    val coroutineScope = rememberCoroutineScope()
-
     LazyRow(
+        state = listState,
         modifier = Modifier
             .fillMaxWidth()
             .height(45.dp),
