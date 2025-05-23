@@ -53,6 +53,7 @@ import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
@@ -291,13 +292,13 @@ fun ChannelList(
     ) {
         Box(
             modifier = Modifier
-                .background(Color(0xFF262C36))
+                .padding(8.dp)
+                .background(color = bg_card_color, shape = RoundedCornerShape(8.dp))
                 .border(
                     width = if (isFocused) 2.dp else 0.dp,
                     color = if (isFocused) base_color else Color.Transparent,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(8.dp)
                 )
-                .padding(4.dp)
         ) {
             AsyncImage(
                 model = channel.logoUrl,
@@ -306,8 +307,8 @@ fun ChannelList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp)
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(8.dp))
             )
         }
     }

@@ -226,12 +226,11 @@ fun ChannelThumbnail(
             .fillMaxSize()
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)
-            .background(color = bg_card_color, shape = RoundedCornerShape(12.dp))
-            .padding(4.dp)
+            .background(color = bg_card_color, shape = RoundedCornerShape(8.dp))
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) base_color else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(8.dp)
             )
             .clickable { channel.videoUrl?.let(onChannelClick) }
     ) {
@@ -243,6 +242,7 @@ fun ChannelThumbnail(
                 .fillMaxWidth()
                 .height(80.dp)
                 .padding(10.dp)
+                .clip(RoundedCornerShape(8.dp))
         )
     }
 }
