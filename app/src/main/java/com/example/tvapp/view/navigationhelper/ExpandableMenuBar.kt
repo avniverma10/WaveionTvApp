@@ -42,7 +42,7 @@ fun ExpandableNavigationMenu(
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all") }
+    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all","movies") }
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -58,6 +58,7 @@ fun ExpandableNavigationMenu(
         selectedIndex = when (currentRoute) {
             Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1
              Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+            Destination.demoHome -> tabs?.indexOfFirst { it.name == "movies" } ?: -1
               Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
             Destination.genreScreen -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
@@ -202,6 +203,7 @@ fun ExpandableNavigationMenu(
                             "all" -> navController.navigate(Destination.channel)
                             "home" -> navController.navigate(Destination.homeScreen)
                             "search" -> navController.navigate(Destination.searchScreen)
+                            "movies" -> navController.navigate(Destination.demoHome)
                             "channels" -> navController.navigate(Destination.genreScreen)
                             "settings" -> navController.navigate(Destination.settings)
                             "epg" -> navController.navigate(Destination.epgScreen) {

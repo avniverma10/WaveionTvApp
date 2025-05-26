@@ -17,8 +17,10 @@ import androidx.navigation.navArgument
 import com.example.tvapp.NotificationBanner
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
+import com.example.tvapp.view.home.DemoHomeScreen
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
+import com.example.tvapp.view.home.DemoPlayerScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
 import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
@@ -75,6 +77,19 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             //val channelId = backStackEntry.arguments?.getString("channelId")
             PanMetroVideoPlayer(navController,sharedViewModel)
         }
+        composable(Destination.demoHome) {
+            DemoHomeScreen(
+                navController   = navController,
+                sharedViewModel = sharedViewModel
+            )
+        }
+        composable(Destination.demoplayer) {
+            DemoPlayerScreen(
+                url    = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         /*
         composable(
              route = Destination.panMetroScreen+"{fromEpg}",

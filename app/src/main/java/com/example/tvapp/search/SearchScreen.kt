@@ -39,12 +39,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -75,18 +77,17 @@ fun SearchScreen(
     val searchResults by sharedViewModel.searchResults.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+
+    BackHandler {
+        focusManager.clearFocus(force = true)
+        focusManager.moveFocus(FocusDirection.Left)
+    }
 
     LaunchedEffect(Unit) {
         val listToFocus = if (searchText.isNotEmpty()) searchResults else epgData
         if (listToFocus?.isNotEmpty() == true) {
             firstThumbnailFocusRequester.requestFocus()
-        }
-    }
-
-    BackHandler {
-        navController.navigate(Destination.epgScreen) {
-            popUpTo(0) { inclusive = true }
-            launchSingleTop = true
         }
     }
 

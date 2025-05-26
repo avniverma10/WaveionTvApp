@@ -43,6 +43,7 @@ import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.ui.theme.filter_selected_color
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -95,7 +96,7 @@ fun CategoryMenu(
                     .then(
                         when {
                             isFocused.value ->
-                                Modifier.border(2.dp, color = base_color, shape = RoundedCornerShape(4.dp))
+                                Modifier.border(2.dp, color = base_color, shape = RoundedCornerShape(4.dp)).background(color = focus_background)
                             isSelected ->
                                 Modifier.background(color = filter_selected_color, shape = RoundedCornerShape(4.dp))
                             else -> Modifier

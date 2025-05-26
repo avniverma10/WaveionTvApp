@@ -108,11 +108,16 @@ fun EPGContent(
         }
     }
 
-    if (noChannels) {
-        languageFocusRequesters
-            .getOrNull(languageSelectedIndex.value)
-            ?.requestFocus()
+    LaunchedEffect(languageSelectedIndex.value) {
+        // only when *language* was just changed
+        if (epgList.isEmpty()) {
+            delay(100)    // wait for compose to settle
+            languageFocusRequesters
+                .getOrNull(languageSelectedIndex.value)
+                ?.requestFocus()
+        }
     }
+
 
     if (epgList.isEmpty()) {
         Box(
