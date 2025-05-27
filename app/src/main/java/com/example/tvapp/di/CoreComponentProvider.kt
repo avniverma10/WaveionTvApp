@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 
@@ -22,4 +23,6 @@ interface CoreComponentProvider {
     fun initializeHome(data: List<WTVHomeCategory>)
     fun provideMacAddr(): LiveData<String>
     fun initializeMacAddr(data: String)
+    fun provideUserInfo(): LoginResponseData?
+    fun initializeUserInfo(data: LoginResponseData)
 }

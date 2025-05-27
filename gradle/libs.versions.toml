@@ -87,6 +87,7 @@ media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", versio
 media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "media3" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+media3-effect = { module = "androidx.media3:media3-effect", version.ref = "media3" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler-ksp = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
@@ -150,7 +151,8 @@ exoplayer = [
     "media3-exoplayer-hls",
     "media3-exoplayer-dash",
     "media3-session",
-    "media3-ui"
+    "media3-ui",
+    "media3-effect"
 ]
 security = [
     "security-crypto"

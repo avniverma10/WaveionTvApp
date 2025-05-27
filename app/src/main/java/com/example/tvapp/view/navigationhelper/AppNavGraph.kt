@@ -1,11 +1,13 @@
 package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -28,6 +30,8 @@ import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
 import com.example.tvapp.view.splash.SplashScreen
+import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.ScrollingFingerprintOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -36,6 +40,8 @@ import java.nio.charset.StandardCharsets
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
+    val fingerprintRules by sharedViewModel.globalFingerPrint.collectAsState()
+    val scrollMessageItems by sharedViewModel.scrollMessageItemsFlow.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
         WTVPlayerNavHost(
@@ -51,6 +57,15 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                 // you can add paddingIfNeeded here
             )
         }
+
+        Log.e("fingerprintRules>>","${fingerprintRules?.size}")
+        fingerprintRules?.forEach {
+            GlobalFingerprintOverlay(mutableStateOf(it))
+        }
+
+        scrollMessageItems?.forEach {
+            ScrollingFingerprintOverlay(mutableStateOf(it))
+        }
     }
 }
 
@@ -62,7 +77,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             SplashScreen(sharedViewModel = sharedViewModel, navController)
         }
         composable(Destination.loginScreen) {
-            PanmetroLoginScreen(navController = navController)
+            PanmetroLoginScreen(sharedViewModel = sharedViewModel,navController = navController)
         }
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)

@@ -1,4 +1,4 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.genre
 
 import android.app.Activity
 import android.util.Log
@@ -43,6 +43,7 @@ import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
+import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.delay
@@ -63,6 +64,10 @@ fun GenreMultiDRMPlayer(
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
 
+    val fingerPrintItems by sharedViewModel.fingerPrintItemsFlow.collectAsState()
+    val playerView = remember {
+        mutableStateOf<PlayerView?>(null)
+    }
 
 
     // Mutable state for UI updates
@@ -167,6 +172,9 @@ fun GenreMultiDRMPlayer(
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+            //make fingerprint request
+            sharedViewModel.providePlayerFingerprint(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+
         }
 
     }
@@ -181,9 +189,9 @@ fun GenreMultiDRMPlayer(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                val playerView = view.findViewById<PlayerView>(R.id.player_view)
+                playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-                playerView.apply {
+                playerView.value?.apply {
                     player = exoPlayer
                     useController = false
                     keepScreenOn = true
@@ -193,6 +201,9 @@ fun GenreMultiDRMPlayer(
 
             }
         )
+        fingerPrintItems.forEach {
+            ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+        }
 
         // Show Loading Indicator if Buffering
         Column(

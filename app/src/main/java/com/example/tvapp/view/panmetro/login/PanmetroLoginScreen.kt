@@ -48,8 +48,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.components.GradientBackground
+import com.example.tvapp.extensions.applyAppManifest
+import com.example.tvapp.extensions.applyUserInfo
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.provideMacAddrLiveData
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.ui.theme.base_color
@@ -57,10 +60,12 @@ import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.LoginViewModel
+import com.example.tvapp.viewmodels.SharedViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PanmetroLoginScreen(
+    sharedViewModel: SharedViewModel,
     loginViewModel: LoginViewModel = hiltViewModel(),
     navController: NavController
 ) {
@@ -279,6 +284,8 @@ fun PanmetroLoginScreen(
                                         onLoginResponse = { response, errorMsg ->
                                             if (response != null) {
                                                 PreferenceManager.saveLogin(username, password)
+                                                PreferenceManager.saveUserInfo(response)
+                                                sharedViewModel.provideGlobalFingerprintInfo()
                                                 context.hideKeyboard()
                                                 navController.navigate(Destination.genreScreen)
                                             } else {

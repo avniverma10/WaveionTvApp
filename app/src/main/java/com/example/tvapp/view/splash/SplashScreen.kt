@@ -56,6 +56,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import com.example.tvapp.extensions.applyUserInfo
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import kotlinx.coroutines.delay
@@ -136,7 +137,10 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
         if(isInitializeData){
             showExitDialog = false
-            if(PreferenceManager.isLoggedIn()){
+            if(PreferenceManager.getLoginResponse()?.loginData != null){
+                PreferenceManager.getLoginResponse()?.let {
+                    context.applyUserInfo(it)
+                }
                 navController.navigate(Destination.genreScreen) {
                     popUpTo(Destination.splashScreen) { inclusive = true }
                 }

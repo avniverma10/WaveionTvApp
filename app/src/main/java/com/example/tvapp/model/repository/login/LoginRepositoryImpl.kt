@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.toJSONObject
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.login.WTVLogin
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.example.tvapp.utils.sealed.LoginResponse
@@ -18,7 +19,7 @@ class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterfac
     suspend fun provideUserLogin(
         loginUrl: String,
         requestBody: HashMap<String, String>
-    ): Flow<WTVResponse<WTVLogin>> = flow {
+    ): Flow<WTVResponse<LoginResponseData>> = flow {
         try {
             Log.e("url:","$loginUrl ${requestBody}")
             val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,body = requestBody).execute()
@@ -26,7 +27,7 @@ class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterfac
                 Log.e("response:","${response.body()}")
 
                 val manifest = response.body()?.toJSONObject()?.toString()
-                    .convertIntoModel(WTVLogin::class.java)
+                    .convertIntoModel(LoginResponseData::class.java)
                 manifest?.let {
                     // Optionally save manifest data into ContentProvider or DB here
                     emit(WTVResponse.Success(it))

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.google.gson.Gson
 
 object PreferenceManager {
@@ -16,6 +17,7 @@ object PreferenceManager {
   private const val KEY_PLAYER_CHANNEL = "playerChannelIndex"
   private const val KEY_USERNAME   = "username"
   private const val KEY_PASSWORD   = "password"
+  private const val KEY_USER_INFO   = "userinfo"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
@@ -60,11 +62,24 @@ object PreferenceManager {
     editor.apply()
   }
 
+  /** Save username & password atomically */
+  fun saveUserInfo(userInfo: LoginResponseData) {
+    val json = Gson().toJson(userInfo)
+    val editor = prefs.edit()
+    editor.putString(KEY_USER_INFO, json)
+    editor.apply()
+  }
+  fun getLoginResponse(): LoginResponseData? {
+    val json = prefs.getString(KEY_USER_INFO, null)
+      ?: return null
+    return Gson().fromJson(json, LoginResponseData::class.java)
+  }
+
+
   /** Clear only the login keys */
   fun clearLogin(): Boolean {
     val editor = prefs.edit()
-    editor.remove(KEY_USERNAME)
-    editor.remove(KEY_PASSWORD)
+    editor.remove(KEY_USER_INFO)
     return editor.commit()
   }
 

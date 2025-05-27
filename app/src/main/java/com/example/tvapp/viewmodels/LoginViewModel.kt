@@ -4,10 +4,12 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.AndroidTvDrmInfo
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.login.WTVLogin
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.repository.login.LoginRepositoryImpl
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.sealed.LoginResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,22 +23,15 @@ class LoginViewModel @Inject constructor(
     private val application: Application, private val loginRepositoryImpl: LoginRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     var verificationId: String? = "000000"
 
-    fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(WTVLogin?,String?)->Unit){
+    fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(LoginResponseData?, String?)->Unit){
         viewModelScope.launch {
-           // 3. Prepare headers and body
-            /*val headers = mapOf(
-                "Authorization" to "56fdsr237df325fv454v3v4532drferh",
-                "Content-Type"  to "application/json"
-            )*/
-            // "uname":"PAN000014","paswrd":"1234566","macaddr":"123456789"
-            Log.e("MAC ID", "$androidTvDrmInfo.macId")
             val requestBody = hashMapOf(
-                "userName" to (androidTvDrmInfo.userName ?: ""),
-                "userPassword" to (androidTvDrmInfo.userPassword ?: ""),
+                "username" to (androidTvDrmInfo.userName ?: ""),
+                "password" to (androidTvDrmInfo.userPassword ?: ""),
                 "macId" to (androidTvDrmInfo.macId)
             )
             loginRepositoryImpl.provideUserLogin(
-                loginUrl = "https://api-demo.caastv.com/api/android/appLogin",
+                loginUrl = Constants.provideBaseUrl()+"app/tv-users/login",
                 requestBody = requestBody).collect { response ->
                 when (response) {
                     is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data

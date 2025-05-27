@@ -41,9 +41,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import androidx.core.content.edit
+import androidx.core.net.toUri
+import com.example.tvapp.WTVApp
+import com.example.tvapp.extensions.convertIntoModels
+import com.example.tvapp.extensions.userInfo
+import com.example.tvapp.model.data.fingerprint.GlobalFingerprintRule
+import com.example.tvapp.model.data.fingerprint.PlayerFingerprintRule
+import com.example.tvapp.model.data.login.LoginResponseData
+import com.example.tvapp.model.data.message.ScrollMessageInfo
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.uistate.PreferenceManager
+import com.google.gson.reflect.TypeToken
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
+import java.util.concurrent.TimeUnit
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -53,6 +68,19 @@ open class SharedViewModel @Inject constructor(
     private val filterPreferences: FilterPreferences,
     private val loginPrefsRepository: LoginPrefsRepository,
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
+    fun provideApplicationInstance() = application.applicationContext as? WTVApp
+    private var globalFingerprintEventSource: EventSource? = null
+    private val _globalFingerPrint = MutableStateFlow<List<GlobalFingerprintRule>?>(emptyList())
+    val globalFingerPrint: StateFlow<List<GlobalFingerprintRule>?> = _globalFingerPrint
+
+    private var fingerprintEventSource: EventSource? = null
+    private val _fingerPrintItemsFlow = MutableStateFlow<List<PlayerFingerprintRule>>(emptyList())
+    val fingerPrintItemsFlow: StateFlow<List<PlayerFingerprintRule>> = _fingerPrintItemsFlow
+
+    private var scrollEventSource: EventSource? = null
+    private val _scrollMessageItemsFlow = MutableStateFlow<List<ScrollMessageInfo>>(emptyList())
+    val scrollMessageItemsFlow: StateFlow<List<ScrollMessageInfo>> = _scrollMessageItemsFlow
+
 
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
@@ -89,6 +117,9 @@ open class SharedViewModel @Inject constructor(
         private set
 
     init {
+
+        provideGlobalFingerprintInfo()
+        //provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
         viewModelScope.launch {
             isInitializeData
@@ -315,8 +346,225 @@ open class SharedViewModel @Inject constructor(
         prefs.lastEpgDataItem?.let { updateSelectedChannel(it) }
     }
 
+
+    fun provideGlobalFingerprintInfo() {
+        var packageInfo:String?=null
+        var userInfo:String?=null
+        PreferenceManager.getLoginResponse()?.let {
+            packageInfo = it.loginData.packages.joinToString(
+                separator = ","
+            ) { it.packageName }
+
+            userInfo = "${it.loginData.userId}:${it.loginData.username}"
+        }
+
+        // _globalFingerPrint.value = listOf(FingerprintRule(),FingerprintRule(),FingerprintRule(),FingerprintRule())
+        val queryBuilder = (Constants.BASE_URL + "app/fingerprint-sse?scope=GLOBAL")
+            .toUri()
+            .buildUpon()
+        // Only append if values are not null or blank
+        packageInfo?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("package", it)
+        }
+
+        userInfo?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("user", it)
+        }
+
+        val sseUrl = queryBuilder.build().toString()
+        Log.e("finalUrl>",sseUrl)
+
+        val client = OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                Log.e("GlobalFingerprintInfo >",sseUrl+data.toString())
+
+                try {
+                    data.toString()
+                        .convertIntoModels(object : TypeToken<List<GlobalFingerprintRule>>() {})?.let {
+                            _globalFingerPrint.value = it
+                        }
+                } catch (e: Exception) {
+                    Log.e("GlobalFingerprintInfo ", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("GlobalFingerprintInfo", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("GlobalFingerprintInfo SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        globalFingerprintEventSource = EventSources.createFactory(client).newEventSource(request, listener)
+    }
+
+    fun provideScrollMessageInfo() {
+        val sseUrl = (Constants.BASE_URL + "app/scroll-message/sse/getScrollMessage")
+        Log.e("finalUrl>",sseUrl)
+
+        val client = OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                Log.e("ScrollMessageInfo >",sseUrl+data.toString())
+
+                try {
+                    data.toString()
+                        .convertIntoModels(object : TypeToken<List<ScrollMessageInfo>>() {})?.let {
+                            _scrollMessageItemsFlow.value = it
+                        }
+                } catch (e: Exception) {
+                    Log.e("ScrollMessageInfo ", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("ScrollMessageInfo", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("ScrollMessageInfo SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        scrollEventSource = EventSources.createFactory(client).newEventSource(request, listener)
+    }
+
+
+    fun providePlayerFingerprint(
+        channel: String?=null,//"1003:RAAPCHIK"
+    ) {
+        fingerprintEventSource?.let {
+            fingerprintEventSource?.cancel()
+            fingerprintEventSource = null
+        }
+        val queryBuilder = (Constants.BASE_URL + "app/fingerprint-sse?scope=PLAYER")
+            .toUri()
+            .buildUpon()
+        channel?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("channel", it)
+        }
+        val sseUrl = queryBuilder.build().toString()
+        Log.e("PlayerFingerprint url>",sseUrl)
+        val client = OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                Log.e("PlayerFingerprint >",sseUrl+data.toString())
+
+                try {
+                    data.toString()
+                        .convertIntoModels(object : TypeToken<List<PlayerFingerprintRule>>() {})?.let {
+                            _fingerPrintItemsFlow.value = it
+                        }
+                    Log.e("PlayerFingerpdata >", data.toString())
+
+                } catch (e: Exception) {
+                    Log.e("PlayerFingerprint ", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("PlayerFingerprint", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        fingerprintEventSource = EventSources.createFactory(client).newEventSource(request, listener)
+    }
+
+
+    fun stopFingerPrintSSE() {
+        globalFingerprintEventSource?.cancel()
+        globalFingerprintEventSource = null
+        fingerprintEventSource?.cancel()
+        fingerprintEventSource = null
+        scrollEventSource?.cancel()
+        scrollEventSource = null
+    }
+
     override fun onCleared() {
         filterPreferences.clearFilter(viewModelScope)
+        stopFingerPrintSSE()
         super.onCleared()
     }
 }

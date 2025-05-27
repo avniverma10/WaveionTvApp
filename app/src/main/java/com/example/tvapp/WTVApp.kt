@@ -7,6 +7,7 @@ import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 import dagger.hilt.android.HiltAndroidApp
@@ -19,6 +20,7 @@ class WTVApp : Application(), CoreComponentProvider{
     private var wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private var wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
     private var macAddr: MutableLiveData<String> = MutableLiveData()
+    private var userInfo: LoginResponseData? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -59,5 +61,11 @@ class WTVApp : Application(), CoreComponentProvider{
 
     override fun initializeMacAddr(data: String) {
         this.macAddr.value = data
+    }
+
+    override fun provideUserInfo(): LoginResponseData? = userInfo
+
+    override fun initializeUserInfo(data: LoginResponseData) {
+        this.userInfo = data
     }
 }

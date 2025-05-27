@@ -21,6 +21,7 @@ import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 import java.io.File
@@ -53,6 +54,14 @@ fun Context.appManifestLiveData() =
 
 fun Context.applyAppManifest(data: WTVManifest) =
     (applicationContext as? CoreComponentProvider)?.initializeAppManifest(data)
+
+fun Context.userInfo() =
+    (applicationContext as? CoreComponentProvider)?.provideUserInfo()
+        ?: throw IllegalStateException("userInfo is null: $applicationContext")
+
+
+fun Context.applyUserInfo(data: LoginResponseData) =
+    (applicationContext as? CoreComponentProvider)?.initializeUserInfo(data)
 
 fun Context.appGenreLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideGenreLiveData()
