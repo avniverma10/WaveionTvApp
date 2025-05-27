@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -37,12 +38,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -77,6 +80,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.TimeHeader
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -97,7 +101,8 @@ fun EPGContent(
     val epgList by sharedViewModel.filteredEPGList.collectAsState()
     val noChannels = epgList.isEmpty()
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
-
+    val rowStates = epgList.map { rememberLazyListState() }
+    val scope = rememberCoroutineScope()
 
     var hasDoneInitialFocus by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(epgList.isNotEmpty()) {
@@ -107,7 +112,13 @@ fun EPGContent(
             hasDoneInitialFocus = true
         }
     }
-
+    val programFocusRequesters = remember(epgList) {
+        epgList.map { channel ->
+            sharedViewModel
+                .provideAvailableProgram(channel.tv?.programme.orEmpty())
+                .map { FocusRequester() }
+        }
+    }
     LaunchedEffect(languageSelectedIndex.value) {
         // only when *language* was just changed
         if (epgList.isEmpty()) {
@@ -217,8 +228,9 @@ fun EPGContent(
                                 categoryFocusRequesters = categoryFocusRequesters,
                                 categorySelectedIndex = categorySelectedIndex
                             )
-
+                            val rowState = rowStates[channelIndex]
                             LazyRow(
+                                state = rowState,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(
@@ -230,7 +242,7 @@ fun EPGContent(
                                     .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
                                     val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
-                                    val focusRequester = remember { FocusRequester() }
+                                    val focusRequester = programFocusRequesters[channelIndex][programIndex]
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == availableProgram.lastIndex)
                                     Box(
@@ -245,6 +257,11 @@ fun EPGContent(
                                                         .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
                                                 else Modifier
                                             )
+//                                            .focusProperties {
+//                                                if (channelIndex == 0) {
+//                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
+//                                                }
+//                                            }
                                             .onFocusChanged { isFocused.value = it.isFocused }
                                             .focusRequester(focusRequester)
                                             .focusable()
@@ -263,8 +280,53 @@ fun EPGContent(
                                                             }
                                                             true
                                                         }
-                                                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                                            if (isFocused.value && isLastProgram) true else false
+                                                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                                            val nextRowIdx = channelIndex + 1
+                                                            val nextRowFirst = programFocusRequesters
+                                                                .getOrNull(nextRowIdx)
+                                                                ?.getOrNull(0)
+                                                            val nextRowState = rowStates.getOrNull(nextRowIdx)
+                                                            if (nextRowFirst != null && nextRowState != null) {
+                                                                scope.launch {
+                                                                    // first scroll that LazyRow so item 0 is visible
+                                                                    nextRowState.animateScrollToItem(0)
+                                                                    // then give it a moment to bind
+                                                                    delay(50)
+                                                                    nextRowFirst.requestFocus()
+                                                                }
+                                                            }
+                                                            true
+                                                        }
+
+                                                        KeyEvent.KEYCODE_DPAD_UP -> {
+                                                            if (channelIndex == 0) {
+                                                                // **First row → send focus to the selected language**
+                                                                val langRequester = languageFocusRequesters
+                                                                    .getOrNull(languageSelectedIndex.value)
+                                                                if (langRequester != null) {
+                                                                    scope.launch {
+                                                                        delay(50)
+                                                                        try { langRequester.requestFocus() } catch (_: Exception) {}
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                // normal “go to previous row” behavior
+                                                                val prevRowIdx = channelIndex - 1
+                                                                val prevRowFirst = programFocusRequesters
+                                                                    .getOrNull(prevRowIdx)
+                                                                    ?.getOrNull(0)
+                                                                val prevRowState = rowStates.getOrNull(prevRowIdx)
+                                                                if (prevRowFirst != null && prevRowState != null) {
+                                                                    scope.launch {
+                                                                        prevRowState.animateScrollToItem(
+                                                                            0
+                                                                        )
+                                                                        delay(50)
+                                                                        prevRowFirst.requestFocus()
+                                                                    }
+                                                                }
+                                                            }
+                                                            true
                                                         }
                                                         else -> false
                                                     }

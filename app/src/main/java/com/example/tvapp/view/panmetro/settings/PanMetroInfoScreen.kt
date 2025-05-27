@@ -88,7 +88,7 @@ fun PanMetroInfoScreen(
     Log.d("PanMetroInfoScreen", "showExitDialog: $showExitDialog")
     // intercept back-press as “logout” as well
     BackHandler {
-        navController.popBackStack()
+        navController.navigate(Destination.settings)
     }
 
     // 2) track focus state
