@@ -5,6 +5,7 @@ import com.example.tvapp.model.data.genre.WTVGenre
 object Constants {
     var genre:List<WTVGenre>?= null
 
+    const val HEADER_TOKEN = "BUAA8JJkzfMI56y4BhEhU"
     const val DEV_BASE_URL = "https://api-dev.caastv.com/api/"//"http://192.168.1.4:3001/api/"
     const val BASE_URL = "https://api-demo.caastv.com/api/"//"http://192.168.1.4:3001/api/"
     const val BASE_URL_API_1 = "https://api-demo.caastv.com/api/tabs"

@@ -44,6 +44,8 @@ import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.delay
@@ -63,8 +65,7 @@ fun GenreMultiDRMPlayer(
     val coroutineScope = rememberCoroutineScope()
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
-
-    val fingerPrintItems by sharedViewModel.fingerPrintItemsFlow.collectAsState()
+    val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -173,7 +174,7 @@ fun GenreMultiDRMPlayer(
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
-            sharedViewModel.providePlayerFingerprint(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
 
         }
 
@@ -201,8 +202,16 @@ fun GenreMultiDRMPlayer(
 
             }
         )
-        fingerPrintItems.forEach {
-            ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+            }
+        }
+
+        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(player= playerView.value, scrollMessageInfo = mutableStateOf(it))
+            }
         }
 
         // Show Loading Indicator if Buffering

@@ -67,6 +67,7 @@ import com.example.tvapp.view.playeroverlay.FullScreenPlayerOverlay
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.example.tvapp.view.uicomponent.generateWatermark
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -90,7 +91,7 @@ fun PanMetroVideoPlayer(
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
-    val fingerPrintItems by sharedViewModel.fingerPrintItemsFlow.collectAsState()
+    val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -240,7 +241,7 @@ fun PanMetroVideoPlayer(
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
-            sharedViewModel.providePlayerFingerprint(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
 
         }
     }
@@ -366,8 +367,16 @@ fun PanMetroVideoPlayer(
             }
         )
 
-        fingerPrintItems.forEach {
-            ChannelFingerprintOverlay(fingerprintRule = mutableStateOf(it))
+        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+            }
+        }
+
+        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+            }
         }
 //        Row(
 //            verticalAlignment = Alignment.Top,

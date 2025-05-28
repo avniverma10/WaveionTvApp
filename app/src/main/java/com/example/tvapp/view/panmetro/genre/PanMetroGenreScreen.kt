@@ -89,6 +89,8 @@ fun PanmetroGenreScreen(
     }
 
     LaunchedEffect(Unit) {
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
         genreViewModel.filterPanMetroChannelsByGenre()
 
     }

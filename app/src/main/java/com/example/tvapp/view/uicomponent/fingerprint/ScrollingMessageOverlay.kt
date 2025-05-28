@@ -24,22 +24,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.ui.PlayerView
 import com.example.tvapp.extensions.getFloatValue
 import com.example.tvapp.extensions.getIntValue
 import com.example.tvapp.model.data.message.ScrollMessageInfo
+import com.example.tvapp.model.data.sseresponse.ScrollMessage
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 @Composable
 fun ScrollingMessageOverlay(
-    scrollMessageInfo: MutableState<ScrollMessageInfo>
+    player: PlayerView?=null,
+    scrollMessageInfo: MutableState<ScrollMessage>
 ) {
     val context = LocalContext.current
 
     val density = LocalDensity.current
     val config = LocalConfiguration.current
-    val screenWidthPx = with(density) { config.screenWidthDp.dp.toPx() }
-    val screenHeightPx = with(density) { config.screenHeightDp.dp.toPx() }
+
+    val screenWidthPx = player?.width?:with(density) { config.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(density) {player?.height?.dp?.toPx()}?:with(density) { config.screenHeightDp.dp.toPx() }
 
     val fontColor = runCatching {
         Color(android.graphics.Color.parseColor(scrollMessageInfo.value.fontColorHex ?: "#000000"))

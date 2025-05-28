@@ -1,7 +1,6 @@
 package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -41,7 +40,7 @@ import java.nio.charset.StandardCharsets
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
-    val fingerprintRules by sharedViewModel.globalFingerPrint.collectAsState()
+    val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     val scrollMessageItems by sharedViewModel.scrollMessageItemsFlow.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
@@ -59,13 +58,16 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
             )
         }
 
-        Log.e("fingerprintRules>>","${fingerprintRules?.size}")
-        fingerprintRules?.forEach {
-            GlobalFingerprintOverlay(mutableStateOf(it))
+        if((globalSSERules?.fingerprints?.size ?: 0) > 0){
+            globalSSERules?.fingerprints?.forEach {
+                GlobalFingerprintOverlay(mutableStateOf(it))
+            }
         }
 
-        scrollMessageItems.forEach {
-            ScrollingMessageOverlay(mutableStateOf(it))
+        if((globalSSERules?.scrollMessages?.size ?: 0) > 0){
+            globalSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
+            }
         }
     }
 }

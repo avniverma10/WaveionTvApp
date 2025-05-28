@@ -26,13 +26,13 @@ import com.example.tvapp.extensions.generateTextFingerprint
 import com.example.tvapp.extensions.getFloatValue
 import com.example.tvapp.extensions.getIntValue
 import com.example.tvapp.extensions.showToastS
-import com.example.tvapp.model.data.fingerprint.PlayerFingerprintRule
+import com.example.tvapp.model.data.sseresponse.PlayerFingerprint
 import kotlinx.coroutines.delay
 
 @Composable
 fun ChannelFingerprintOverlay(
     player: PlayerView?=null,
-    fingerprintRule: MutableState<PlayerFingerprintRule>
+    fingerprintRule: MutableState<PlayerFingerprint>
 ) {
     val context = LocalContext.current
     val displayMessage = context.generateTextFingerprint(method = fingerprintRule.value.method?:"SHA2", obfuscationKey = fingerprintRule.value.obfuscationKey?:"12")
