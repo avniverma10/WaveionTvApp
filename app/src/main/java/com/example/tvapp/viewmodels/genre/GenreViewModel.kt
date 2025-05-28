@@ -28,7 +28,7 @@ open class GenreViewModel @Inject constructor(
     fun filterPanMetroChannelsByGenre(genre:String?=null) {
         genre?.let {
             _filteredPanMetroChannels.value = provideAvailableEPG()?.filter { epgItem ->
-                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.orEmpty()?.any { it.equals(genre, true) } == true)
+                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.map { it.name }.orEmpty()?.any { it.equals(genre, true) } == true)
                 genreMatch
             }?: arrayListOf()
         }?:kotlin.run {

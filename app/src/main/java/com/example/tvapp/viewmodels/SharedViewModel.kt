@@ -69,6 +69,9 @@ open class SharedViewModel @Inject constructor(
     private val loginPrefsRepository: LoginPrefsRepository,
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
+
+    var enableScrollingSSE = MutableStateFlow<Boolean>(false)
+
     private var globalFingerprintEventSource: EventSource? = null
     private val _globalFingerPrint = MutableStateFlow<List<GlobalFingerprintRule>?>(emptyList())
     val globalFingerPrint: StateFlow<List<GlobalFingerprintRule>?> = _globalFingerPrint
@@ -117,7 +120,6 @@ open class SharedViewModel @Inject constructor(
         private set
 
     init {
-
         provideGlobalFingerprintInfo()
         provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
@@ -261,8 +263,8 @@ open class SharedViewModel @Inject constructor(
         val filter = _filterState.value
 
         val filtered = fullList?.filter { epgItem ->
-            val genreList = epgItem.content?.genre.orEmpty()
-            val language = epgItem.content?.language.orEmpty()
+            val genreList = epgItem.content?.genre?.map { it.name }.orEmpty()
+            val language = epgItem.content?.language?.name.orEmpty()
 
             val genreMatch = filter.genre == null || genreList.any { it.equals(filter.genre, true) }
             val languageMatch = filter.language == null || language.equals(filter.language, true)
@@ -427,6 +429,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun provideScrollMessageInfo() {
+        //if(!enableScrollingSSE.value)return
         val sseUrl = (Constants.BASE_URL + "app/scroll-message/sse/getScrollMessage")
         Log.e("finalUrl>",sseUrl)
 
