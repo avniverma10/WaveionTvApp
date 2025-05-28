@@ -1,15 +1,17 @@
 package com.example.tvapp.view.splash
 
 import android.Manifest
-import android.app.Activity
 import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
+import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -56,10 +58,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.core.content.FileProvider
 import com.example.tvapp.extensions.applyUserInfo
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import kotlinx.coroutines.delay
+import java.io.File
 
 @Composable
 fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
@@ -162,7 +166,24 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                 message           = "A mandatory update is available. You must update to continue.",
                 borderColor       = Color.Transparent,
                 confirmButtonText = "Yes",
-                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                onConfirm         = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                        // Need to request WRITE_EXTERNAL_STORAGE
+                        val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        if (ContextCompat.checkSelfPermission(context, perm)
+                            != PackageManager.PERMISSION_GRANTED) {
+                            writePermissionLauncher.launch(perm)
+                        }else{
+                            // Either permission already granted, or API >= 29
+                            sharedViewModel.onUserAcceptedUpdate()
+                        }
+                    }else{
+                        // Either permission already granted, or API >= 29
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                }
+
+                ,
                 dismissButtonText = "Exit",
                 onDismiss         = {
                     activity?.finishAffinity()
@@ -179,72 +200,100 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                 message           = "There’s a new version. Would you like to update now?",
                 borderColor       = Color.Transparent,
                 confirmButtonText = "Yes",
-                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                onConfirm         = {if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                    // Need to request WRITE_EXTERNAL_STORAGE
+                    val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    if (ContextCompat.checkSelfPermission(context, perm)
+                        != PackageManager.PERMISSION_GRANTED) {
+                        writePermissionLauncher.launch(perm)
+                    }else{
+                        // Either permission already granted, or API >= 29
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                }else{
+                    // Either permission already granted, or API >= 29
+                    sharedViewModel.onUserAcceptedUpdate()
+                } },
                 dismissButtonText = "No",
                 onDismiss         = { sharedViewModel.onUserDeclinedUpdate() }
             )
         }
     }
 
-
     Spacer(Modifier.height(16.dp))
 
-
-    // — register for download‑complete only once downloadId is set —
     DisposableEffect(downloadId) {
-        if (downloadId != null) {
+        if (downloadId != null && updateData != null) {
+            val fileName = "tvapp_${updateData?.appVersion}.apk"
+            val appCtx   = context.applicationContext
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(ctx: Context, intent: Intent) {
                     val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-                    if (id == downloadId) {
-                        // 1) Query status...
-                        val q = DownloadManager.Query().setFilterById(id)
-                        dm.query(q).use { cursor ->
-                            if (cursor != null && cursor.moveToFirst()) {
-                                val status = cursor.getInt(cursor.getColumnIndexOrThrow(
-                                    DownloadManager.COLUMN_STATUS))
-
-                                if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                                    val apkUri: Uri = dm.getUriForDownloadedFile(id)
-
-                                    // **Clear the downloadId first** so spinner hides immediately
-                                    sharedViewModel.clearDownloadId()
-
-                                    // 2) Launch the installer using ACTION_VIEW
-                                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                                        setDataAndType(apkUri, "application/vnd.android.package-archive")
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                                                Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (id != downloadId) return
+                    val q = DownloadManager.Query().setFilterById(id)
+                    dm.query(q)?.use { c ->
+                        if (c.moveToFirst()) {
+                            val status = c.getInt(c.getColumnIndexOrThrow(
+                                DownloadManager.COLUMN_STATUS
+                            ))
+                            val apkFile = File(
+                                appCtx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                fileName
+                            )
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                val apkFile = File(
+                                    appCtx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                    fileName
+                                )
+                                val apkUri = FileProvider.getUriForFile(
+                                    appCtx,
+                                    "${appCtx.packageName}.provider",
+                                    apkFile
+                                )
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                                    !appCtx.packageManager.canRequestPackageInstalls()
+                                ) {
+                                    val settings = Intent(
+                                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES
+                                    ).apply {
+                                        data = Uri.parse("package:${appCtx.packageName}")
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                     }
-
-                                    // Only start if there's an activity to handle it
-                                    if (installIntent.resolveActivity(context.packageManager) != null) {
-                                        context.startActivity(installIntent)
-                                    } else {
-                                        context.showToastS("No installer found on device")
-                                    }
-
-                                    // 3) Finish splash so old process ends
-                                    activity?.finish()
-
-                                } else {
-                                    // failure case: also clear so spinner goes away
-                                    sharedViewModel.clearDownloadId()
-                                    context.showToastS("Download failed (status=$status)")
+                                    appCtx.startActivity(settings)
+                                    return
                                 }
+                                val install = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                                    setDataAndType(
+                                        apkUri,
+                                        "application/vnd.android.package-archive"
+                                    )
+                                    addFlags(
+                                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
+                                }
+                                appCtx.startActivity(install)
+                                activity?.finish()
+                            } else {
+                                if (apkFile.exists()) {
+                                    val deleted = apkFile.delete()
+                                    Log.d("Splash", "Download failed (status=$status). APK deleted? $deleted")
+                                } else {
+                                    Log.d("Splash", "Download failed (status=$status). No APK file found to delete.")
+                                }
+                                sharedViewModel.clearDownloadId()
+                                context.showToastS("Download failed (status=$status)")
                             }
                         }
                     }
                 }
             }
-
             ContextCompat.registerReceiver(
                 context,
                 receiver,
                 IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
                 ContextCompat.RECEIVER_EXPORTED
             )
-
             onDispose { context.unregisterReceiver(receiver) }
         } else {
             onDispose { /* nothing to clean up */ }

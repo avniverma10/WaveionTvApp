@@ -4,6 +4,7 @@ package com.example.tvapp.view.panmetro
 
 import android.app.Activity
 import android.os.Process
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +36,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +73,12 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
 
     LaunchedEffect(Unit) {
         firstMenuItemFocusRequester.requestFocus()
+    }
+
+    val focusManager = LocalFocusManager.current
+    BackHandler {
+        focusManager.clearFocus(force = true)
+        focusManager.moveFocus(FocusDirection.Left)
     }
     Box(
         modifier = Modifier

@@ -245,11 +245,16 @@ fun PanMetroVideoPlayer(
         }
     }
 
+//    BackHandler {
+//        navController.navigate(Destination.epgScreen) {
+//            popUpTo(Destination.panMetroScreen) { inclusive = true }
+//        }
+//    }
+
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
-            popUpTo(Destination.panMetroScreen) { inclusive = true }
-        }
+       navController.popBackStack()
     }
+
 
     fun playNextChannel() {
         if (selectedChannelIndex.intValue < (epgList.lastIndex )) {
@@ -276,12 +281,10 @@ fun PanMetroVideoPlayer(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_BACK -> {
-                            navController.navigate(Destination.epgScreen) {
-                                PreferenceManager.selectedGenreIndex = 0
-                                PreferenceManager.selectedChannelIndex = 0
-                                PreferenceManager.lastEpgDataItem = null
-                                popUpTo(Destination.panMetroScreen) { inclusive = true }
-                            }
+                            PreferenceManager.selectedGenreIndex  = 0
+                            PreferenceManager.selectedChannelIndex = 0
+                            PreferenceManager.lastEpgDataItem       = null
+                            navController.popBackStack()
                             true
                         }
 

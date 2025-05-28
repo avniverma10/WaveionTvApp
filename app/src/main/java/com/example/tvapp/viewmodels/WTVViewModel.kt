@@ -60,6 +60,7 @@ import okhttp3.sse.EventSources
 import javax.inject.Inject
 import android.Manifest
 import android.annotation.SuppressLint
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -69,6 +70,7 @@ import com.example.tvapp.utils.Constants
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -445,17 +447,25 @@ open class WTVViewModel @Inject constructor(
             return false
         }
     }
+    @SuppressLint("MissingPermission")
+    fun downloadApk(apkUrl: String): Long {
+        // getApplication<T>() gives you your Application instance in an AndroidViewModel
+        val ctx = getApplication<Application>()
+        val dm  = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
-    private fun downloadApk(apkUrl: String): Long {
-        val dm = application.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        // construct a file in YOUR app’s external-files/Download directory
+        val fileName = "tvapp_${_appUpdateData.value?.appVersion}.apk"
+        val destDir  = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)!!
+        val file     = File(destDir, fileName)
+        val destUri  = Uri.fromFile(file)
+
         val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
             setTitle("Downloading v${_appUpdateData.value?.appVersion}")
-            setDestinationInExternalPublicDir(
-                DIRECTORY_DOWNLOADS,
-                "tvapp_${_appUpdateData.value?.appVersion}.apk"
-            )
-            setNotificationVisibility(VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // write into your app’s own folder (no storage permission needed)
+            setDestinationUri(destUri)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         }
+
         val id = dm.enqueue(req)
         _downloadId.value = id
         return id

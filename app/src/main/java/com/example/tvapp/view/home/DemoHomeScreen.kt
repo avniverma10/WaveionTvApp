@@ -1,5 +1,6 @@
 package com.example.tvapp.view.home
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -25,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -69,6 +72,11 @@ fun DemoHomeScreen(
     LaunchedEffect(Unit) {
         delay(100)
         watchNowRequester.requestFocus()
+    }
+    val focusManager = LocalFocusManager.current
+    BackHandler {
+        focusManager.clearFocus(force = true)
+        focusManager.moveFocus(FocusDirection.Left)
     }
 
     Box(
@@ -329,11 +337,14 @@ fun CategorySection(
 // Sample data
 private val continueWatchingRes = listOf(
     R.drawable.movie_8, R.drawable.movie_15, R.drawable.movie_3,
-    R.drawable.movie_12, R.drawable.movie_5, R.drawable.movie_6
+    R.drawable.movie_12, R.drawable.movie_5, R.drawable.movie_6,
+    R.drawable.movie_10, R.drawable.movie_28, R.drawable.movie_23,
 )
 private val topTvRes = listOf(
     R.drawable.movie_9, R.drawable.movie_18, R.drawable.movie_13,
-    R.drawable.movie_12, R.drawable.movie_14
+    R.drawable.movie_12, R.drawable.movie_14,
+    R.drawable.movie_10, R.drawable.movie_11, R.drawable.movie_3,
+    R.drawable.movie_7, R.drawable.movie_4
 )
 private val trending = listOf(
     R.drawable.movie_22, R.drawable.movie_13, R.drawable.movie_12,
@@ -352,6 +363,6 @@ private val action = listOf(
 )
 private val topMovies = listOf(
     R.drawable.movie_21, R.drawable.movie_22, R.drawable.movie_26,
-    R.drawable.movie_27, R.drawable.movie_28, R.drawable.movie_28,
-    R.drawable.movie_4, R.drawable.movie_10
+    R.drawable.movie_27, R.drawable.movie_28, R.drawable.movie_30,
+    R.drawable.movie_4, R.drawable.movie_10,
 )

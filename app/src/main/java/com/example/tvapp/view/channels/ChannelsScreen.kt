@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -44,6 +45,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -84,7 +86,7 @@ fun ChannelScreen(
     // Create one FocusRequester per item for categories and languages.
     val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
     val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
-
+    val focusManager = LocalFocusManager.current
     // Set selected index only if there is data
     // 1) Keep the old effect for updating your indices:
     LaunchedEffect(filterState, categories, languages) {
@@ -114,13 +116,16 @@ fun ChannelScreen(
             hasDoneInitialFocus = true
         }
     }
+//    BackHandler {
+//        navController.navigate(Destination.epgScreen) {
+//            popUpTo(0) { inclusive = true }
+//            launchSingleTop = true
+//        }
+//    }
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
-            popUpTo(0) { inclusive = true }
-            launchSingleTop = true
-        }
+        focusManager.clearFocus(force = true)
+        focusManager.moveFocus(FocusDirection.Left)
     }
-
     Box(
         modifier = Modifier
             .fillMaxSize()

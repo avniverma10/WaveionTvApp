@@ -84,7 +84,7 @@ fun PanmetroGenreScreen(
 
     BackHandler {
         navController.navigate(Destination.epgScreen) {
-            popUpTo(Destination.genreScreen) { inclusive = true }
+//            popUpTo(Destination.genreScreen) { inclusive = true }
         }
     }
 
@@ -160,9 +160,9 @@ fun PanmetroGenreScreen(
                                             PreferenceManager.selectedGenreIndex = 0
                                             PreferenceManager.selectedChannelIndex = 0
                                             PreferenceManager.lastEpgDataItem = null
-                                            popUpTo(Destination.genreScreen) {
-                                                inclusive = true
-                                            }
+//                                            popUpTo(Destination.genreScreen) {
+//                                                inclusive = true
+//                                            }
                                         }
                                     }
                             }
