@@ -119,7 +119,7 @@ open class SharedViewModel @Inject constructor(
     init {
 
         provideGlobalFingerprintInfo()
-        //provideScrollMessageInfo()
+        provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
         viewModelScope.launch {
             isInitializeData

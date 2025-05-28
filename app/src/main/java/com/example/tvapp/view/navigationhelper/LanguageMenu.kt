@@ -123,7 +123,13 @@ fun LanguageMenu(
                         keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
-                                firstChannelFocusRequester.requestFocus()
+                                firstChannelFocusRequester?.let { requester ->
+                                    try {
+                                        requester.requestFocus()
+                                    } catch (e: IllegalStateException) {
+                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                    }
+                                }
                             }
                             true
                         }
