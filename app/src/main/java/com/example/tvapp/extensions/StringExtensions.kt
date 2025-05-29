@@ -724,3 +724,11 @@ fun currentProgramFilter(start:String?,end:String?): Boolean {
 
    // (start <= now && now < end) || (now < start)
 }
+
+/**
+ * Capitalizes the very first character of this string, lower-cases all the rest.
+ * If the string is empty, returns it unchanged.
+ */
+fun String.capitalizeFirstLetter(): String =
+    this.lowercase(Locale.getDefault())
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }

@@ -16,5 +16,6 @@ object Destination {
     const val settings = "settings"
     const val demoHome    = "demoHome"
     const val demoplayer      = "demoplayer"
+    const val profile      = "profile"
 
 }

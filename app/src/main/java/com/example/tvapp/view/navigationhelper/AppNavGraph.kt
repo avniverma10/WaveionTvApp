@@ -28,6 +28,8 @@ import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
+import com.example.tvapp.view.profile.Profile
+import com.example.tvapp.view.profile.ProfileScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
@@ -84,6 +86,9 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)
+        }
+        composable(Destination.profile) {
+            ProfileScreen(navController, sharedViewModel)
         }
         composable(Destination.genreScreen) {
             PanmetroGenreScreen(navController,sharedViewModel)

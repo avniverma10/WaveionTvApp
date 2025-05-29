@@ -56,10 +56,11 @@ fun ExpandableNavigationMenu(
         expanded = false
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
+            Destination.profile -> tabs?.indexOfFirst { it.name == "profile" } ?: -1
             Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1
-             Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+            Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
             Destination.demoHome -> tabs?.indexOfFirst { it.name == "movies" } ?: -1
-              Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
+            Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
             Destination.genreScreen -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
             Destination.settings -> tabs?.indexOfFirst { it.name == "settings" } ?: -1
@@ -95,19 +96,6 @@ fun ExpandableNavigationMenu(
                         }
                     }
                 }
-
-                /*when {
-                    selectedIndex == -1 -> {
-                        selectedIndex = 0
-                        profileFocusRequester.requestFocus()
-                    }
-                    selectedIndex == 0 -> {
-                        profileFocusRequester.requestFocus()
-                    }
-                    else -> {
-                        focusRequesters.getOrNull(selectedIndex - 1)?.requestFocus()
-                    }
-                }*/
             }
         }
     }
@@ -155,7 +143,12 @@ fun ExpandableNavigationMenu(
                 selected = selectedIndex == 0,
                 expanded = expanded,
                 onFocus = { selectedIndex = 0 },
-                onClick = { expanded = true },
+                onClick = {
+                    selectedTabIndex = -1
+                    selectedIndex = 0
+                    expanded = false
+                    navController.navigate(Destination.profile)
+                },
                 focusRequester = profileFocusRequester,
                 nextFocusRequester = focusRequesters.firstOrNull(),
                 prevFocusRequester = null
