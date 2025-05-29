@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -71,18 +74,16 @@ fun ChannelScreen(
     bannerList: List<Banner> = emptyList()
 ) {
     val context = LocalContext.current
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    val categories = appManifestData.value?.genre?: arrayListOf()
-    val languages = appManifestData.value?.language?: arrayListOf()
-    val filterState by sharedViewModel.filterState.collectAsState()
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData().observeAsState()
+    val categories = appManifestData.value?.genre ?: arrayListOf()
+    val languages  = appManifestData.value?.language ?: arrayListOf()
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
-
-    Log.d("AVNI", "Channel List --> $filteredContent")
+    val filterState by sharedViewModel.filterState.collectAsState()
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
-
+    val gridState = rememberLazyGridState()
     // Create one FocusRequester per item for categories and languages.
     val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
     val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
@@ -110,8 +111,7 @@ fun ChannelScreen(
     var hasDoneInitialFocus by remember { mutableStateOf(false) }
     LaunchedEffect(filteredContent.isNotEmpty()) {
         if (filteredContent.isNotEmpty() && !hasDoneInitialFocus) {
-            // give Compose one frame to attach the modifier
-            kotlinx.coroutines.delay(100)
+            gridState.scrollToItem(0)
             firstChannelFocusRequester.requestFocus()
             hasDoneInitialFocus = true
         }
@@ -169,6 +169,7 @@ fun ChannelScreen(
                 if (channelList.isNotEmpty()) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(5),
+                        state = gridState,
                         contentPadding = PaddingValues(16.dp),
                         modifier = Modifier
                             .fillMaxSize()

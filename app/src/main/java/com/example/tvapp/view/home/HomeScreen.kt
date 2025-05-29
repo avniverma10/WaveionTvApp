@@ -5,6 +5,7 @@ import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -71,11 +75,13 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
 
+    // 1) remember a state for your column
+    val columnState = rememberLazyListState()
+
     val firstChannelFocusRequester = remember { FocusRequester() }
 
-    Log.d("AVNI" ,"Home Categories are --> $homeCategories")
-
     LaunchedEffect(Unit) {
+        columnState.scrollToItem(0)
         firstChannelFocusRequester.requestFocus()
     }
     BackHandler {
@@ -107,7 +113,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             .background(screen_bg_color)
     ) {
 
-        LazyColumn(modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
+        LazyColumn( state = columnState,modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
             // ③ Switch to itemsIndexed so we know when it's the first category
             itemsIndexed(homeCategories) { catIndex, category ->
                 val epgList = epgChannels
@@ -142,6 +148,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         )
     }
 }
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategorySection(
     title: String,
@@ -151,6 +158,9 @@ fun CategorySection(
     firstChannelFocusRequester: FocusRequester? = null,
     isFirstCategory: Boolean = false
 ) {
+    val rowState = rememberLazyListState()
+    // 1) Create a BringIntoViewRequester
+    val bringRequester = remember { BringIntoViewRequester() }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -169,6 +179,7 @@ fun CategorySection(
         )
         Spacer(modifier = Modifier.height(10.dp))
         LazyRow(
+            state = rowState,
             contentPadding       = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -176,7 +187,7 @@ fun CategorySection(
             itemsIndexed(channels) { idx, channel ->
                 // only the first item of the first category gets our focusRequester
                 val modifier = if (isFirstCategory && idx == 0 && firstChannelFocusRequester != null) {
-                    Modifier.focusRequester(firstChannelFocusRequester)
+                    Modifier.focusRequester(firstChannelFocusRequester) .bringIntoViewRequester(bringRequester)
                 } else {
                     Modifier
                 }
@@ -191,6 +202,13 @@ fun CategorySection(
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen)
                         }
+                }
+                if (isFirstCategory && firstChannelFocusRequester != null && channels.isNotEmpty()) {
+                    LaunchedEffect(channels) {
+                        // scroll horizontally to the very first channel
+                        rowState.scrollToItem(0)
+                        firstChannelFocusRequester.requestFocus()
+                    }
                 }
             }
         }
