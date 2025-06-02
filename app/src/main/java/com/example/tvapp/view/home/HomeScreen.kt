@@ -76,13 +76,19 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
 
     // 1) remember a state for your column
-    val columnState = rememberLazyListState()
+   // val columnState = rememberLazyListState()
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
-        columnState.scrollToItem(0)
-        firstChannelFocusRequester.requestFocus()
+        //columnState.scrollToItem(0)
+        firstChannelFocusRequester?.let { requester ->
+            try {
+                requester.requestFocus()
+            } catch (e: IllegalStateException) {
+                Log.e("FocusError", "FocusRequester not initialized", e)
+            }
+        }
     }
     BackHandler {
         showExitDialog = true
@@ -113,7 +119,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             .background(screen_bg_color)
     ) {
 
-        LazyColumn( state = columnState,modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
+        LazyColumn(modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
             // ③ Switch to itemsIndexed so we know when it's the first category
             itemsIndexed(homeCategories) { catIndex, category ->
                 val epgList = epgChannels
@@ -187,7 +193,7 @@ fun CategorySection(
             itemsIndexed(channels) { idx, channel ->
                 // only the first item of the first category gets our focusRequester
                 val modifier = if (isFirstCategory && idx == 0 && firstChannelFocusRequester != null) {
-                    Modifier.focusRequester(firstChannelFocusRequester) .bringIntoViewRequester(bringRequester)
+                    Modifier.focusRequester(firstChannelFocusRequester)
                 } else {
                     Modifier
                 }
@@ -202,13 +208,6 @@ fun CategorySection(
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen)
                         }
-                }
-                if (isFirstCategory && firstChannelFocusRequester != null && channels.isNotEmpty()) {
-                    LaunchedEffect(channels) {
-                        // scroll horizontally to the very first channel
-                        rowState.scrollToItem(0)
-                        firstChannelFocusRequester.requestFocus()
-                    }
                 }
             }
         }

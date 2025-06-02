@@ -83,7 +83,7 @@ fun ChannelScreen(
     val languageSelectedIndex = remember { mutableStateOf(0) }
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
-    val gridState = rememberLazyGridState()
+    //val gridState = rememberLazyGridState()
     // Create one FocusRequester per item for categories and languages.
     val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
     val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
@@ -111,8 +111,14 @@ fun ChannelScreen(
     var hasDoneInitialFocus by remember { mutableStateOf(false) }
     LaunchedEffect(filteredContent.isNotEmpty()) {
         if (filteredContent.isNotEmpty() && !hasDoneInitialFocus) {
-            gridState.scrollToItem(0)
-            firstChannelFocusRequester.requestFocus()
+            //gridState.scrollToItem(0)
+            firstChannelFocusRequester?.let { requester ->
+                try {
+                    requester.requestFocus()
+                } catch (e: IllegalStateException) {
+                    Log.e("FocusError", "FocusRequester not initialized", e)
+                }
+            }
             hasDoneInitialFocus = true
         }
     }
@@ -169,7 +175,6 @@ fun ChannelScreen(
                 if (channelList.isNotEmpty()) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(5),
-                        state = gridState,
                         contentPadding = PaddingValues(16.dp),
                         modifier = Modifier
                             .fillMaxSize()

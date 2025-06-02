@@ -18,7 +18,7 @@ import javax.inject.Inject
 class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
     suspend fun provideUserLogin(
         loginUrl: String,
-        requestBody: HashMap<String, String>
+        requestBody: HashMap<String, String?>
     ): Flow<WTVResponse<LoginResponseData>> = flow {
         try {
             Log.e("url:","$loginUrl ${requestBody}")
