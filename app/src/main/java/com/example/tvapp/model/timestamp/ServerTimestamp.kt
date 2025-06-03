@@ -2,6 +2,7 @@
 package com.example.tvapp.model.timestamp
 
 import android.util.Log
+import com.example.tvapp.extensions.loge
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -23,7 +24,7 @@ data class ServerTimeStamp(
             // 3) Return millis, or null if parse failed
             date?.time
         } catch (e: ParseException) {
-            Log.e("provideTimeStampValue", "Failed to parse timestamp: $timestamp", e)
+            loge("provideTimeStampValue", "Failed to parse timestamp: $timestamp ${e.message}")
             null
         }
     }

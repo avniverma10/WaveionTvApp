@@ -1,12 +1,15 @@
 package com.example.tvapp.model.data.sseresponse
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class GlobalSSEResponse(
     val fingerprints: List<Fingerprint>,
     val scrollMessages: List<ScrollMessage>
 )
 
+@Keep
 data class Fingerprint(
     @SerializedName("__v")
     val version: Int??=null,
@@ -36,6 +39,7 @@ data class Fingerprint(
     val userFilter: List<String>?=null
 )
 
+@Keep
 data class ScrollMessage(
     @SerializedName("__v")
     val version: Int?=null,

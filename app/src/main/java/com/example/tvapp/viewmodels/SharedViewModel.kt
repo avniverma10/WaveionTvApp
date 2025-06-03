@@ -12,6 +12,7 @@ import com.example.tvapp.WTVApp
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
@@ -366,7 +367,7 @@ open class SharedViewModel @Inject constructor(
         }
 
         val sseUrl = queryBuilder.build().toString()
-        Log.e("finalUrl>",sseUrl)
+        loge("finalUrl>",sseUrl)
 
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
@@ -396,14 +397,14 @@ open class SharedViewModel @Inject constructor(
                 data: String
             ) {
                 // Update the global state with new event data.
-                Log.e("SSE>",sseUrl+data.toString())
+                loge("SSE>",sseUrl+data.toString())
                 try {
                     data.toString()
                         .convertIntoModel(GlobalSSEResponse::class.java)?.let {
                             _globalSSERules.value = it
                         }
                 } catch (e: Exception) {
-                    Log.e("SSE>", "Error parsing JSON: ${e.message}")
+                    loge("SSE>", "Error parsing JSON: ${e.message}")
                 }
             }
 
@@ -440,7 +441,7 @@ open class SharedViewModel @Inject constructor(
             queryBuilder.appendQueryParameter("liveChannel", it)
         }
         val sseUrl = queryBuilder.build().toString()
-        Log.e("PlayerFingerprint url>",sseUrl)
+        loge("PlayerFingerprint url>",sseUrl)
         val client = OkHttpClient.Builder()
             .addInterceptor { chain ->
                 val original = chain.request()
@@ -469,17 +470,17 @@ open class SharedViewModel @Inject constructor(
                 data: String
             ) {
                 // Update the global state with new event data.
-                Log.e("SSE >",sseUrl+data.toString())
+                loge("SSE >",sseUrl+data.toString())
 
                 try {
                     data.toString()
                         .convertIntoModel(PlayerSSEResponse::class.java)?.let {
                             _playerSSERules.value = it
                         }
-                    Log.e("SSE >", data.toString())
+                    loge("SSE >", data.toString())
 
                 } catch (e: Exception) {
-                    Log.e("SSE ", "Error parsing JSON: ${e.message}")
+                    loge("SSE ", "Error parsing JSON: ${e.message}")
                 }
             }
 

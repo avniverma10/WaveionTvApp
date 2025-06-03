@@ -121,7 +121,7 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
     val pwd = PreferenceManager.getPassword()//dataS?.get(DataStoreKeys.PASSWORD) ?: ""
 
     val macAddress = provideMacAddress()
-    Log.e("loginInfo>>","${uNamme},${pwd},>${macAddress}")
+    loge("loginInfo>>","${uNamme},${pwd},>${macAddress}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
@@ -135,8 +135,8 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         .build()
     val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?","https://cryptoguard.waveiontechnologies.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
-    Log.e("loginInfo>",contentUrl.toString())
-    Log.e("loginInfo>",licenseUrl)
+    loge("loginInfo>",contentUrl.toString())
+    loge("loginInfo>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)

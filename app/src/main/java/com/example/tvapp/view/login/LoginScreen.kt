@@ -364,7 +364,7 @@
 //        }
 //        bitmap
 //    } catch (e: WriterException) {
-//        Log.e("QRCode", "Error generating QR Code", e)
+//        loge("QRCode", "Error generating QR Code", e)
 //        null
 //    }
 //}

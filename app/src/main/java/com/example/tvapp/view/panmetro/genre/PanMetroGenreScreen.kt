@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.android.caastv.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -155,7 +156,7 @@ fun PanmetroGenreScreen(
                                         channelToGenreFocus.value = true
                                         requester.requestFocus()
                                     } catch (e: IllegalStateException) {
-                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                        loge("FocusError", "FocusRequester not initialized ${e.message}")
                                     }
                                 }
                             },

@@ -1,10 +1,12 @@
 package com.example.tvapp.model.data.epgdata
 
+import androidx.annotation.Keep
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class EPGDataItem(
     val _id: String?="67d27a11140c8a5c710993d6",
     val channelId: String?="ZEE_SALAAM_RS-0.10",
@@ -19,12 +21,12 @@ data class EPGDataItem(
     val currentPrograms: List<Programme>?=null
 )
 
-
+@Keep
 data class Tv(
     val channel: Channel?=null,
     val programme: List<Programme>?= null
 )
-
+@Keep
 data class Programme(
     @SerializedName("_channel")
     val channelId: String?="ZEE_SALAAM_RS-0.10",
@@ -46,7 +48,7 @@ data class Programme(
     @Volatile
     var endFormatedTime:String?=null
 )
-
+@Keep
 data class Content(
     val ChannelID: String?="67a6ff5b72bb0101dcc82ad4",
     @SerializedName("__v")
@@ -71,6 +73,7 @@ data class Content(
     val assetId: String?="546465f1-a54c-4146-b417-c5d5ac0d0802",
     val streamType: String?="",
 )
+@Keep
 data class Channel(
     val _id: String?="ZEE_SALAAM_RS-0.10",
     @SerializedName("display-name")

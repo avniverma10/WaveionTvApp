@@ -108,7 +108,7 @@ class EPGViewModel @Inject constructor(
                 try {
                     _bannerList.value = bannerData
                 } catch (e: Exception) {
-                    Log.e("Error", "Error fetching banners")
+                    loge("Error", "Error fetching banners")
                 }
             }
         }

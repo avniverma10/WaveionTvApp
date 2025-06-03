@@ -3,6 +3,7 @@ package com.example.tvapp.model.repository.login
 import android.util.Log
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.login.WTVLogin
@@ -21,10 +22,10 @@ class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterfac
         requestBody: HashMap<String, String?>
     ): Flow<WTVResponse<LoginResponseData>> = flow {
         try {
-            Log.e("url:","$loginUrl ${requestBody}")
+            loge("url:","$loginUrl ${requestBody}")
             val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,body = requestBody).execute()
             if (response.isSuccessful && response.body() != null) {
-                Log.e("response:","${response.body()}")
+                loge("response:","${response.body()}")
 
                 val manifest = response.body()?.toJSONObject()?.toString()
                     .convertIntoModel(LoginResponseData::class.java)

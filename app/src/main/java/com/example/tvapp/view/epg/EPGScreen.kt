@@ -41,6 +41,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
@@ -81,7 +82,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         try {
             firstChannelFocusRequester.requestFocus()
         } catch (e: IllegalStateException) {
-            Log.e("FocusError", "FocusRequester not initialized", e)
+            loge("FocusError", "FocusRequester not initialized ${e.message}")
         }
     }
     val categories = appManifestData.value?.genre?: arrayListOf()

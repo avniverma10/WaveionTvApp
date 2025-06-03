@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.ui.theme.filter_selected_color
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.ui.theme.focus_background
@@ -113,7 +114,7 @@ fun LanguageMenu(
                                         try {
                                             requester.requestFocus()
                                         } catch (e: IllegalStateException) {
-                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                            loge("FocusError", "FocusRequester not initialized ${e.message}")
                                         }
                                     }
                                 }
@@ -127,7 +128,7 @@ fun LanguageMenu(
                                     try {
                                         requester.requestFocus()
                                     } catch (e: IllegalStateException) {
-                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                        loge("FocusError", "FocusRequester not initialized  ${e.message}")
                                     }
                                 }
                             }

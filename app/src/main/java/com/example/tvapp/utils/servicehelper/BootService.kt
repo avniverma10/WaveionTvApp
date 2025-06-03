@@ -6,6 +6,7 @@ import android.os.*
 import android.provider.Settings
 import android.util.Log
 import com.android.caastv.R
+import com.example.tvapp.extensions.loge
 
 class BootService : Service() {
     override fun onCreate() {
@@ -24,7 +25,7 @@ class BootService : Service() {
                 Log.d("BootService", "Launching MainActivity in foreground...")
                 startActivity(launchIntent)
             } else {
-                Log.e("BootService", "SYSTEM_ALERT_WINDOW permission missing! Cannot bring app to foreground.")
+                loge("BootService", "SYSTEM_ALERT_WINDOW permission missing! Cannot bring app to foreground.")
             }
 
             stopSelf() // Stop service after launch

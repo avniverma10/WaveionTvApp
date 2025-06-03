@@ -65,6 +65,7 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import com.android.caastv.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.utils.Constants
 import kotlinx.coroutines.delay
@@ -164,7 +165,7 @@ open class WTVViewModel @Inject constructor(
         viewModelScope.launch {
             networkApiCallInterfaceImpl
                 .provideNotificationSSE("https://api-demo.caastv.com/api/app/getNotification-sse")
-                .catch { Log.e("WTVViewModel", "SSE failed", it) }
+                .catch { loge("WTVViewModel", "SSE failed $it") }
                 .collect { item ->
                     if (skipFirst) {
                         skipFirst = false
@@ -267,7 +268,7 @@ open class WTVViewModel @Inject constructor(
                 }
                 _errorLoadingData.value = "Server api ${errorMsg} not responding yet!"
                 _isInitializeData.value = false
-                Log.e("_errorLoadingData", "${_errorLoadingData}")
+                loge("_errorLoadingData", "${_errorLoadingData}")
             }
             launch {
                 networkApiCallInterfaceImpl
@@ -292,22 +293,22 @@ open class WTVViewModel @Inject constructor(
 
         val resp = okHttpClient.newCall(req).execute()
         if (!resp.isSuccessful) {
-            Log.e(TAG, "Health endpoint error: HTTP ${resp.code}")
+            loge(TAG, "Health endpoint error: HTTP ${resp.code}")
             throw IOException("Health check failed: ${resp.code}")
         }
         val bodyStr = resp.body!!.string()
-        Log.d(TAG, "Raw JSON response: $bodyStr")
+        loge(TAG, "Raw JSON response: $bodyStr")
         val timestampStr = JSONObject(bodyStr).getString("timestamp")
-        Log.d(TAG, "Parsed timestamp string: $timestampStr")
+        loge(TAG, "Parsed timestamp string: $timestampStr")
 
         val serverInst = try {
             Instant.parse(timestampStr)
         } catch (e: Exception) {
-            Log.e(TAG, "Instant.parse failed for $timestampStr", e)
+            loge(TAG, "Instant.parse failed for $timestampStr ${e.message}")
             throw e
         }
         val serverMs = serverInst.toEpochMilli()
-        Log.d(TAG, "Server epoch ms: $serverMs")
+        loge(TAG, "Server epoch ms: $serverMs")
         return serverMs
     }
 
@@ -491,7 +492,7 @@ open class WTVViewModel @Inject constructor(
             .filter { program ->
                 val start = program.startTime
                 val end = program.endTime
-                Log.e("", "start:${start} and end:${end}")
+                loge("", "start:${start} and end:${end}")
                 // Only include if both times are non-null and end is strictly in the future:
                 if (start == null || end == null) return@filter false
                 // 1) Currently running: start <= now < end

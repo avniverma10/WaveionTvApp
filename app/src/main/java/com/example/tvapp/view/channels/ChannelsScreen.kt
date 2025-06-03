@@ -59,6 +59,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.base_color
@@ -123,7 +124,7 @@ fun ChannelScreen(
                 try {
                     requester.requestFocus()
                 } catch (e: IllegalStateException) {
-                    Log.e("FocusError", "FocusRequester not initialized", e)
+                    loge("FocusError", "FocusRequester not initialized ${e.message}")
                 }
             }
             hasDoneInitialFocus = true

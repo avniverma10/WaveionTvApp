@@ -107,7 +107,7 @@ fun Context.isInternetOn(): Boolean {
             val activeNetworkInfo: NetworkInfo? = connectivityManager.activeNetworkInfo
             return activeNetworkInfo?.isConnected ?: false
         } catch (e: Throwable) {
-            Log.e("",e.message?:"")
+            loge("",e.message?:"")
         }
     }
     return false

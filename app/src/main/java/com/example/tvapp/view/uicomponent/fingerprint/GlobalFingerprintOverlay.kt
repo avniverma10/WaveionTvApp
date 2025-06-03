@@ -24,9 +24,6 @@ import androidx.compose.ui.unit.sp
 import com.example.tvapp.extensions.generateTextFingerprint
 import com.example.tvapp.extensions.getFloatValue
 import com.example.tvapp.extensions.getIntValue
-import com.example.tvapp.extensions.showToastS
-import com.example.tvapp.model.data.fingerprint.FingerprintRule
-import com.example.tvapp.model.data.fingerprint.GlobalFingerprintRule
 import com.example.tvapp.model.data.sseresponse.Fingerprint
 import kotlinx.coroutines.delay
 

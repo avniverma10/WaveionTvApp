@@ -45,6 +45,7 @@ import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.android.caastv.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.example.tvapp.viewmodels.WTVPlayerViewModel
@@ -89,10 +90,10 @@ fun WTVVideoPlayer(
             addAnalyticsListener(object : AnalyticsListener {
                 override fun onEvents(player: Player, events: AnalyticsListener.Events) {
                     if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                        Log.d("DRM", "Keys loaded successfully")
+                        loge("DRM", "Keys loaded successfully")
                     }
                     if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                        Log.e("DRM", "Session manager error")
+                        loge("DRM", "Session manager error")
                     }
                 }
             })

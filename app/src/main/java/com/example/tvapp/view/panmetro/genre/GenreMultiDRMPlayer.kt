@@ -39,6 +39,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import com.android.caastv.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
@@ -101,10 +102,10 @@ fun GenreMultiDRMPlayer(
         val analyticsListener = object : AnalyticsListener {
             override fun onEvents(player: Player, events: AnalyticsListener.Events) {
                 if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                    Log.d("DRM", "Keys loaded successfully")
+                    loge("DRM", "Keys loaded successfully")
                 }
                 if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                    Log.e("DRM", "Session manager error")
+                    loge("DRM", "Session manager error")
                 }
             }
         }
@@ -155,7 +156,7 @@ fun GenreMultiDRMPlayer(
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
-        Log.e("selectedVideoUrl>","$selectedChannelIndex")
+        loge("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
@@ -169,7 +170,7 @@ fun GenreMultiDRMPlayer(
             } else {
                 MediaItem.fromUri(url)
             }
-            Log.e("Requested Data>",drmData.toJSONObject().toString())
+            loge("Requested Data>",drmData.toJSONObject().toString())
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically

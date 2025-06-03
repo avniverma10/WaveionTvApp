@@ -201,14 +201,12 @@ private fun ChannelCard(
 
     var currentProgram = remember(programIndex) {
         var program = programList?.getOrNull(programIndex.intValue)
-        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
         program
     }
 
     var nextProgram = remember(programIndex) {
         val nextIndex = programIndex.intValue+1
         var program = programList?.getOrNull(nextIndex)
-        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
         program
     }
 

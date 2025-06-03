@@ -1,6 +1,7 @@
 package com.example.tvapp.model.data.epgdata
 
 import android.util.Log
+import com.example.tvapp.extensions.loge
 import com.google.gson.*
 import java.lang.reflect.Type
 import java.text.SimpleDateFormat
@@ -25,7 +26,7 @@ class ProgramTimestampAdapter :  JsonDeserializer<Long> {
             }
             return timestampInfo.timeInMillis
         } catch (e: Exception) {
-            Log.e("CurrentDateTimeAdapter", "Parse Error: ${json.asString}", e)
+            loge("CurrentDateTimeAdapter", "Parse Error: ${json.asString} ${e.message}")
             0L
         }
     }

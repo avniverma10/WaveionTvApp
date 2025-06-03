@@ -515,7 +515,7 @@ fun ChannelInfo(
                                     try {
                                         requester.requestFocus()
                                     } catch (e: IllegalStateException) {
-                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                        e.message
                                     }
                                 }
                                 true

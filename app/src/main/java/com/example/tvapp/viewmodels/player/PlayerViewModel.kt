@@ -2,17 +2,10 @@ package com.example.tvapp.viewmodels.player
 
 
 import android.app.Application
-import android.util.Log
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
-import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.coreEPGLiveData
-import com.example.tvapp.extensions.logReport
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
-import com.example.tvapp.model.data.fingerprint.PlayerFingerprintRule
-import com.example.tvapp.utils.Constants
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -21,17 +14,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.sse.EventSource
-import okhttp3.sse.EventSourceListener
-import okhttp3.sse.EventSources
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.sequences.distinctBy
 
 @HiltViewModel
 open class PlayerViewModel @Inject constructor(

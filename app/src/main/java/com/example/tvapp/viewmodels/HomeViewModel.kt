@@ -5,6 +5,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.home.HomeContent
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -62,7 +63,7 @@ class HomeViewModel @Inject constructor(private val application: Application, pr
 
             emit(epgHomeItems!!) // Emit result from API
         } catch (e: Exception) {
-            Log.e("HOME_REPO", "Error fetching home content", e)
+            loge("HOME_REPO", "Error fetching home content  ${e.message}")
         }
     }.flowOn(Dispatchers.IO)
 }

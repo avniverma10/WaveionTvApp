@@ -33,6 +33,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.ui.theme.base_color
 
 @Composable
@@ -91,7 +92,7 @@ fun ExpandableNavigationMenu(
                             try {
                                 requester.requestFocus()
                             } catch (e: IllegalStateException) {
-                                Log.e("FocusError", "FocusRequester not initialized", e)
+                                loge("FocusError", "FocusRequester not initialized ${e.message}")
                             }
                         }
                     }

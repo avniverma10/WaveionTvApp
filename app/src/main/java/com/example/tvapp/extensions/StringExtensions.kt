@@ -218,7 +218,7 @@ fun String.toJsonObject(): JsonObject? {
     return try {
         Gson().fromJson(this, JsonObject::class.java)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -227,7 +227,7 @@ fun String.toJSONObject(): JSONObject? {
     return try {
         JSONObject(this)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -236,7 +236,7 @@ fun String.toJsonArray(): JsonArray? {
     return try {
         Gson().fromJson(this, JsonArray::class.java)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -289,7 +289,7 @@ fun String.toUrlUtf(): String {
     return try {
         URLEncoder.encode(this, "UTF-8")
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         ""
     }
 }
@@ -298,7 +298,7 @@ fun String.decodeUrlUTF(): String {
     return try {
         URLDecoder.decode(this, "UTF-8")
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         ""
     }
 }
@@ -345,7 +345,7 @@ fun String?.getDate(format: String, locale: Locale? = null): Date? {
             locale?.let { SimpleDateFormat(format, locale) } ?: SimpleDateFormat(format)
         dateFormat.parse(date)
     } catch (e: Exception) {
-        Log.e("","${e.message}")
+        this?.loge("","${e.message}")
         null
     }
 }
@@ -371,7 +371,7 @@ fun String?.getQueryParamFromUrl(key: String): String? {
             val videoUri = Uri.parse(it)
             return videoUri.getQueryParameter(key)
         } catch (e: java.lang.Exception) {
-            Log.e("","${e.message}")
+            loge("","${e.message}")
         }
     }
     return null

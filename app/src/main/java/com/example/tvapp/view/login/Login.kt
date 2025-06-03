@@ -361,7 +361,6 @@ fun generateQRCode(content: String, size: Int = 1024): Bitmap? {
 
         return Bitmap.createScaledBitmap(bitmap, size, size, false) // Scale QR to fit
     } catch (e: WriterException) {
-        Log.e("QRCode", "Error generating QR Code", e)
         null
     }
 }

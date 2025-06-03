@@ -82,21 +82,4 @@ object DeviceInfoService {
             active = isActive
         )
     }
-
-    suspend fun sendDeviceInfo(context: Context, userId: String, isActive: Boolean = true) =
-        withContext(Dispatchers.IO) {
-            val deviceInfo = collectDeviceInfo(context, userId, isActive)
-            Log.i("rishi -DeviceInfo", "sendDeviceInfo: deviceInfo $deviceInfo")
-            try {
-                Log.d("rishi -DeviceInfo", "Sending device info: $deviceInfo")
-                val response = RetrofitClientForDeviceInfo.deviceInfoApi.sendDeviceInfo(deviceInfo)
-                if (response.isSuccessful) {
-                    Log.d("rishi -DeviceInfo", "Device info sent successfully. Response Code: ${response.code()}")
-                } else {
-                    Log.e("rishi -DeviceInfo", "Failed to send device info. Response Code: ${response.code()}, Message: ${response.message()}")
-                }
-            } catch (e: Exception) {
-                Log.e("rishi -DeviceInfo", "Exception while sending device info", e)
-            }
-        }
 }
