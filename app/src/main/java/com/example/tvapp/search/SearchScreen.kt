@@ -1,5 +1,7 @@
 package com.example.tvapp.search
 
+import android.app.Activity
+import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -47,6 +49,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -55,12 +58,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.android.caastv.R
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.ui.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 
@@ -78,13 +83,24 @@ fun SearchScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    var backPressCount by remember { mutableStateOf(0) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
 
     BackHandler {
-        focusManager.clearFocus(force = true)
-        focusManager.moveFocus(FocusDirection.Left)
-    }
+        backPressCount++
 
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
+    }
     LaunchedEffect(Unit) {
+        backPressCount = 0
         val listToFocus = if (searchText.isNotEmpty()) searchResults else epgData
         if (listToFocus?.isNotEmpty() == true) {
             firstThumbnailFocusRequester.requestFocus()
@@ -184,11 +200,14 @@ fun SearchScreen(
                         genreId = epgItem.content?.genreId ?: "Unknown"
                     )
                 }
-                val displayedChannels = if (searchText.isEmpty()) channelsForEmpty else searchResults
+                val displayedChannels =
+                    if (searchText.isEmpty()) channelsForEmpty else searchResults
                 itemsIndexed(displayedChannels ?: emptyList()) { index, channel ->
                     ChannelThumbnail(
                         channel = channel,
-                        modifier = if (index == 0) Modifier.focusRequester(firstThumbnailFocusRequester) else Modifier,
+                        modifier = if (index == 0) Modifier.focusRequester(
+                            firstThumbnailFocusRequester
+                        ) else Modifier,
                         onChannelClick = { url ->
                             epgData?.find { it.content?.videoUrl == url }?.let { item ->
                                 sharedViewModel.updateSelectedChannel(item)
@@ -202,13 +221,32 @@ fun SearchScreen(
 
         // Overlay navigation menu:
         ExpandableNavigationMenu(
-            navController      = navController,
-            sharedViewModel    = sharedViewModel,
-            onNavMenuIntent    = { tabInfo, selectedIndex ->
+            navController = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { tabInfo, selectedIndex ->
                 Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
             },
             modifier = Modifier.align(Alignment.CenterStart)
         )
+
+        // Exit confirmation dialog
+        if (showExitDialog) {
+            CommonDialog(
+                showDialog = true,
+                title = "Exit App",
+                borderColor = Color.Transparent,
+                painter = painterResource(id = R.drawable.exit_icon),
+                message = "Are you sure you want to exit the app?",
+                confirmButtonText = "Yes",
+                onConfirm = {
+                    (context as? Activity)?.finishAffinity()
+                    Process.killProcess(Process.myPid())
+                },
+                dismissButtonText = "No",
+                onDismiss = { showExitDialog = false }
+            )
+
+        }
     }
 }
 

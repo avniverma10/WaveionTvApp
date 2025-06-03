@@ -29,6 +29,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -74,6 +76,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    var backPressCount by remember { mutableStateOf(0) }
+    val focusManager = LocalFocusManager.current
 
     // 1) remember a state for your column
    // val columnState = rememberLazyListState()
@@ -91,7 +95,16 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         }
     }
     BackHandler {
-        showExitDialog = true
+        backPressCount++
+
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
     }
 
 

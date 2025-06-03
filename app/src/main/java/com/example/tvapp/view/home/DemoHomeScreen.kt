@@ -1,5 +1,7 @@
 package com.example.tvapp.view.home
 
+import android.app.Activity
+import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
@@ -33,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -44,6 +47,7 @@ import com.android.caastv.R
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 
@@ -67,18 +71,29 @@ fun DemoHomeScreen(
         Banner(R.drawable.movie_30,  "TRON", "Underdog boxers battle for glory.", listOf("Fantasy","Sci-Fi","Inspiration"))
     )
     var currentBanner by remember { mutableStateOf(0) }
-
+    var backPressCount by remember { mutableStateOf(0) }
+    var showExitDialog by remember { mutableStateOf(false) }
     val watchNowRequester = remember { FocusRequester() }
+    val context = LocalContext.current
+
+
     LaunchedEffect(Unit) {
         delay(100)
         watchNowRequester.requestFocus()
     }
     val focusManager = LocalFocusManager.current
     BackHandler {
-        focusManager.clearFocus(force = true)
-        focusManager.moveFocus(FocusDirection.Left)
-    }
+        backPressCount++
 
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -226,6 +241,25 @@ fun DemoHomeScreen(
                 .align(Alignment.CenterStart)
                 .width(menuWidth)
         )
+
+        // Exit confirmation dialog
+        if (showExitDialog) {
+            CommonDialog(
+                showDialog = true,
+                title = "Exit App",
+                borderColor = Color.Transparent,
+                painter = painterResource(id = R.drawable.exit_icon),
+                message = "Are you sure you want to exit the app?",
+                confirmButtonText = "Yes",
+                onConfirm = {
+                    (context as? Activity)?.finishAffinity()
+                    Process.killProcess(Process.myPid())
+                },
+                dismissButtonText = "No",
+                onDismiss = { showExitDialog = false }
+            )
+
+        }
     }
 }
 
@@ -339,6 +373,8 @@ private val continueWatchingRes = listOf(
     R.drawable.movie_8, R.drawable.movie_15, R.drawable.movie_3,
     R.drawable.movie_12, R.drawable.movie_5, R.drawable.movie_6,
     R.drawable.movie_10, R.drawable.movie_28, R.drawable.movie_23,
+    R.drawable.movie_13, R.drawable.movie_15, R.drawable.movie_10,
+    R.drawable.movie_6, R.drawable.movie_9
 )
 private val topTvRes = listOf(
     R.drawable.movie_9, R.drawable.movie_18, R.drawable.movie_13,
@@ -349,20 +385,28 @@ private val topTvRes = listOf(
 private val trending = listOf(
     R.drawable.movie_22, R.drawable.movie_13, R.drawable.movie_12,
     R.drawable.movie_17, R.drawable.movie_10, R.drawable.movie_15,
-    R.drawable.movie_23, R.drawable.movie_4
+    R.drawable.movie_23, R.drawable.movie_4,
+    R.drawable.movie_8, R.drawable.movie_15, R.drawable.movie_3,
+    R.drawable.movie_12, R.drawable.movie_5, R.drawable.movie_6,
 )
 private val latest = listOf(
     R.drawable.movie_17, R.drawable.movie_13, R.drawable.movie_12,
     R.drawable.movie_22, R.drawable.movie_25, R.drawable.movie_7,
-    R.drawable.movie_1, R.drawable.movie_10
+    R.drawable.movie_1, R.drawable.movie_10,
+    R.drawable.movie_10, R.drawable.movie_11, R.drawable.movie_3,
+    R.drawable.movie_7, R.drawable.movie_4
 )
 private val action = listOf(
     R.drawable.movie_8, R.drawable.movie_9, R.drawable.movie_11,
     R.drawable.movie_13, R.drawable.movie_15, R.drawable.movie_10,
-    R.drawable.movie_6, R.drawable.movie_9
+    R.drawable.movie_6, R.drawable.movie_9,
+    R.drawable.movie_22, R.drawable.movie_13, R.drawable.movie_12,
+    R.drawable.movie_17, R.drawable.movie_10, R.drawable.movie_15,
 )
 private val topMovies = listOf(
     R.drawable.movie_21, R.drawable.movie_22, R.drawable.movie_26,
     R.drawable.movie_27, R.drawable.movie_28, R.drawable.movie_30,
     R.drawable.movie_4, R.drawable.movie_10,
+    R.drawable.movie_10, R.drawable.movie_11, R.drawable.movie_3,
+    R.drawable.movie_7, R.drawable.movie_4
 )

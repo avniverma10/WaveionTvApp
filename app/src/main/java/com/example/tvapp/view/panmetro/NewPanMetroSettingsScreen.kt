@@ -70,15 +70,23 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-
+    var backPressCount by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) {
         firstMenuItemFocusRequester.requestFocus()
     }
 
     val focusManager = LocalFocusManager.current
     BackHandler {
-        focusManager.clearFocus(force = true)
-        focusManager.moveFocus(FocusDirection.Left)
+        backPressCount++
+
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
     }
     Box(
         modifier = Modifier
@@ -101,32 +109,33 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             onNavMenuIntent = { _, _ -> },
             modifier        = Modifier.align(Alignment.CenterStart)
         )
+        if (showExitDialog) {
+            CommonDialog(
+                showDialog = true,
+                title = "Logout App",
+                message = "Are you sure you want to logout and exit the app?",
+                painter = painterResource(id = R.drawable.logout_icon),
+                errorCode = null,
+                errorMessage = null,
+                borderColor = Color.Transparent,
+                confirmButtonText ="Yes" ,
+                onConfirm =  {
+                    PreferenceManager.clearLogin()
+                    showExitDialog = false
+                    context.hideKeyboard()
+                    (context as? Activity)?.finishAffinity()
+
+                },
+                dismissButtonText = "No",
+                onDismiss = { showExitDialog = false }
+            )
+        }
     }
     if (showInfo) {
         PanMetroInfoScreen(
             navController = navController,
             sharedViewModel = sharedViewModel
 //            onOkClick = { showInfo = false }
-        )
-    }
-    if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Logout App",
-            message = "Are you sure you want to logout exit the app?",
-            painter = painterResource(id = R.drawable.logout_icon),
-            errorCode = null,
-            errorMessage = null,
-            borderColor = Color.Transparent,
-            confirmButtonText ="Yes" ,
-            onConfirm =  {
-                PreferenceManager.clearLogin()
-                showExitDialog = false
-                context.hideKeyboard()
-                (context as? Activity)?.finishAffinity()
-            },
-            dismissButtonText = "No",
-            onDismiss = { showExitDialog = false }
         )
     }
 }

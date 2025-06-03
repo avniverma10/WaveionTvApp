@@ -1,5 +1,7 @@
 package com.example.tvapp.view.channels
 
+import android.app.Activity
+import android.os.Process
 import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
@@ -49,11 +51,13 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
@@ -64,6 +68,7 @@ import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
@@ -83,6 +88,8 @@ fun ChannelScreen(
     val languageSelectedIndex = remember { mutableStateOf(0) }
     val firstChannelFocusRequester = remember { FocusRequester() }
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
+    var backPressCount by remember { mutableStateOf(0) }
+    var showExitDialog by remember { mutableStateOf(false) }
     //val gridState = rememberLazyGridState()
     // Create one FocusRequester per item for categories and languages.
     val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
@@ -129,8 +136,16 @@ fun ChannelScreen(
 //        }
 //    }
     BackHandler {
-        focusManager.clearFocus(force = true)
-        focusManager.moveFocus(FocusDirection.Left)
+        backPressCount++
+
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
     }
     Box(
         modifier = Modifier
@@ -242,6 +257,24 @@ fun ChannelScreen(
             },
             modifier        = Modifier.align(Alignment.CenterStart)
         )
+
+        if (showExitDialog) {
+            CommonDialog(
+                showDialog = true,
+                title = "Exit App",
+                borderColor = Color.Transparent,
+                painter = painterResource(id = R.drawable.exit_icon),
+                message = "Are you sure you want to exit the app?",
+                confirmButtonText = "Yes",
+                onConfirm = {
+                    (context as? Activity)?.finishAffinity()
+                    Process.killProcess(Process.myPid())
+                },
+                dismissButtonText = "No",
+                onDismiss = { showExitDialog = false }
+            )
+
+        }
     }
 }
 

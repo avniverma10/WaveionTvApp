@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -55,27 +57,19 @@ fun PanmetroGenreScreen(
 
     val availableGenre = genreViewModel.provideAvailableGenre()
 
+     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
 
-    // Lift the selected genre index state.
     var channelToGenreFocus = remember { mutableStateOf(false) }
 
 
-    // 2. Use rememberSaveable with that Saver instead of plain remember
     val selectedGenreIndex: MutableState<Int> = remember { mutableStateOf( 0) }
     val selectedChannelIndex: MutableState<Int> = remember { mutableStateOf( 0) }
 
-
-    // FocusRequester for the channel list area.
     var genreListFocusRequester = remember { FocusRequester() }
     var channelListFocusRequester = remember { FocusRequester() }
 
-
-    // Create a list of FocusRequesters for the genre items.
     val genreFocusRequesters = remember(availableGenre) { List(availableGenre.size) { FocusRequester() } }
 
-
-
-    // When a channel is selected, update the video URL in the ViewModel.
     val onVideoChange: (EPGDataItem,Int) -> Unit = { channel,channelIndex ->
         selectedChannelIndex.value = channelIndex
         sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
@@ -94,14 +88,25 @@ fun PanmetroGenreScreen(
         genreViewModel.filterPanMetroChannelsByGenre()
 
     }
-
-    // The entire screen is a Box so we can layer items if needed
+     LaunchedEffect(filteredChannels) {
+              if (filteredChannels.isNotEmpty()) {
+                       // If there is at least one channel, move focus to channel list
+                       channelToGenreFocus.value = false
+                      selectedChannelIndex.value = 0
+                      channelListFocusRequester.requestFocus()
+                  } else {
+                       // If empty, keep focus on the genre list
+                       channelToGenreFocus.value = true
+                       genreFocusRequesters
+                           .getOrNull(selectedGenreIndex.value)
+                           ?.let { it.requestFocus() }
+                   }
+     }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1F3A6B)) // Example dark blue background
     ){
-        // Column to hold the top bar and main content
         Column(
             modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
@@ -132,7 +137,7 @@ fun PanmetroGenreScreen(
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
-                                channelListFocusRequester.requestFocus()
+//                                channelListFocusRequester.requestFocus()
                             }
                         )
                         Spacer(modifier = Modifier.width(10.dp))

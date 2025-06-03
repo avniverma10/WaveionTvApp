@@ -69,7 +69,7 @@ fun PanMetroInfoScreen(
     username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
     validity: String = "26/04/2025",
-    appVersion: String = "1.0.7",
+    appVersion: String = "1.0.15",
     androidVersion: String = "11",
     ram: String = "2 GB",
     storage: String = "32 GB",

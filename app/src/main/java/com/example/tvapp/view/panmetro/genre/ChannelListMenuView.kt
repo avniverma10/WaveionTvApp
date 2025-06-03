@@ -83,9 +83,9 @@ fun ChannelListMenuScreen(
             ?.let { sharedViewModel.updateSelectedChannel(it) }
     }
 
-    LaunchedEffect(Unit) {
-        channelListFocusRequester.requestFocus()
-    }
+//    LaunchedEffect(Unit) {
+//        channelListFocusRequester.requestFocus()
+//    }
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
