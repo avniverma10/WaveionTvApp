@@ -64,10 +64,12 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.network.heper.ConnectivityObserver
+import com.example.tvapp.utils.network.heper.NetworkStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import org.json.JSONObject
@@ -142,6 +144,7 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
+
     /*fun updateEPGData(epgList: List<EPGDataItem>) {
         viewModelScope.launch {
             saveEPGList(application, epgList)
@@ -164,7 +167,7 @@ open class WTVViewModel @Inject constructor(
 
         viewModelScope.launch {
             networkApiCallInterfaceImpl
-                .provideNotificationSSE("https://api-demo.caastv.com/api/app/getNotification-sse")
+                .provideNotificationSSE(Constants.BASE_URL+"app/getNotification-sse")
                 .catch { loge("WTVViewModel", "SSE failed $it") }
                 .collect { item ->
                     if (skipFirst) {
@@ -214,7 +217,7 @@ open class WTVViewModel @Inject constructor(
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://api-demo.caastv.com/api/manifest")
+                    .provideWTVManifest(Constants.BASE_URL+"manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -233,7 +236,7 @@ open class WTVViewModel @Inject constructor(
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://api-demo.caastv.com/api/epg-files/join-epg-content")
+                    .provideWTVEPGData(Constants.BASE_URL+"epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
@@ -272,7 +275,7 @@ open class WTVViewModel @Inject constructor(
             }
             launch {
                 networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://api-demo.caastv.com/api/homescreenCategory")
+                    .provideWTVHomeData(Constants.BASE_URL+"homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
                             application.applyAppHome(response.data)
@@ -288,7 +291,7 @@ open class WTVViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun fetchServerTimeMillis(): Long {
         val req = Request.Builder()
-            .url("https://api-panmetro.caastv.com/api/app/health")
+            .url(Constants.BASE_URL+"app/health")
             .get().build()
 
         val resp = okHttpClient.newCall(req).execute()
@@ -383,7 +386,7 @@ open class WTVViewModel @Inject constructor(
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://api-demo.caastv.com/api/app/appupdate")
+            .provideAppUpdateInfo(Constants.BASE_URL+"app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 

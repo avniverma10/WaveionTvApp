@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.tv.material3.Text
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.components.GradientBackground
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.viewmodels.LoginViewModel

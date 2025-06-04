@@ -10,7 +10,7 @@ fun Any.loge(tag: String = "", value: String?) {
     if (Constants.BUILD_TYPE.equals("release")) return
     val customTag = if (tag.isNotEmpty()) tag else this.javaClass.simpleName
     val messageToDisplay = value ?: "empty message"
-    loge(customTag, if (tag.isNotEmpty()) "${this.javaClass.simpleName} >> $messageToDisplay" else messageToDisplay)
+    Log.d(customTag, if (tag.isNotEmpty()) "${this.javaClass.simpleName} >> $messageToDisplay" else messageToDisplay)
 }
 
 @SuppressLint("LogNotTimber")

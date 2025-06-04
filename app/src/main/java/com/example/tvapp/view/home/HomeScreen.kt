@@ -48,12 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.screen_bg_color
@@ -136,9 +137,14 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         LazyColumn(modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
             // ③ Switch to itemsIndexed so we know when it's the first category
             itemsIndexed(homeCategories) { catIndex, category ->
-                val epgList = epgChannels
-                    ?.filter { it.channelId in category.channels }
-                val channelsForCategory = epgList
+                val epgItems = arrayListOf<EPGDataItem>()
+                category.channels.forEach { channel ->
+                    val matchesForThisGenre = epgChannels.filter { epgItem ->
+                        epgItem.content?.ChannelID?.contains(channel) == true
+                    }
+                    epgItems.addAll(matchesForThisGenre)
+                }
+                val channelsForCategory = epgItems
                     ?.mapNotNull { epgItem ->
                         epgItem.tv?.channel?.copy(
                             logoUrl  = epgItem.content?.thumbnailUrl,

@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager

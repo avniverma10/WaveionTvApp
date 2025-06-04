@@ -39,7 +39,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner

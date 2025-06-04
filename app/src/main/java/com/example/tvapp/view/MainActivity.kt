@@ -1,5 +1,6 @@
 package com.example.tvapp.view
 
+import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -9,14 +10,19 @@ import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
+import com.example.tvapp.view.network.NetworkUnstableScreen
 import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
+@RequiresApi(Build.VERSION_CODES.M)
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
@@ -38,7 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             TVAppTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    WTVPlayerApp(sharedViewModel=sharedViewModel)
+                    WTVPlayerApp(sharedViewModel = sharedViewModel)
                 }
 //                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)

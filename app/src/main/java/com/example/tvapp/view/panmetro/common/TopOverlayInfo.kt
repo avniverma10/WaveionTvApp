@@ -29,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 import java.text.SimpleDateFormat

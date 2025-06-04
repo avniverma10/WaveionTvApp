@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+#keep BuildConfig constants (if you use BuildConfig.BUILD_TYPE, etc.)
+-keep class **.BuildConfig { *; }
+
+-keep class com.example.tvapp.model.** {
+    *;
+}

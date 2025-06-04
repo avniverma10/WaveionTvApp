@@ -16,7 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.android.caastv.R  // adjust your package
+import com.android.tccl.R  // adjust your package
 import com.example.tvapp.ui.theme.base_color
 
 @Composable

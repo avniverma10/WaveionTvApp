@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.ui.theme.filter_selected_color
 import com.example.tvapp.ui.theme.base_color

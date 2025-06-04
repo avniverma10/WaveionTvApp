@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.components.GradientBackground
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyUserInfo
@@ -70,12 +70,12 @@ fun PanmetroLoginScreen(
     navController: NavController
 ) {
     val context    = LocalContext.current
-    val macAddress = context.provideMacAddress()
+    val macAddress = "436563634"//context.provideMacAddress()
 
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
 
-    var username   by remember { mutableStateOf("avni") }
+    var username   by remember { mutableStateOf("rrishi") }
     var password   by remember { mutableStateOf("123") }
     var macId      by remember { mutableStateOf(macAddress) }
 
@@ -125,13 +125,13 @@ fun PanmetroLoginScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.app_logo),
+                painter = painterResource(R.drawable.tccl_logo),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(50.dp)
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "CAASTV",
+                text = "TCCL",
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
@@ -147,7 +147,7 @@ fun PanmetroLoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Welcome to CAASTV",
+                text = "Welcome to TCCL",
                 color = Color.White,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,
@@ -287,7 +287,7 @@ fun PanmetroLoginScreen(
                                                 PreferenceManager.saveUserInfo(response)
                                                 sharedViewModel.provideGlobalSSERequest()
                                                 context.hideKeyboard()
-                                                navController.navigate(Destination.genreScreen)
+                                                navController.navigate(Destination.homeScreen)
                                             } else {
                                                 context.showToastS(errorMsg ?: "Login failed")
                                             }

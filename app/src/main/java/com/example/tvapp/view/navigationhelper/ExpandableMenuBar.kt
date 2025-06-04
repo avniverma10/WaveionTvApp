@@ -33,8 +33,12 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideLandingResource
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.ui.theme.font_color_white
 
 @Composable
 fun ExpandableNavigationMenu(
@@ -155,14 +159,16 @@ fun ExpandableNavigationMenu(
                 prevFocusRequester = null
             ) {
                 AsyncImage(
-                    model = profileTab?.iconUrl ?: "",
+                    model = profileTab?.iconUrl?:"",
                     contentDescription = profileTab?.displayName ?: "Profile",
                     modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                     colorFilter = if (selectedIndex == 0) {
                         androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                     } else {
-                        null
-                    }
+                        androidx.compose.ui.graphics.ColorFilter.tint(font_color_white)
+                    },
+                    error = profileTab?.name?.provideLandingResource()?.let { painterResource(it) },        // Error state
+                    placeholder = profileTab?.name?.provideLandingResource()?.let { painterResource(it) }
                 )
                 if (expanded) {
                     Spacer(modifier = Modifier.width(5.dp))
@@ -208,14 +214,16 @@ fun ExpandableNavigationMenu(
                     }
                 ) {
                     AsyncImage(
-                        model = tab.iconUrl,
+                        model = tab.iconUrl?:"",
                         contentDescription = tab.displayName,
                         modifier = Modifier.size(36.dp).padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                         colorFilter = if (selectedIndex == index + 1) {
                             androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                         } else {
-                            null
-                        }
+                            androidx.compose.ui.graphics.ColorFilter.tint(font_color_white)
+                        },
+                        error = tab.name?.provideLandingResource()?.let { painterResource(it) },        // Error state
+                        placeholder = tab.name?.provideLandingResource()?.let { painterResource(it) }
                     )
                     if (expanded) {
                         Spacer(modifier = Modifier.width(8.dp))

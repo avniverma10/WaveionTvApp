@@ -31,9 +31,9 @@
         android:name="com.example.tvapp.WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
-        android:banner="@mipmap/ic_tv_banner"
-        android:icon="@mipmap/caastv_icon"
-        android:label="CAASTV"
+        android:banner="@mipmap/tccl_icon"
+        android:icon="@mipmap/tccl_icon"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
@@ -63,7 +63,7 @@
 
         <provider
             android:name="com.example.tvapp.model.wtvdatabase.EPGContentProvider"
-            android:authorities="com.android.caastv.provider"
+            android:authorities="com.android.tccl.provider"
             android:exported="false" />
     </application>
 

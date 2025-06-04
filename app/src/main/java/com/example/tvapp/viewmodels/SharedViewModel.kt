@@ -4,7 +4,9 @@ package com.example.tvapp.viewmodels
 import android.app.Application
 import android.content.Context
 import android.database.ContentObserver
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
@@ -28,6 +30,8 @@ import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.network.heper.ConnectivityObserver
+import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
@@ -36,6 +40,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
@@ -43,6 +48,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -63,6 +69,7 @@ open class SharedViewModel @Inject constructor(
     private val loginPrefsRepository: LoginPrefsRepository,
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
+    private val observer = ConnectivityObserver(application.applicationContext)
 
     var enableScrollingSSE = MutableStateFlow<Boolean>(false)
 
@@ -143,6 +150,14 @@ open class SharedViewModel @Inject constructor(
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    val networkStatus: StateFlow<NetworkStatus> =
+        observer.observe()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = NetworkStatus.Unavailable
+            )
 
 
 
@@ -170,7 +185,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners("https://api-demo.caastv.com/api/banners").collect { response ->
+        wtvNetworkRepositoryImpl.getBanners(Constants.BASE_URL+"banners").collect { response ->
             when (response) {
                 is WTVListResponse.Success -> _bannerList.value = response.data
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")

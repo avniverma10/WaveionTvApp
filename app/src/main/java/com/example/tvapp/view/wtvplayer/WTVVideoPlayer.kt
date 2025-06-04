@@ -44,7 +44,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer

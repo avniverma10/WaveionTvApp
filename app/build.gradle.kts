@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "com.android.caastv"
+    namespace = "com.android.tccl"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.android.caastv"
+        applicationId = "com.android.tccl"
         minSdk = 21
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.15"
+        versionCode = 1
+        versionName = "1.0.4"
     }
 
     buildTypes {

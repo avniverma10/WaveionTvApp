@@ -27,9 +27,9 @@ class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterfac
             if (response.isSuccessful && response.body() != null) {
                 loge("response:","${response.body()}")
 
-                val manifest = response.body()?.toJSONObject()?.toString()
+                val loginRes = response.body()?.toJSONObject()?.toString()
                     .convertIntoModel(LoginResponseData::class.java)
-                manifest?.let {
+                loginRes?.let {
                     // Optionally save manifest data into ContentProvider or DB here
                     emit(WTVResponse.Success(it))
                 } ?: throw Exception("Failed to parse manifest")

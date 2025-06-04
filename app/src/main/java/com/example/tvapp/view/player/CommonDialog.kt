@@ -24,7 +24,7 @@
 //import androidx.compose.ui.window.Dialog
 //import androidx.compose.ui.window.Popup
 //import androidx.compose.ui.window.PopupProperties
-//import com.android.caastv.R
+//import com.android.tccl.R
 //import com.example.tvapp.ui.theme.base_color
 //
 //@Composable

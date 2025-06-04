@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.android.caastv.R
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import com.android.tccl.R
 import com.example.tvapp.extensions.*
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -158,10 +162,7 @@ fun SplashScreen(
 
         showExitDialog = false
         if (PreferenceManager.getLoginResponse()?.loginData != null) {
-            PreferenceManager.getLoginResponse()?.let {
-                context.applyUserInfo(it)
-            }
-            navController.navigate(Destination.genreScreen) {
+            navController.navigate(Destination.homeScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
         } else {
@@ -347,13 +348,19 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        AnimatedSvgFromAssets(
-            assetFileName = "splash_logo.svg",
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(600.dp)
-        )
 
+        // center your animated logo
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .diskCachePolicy(CachePolicy.ENABLED)    // cache image on disk
+                .memoryCachePolicy(CachePolicy.ENABLED)  // cache image in memory
+                .build(),
+            contentDescription = "Default Background",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.align(Alignment.Center),
+            error = painterResource(R.drawable.tccl_boot_logo),        // Error state
+            placeholder = painterResource(R.drawable.tccl_boot_logo)   // Loading state
+        )
         if (isUpdating) {
             CircularProgressIndicator(
                 modifier = Modifier

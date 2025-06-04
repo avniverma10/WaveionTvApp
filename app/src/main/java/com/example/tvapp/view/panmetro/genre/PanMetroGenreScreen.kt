@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -35,9 +36,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.manifest.EPGCategory
+import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
@@ -53,6 +57,9 @@ fun PanmetroGenreScreen(
     HideKeyboardOnEnter()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
     val epgList = genreViewModel.provideAvailableEPG()
 
@@ -78,8 +85,12 @@ fun PanmetroGenreScreen(
 
 
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
-//            popUpTo(Destination.genreScreen) { inclusive = true }
+        if(tabItems.any { it.name == "epg" }){
+            navController.navigate(Destination.epgScreen) {
+            }
+        }else if(tabItems.any { it.name == "home" }){
+            navController.navigate(Destination.homeScreen) {
+            }
         }
     }
 
@@ -203,9 +214,9 @@ fun PanmetroGenreScreen(
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.banner3),
-                                    contentDescription = "Panmetro Logo",
-                                    contentScale = ContentScale.Crop,
+                                    painter = painterResource(id = R.drawable.tccl_boot_logo),
+                                    contentDescription = "TCCL Logo",
+                                    contentScale = ContentScale.FillBounds,
                                     modifier = Modifier
                                         .fillMaxSize() // Stretch the image to fill the inner Box.
                                         .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.

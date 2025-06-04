@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.base_color
@@ -181,7 +181,7 @@ fun SearchScreen(
                 style = TextStyle(
                     fontSize = 18.sp,
                     lineHeight = 28.01.sp,
-                    fontFamily = FontFamily(Font(com.android.caastv.R.font.figtree_light)),
+                    fontFamily = FontFamily(Font(com.android.tccl.R.font.figtree_light)),
                     fontWeight = FontWeight(600),
                     color = Color.White
                 ),

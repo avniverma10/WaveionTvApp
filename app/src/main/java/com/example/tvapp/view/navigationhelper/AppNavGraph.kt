@@ -1,14 +1,27 @@
 package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,12 +31,14 @@ import androidx.navigation.navArgument
 import com.example.tvapp.NotificationBanner
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
+import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.DemoHomeScreen
 import com.example.tvapp.view.home.DemoPlayerScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
+import com.example.tvapp.view.network.NetworkUnstableScreen
 import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
@@ -37,41 +52,42 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
+@RequiresApi(Build.VERSION_CODES.M)
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
+    val context = LocalContext.current
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     val scrollMessageItems by sharedViewModel.scrollMessageItemsFlow.collectAsState()
-
-    Box(Modifier.fillMaxSize()) {
-        WTVPlayerNavHost(
-            navController = navController,
-            sharedViewModel = sharedViewModel
-        )
-        bannerMsg?.let { msg ->
-            NotificationBanner(
-                message = msg,
-                visible = true,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                // you can add paddingIfNeeded here
+        Box(Modifier.fillMaxSize()) {
+            WTVPlayerNavHost(
+                navController = navController,
+                sharedViewModel = sharedViewModel
             )
-        }
+            bannerMsg?.let { msg ->
+                NotificationBanner(
+                    message = msg,
+                    visible = true,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                    // you can add paddingIfNeeded here
+                )
+            }
 
-        if((globalSSERules?.fingerprints?.size ?: 0) > 0){
-            globalSSERules?.fingerprints?.forEach {
-                GlobalFingerprintOverlay(mutableStateOf(it))
+            if((globalSSERules?.fingerprints?.size ?: 0) > 0){
+                globalSSERules?.fingerprints?.forEach {
+                    GlobalFingerprintOverlay(mutableStateOf(it))
+                }
+            }
+
+            if((globalSSERules?.scrollMessages?.size ?: 0) > 0){
+                globalSSERules?.scrollMessages?.forEach {
+                    ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
+                }
             }
         }
-
-        if((globalSSERules?.scrollMessages?.size ?: 0) > 0){
-            globalSSERules?.scrollMessages?.forEach {
-                ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
-            }
-        }
-    }
 }
 
 @SuppressLint("ContextCastToActivity")
@@ -148,7 +164,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
 
             val filteredEPGList = sharedViewModel.filteredEPGList.collectAsState().value
 
-            // ✅ FIX GOES HERE
+            // FIX GOES HERE
             val categoryEPGItems = if (categoryIds.isBlank()) {
                 filteredEPGList // Show all channels if no category filter applied
             } else {

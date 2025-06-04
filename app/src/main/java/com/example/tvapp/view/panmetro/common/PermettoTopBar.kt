@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.ui.theme.base_color
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
