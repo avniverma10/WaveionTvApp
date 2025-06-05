@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.android.tccl.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 import java.text.SimpleDateFormat
@@ -100,7 +101,7 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
                 )
             )
             Spacer(modifier = Modifier.width(20.dp))
-            Log.d("AVNI","${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} ")
+            loge("AVNI","${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} ")
             Text(
                 text = "${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} • ${timeLeft} MIN LEFT",
                 color = Color.LightGray,

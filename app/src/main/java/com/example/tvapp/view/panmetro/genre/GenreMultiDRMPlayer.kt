@@ -125,7 +125,7 @@ fun GenreMultiDRMPlayer(
                 // 2) Schedule a retry in 0-2 minutes
                 scope.launch {
                     val retryDelay = Random.nextLong(0L, 120_000L)
-                    Log.d("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                    loge("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
                     delay(retryDelay)
 
                     // re‐prepare the same live source

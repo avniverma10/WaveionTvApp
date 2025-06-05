@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.tccl.R
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.base_color
@@ -224,7 +225,7 @@ fun SearchScreen(
             navController = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { tabInfo, selectedIndex ->
-                Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
+                loge("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
             },
             modifier = Modifier.align(Alignment.CenterStart)
         )

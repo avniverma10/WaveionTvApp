@@ -104,7 +104,7 @@ fun WTVVideoPlayer(
     LaunchedEffect(currentIndex) {
         if (currentIndex in allChannels.indices) {
             val newVideoUrl = allChannels[currentIndex].content?.videoUrl ?: ""
-            Log.d("ExoPlayer", "Switching to video: $newVideoUrl")
+            loge("ExoPlayer", "Switching to video: $newVideoUrl")
             // Stop and clear previous media to avoid issues
             exoPlayer.stop()
             exoPlayer.clearMediaItems()

@@ -296,12 +296,12 @@ fun SplashScreen(
                                 // Download failed: clean up and notify
                                 if (apkFile.exists()) {
                                     val deleted = apkFile.delete()
-                                    Log.d(
+                                    loge(
                                         "Splash",
                                         "Download failed (status=$status). APK deleted? $deleted"
                                     )
                                 } else {
-                                    Log.d(
+                                    loge(
                                         "Splash",
                                         "Download failed (status=$status). No APK file found."
                                     )

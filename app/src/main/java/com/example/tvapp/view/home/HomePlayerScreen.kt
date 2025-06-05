@@ -76,8 +76,6 @@ fun HomePlayerScreen(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
-    // Debug: Log the size of allChannels.
-    Log.d("HomePlayerScreen", "allChannels.size = ${allChannels.size}")
 
     // Initialize currentIndex.
     var currentIndex by remember {
@@ -97,7 +95,7 @@ fun HomePlayerScreen(
     // When currentIndex changes, update overlayChannel.
     LaunchedEffect(currentIndex) {
         val newChannel = allChannels.getOrNull(currentIndex)
-        Log.d("HomePlayerScreen", "Updating overlayChannel: newChannel = ${newChannel?.content?.title}")
+        loge("HomePlayerScreen", "Updating overlayChannel: newChannel = ${newChannel?.content?.title}")
         overlayChannel = newChannel ?: allChannels.firstOrNull() // fallback to first channel if available
     }
 
@@ -107,7 +105,7 @@ fun HomePlayerScreen(
         val newIndex = allChannels.indexOfFirst { channel ->
             channel.content?.videoUrl?.trim()?.lowercase() == initialVideoUrl.trim().lowercase()
         }
-        Log.d("HomePlayerScreen", "Incoming URL: $initialVideoUrl, Found index: $newIndex")
+        loge("HomePlayerScreen", "Incoming URL: $initialVideoUrl, Found index: $newIndex")
         if (newIndex != -1 && newIndex != currentIndex) {
             currentIndex = newIndex
         }
@@ -122,7 +120,7 @@ fun HomePlayerScreen(
                 addAnalyticsListener(object : AnalyticsListener {
                     override fun onEvents(player: Player, events: AnalyticsListener.Events) {
                         if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                            Log.d("DRM", "Keys loaded successfully")
+                            loge("DRM", "Keys loaded successfully")
                         }
                         if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
                             loge("DRM", "Session manager error")
@@ -136,7 +134,7 @@ fun HomePlayerScreen(
     LaunchedEffect(currentIndex) {
         if (currentIndex in allChannels.indices) {
             val newVideoUrl = allChannels[currentIndex].content?.videoUrl ?: ""
-            Log.d("HomePlayerScreen", "Switching to video: $newVideoUrl")
+            loge("HomePlayerScreen", "Switching to video: $newVideoUrl")
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             val mediaItem = MediaItem.fromUri(newVideoUrl)

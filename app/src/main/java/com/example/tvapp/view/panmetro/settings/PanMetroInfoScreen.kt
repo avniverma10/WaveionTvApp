@@ -85,7 +85,6 @@ fun PanMetroInfoScreen(
     /* 1) track whether to show the confirmation dialog */
     var showExitDialog by remember { mutableStateOf(false) }
 
-    Log.d("PanMetroInfoScreen", "showExitDialog: $showExitDialog")
     // intercept back-press as “logout” as well
     BackHandler {
         navController.navigate(Destination.settings)

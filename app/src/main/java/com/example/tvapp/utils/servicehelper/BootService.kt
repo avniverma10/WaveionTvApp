@@ -15,14 +15,14 @@ class BootService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("BootService", "BootService started, preparing to launch MainActivity...")
+        loge("BootService", "BootService started, preparing to launch MainActivity...")
 
         Handler(Looper.getMainLooper()).postDelayed({
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
             if (Settings.canDrawOverlays(this)) {
-                Log.d("BootService", "Launching MainActivity in foreground...")
+                loge("BootService", "Launching MainActivity in foreground...")
                 startActivity(launchIntent)
             } else {
                 loge("BootService", "SYSTEM_ALERT_WINDOW permission missing! Cannot bring app to foreground.")

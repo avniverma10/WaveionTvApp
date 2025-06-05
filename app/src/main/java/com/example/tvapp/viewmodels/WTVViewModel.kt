@@ -192,7 +192,7 @@ open class WTVViewModel @Inject constructor(
             delay(TimeUnit.MINUTES.toMillis(1))
             _bannerMessage.value = null
         }
-        Log.d("WTVViewModel", " showPushNotification: ${item.message}")
+        loge("WTVViewModel", " showPushNotification: ${item.message}")
 
         // 2) Check POST_NOTIFICATIONS permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -243,7 +243,7 @@ open class WTVViewModel @Inject constructor(
                     }
             }.await()
 
-            Log.d("AVNI", "manifestDeferred:${manifestDeferred} and epgDeferred:${epgDeferred}")
+            loge("AVNI", "manifestDeferred:${manifestDeferred} and epgDeferred:${epgDeferred}")
 
             // Wait for all to complete (success or failure)
             if (manifestDeferred != null && epgDeferred != null) {
@@ -415,7 +415,7 @@ open class WTVViewModel @Inject constructor(
             .getPackageInfo(application.packageName, 0)
             .versionName
             .orEmpty()
-        Log.d(
+        loge(
             "App version",
             "current version: $current, new version: ${update.appVersion} and isVersionHigher:>${
                 shouldUpdateRequired(
@@ -430,7 +430,6 @@ open class WTVViewModel @Inject constructor(
     }
 
     private fun isVersionHigher(newVer: String, oldVer: String): Boolean {
-        Log.d("AVNI", "Inside isVersionHigher")
         val n = newVer.split(".").map { it.toIntOrNull() ?: 0 }
         val o = oldVer.split(".").map { it.toIntOrNull() ?: 0 }
         for (i in 0 until maxOf(n.size, o.size)) {

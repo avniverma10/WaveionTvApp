@@ -74,6 +74,7 @@ import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.extensions.calculateProgramsWidth
 import com.example.tvapp.extensions.formatTime
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -238,7 +239,7 @@ fun EPGContent(
                                     )
                             ) {
                                 val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
-                                Log.d("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
+                                loge("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
                                     .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
                                     val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
