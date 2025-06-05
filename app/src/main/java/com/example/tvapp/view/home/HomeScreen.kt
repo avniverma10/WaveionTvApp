@@ -87,6 +87,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val firstChannelFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
         //columnState.scrollToItem(0)
         firstChannelFocusRequester?.let { requester ->
             try {

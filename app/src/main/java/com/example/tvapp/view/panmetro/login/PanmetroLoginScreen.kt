@@ -70,7 +70,7 @@ fun PanmetroLoginScreen(
     navController: NavController
 ) {
     val context    = LocalContext.current
-    val macAddress = "436563634"//context.provideMacAddress()
+    val macAddress = context.provideMacAddress()
 
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
