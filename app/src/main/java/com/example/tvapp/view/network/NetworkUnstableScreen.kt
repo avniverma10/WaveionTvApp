@@ -1,10 +1,14 @@
 package com.example.tvapp.view.network
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -14,6 +18,7 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,31 +32,41 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun NetworkUnstableScreen(
     onNetworkSettingsClick: () -> Unit,
-    onExitAppClick: () -> Unit
+    onExitAppClick: () -> Unit,
+    initialFocusOnConfirm: Boolean = true
 ) {
-    // We'll use a FocusRequester to place initial focus on the "Network Settings" button
-    val networkSettingsRequester = remember { FocusRequester() }
 
-    // As soon as the composable is first composed, request focus on the first button
+    val exitAppRequester   = remember { FocusRequester() }
+    val exitAppInteraction = remember { MutableInteractionSource() }
+    val isExitAppFocused   by exitAppInteraction.collectIsFocusedAsState()
+
+    val networkSettingsRequester   = remember { FocusRequester() }
+    val networkSettingsInteraction = remember { MutableInteractionSource() }
+    val isNetworkFocused   by networkSettingsInteraction.collectIsFocusedAsState()
+
     LaunchedEffect(Unit) {
-        networkSettingsRequester.requestFocus()
+        if (initialFocusOnConfirm) {
+            networkSettingsRequester.requestFocus()
+        }else {
+            exitAppRequester.requestFocus()
+        }
     }
 
-    // Container that fills the entire screen, dark background
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black), // TV UIs are often dark
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        // Arrange everything in a vertical column, centered horizontally
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .padding(horizontal = 32.dp) // add horizontal padding so text doesn't go edge‐to‐edge
+                // This makes all children inside this Column be treated as one navigable group.
+                .focusGroup()
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // 1) Large title: “Apps”
             Text(
                 text = "TCCL",
                 color = Color.White,
@@ -61,7 +76,6 @@ fun NetworkUnstableScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2) Two‐line message
             Text(
                 text = "The network is unstable.\nPlease check the connection status and try again.",
                 color = Color.White,
@@ -70,18 +84,17 @@ fun NetworkUnstableScreen(
             )
 
             Spacer(modifier = Modifier.height(48.dp))
-
-            // 3) “Network Settings” button (default focused)
             Button(
                 onClick = onNetworkSettingsClick,
+                interactionSource = networkSettingsInteraction,
                 modifier = Modifier
                     .focusRequester(networkSettingsRequester)
-                    .focusable(), // allows D-pad focus
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF1F1F1F),  // dark gray background
-                    contentColor = Color.White
+                    .focusable(interactionSource = networkSettingsInteraction),
+                colors = ButtonDefaults.textButtonColors(
+                    backgroundColor = if (isNetworkFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                    contentColor = if (isNetworkFocused) Color.White else Color.Black
                 ),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                contentPadding = PaddingValues(
                     horizontal = 24.dp,
                     vertical = 12.dp
                 )
@@ -94,15 +107,17 @@ fun NetworkUnstableScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4) “Exit App” button
             Button(
                 onClick = onExitAppClick,
-                modifier = Modifier.focusable(), // can be focused after user navigates down
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor =Color(0xFF3A3A3A), // slightly lighter gray,
-                    contentColor = Color.White
+                interactionSource = exitAppInteraction,
+                modifier = Modifier
+                    .focusRequester(exitAppRequester)
+                    .focusable(interactionSource = exitAppInteraction),
+                colors = ButtonDefaults.textButtonColors(
+                    backgroundColor = if (isExitAppFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                    contentColor = if (isExitAppFocused) Color.White else Color.Black
                 ),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                contentPadding = PaddingValues(
                     horizontal = 24.dp,
                     vertical = 12.dp
                 )

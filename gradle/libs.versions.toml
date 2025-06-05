@@ -57,8 +57,10 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "cryptoVer" }
 lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "viewmodel_compose_v" }
+lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "viewmodel_compose_v" }
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation_compose_v" }
 core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "splash_v" }
+
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
@@ -159,7 +161,9 @@ security = [
 ]
 lifecycle = [
     "androidx-lifecycle-runtime-ktx",
-    "androidx-lifecycle-process"
+    "androidx-lifecycle-process",
+    "lifecycle-viewmodel",
+    "lifecycle-runtime-compose"
 ]
 
 # Dimens  ssp-android

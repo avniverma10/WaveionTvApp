@@ -12,13 +12,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
 import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
 import com.example.tvapp.view.network.NetworkUnstableScreen
-import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -26,9 +30,6 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
-
-    private val loginViewModel : LoginViewModel by viewModels()
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install Splash Screen
         super.onCreate(savedInstanceState)
@@ -43,9 +44,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             TVAppTheme {
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     WTVPlayerApp(sharedViewModel = sharedViewModel)
                 }
+
+
 //                val navController = rememberNavController()
 //                ChannelScreen(navController ,sharedViewModel)
             }

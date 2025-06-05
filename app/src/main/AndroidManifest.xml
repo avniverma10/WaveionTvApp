@@ -31,8 +31,9 @@
         android:name="com.example.tvapp.WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
-        android:banner="@mipmap/tccl_icon"
-        android:icon="@mipmap/tccl_icon"
+        android:banner="@mipmap/ic_banner_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
@@ -42,7 +43,8 @@
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
-            android:exported="true">
+            android:exported="true"
+            tools:targetApi="23">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

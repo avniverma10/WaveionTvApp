@@ -44,6 +44,7 @@ import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.uicomponent.ZoomInOutSwitcher
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
@@ -213,14 +214,8 @@ fun PanmetroGenreScreen(
                                     .fillMaxSize() // Force the inner Box to fill the outer Box.
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.tccl_boot_logo),
-                                    contentDescription = "TCCL Logo",
-                                    contentScale = ContentScale.FillBounds,
-                                    modifier = Modifier
-                                        .fillMaxSize() // Stretch the image to fill the inner Box.
-                                        .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-                                )
+
+                                ZoomInOutSwitcher()
                             }
                         }
 

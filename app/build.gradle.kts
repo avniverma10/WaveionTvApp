@@ -17,7 +17,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0.4"
+        versionName = "1.0.8"
     }
 
     buildTypes {
@@ -97,7 +97,7 @@ dependencies {
     //Navigation
     implementation (libs.navigation.compose)
     //viewmodel compose
-    implementation (libs.lifecycle.viewmodel)
+    //implementation (libs.lifecycle.viewmodel)
     //message central
     implementation (libs.zxing.embedded)
 

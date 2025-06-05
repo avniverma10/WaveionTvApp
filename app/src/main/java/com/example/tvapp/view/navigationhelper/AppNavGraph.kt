@@ -2,26 +2,24 @@ package com.example.tvapp.view.navigationhelper
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.flowWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.tvapp.NotificationBanner
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
 import com.example.tvapp.utils.network.heper.NetworkStatus
@@ -43,7 +42,6 @@ import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
-import com.example.tvapp.view.profile.Profile
 import com.example.tvapp.view.profile.ProfileScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
@@ -52,15 +50,23 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-@RequiresApi(Build.VERSION_CODES.M)
-@SuppressLint("UnrememberedMutableState")
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
-    val scrollMessageItems by sharedViewModel.scrollMessageItemsFlow.collectAsState()
+    val isApi23OrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+
+        //If API ≥ 23, collect the networkStatus StateFlow as state; else default to Available
+        val networkState by if (isApi23OrLater) {
+            sharedViewModel.networkStatus.collectAsStateWithLifecycle(
+                initialValue = NetworkStatus.Unavailable
+            )
+        } else {
+            remember { mutableStateOf(NetworkStatus.Available) }
+        }
+
         Box(Modifier.fillMaxSize()) {
             WTVPlayerNavHost(
                 navController = navController,
@@ -86,6 +92,25 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                 globalSSERules?.scrollMessages?.forEach {
                     ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
                 }
+            }
+
+
+            //Whenever there's no network, overlay a full-width banner at the top:
+            if (networkState is NetworkStatus.Unavailable) {
+                // A semi-transparent dark background, with a warning text
+                NetworkUnstableScreen(
+                    onNetworkSettingsClick = {
+                        // For example on Android TV:
+                        context.startActivity(
+                            Intent(Settings.ACTION_WIFI_SETTINGS)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    },
+                    onExitAppClick = {
+                        // Simply finish the Activity (exit the app)
+                        (context as? Activity)?.finishAffinity()
+                    }
+                )
             }
         }
 }

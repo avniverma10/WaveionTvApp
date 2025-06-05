@@ -346,7 +346,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.White)
     ) {
 
         // center your animated logo
@@ -357,7 +357,7 @@ fun SplashScreen(
                 .build(),
             contentDescription = "Default Background",
             contentScale = ContentScale.FillBounds,
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center).wrapContentWidth(),
             error = painterResource(R.drawable.tccl_boot_logo),        // Error state
             placeholder = painterResource(R.drawable.tccl_boot_logo)   // Loading state
         )

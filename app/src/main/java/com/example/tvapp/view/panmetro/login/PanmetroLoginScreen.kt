@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.android.tccl.R
 import com.example.tvapp.components.GradientBackground
+import com.example.tvapp.extensions.AndroidTvDrmInfo
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyUserInfo
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
@@ -276,8 +277,8 @@ fun PanmetroLoginScreen(
                         }
                         if (valid) {
                             (context as? Activity)?.hideKeyboard()
-                            context.getAndroidTvDrmInfo()
-                                ?.copy(userName = username, userPassword = password)
+                            //context.getAndroidTvDrmInfo()
+                            AndroidTvDrmInfo()?.copy(userName = username, userPassword = password)
                                 ?.let { info ->
                                     loginViewModel.validateUserLogin(
                                         androidTvDrmInfo = info,

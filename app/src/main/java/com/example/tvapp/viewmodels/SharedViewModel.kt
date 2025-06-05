@@ -69,7 +69,7 @@ open class SharedViewModel @Inject constructor(
     private val loginPrefsRepository: LoginPrefsRepository,
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
-    private val observer = ConnectivityObserver(application.applicationContext)
+    private val observer = ConnectivityObserver(application)
 
     var enableScrollingSSE = MutableStateFlow<Boolean>(false)
 
