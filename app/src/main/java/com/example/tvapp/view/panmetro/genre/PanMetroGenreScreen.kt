@@ -39,6 +39,7 @@ import androidx.navigation.NavController
 import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
@@ -60,6 +61,7 @@ fun PanmetroGenreScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
     val epgList = genreViewModel.provideAvailableEPG()
@@ -81,7 +83,9 @@ fun PanmetroGenreScreen(
 
     val onVideoChange: (EPGDataItem,Int) -> Unit = { channel,channelIndex ->
         selectedChannelIndex.value = channelIndex
-        sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
+            sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
+       // selectedChannelIndex.value = channelIndex
+       // sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
     }
 
 
@@ -105,7 +109,16 @@ fun PanmetroGenreScreen(
               if (filteredChannels.isNotEmpty()) {
                        // If there is at least one channel, move focus to channel list
                        channelToGenreFocus.value = false
-                      selectedChannelIndex.value = 0
+                      var defaultChannel: EPGDataItem? = epgList?.find { it.content?.ChannelID == appManifestData.value?.landingChannel?.channelId  }
+                      if(sharedViewModel.isFromSplash.value && defaultChannel != null){
+                          defaultChannel?.let {
+                              selectedChannelIndex.value = epgList?.indexOf(it)?:0
+                              sharedViewModel.updateSelectedChannel(it)
+                              sharedViewModel.isFromSplash.value = false
+                          }
+                      }else{
+                          selectedChannelIndex.value = 0
+                      }
                       channelListFocusRequester.requestFocus()
                   } else {
                        // If empty, keep focus on the genre list
@@ -146,7 +159,6 @@ fun PanmetroGenreScreen(
                             // On selection, update the index, filter channels, and move focus to the channel list.
                             onCategoryForward = { index, selectedGenre ->
                                 channelToGenreFocus.value = false
-                                selectedChannelIndex.value = 0
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.

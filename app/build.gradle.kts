@@ -17,7 +17,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0.9"
+        versionName = "1.0.10"
     }
 
     buildTypes {
@@ -112,6 +112,8 @@ dependencies {
     implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
+    //isoparser
+   // implementation(libs.isoparser)
    // If you don't use feature license encrypt, please comment line below
     implementation ("com.sigma.packer:sigma-packer:1.0.1")
 

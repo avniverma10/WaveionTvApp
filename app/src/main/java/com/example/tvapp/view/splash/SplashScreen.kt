@@ -170,6 +170,8 @@ fun SplashScreen(
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
         }
+
+        sharedViewModel.isFromSplash.value = true
     }
     if (showDialog && updateData != null) {
         val apkVersionName = updateData?.appVersion ?: "latest"

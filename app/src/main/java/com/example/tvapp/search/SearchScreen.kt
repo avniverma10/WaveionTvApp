@@ -104,7 +104,11 @@ fun SearchScreen(
         backPressCount = 0
         val listToFocus = if (searchText.isNotEmpty()) searchResults else epgData
         if (listToFocus?.isNotEmpty() == true) {
-            firstThumbnailFocusRequester.requestFocus()
+            try {
+                firstThumbnailFocusRequester.requestFocus()
+            } catch (e: IllegalStateException) {
+                loge("FocusError", "FocusRequester not initialized ${e.message}")
+            }
         }
     }
 

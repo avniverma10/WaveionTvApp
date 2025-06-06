@@ -71,7 +71,7 @@ open class SharedViewModel @Inject constructor(
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
     private val observer = ConnectivityObserver(application)
 
-    var enableScrollingSSE = MutableStateFlow<Boolean>(false)
+    var isFromSplash = MutableStateFlow<Boolean>(false)
 
     private var globalEventSource: EventSource? = null
     private val _globalSSERules = MutableStateFlow<GlobalSSEResponse?>(null)

@@ -306,7 +306,7 @@ fun PanmetroLoginScreen(
                         .border(
                             BorderStroke(
                                 width = if (isButtonFocused) 2.dp else 0.dp,
-                                color = Color(0xFF40DEBE)
+                                color = Color(0xFF2DDEBA)
                             ),
                             shape = RoundedCornerShape(6.dp)
                         )

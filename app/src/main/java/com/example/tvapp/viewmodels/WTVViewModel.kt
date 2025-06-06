@@ -66,6 +66,7 @@ import android.os.Looper
 import android.widget.Toast
 import com.android.tccl.R
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.network.heper.ConnectivityObserver
@@ -248,11 +249,12 @@ open class WTVViewModel @Inject constructor(
             // Wait for all to complete (success or failure)
             if (manifestDeferred != null && epgDeferred != null) {
                 // **This line runs only after all of the above finish.**
+                Log.e("manifestDeferred",manifestDeferred.toJSONObject().toString())
                 application.applyAppManifest(manifestDeferred)
                 val epgData = removeDuplicateEPG(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
-                epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
+                epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
                     ?.let(::updateSelectedChannel) ?: kotlin.run {
                     epgData?.getOrNull(0)?.let {
                         _selectedChannel.value = it

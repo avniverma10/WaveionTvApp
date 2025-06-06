@@ -35,7 +35,7 @@ data class Contact(
 data class LandingChannel(
     val _id: String?=null,
     val title: String?=null,
-    val ChannelID: String?=null,
+    val channelId: String?=null,
     val videoUrl: String?=null,
     val createdAt: String?=null,
     val updatedAt: String?=null,
