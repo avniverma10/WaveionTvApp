@@ -76,8 +76,8 @@ fun PanmetroLoginScreen(
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
 
-    var username   by remember { mutableStateOf("rrishi") }
-    var password   by remember { mutableStateOf("123") }
+    var username   by remember { mutableStateOf("") }
+    var password   by remember { mutableStateOf("") }
     var macId      by remember { mutableStateOf(macAddress) }
 
     val passwordFocusRequester = remember { FocusRequester() }

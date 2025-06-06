@@ -46,7 +46,7 @@ class BootService : Service() {
         return Notification.Builder(this, channelId)
             .setContentTitle("Boot Service Running")
             .setContentText("Launching the app immediately after boot")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.mipmap.tccl_icon)
             .build()
     }
 }

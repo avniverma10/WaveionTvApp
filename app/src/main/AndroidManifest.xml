@@ -31,24 +31,37 @@
         android:name="com.example.tvapp.WTVApp"
         android:allowBackup="true"
         android:largeHeap="true"
-        android:banner="@mipmap/ic_banner_launcher"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@mipmap/ic_latest_launcher"
+        android:roundIcon="@mipmap/ic_latest_launcher"
+        android:banner="@drawable/tccl_banner"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.TVApp">
+
+        <!-- Amazon Fire TV: 10:3 banner for “Recently Used Apps” -->
+        <meta-data
+            android:name="com.amazon.tv.leanbacklauncher.appBanner"
+            android:resource="@drawable/tccl_banner" />
+
+        <!-- Android TV / Leanback: 16:9 banner for Recents and Leanback launchers -->
+        <meta-data
+            android:name="com.google.android.tv.icon"
+            android:resource="@drawable/tccl_banner" />
+        <meta-data
+            android:name="com.google.android.tv.img_banner"
+            android:resource="@drawable/tccl_banner" />
+
         <activity
             android:name="com.example.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
             android:exported="true"
-            tools:targetApi="23">
+            tools:targetApi="23"
+            android:banner="@drawable/tccl_banner">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity>
