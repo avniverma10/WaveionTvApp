@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
-import com.android.caastv.R
+import com.android.tccl.R
 
 @Composable
 fun OverlayPermissionDialog(onRequest: () -> Unit) {
