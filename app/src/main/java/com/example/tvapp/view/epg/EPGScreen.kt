@@ -136,7 +136,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()
-                Process.killProcess(Process.myPid())
+//                Process.killProcess(Process.myPid())
             },
             dismissButtonText = "No",
             onDismiss = {

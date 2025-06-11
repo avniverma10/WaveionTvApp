@@ -1,3 +1,4 @@
+// File: MainActivity.kt
 package com.example.tvapp.view
 
 import android.os.Build
@@ -6,10 +7,11 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.tvapp.globalFingerprintService.OverlayPermissionDialog
+import com.example.tvapp.globalFingerprintService.OverlayPermissionHelper
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
@@ -19,35 +21,54 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private lateinit var overlayHelper: OverlayPermissionHelper
     private val sharedViewModel: SharedViewModel by viewModels()
-
     private val loginViewModel : LoginViewModel by viewModels()
-    @RequiresApi(Build.VERSION_CODES.O)
+
+    private val isFireTv: Boolean
+        get() = Build.MANUFACTURER.equals("Amazon", ignoreCase = true)
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Install Splash Screen
         super.onCreate(savedInstanceState)
-        //Init the singleton
         PreferenceManager.init(applicationContext)
-        //init app data
-        sharedViewModel.initializeAppRequiredData()
-        // in onCreate of your ComponentActivity
-        window.setSoftInputMode(
-            WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
-        )
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+
+        overlayHelper = OverlayPermissionHelper(this).apply {
+            registerLauncher()
+        }
 
         setContent {
             TVAppTheme {
+                // observe overlay‐permission state
+                val hasOverlayPermission by overlayHelper.hasOverlayPermissionState
                 Box(modifier = Modifier.fillMaxSize()) {
-                    WTVPlayerApp(sharedViewModel=sharedViewModel)
+                    when {
+                        isFireTv -> {
+                            WTVApp()
+                        }
+                        hasOverlayPermission -> {
+                            WTVApp()
+                            LaunchedEffect(Unit) {
+                                overlayHelper.startOverlayServiceIfNeeded()
+                                overlayHelper.requestIgnoreBatteryOptimizationsIfNeeded()
+                            }
+                        }
+                        else -> {
+                            OverlayPermissionDialog {
+                                overlayHelper.requestOverlayPermission()
+                            }
+                        }
+                    }
                 }
-//                val navController = rememberNavController()
-//                ChannelScreen(navController ,sharedViewModel)
             }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-       // showToastS("MainActivity>onDestroy")
+    @Composable
+    private fun WTVApp() {
+        Box(modifier = Modifier.fillMaxSize()) {
+            WTVPlayerApp(sharedViewModel = sharedViewModel)
+        }
     }
 }
+

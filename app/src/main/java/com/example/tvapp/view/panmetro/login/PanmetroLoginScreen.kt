@@ -102,7 +102,7 @@ fun PanmetroLoginScreen(
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()
-                Process.killProcess(Process.myPid())
+//                Process.killProcess(Process.myPid())
             },
             dismissButtonText = "No",
             onDismiss = {

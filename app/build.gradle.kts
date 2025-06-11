@@ -114,5 +114,12 @@ dependencies {
     implementation(libs.bundles.dimens)
    // If you don't use feature license encrypt, please comment line below
     implementation ("com.sigma.packer:sigma-packer:1.0.1")
+    // 1) Basic Lifecycle runtime (gives LifecycleRegistry)
+    implementation ("androidx.lifecycle:lifecycle-runtime:2.6.1")
+    // 2) Lifecycle KTX (coroutine support, etc.)
+    implementation ("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
+    // 3) Lifecycle‐Compose integration (provides LocalLifecycleOwner)
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
+
 
 }
