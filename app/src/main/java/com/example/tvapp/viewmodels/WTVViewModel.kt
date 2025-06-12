@@ -214,7 +214,7 @@ open class WTVViewModel @Inject constructor(
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest("https://api-demo.caastv.com/api/manifest")
+                    .provideWTVManifest(Constants.BASE_URL +"manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -233,7 +233,7 @@ open class WTVViewModel @Inject constructor(
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData("https://api-demo.caastv.com/api/epg-files/join-epg-content")
+                    .provideWTVEPGData(Constants.BASE_URL +"epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
@@ -272,7 +272,7 @@ open class WTVViewModel @Inject constructor(
             }
             launch {
                 networkApiCallInterfaceImpl
-                    .provideWTVHomeData("https://api-demo.caastv.com/api/homescreenCategory")
+                    .provideWTVHomeData(Constants.BASE_URL +"homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
                             application.applyAppHome(response.data)
@@ -383,7 +383,7 @@ open class WTVViewModel @Inject constructor(
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo("https://api-demo.caastv.com/api/app/appupdate")
+            .provideAppUpdateInfo(Constants.BASE_URL +"app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 

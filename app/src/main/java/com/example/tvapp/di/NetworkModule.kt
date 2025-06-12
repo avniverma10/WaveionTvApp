@@ -1,6 +1,7 @@
 package com.example.tvapp.di
 
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.network.LoggingInterceptor
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.google.gson.GsonBuilder
@@ -38,7 +39,7 @@ object NetworkModule {
     @Provides
     fun retrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://example.com")
+            .baseUrl(Constants.BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(
                 GsonConverterFactory.create(

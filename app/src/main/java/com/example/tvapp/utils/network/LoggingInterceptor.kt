@@ -1,16 +1,19 @@
 package com.example.tvapp.utils.network
 import android.util.Log
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.utils.Constants
 import okhttp3.Interceptor
 import okhttp3.Response
 
-//It is use to intercept API's request and response
-class LoggingInterceptor:Interceptor {
+class LoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-       val request = chain.request()
-        loge("Request::","${request}")
-       val response = chain.proceed(request)
-       // loge("Response::", response.body?.string().toString())
-      return response
+        val requestWithKey = chain.request()
+            .newBuilder()
+            .addHeader("x-api-key", Constants.HEADER_TOKEN)
+            .build()
+        loge("Request →", "${requestWithKey.method} ${requestWithKey.url}")
+        val response = chain.proceed(requestWithKey)
+        loge("Response ←", "${response.code} ${response.request.url}")
+        return response
     }
 }
