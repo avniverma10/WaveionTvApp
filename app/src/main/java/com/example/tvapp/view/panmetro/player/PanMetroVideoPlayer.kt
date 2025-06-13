@@ -54,6 +54,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.source.BehindLiveWindowException
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.android.tccl.R
@@ -191,7 +192,11 @@ fun PanMetroVideoPlayer(
                     val retryDelay = Random.nextLong(0L, 120_000L)
                     loge("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
                     delay(retryDelay)
-
+                    val isBehindLiveWindow = error.cause is BehindLiveWindowException
+                    if (isBehindLiveWindow) {
+                        loge("Retry", "BehindLiveWindowException detected. Seeking to default position.")
+                        exoPlayer.seekToDefaultPosition()
+                    }
                     // re‐prepare the same live source
                     exoPlayer.prepare()
                     exoPlayer.playWhenReady = true
