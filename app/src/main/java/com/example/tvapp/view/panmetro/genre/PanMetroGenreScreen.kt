@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -34,7 +36,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
@@ -56,9 +60,11 @@ fun PanmetroGenreScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val epgList = genreViewModel.provideAvailableEPG()
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
 
     val availableGenre = genreViewModel.provideAvailableGenre()
 
+     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
 
     // Lift the selected genre index state.
     var channelToGenreFocus = remember { mutableStateOf(false) }
@@ -96,8 +102,29 @@ fun PanmetroGenreScreen(
         genreViewModel.filterPanMetroChannelsByGenre()
 
     }
-
-    // The entire screen is a Box so we can layer items if needed
+     LaunchedEffect(filteredChannels) {
+              if (filteredChannels.isNotEmpty()) {
+                       // If there is at least one channel, move focus to channel list
+                       channelToGenreFocus.value = false
+                      var defaultChannel: EPGDataItem? = epgList?.find { it.content?.ChannelID == appManifestData.value?.landingChannel?.channelId  }
+                      if(sharedViewModel.isFromSplash.value && defaultChannel != null){
+                          defaultChannel?.let {
+                              selectedChannelIndex.value = epgList?.indexOf(it)?:0
+                              sharedViewModel.updateSelectedChannel(it)
+                              sharedViewModel.isFromSplash.value = false
+                          }
+                      }else{
+                          selectedChannelIndex.value = 0
+                      }
+                      channelListFocusRequester.requestFocus()
+                  } else {
+                       // If empty, keep focus on the genre list
+                       channelToGenreFocus.value = true
+                       genreFocusRequesters
+                           .getOrNull(selectedGenreIndex.value)
+                           ?.let { it.requestFocus() }
+                   }
+     }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -134,7 +161,7 @@ fun PanmetroGenreScreen(
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
-                                channelListFocusRequester.requestFocus()
+//                                channelListFocusRequester.requestFocus()
                             }
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -152,7 +179,7 @@ fun PanmetroGenreScreen(
                                         channelToGenreFocus.value = true
                                         requester.requestFocus()
                                     } catch (e: IllegalStateException) {
-                                        Log.e("FocusError", "FocusRequester not initialized", e)
+                                        loge("FocusError", "FocusRequester not initialized ${e.message}")
                                     }
                                 }
                             },

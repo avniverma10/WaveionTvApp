@@ -346,7 +346,7 @@ fun PanmetroLoginScreen(
                                         .focusRequester(loginFocusRequester),
                                     shape = RoundedCornerShape(30.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF8223EC), // Green background
+                                        containerColor = Color(0xFF8326EC), // Green background
                                         contentColor = Color.White           // Text color
                                     )
                                 ) {

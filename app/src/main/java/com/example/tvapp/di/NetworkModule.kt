@@ -33,6 +33,8 @@ object NetworkModule {
     private const val CONNECT_TIMEOUT = 3 * 60L
     private const val READ_TIMEOUT    = 3 * 60L
     private const val WRITE_TIMEOUT   = 3 * 60L
+    private const val API_KEY_HEADER = "x-api-key"
+    private const val API_KEY_VALUE  = "BUAA8JJkzfMI56y4BhEhU"
 
     @Singleton
     @Provides
@@ -91,14 +93,22 @@ object NetworkModule {
             init(null, trustAllCerts, SecureRandom())
         }
         val sslSocketFactory = sslContext.socketFactory
-
+        // 1) Interceptor that adds the API key header:
+        val apiKeyInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            val requestWithApiKey = originalRequest.newBuilder()
+                .header(API_KEY_HEADER, API_KEY_VALUE)
+                .build()
+            chain.proceed(requestWithApiKey)
+        }
         // Build and return the OkHttpClient
         return OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .cache(cache)                                    // enable on-disk LRU
+            .cache(cache)
+            .addInterceptor(apiKeyInterceptor)          // enable on-disk LRU
             .addInterceptor(offlineInterceptor)              // handles errors → cache
             .addNetworkInterceptor(networkCacheInterceptor)  // caches fresh responses
             // Trust all SSL certificates (for debug/development only)

@@ -97,6 +97,7 @@ fun PanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedV
             errorCode = null,
             errorMessage = null,
             borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.logout_icon),
             confirmButtonText ="Yes" ,
             onConfirm =  {
                 scope.launch {

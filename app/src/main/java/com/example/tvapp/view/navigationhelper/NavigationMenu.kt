@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +41,9 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,6 +58,7 @@ fun CategoryMenu(
     languageFocusRequesters: List<FocusRequester>
 ) {
 
+    val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
@@ -64,17 +69,12 @@ fun CategoryMenu(
         return
     }
 
-    // When requesting focus on enter:
     LaunchedEffect(selectedIndex.value) {
-        categoryFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
-            try {
-                requester.requestFocus()
-            } catch (e: IllegalStateException) {
-                Log.e("FocusError", "FocusRequester not initialized", e)
-            }
+        coroutineScope.launch {
+            listState.animateScrollToItem(selectedIndex.value)
+            delay(50)
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -83,6 +83,7 @@ fun CategoryMenu(
             .background(Color(0xFF161D25), shape = RoundedCornerShape(12.dp))
     ) {
         LazyRow(
+            state = listState,
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(53.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -95,9 +96,9 @@ fun CategoryMenu(
                     .then(
                         when {
                             isFocused.value ->
-                                Modifier.border(2.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(4.dp))
+                                Modifier.border(2.dp, color = base_color, shape = RoundedCornerShape(4.dp)).background(color = focus_background)
                             isSelected ->
-                                Modifier.background(Color(0x1A49FEDD), shape = RoundedCornerShape(4.dp))
+                                Modifier.background(color = filter_selected_color, shape = RoundedCornerShape(4.dp))
                             else -> Modifier
                         }
                     )

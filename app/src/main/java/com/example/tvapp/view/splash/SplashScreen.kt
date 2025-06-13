@@ -11,7 +11,12 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
@@ -42,6 +47,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
@@ -50,6 +61,7 @@ import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.getIptvDeviceInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.isNotNullOrEmpty
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideMacAddrLiveData
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toJSONObject
@@ -60,6 +72,7 @@ import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 
 @SuppressLint("ContextCastToActivity")
@@ -95,8 +108,42 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
-    //hide keyboard forcefully
-    //HideKeyboardOnEnter()
+    var pendingInstallIntent by remember { mutableStateOf<Intent?>(null) }
+
+
+    val unknownSourcesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        // Nothing needed here, because we also handle ON_RESUME below.
+    }
+
+    //  Observe ON_RESUME: if pendingInstallIntent != null and we now have install permission,
+    //    fire the install Intent.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (pendingInstallIntent != null &&
+                        context.packageManager.canRequestPackageInstalls()
+                    ) {
+                        // Launch the stored install Intent exactly once
+                        context.startActivity(pendingInstallIntent!!.apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                        // Clear it so we don’t re-launch repeatedly
+                        pendingInstallIntent = null
+                        activity?.finish()
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     LaunchedEffect(Unit) {
         context.hideKeyboard()
         sharedViewModel.checkDeviceDateTime()
@@ -151,85 +198,145 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                 }
             }
         }
+        sharedViewModel.isFromSplash.value = true
     }
-
-    // — show the update dialog —
     if (showDialog && updateData != null) {
+        val apkVersionName = updateData?.appVersion ?: "latest"
+        val fileName = "tvapp_$apkVersionName.apk"
+
         if (updateData?.forceUpdate == 1) {
-            // ────────── Forced ──────────
+            // Forced update
             CommonDialog(
-                showDialog        = true,
-                title             = "Update Required",
-                message           = "A mandatory update is available. You must update to continue.",
+                showDialog = true,
+                title = "Update Required",
+                painter = painterResource(id = R.drawable.updateicon),
+                message = "A mandatory update is available. You must update to continue.",
+                borderColor = Color.Transparent,
                 confirmButtonText = "Yes",
-                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                onConfirm = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                        val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        if (ContextCompat.checkSelfPermission(context, perm)
+                            != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            writePermissionLauncher.launch(perm)
+                        } else {
+                            sharedViewModel.onUserAcceptedUpdate()
+                        }
+                    } else {
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                },
                 dismissButtonText = "Exit",
-                onDismiss         = {
+                onDismiss = {
                     activity?.finishAffinity()
                     android.os.Process.killProcess(android.os.Process.myPid())
                 },
-                initialFocusOnConfirm  = true
-
+                initialFocusOnConfirm = true
             )
         } else {
             CommonDialog(
-                showDialog        = true,
-                title             = "Update Available",
-                message           = "There’s a new version. Would you like to update now?",
+                showDialog = true,
+                title = "Update Available",
+                painter = painterResource(id = R.drawable.updateicon),
+                message = "There’s a new version. Would you like to update now?",
+                borderColor = Color.Transparent,
                 confirmButtonText = "Yes",
-                onConfirm         = { sharedViewModel.onUserAcceptedUpdate() },
+                onConfirm = {
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                        val perm = Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        if (ContextCompat.checkSelfPermission(context, perm)
+                            != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            writePermissionLauncher.launch(perm)
+                        } else {
+                            sharedViewModel.onUserAcceptedUpdate()
+                        }
+                    } else {
+                        sharedViewModel.onUserAcceptedUpdate()
+                    }
+                },
                 dismissButtonText = "No",
-                onDismiss         = { sharedViewModel.onUserDeclinedUpdate() }
+                onDismiss = {
+                    sharedViewModel.onUserDeclinedUpdate()
+                }
             )
         }
     }
 
-
-    Spacer(Modifier.height(16.dp))
-
-
-    // — register for download‑complete only once downloadId is set —
     DisposableEffect(downloadId) {
-        if (downloadId != null) {
+        if (downloadId != null && updateData != null) {
+            val apkVersionName = updateData?.appVersion ?: "latest"
+            val fileName = "tvapp_$apkVersionName.apk"
+            val appCtx = context.applicationContext
+
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(ctx: Context, intent: Intent) {
                     val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-                    if (id == downloadId) {
-                        // 1) Query status...
-                        val q = DownloadManager.Query().setFilterById(id)
-                        dm.query(q).use { cursor ->
-                            if (cursor != null && cursor.moveToFirst()) {
-                                val status = cursor.getInt(cursor.getColumnIndexOrThrow(
-                                    DownloadManager.COLUMN_STATUS))
+                    if (id != downloadId) return
 
-                                if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                                    val apkUri: Uri = dm.getUriForDownloadedFile(id)
+                    val query = DownloadManager.Query().setFilterById(id)
+                    dm.query(query)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val status = cursor.getInt(
+                                cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+                            )
 
-                                    // **Clear the downloadId first** so spinner hides immediately
-                                    sharedViewModel.clearDownloadId()
+                            val apkFile = File(
+                                appCtx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                fileName
+                            )
 
-                                    // 2) Launch the installer using ACTION_VIEW
-                                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                                        setDataAndType(apkUri, "application/vnd.android.package-archive")
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
-                                                Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    }
-
-                                    // Only start if there's an activity to handle it
-                                    if (installIntent.resolveActivity(context.packageManager) != null) {
-                                        context.startActivity(installIntent)
-                                    } else {
-                                        context.showToastS("No installer found on device")
-                                    }
-
-                                    // 3) Finish splash so old process ends
-                                    activity?.finish()
-
-                                } else {
-                                    // failure case: also clear so spinner goes away
-                                    sharedViewModel.clearDownloadId()
-                                    context.showToastS("Download failed (status=$status)")
+                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                                val apkUri: Uri = FileProvider.getUriForFile(
+                                    appCtx,
+                                    "${appCtx.packageName}.provider",
+                                    apkFile
+                                )
+                                val installIntent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                                    setDataAndType(
+                                        apkUri,
+                                        "application/vnd.android.package-archive"
+                                    )
+                                    addFlags(
+                                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                                                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    )
                                 }
+                                pendingInstallIntent = installIntent
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+                                    !appCtx.packageManager.canRequestPackageInstalls()
+                                ) {
+                                    val settingsIntent = Intent(
+                                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES
+                                    ).apply {
+                                        data = Uri.parse("package:${appCtx.packageName}")
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    unknownSourcesLauncher.launch(settingsIntent)
+                                    return
+                                }
+
+                                // 5) Otherwise, we’re good—install immediately
+                                appCtx.startActivity(installIntent)
+                                activity?.finish()
+                            } else {
+                                // Download failed: clean up and notify
+                                if (apkFile.exists()) {
+                                    val deleted = apkFile.delete()
+                                    loge(
+                                        "Splash",
+                                        "Download failed (status=$status). APK deleted? $deleted"
+                                    )
+                                } else {
+                                    loge(
+                                        "Splash",
+                                        "Download failed (status=$status). No APK file found."
+                                    )
+                                }
+                                sharedViewModel.clearDownloadId()
+                                context.showToastS("Download failed (status=$status)")
                             }
                         }
                     }
@@ -243,9 +350,11 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
                 ContextCompat.RECEIVER_EXPORTED
             )
 
-            onDispose { context.unregisterReceiver(receiver) }
+            onDispose {
+                context.unregisterReceiver(receiver)
+            }
         } else {
-            onDispose { /* nothing to clean up */ }
+            onDispose { /* no-op until downloadId is non-null */ }
         }
     }
 

@@ -78,14 +78,15 @@ fun FullScreenPlayerOverlay(
     val maxScale = 1f
     val minScale = 0.7f
 
-    LaunchedEffect(selectedIndex) {
-        selectedIndex.value = epgList.indexOfFirst { it.content?.videoUrl == selectedChannel.content?.videoUrl }
+    LaunchedEffect(selectedChannel) {
+        val idx = epgList.indexOfFirst {
+            it.content?.videoUrl == selectedChannel.content?.videoUrl
+        }.coerceAtLeast(0)
+        selectedIndex.value = idx
         playerViewModel.updateSelectedPProgramInfo(selectedChannel)
-        scope.launch {
-            delay(200)
-            lazyListState.animateScrollToItem(selectedIndex.value)
-        }
+        lazyListState.scrollToItem(idx)
     }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Top gradient overlay

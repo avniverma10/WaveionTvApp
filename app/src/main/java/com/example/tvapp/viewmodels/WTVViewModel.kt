@@ -184,6 +184,9 @@ open class WTVViewModel @Inject constructor(
 
             // Wait for all to complete (success or failure)
             //if(manifestDeferred != null && epgDeferred != null){
+            Log.d("EPG","manifest ---> ${manifestDeferred} ")
+            Log.d("EPG"," epg ---> ${epgDeferred}")
+
             if(manifestDeferred != null && epgDeferred != null){
                 // **This line runs only after all of the above finish.**
                 manifestDeferred.let {
@@ -192,7 +195,7 @@ open class WTVViewModel @Inject constructor(
                 val epgData = removeDuplicateEPG(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
-                epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
+                epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
                     ?.let(::updateSelectedChannel)?:kotlin.run {
                     _selectedChannel.value =  epgData.getOrNull(0)!!
                 }

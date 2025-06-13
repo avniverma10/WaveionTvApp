@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,8 +41,12 @@ import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.isNotNullOrEmpty
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -55,7 +60,8 @@ fun LanguageMenu(
     languageFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
-
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
     val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
@@ -65,19 +71,16 @@ fun LanguageMenu(
         return
     }
 
-    LaunchedEffect(selectedIndex) {
-        languageFocusRequesters.getOrNull(selectedIndex.value)?.let { requester ->
-            try {
-                requester.requestFocus()
-            } catch (e: IllegalStateException) {
-                Log.e("FocusError", "FocusRequester not initialized", e)
-            }
+    LaunchedEffect(selectedIndex.value) {
+        coroutineScope.launch {
+            listState.animateScrollToItem(selectedIndex.value)
+            delay(50)
+//            languageFocusRequesters.getOrNull(selectedIndex.value)?.requestFocus()
         }
     }
 
-    val coroutineScope = rememberCoroutineScope()
-
     LazyRow(
+        state = listState,
         modifier = Modifier
             .fillMaxWidth()
             .height(45.dp),
@@ -93,9 +96,9 @@ fun LanguageMenu(
                 .then(
                     if (isFocused.value) {
                         Modifier
-                            .border(1.dp, Color(0xFF49FEDD), shape = RoundedCornerShape(30.dp),)
+                            .border(1.dp, color = base_color, shape = RoundedCornerShape(30.dp),).background(color = focus_background, shape = RoundedCornerShape(30.dp))
                     } else if (isSelected) {
-                        Modifier.background(Color(0x1A49FEDD), shape = RoundedCornerShape(30.dp))
+                        Modifier.background(color = filter_selected_color, shape = RoundedCornerShape(30.dp))
                     } else Modifier
                 )
                 .onFocusChanged {
@@ -130,7 +133,13 @@ fun LanguageMenu(
                         keyEvent.type == KeyEventType.KeyDown &&
                                 keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
-                                firstChannelFocusRequester.requestFocus()
+                                firstChannelFocusRequester?.let { requester ->
+                                    try {
+                                        requester.requestFocus()
+                                    } catch (e: IllegalStateException) {
+                                        loge("FocusError", "FocusRequester not initialized  ${e.message}")
+                                    }
+                                }
                             }
                             true
                         }

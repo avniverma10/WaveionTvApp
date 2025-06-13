@@ -32,6 +32,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
@@ -39,6 +40,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appGenreLiveData
 import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
@@ -136,6 +138,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             errorCode = null,
             errorMessage = null,
             borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.exit_icon),
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()

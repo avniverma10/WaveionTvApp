@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.database.ContentObserver
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.coreEPGLiveData
@@ -56,7 +57,7 @@ open class SharedViewModel @Inject constructor(
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
 
-
+    var isFromSplash = MutableStateFlow<Boolean>(false)
     private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
 
@@ -84,6 +85,8 @@ open class SharedViewModel @Inject constructor(
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
+    var lastFocusedChannelIndex = mutableStateOf(0)
+        private set
 
     init {
         // only load once, no continuous observation to avoid overriding
@@ -148,7 +151,9 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-
+    fun updateLastFocusedChannel(index: Int) {
+        lastFocusedChannelIndex.value = index
+    }
 
     suspend fun fetchEPGList(context: Context): List<EPGDataItem> {
         return withContext(Dispatchers.IO) {
@@ -225,8 +230,8 @@ open class SharedViewModel @Inject constructor(
         val filter = _filterState.value
 
         val filtered = fullList?.filter { epgItem ->
-            val genreList = epgItem.content?.genre.orEmpty()
-            val language = epgItem.content?.language.orEmpty()
+            val genreList = epgItem.content?.genre?.map { it.name }.orEmpty()
+            val language = epgItem.content?.language?.name.orEmpty()
 
             val genreMatch = filter.genre == null || genreList.any { it.equals(filter.genre, true) }
             val languageMatch = filter.language == null || language.equals(filter.language, true)

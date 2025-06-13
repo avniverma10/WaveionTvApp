@@ -43,25 +43,30 @@ fun CommonDialog(
 ) {
     if (!showDialog) return
 
-    val noButtons = confirmButtonText == null && dismissButtonText == null
+    // Pre-compute shape and optional border stroke
+    val dialogShape = RoundedCornerShape(16.dp)
+    val borderStroke = borderColor
+        .takeIf { it != Color.Transparent }
+        ?.let { BorderStroke(1.dp, it) }
 
     Popup(
         alignment = Alignment.Center,
         properties = PopupProperties(
-            focusable             = !noButtons,
+            focusable             = (confirmButtonText != null || dismissButtonText != null),
             dismissOnBackPress    = false,
             dismissOnClickOutside = false
         )
     ) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 8.dp,
+            shape = dialogShape,
+            border = borderStroke,
+            tonalElevation = if (borderStroke != null) 8.dp else 0.dp,
+            shadowElevation = 0.dp,
             color = Color(0xFF191B1F),
             modifier = Modifier
                 .padding(24.dp)
                 .widthIn(min = 200.dp, max = 400.dp)
                 .wrapContentHeight()
-                .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(16.dp))
         ) {
             Column(
                 modifier = Modifier
@@ -88,7 +93,6 @@ fun CommonDialog(
                             fontSize = 18.sp,
                             color = Color.White,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.wrapContentWidth(),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -104,7 +108,8 @@ fun CommonDialog(
                         fontSize = msgFontSize,
                         color = Color.White,
                         textAlign = TextAlign.Center,
-                        modifier = if (noButtons) Modifier.fillMaxWidth() else Modifier
+                        modifier = if (confirmButtonText == null && dismissButtonText == null)
+                            Modifier.fillMaxWidth() else Modifier
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                 }
@@ -121,12 +126,8 @@ fun CommonDialog(
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
-                if ((errorCode == null && errorMessage == null) && !noButtons) {
-                    Spacer(modifier = Modifier.height(30.dp))
-                }
-
                 // ─── Buttons ────────────────────────────────────────────────
-                if (!noButtons) {
+                if (confirmButtonText != null || dismissButtonText != null) {
                     val dismissRequester   = remember { FocusRequester() }
                     val dismissInteraction = remember { MutableInteractionSource() }
                     val isDismissFocused   by dismissInteraction.collectIsFocusedAsState()
@@ -136,34 +137,43 @@ fun CommonDialog(
                     val isConfirmFocused   by confirmInteraction.collectIsFocusedAsState()
 
                     LaunchedEffect(showDialog) {
-                        if (showDialog) {
-                            if (initialFocusOnConfirm) {
-                                confirmRequester.requestFocus()
-                            } else if (dismissButtonText != null) {
-                                dismissRequester.requestFocus()
-                            } else {
-                                confirmRequester.requestFocus()
-                            }
+                        if (initialFocusOnConfirm && confirmButtonText != null) {
+                            confirmRequester.requestFocus()
+                        } else if (dismissButtonText != null) {
+                            dismissRequester.requestFocus()
+                        } else {
+                            confirmRequester.requestFocus()
                         }
                     }
+
+                    Spacer(modifier = Modifier.height( if (errorCode == null && errorMessage == null) 30.dp else 0.dp ))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Dismiss button (Exit/No)
+                        // Dismiss button
                         if (dismissButtonText != null && onDismiss != null) {
                             TextButton(
-                                onClick           = onDismiss,
+                                onClick = onDismiss,
                                 interactionSource = dismissInteraction,
-                                modifier          = Modifier
+                                modifier = Modifier
                                     .focusRequester(dismissRequester)
-                                    .focusable(interactionSource = dismissInteraction),
-                                shape  = RoundedCornerShape(8.dp),
+                                    .focusable(interactionSource = dismissInteraction)
+                                    // always reserve the 2.dp border, but toggle its color
+                                    .border(
+                                        BorderStroke(
+                                            width = 1.dp,
+                                            color = if (isDismissFocused) Color(0xFF49FEDD) else Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .defaultMinSize(minWidth = 68.dp, minHeight = 44.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.textButtonColors(
-                                    containerColor = if (isDismissFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                    contentColor   = Color.Black
+                                    containerColor = if (isDismissFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                                    contentColor = if (isDismissFocused) Color.White else Color.Black
                                 )
                             ) {
                                 Text(dismissButtonText)
@@ -171,24 +181,33 @@ fun CommonDialog(
                             Spacer(Modifier.width(28.dp))
                         }
 
-                        // Confirm button (Yes)
+                        // Confirm button
                         if (confirmButtonText != null && onConfirm != null) {
                             TextButton(
-                                onClick           = onConfirm,
+                                onClick = onConfirm,
                                 interactionSource = confirmInteraction,
-                                modifier          = Modifier
+                                modifier = Modifier
                                     .focusRequester(confirmRequester)
-                                    .focusable(interactionSource = confirmInteraction),
-                                shape  = RoundedCornerShape(8.dp),
+                                    .focusable(interactionSource = confirmInteraction)
+                                    .border(
+                                        BorderStroke(
+                                            width = 1.dp,
+                                            color = if (isConfirmFocused) Color(0xFF49FEDD) else Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .defaultMinSize(minWidth = 68.dp, minHeight = 44.dp),
+                                shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.textButtonColors(
-                                    containerColor = if (isConfirmFocused) Color(0xFF49FEDD) else Color(0xFF414857),
-                                    contentColor   = Color.Black
+                                    containerColor = if (isConfirmFocused) Color(0x1A49FEDD) else Color(0xFF414857),
+                                    contentColor = if (isConfirmFocused) Color.White else Color.Black
                                 )
                             ) {
                                 Text(confirmButtonText)
                             }
                         }
                     }
+
                 }
             }
         }
