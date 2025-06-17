@@ -40,8 +40,13 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.android.caastv.R
 import com.example.tvapp.extensions.formatTime
 import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
@@ -60,11 +65,13 @@ fun FullScreenPlayerOverlay(
     lazyListState: LazyListState,
     sharedViewModel: SharedViewModel,
     playerViewModel: PlayerViewModel,
+    epgList: List<EPGDataItem>,
+    categoryName: String,
+    languageName: String,
     channelFocusRequesters: List<FocusRequester>,
     onChannelFocused: (EPGDataItem) -> Unit
 ) {
     HideKeyboardOnEnter()
-    val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -115,15 +122,32 @@ fun FullScreenPlayerOverlay(
             TopOverlayInfo(sharedViewModel= sharedViewModel,playerViewModel = playerViewModel)
         }
 
-        // Channel carousel at bottom
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(10.dp, 10.dp)
-                .focusTarget()   // enable focus movement inside
-
+                .padding(horizontal = 10.dp, vertical = 16.dp)
+                .focusTarget()
         ) {
+            Text(
+                text = if (languageName == "All Languages")
+                    "You are watching – $categoryName"
+                else
+                    "You are watching – $categoryName • $languageName",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = FontFamily(Font(R.font.figtree_medium)),
+                    fontStyle  = FontStyle.Italic,
+                    fontSize = 18.sp      // bump up the size
+                ),
+                color = Color.White,
+                modifier = Modifier
+                    .background(
+                        color = Color.Black.copy(alpha = 0.3f),  // lighter overlay
+                        shape = RoundedCornerShape(6.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             LazyRow(
                 state = lazyListState,
                 modifier = Modifier
@@ -170,7 +194,7 @@ fun FullScreenPlayerOverlay(
                                     onChannelFocused(item)
                                 }
                             }
-                            .focusRequester(channelFocusRequesters[index])
+                            .focusRequester(channelFocusRequesters.getOrNull(index) ?: FocusRequester())
                             .focusable()
                     )
                 }

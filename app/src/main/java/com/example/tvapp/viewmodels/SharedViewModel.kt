@@ -8,6 +8,8 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import com.android.caastv.R
+import com.example.tvapp.CustomApps.AppItem
 import com.example.tvapp.WTVApp
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
@@ -107,6 +109,8 @@ open class SharedViewModel @Inject constructor(
     private val _panMetroGenreState = MutableStateFlow(PanMetroGenreFilter())
     val panMetroGenreState: StateFlow<PanMetroGenreFilter> = _panMetroGenreState.asStateFlow()
 
+    private val _currentPlaylist = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val currentPlaylist: StateFlow<List<EPGDataItem>> = _currentPlaylist
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
@@ -142,9 +146,9 @@ open class SharedViewModel @Inject constructor(
         }*/
     }
 
-
-
-
+    fun setCurrentPlaylist(list: List<EPGDataItem>) {
+        _currentPlaylist.value = list
+    }
 
     fun clearWishlistPopup() { _wishlistPopupProgram.value = null }
 
@@ -240,6 +244,13 @@ open class SharedViewModel @Inject constructor(
         applyFilters()
     }
 
+    private val _currentPlaylistName = MutableStateFlow("All Channels")
+    val currentPlaylistName: StateFlow<String> = _currentPlaylistName
+
+    fun setCurrentPlaylist(list: List<EPGDataItem>, name: String) {
+        _currentPlaylist.value = list
+        _currentPlaylistName.value = name
+    }
 
     private fun saveFilters() {
         filterPreferences.saveFilter(viewModelScope, _filterState.value)

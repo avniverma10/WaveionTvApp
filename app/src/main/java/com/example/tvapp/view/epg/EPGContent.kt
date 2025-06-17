@@ -103,6 +103,8 @@ fun EPGContent(
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
     val rowStates = epgList.map { rememberLazyListState() }
     val scope = rememberCoroutineScope()
+    val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
+    val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
 
     var hasDoneInitialFocus by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(epgList.isNotEmpty()) {
@@ -151,7 +153,6 @@ fun EPGContent(
     val channelMap = epgList.associateBy { it.channelId }
     val hasInitiallyFocused = remember { mutableStateOf(false) }
     val leftPanelWidth = 180.dp
-
     //hide keyboard forcefully
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
@@ -211,15 +212,12 @@ fun EPGContent(
                                 isLastChannel = isLastChannel,
                                 onPlayClicked = { videoUrl ->
                                     sharedViewModel.updateLastFocusedChannel(channelIndex)
-                                    epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
-                                        sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen) {
-//                                            PreferenceManager.selectedGenreIndex = 0
-//                                            PreferenceManager.selectedChannelIndex = 0
-                                            PreferenceManager.lastEpgDataItem = null
-                                            // popUpTo(Destination.epgScreen) { inclusive = true }
-                                        }
+                                    sharedViewModel.updateSelectedChannel(channelData)
+                                    if (genre != "All Channels" && lang != "All Languages") {
+                                        sharedViewModel.setCurrentPlaylist(epgList, genre)
+                                        sharedViewModel.updateLanguage(lang)
                                     }
+                                    navController.navigate(Destination.panMetroScreen)
                                 },
 //                                hasInitiallyFocused = hasInitiallyFocused,
                                 focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
@@ -269,15 +267,15 @@ fun EPGContent(
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                                            epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
-                                                                sharedViewModel.updateSelectedChannel(channelItem)
-                                                                navController.navigate(Destination.panMetroScreen) {
-                                                                    PreferenceManager.selectedGenreIndex = 0
-                                                                    PreferenceManager.selectedChannelIndex = 0
-                                                                    PreferenceManager.lastEpgDataItem = null
-                                                                    // popUpTo(Destination.epgScreen) { inclusive = true }
+                                                            sharedViewModel.setCurrentPlaylist(epgList)
+                                                            epgList
+                                                                .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
+                                                                ?.let { channelItem ->
+                                                                    sharedViewModel.updateSelectedChannel(channelItem)
+                                                                    navController.navigate(Destination.panMetroScreen) {
+                                                                        PreferenceManager.lastEpgDataItem = null
+                                                                    }
                                                                 }
-                                                            }
                                                             true
                                                         }
                                                         KeyEvent.KEYCODE_DPAD_DOWN -> {

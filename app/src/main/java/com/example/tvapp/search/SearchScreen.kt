@@ -209,6 +209,20 @@ fun SearchScreen(
                             firstThumbnailFocusRequester
                         ) else Modifier,
                         onChannelClick = { url ->
+                            val allChannels = epgData
+                                ?.mapNotNull { it.tv?.channel?.copy(
+                                    logoUrl = it.content?.thumbnailUrl,
+                                    videoUrl = it.content?.videoUrl,
+                                    genreId  = it.content?.genreId.orEmpty()
+                                ) }
+                                .orEmpty()
+                            sharedViewModel.setCurrentPlaylist(
+                                allChannels.mapNotNull { ch ->
+                                    epgData.firstOrNull { it.content?.videoUrl == ch.videoUrl }
+                                },
+                                "All Channels"
+                            )
+                            sharedViewModel.updateLanguage(null)
                             epgData?.find { it.content?.videoUrl == url }?.let { item ->
                                 sharedViewModel.updateSelectedChannel(item)
                                 navController.navigate(Destination.panMetroScreen)

@@ -153,6 +153,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                         channels                 = channelsForCategory,
                         navController            = navController,
                         sharedViewModel          = sharedViewModel,
+                        categoryChannelIds       = category.channels,
                         // ④ Pass down our focusRequester only on the *very first* category
                         firstChannelFocusRequester = if (catIndex == 0) firstChannelFocusRequester else null,
                         isFirstCategory          = (catIndex == 0)
@@ -173,6 +174,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 fun CategorySection(
     title: String,
     channels: List<Channel>,
+    categoryChannelIds: List<String>,
     navController: NavController,
     sharedViewModel: SharedViewModel,
     firstChannelFocusRequester: FocusRequester? = null,
@@ -200,7 +202,7 @@ fun CategorySection(
         Spacer(modifier = Modifier.height(10.dp))
         LazyRow(
             state = rowState,
-            contentPadding       = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // ⑤ Use itemsIndexed so we know when it's the first channel
@@ -213,15 +215,19 @@ fun CategorySection(
                 }
 
                 ChannelBox(
-                    channel  = channel,
-                    modifier = modifier,         // new slot
+                    channel = channel,
+                    modifier = modifier,
                 ) { videoUrl ->
-                    sharedViewModel.wtvEPGList.value
-                        ?.find { it.content?.videoUrl == videoUrl }
-                        ?.let { channelItem ->
-                            sharedViewModel.updateSelectedChannel(channelItem)
-                            navController.navigate(Destination.panMetroScreen)
-                        }
+                    val selectedItem = sharedViewModel.wtvEPGList.value
+                        .firstOrNull { it.content?.videoUrl == videoUrl }
+                        ?: return@ChannelBox
+                    val categoryEpg = sharedViewModel.wtvEPGList.value
+                        .filter { it.channelId in categoryChannelIds }
+                    sharedViewModel.setCurrentPlaylist(categoryEpg)
+                    sharedViewModel.setCurrentPlaylist(categoryEpg, title)
+                    sharedViewModel.updateLanguage(null)
+                    sharedViewModel.updateSelectedChannel(selectedItem)
+                    navController.navigate(Destination.panMetroScreen)
                 }
             }
         }
@@ -240,7 +246,7 @@ fun ChannelBox(
     )
 
     Box(
-        modifier = modifier                 // ← apply before the rest
+        modifier = modifier
             .width(140.dp)
             .graphicsLayer {
                 scaleX = scale

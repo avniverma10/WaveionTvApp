@@ -164,15 +164,19 @@ fun PanmetroGenreScreen(
                             onPlayerScreenIntent = { channelInfo ->
                                 epgList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
                                     ?.let { channelItem ->
+                                        val channelsInThisGenre = genreViewModel.filteredPanMetroChannels.value
+                                        val genreName = availableGenre
+                                            .getOrNull(selectedGenreIndex.value)
+                                            ?.name
+                                            ?: "All"
+                                        sharedViewModel.setCurrentPlaylist(channelsInThisGenre, genreName)
+                                        sharedViewModel.updateLanguage(null)
+                                        sharedViewModel.updateSelectedChannel(channelItem)
                                         navController.navigate(Destination.panMetroScreen) {
-                                            PreferenceManager.selectedGenreIndex = 0
-                                            PreferenceManager.selectedChannelIndex = 0
-                                            PreferenceManager.lastEpgDataItem = null
-//                                            popUpTo(Destination.genreScreen) {
-//                                                inclusive = true
-//                                            }
+                                            popUpTo(Destination.panMetroScreen) { inclusive = true }
                                         }
                                     }
+
                             }
                         )
                     }

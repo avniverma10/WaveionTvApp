@@ -96,6 +96,8 @@ fun ChannelScreen(
     val categoryFocusRequesters = remember(categories) { List(categories.size) { FocusRequester() } }
     val languageFocusRequesters = remember(languages) { List(languages.size) { FocusRequester() } }
     val focusManager = LocalFocusManager.current
+    val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
+    val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
     // Set selected index only if there is data
     // 1) Keep the old effect for updating your indices:
     LaunchedEffect(filterState, categories, languages) {
@@ -210,6 +212,10 @@ fun ChannelScreen(
                                         sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
                                             ?.let { channelItem ->
                                                 sharedViewModel.updateSelectedChannel(channelItem)
+                                                if (genre != "All Channels" && lang != "All Languages") {
+                                                    sharedViewModel.setCurrentPlaylist(filteredContent, genre)
+                                                    sharedViewModel.updateLanguage(lang)
+                                                }
                                                 navController.navigate(Destination.panMetroScreen)
                                             }
                                     },
@@ -226,6 +232,10 @@ fun ChannelScreen(
                                         sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
                                             ?.let { channelItem ->
                                                 sharedViewModel.updateSelectedChannel(channelItem)
+                                                if (genre != "All Channels" && lang != "All Languages") {
+                                                    sharedViewModel.setCurrentPlaylist(filteredContent, genre)
+                                                    sharedViewModel.updateLanguage(lang)
+                                                }
                                                 navController.navigate(Destination.panMetroScreen)
                                             }
                                     },

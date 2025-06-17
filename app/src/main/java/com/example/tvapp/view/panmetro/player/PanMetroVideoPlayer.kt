@@ -88,7 +88,7 @@ fun PanMetroVideoPlayer(
 ) {
 
     val context = LocalContext.current
-    val epgList = playerViewModel.provideAvailableEPG()
+    val playlist by sharedViewModel.currentPlaylist.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -96,11 +96,16 @@ fun PanMetroVideoPlayer(
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
-    val channelRequesters = remember(epgList) {
-        List((epgList.size)) { FocusRequester() }
+    val epgList = if (playlist.isNotEmpty()) {
+        playlist
+    } else {
+        playerViewModel.provideAvailableEPG()
     }
-
-
+    val channelRequesters = remember(epgList.size) {
+        List(epgList.size) { FocusRequester() }
+    }
+    val filter by sharedViewModel.filterState.collectAsState()
+    val language = filter.language ?: "All Languages"
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorCodeState by remember { mutableStateOf(0) }
     var errorMessageState by remember { mutableStateOf("") }
@@ -126,6 +131,7 @@ fun PanMetroVideoPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
+    val categoryName by sharedViewModel.currentPlaylistName.collectAsState()
 
     // State management
     var isOverlayVisible by remember { mutableStateOf(true) }
@@ -254,7 +260,10 @@ fun PanMetroVideoPlayer(
 //    }
 
     BackHandler {
-       navController.popBackStack()
+        sharedViewModel.updateLanguage(null)                         // clear language filter
+        sharedViewModel.updateGenre(null)                            // clear genre filter
+        sharedViewModel.setCurrentPlaylist(emptyList(), "All Channels")
+        navController.popBackStack()
     }
 
 
@@ -449,12 +458,15 @@ fun PanMetroVideoPlayer(
         }
         if (isOverlayVisible && selectedChannelIndex.intValue >=0) {
             FullScreenPlayerOverlay(
-                selectedIndex =  selectedChannelIndex,
-                lazyListState = listState,
-                sharedViewModel= sharedViewModel,
-                playerViewModel = playerViewModel,
+                selectedIndex         = selectedChannelIndex,
+                lazyListState         = listState,
+                sharedViewModel       = sharedViewModel,
+                playerViewModel       = playerViewModel,
+                epgList               = epgList,
+                categoryName          = categoryName,
+                languageName          = language,
                 channelFocusRequesters = channelRequesters,
-                onChannelFocused = { sharedViewModel.updateSelectedChannel(it) }
+                onChannelFocused      = { sharedViewModel.updateSelectedChannel(it) }
             )
         }
     }
