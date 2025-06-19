@@ -52,6 +52,8 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
     val focusRequester = remember { FocusRequester() }
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
+    var backPressCount by remember { mutableStateOf(0) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         // Move focus to the first channel in your EPG content
@@ -62,10 +64,18 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
         }
     }
 
-    val focusManager = LocalFocusManager.current
+
     BackHandler {
-        focusManager.clearFocus(force = true)
-        focusManager.moveFocus(FocusDirection.Left)
+        backPressCount++
+
+        if (backPressCount >= 2) {
+            // Show exit confirmation if pressed back twice
+            showExitDialog = true
+        } else {
+            // First back: just clear focus and move left as before
+            focusManager.clearFocus(force = true)
+            focusManager.moveFocus(FocusDirection.Left)
+        }
     }
 
     Box(
