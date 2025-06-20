@@ -84,7 +84,6 @@ open class SharedViewModel @Inject constructor(
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
 
-
     private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
 
@@ -141,9 +140,9 @@ open class SharedViewModel @Inject constructor(
         }*/
 
         // load banners
-        /*viewModelScope.launch {
+        viewModelScope.launch {
             provideBanners()
-        }*/
+        }
     }
 
     fun setCurrentPlaylist(list: List<EPGDataItem>) {
@@ -174,7 +173,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners("https://api-demo.caastv.com/api/banners").collect { response ->
+        wtvNetworkRepositoryImpl.getBanners(Constants.BASE_URL +"banners").collect { response ->
             when (response) {
                 is WTVListResponse.Success -> _bannerList.value = response.data
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")

@@ -130,43 +130,46 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(screen_bg_color)
+            .background(Color.Black)
     ) {
-
-        LazyColumn(modifier = Modifier.fillMaxSize(). padding(start = 70.dp)) {
-            // ③ Switch to itemsIndexed so we know when it's the first category
-            itemsIndexed(homeCategories) { catIndex, category ->
-                val epgList = epgChannels
-                    ?.filter { it.channelId in category.channels }
-                val channelsForCategory = epgList
-                    ?.mapNotNull { epgItem ->
-                        epgItem.tv?.channel?.copy(
-                            logoUrl  = epgItem.content?.thumbnailUrl,
-                            videoUrl = epgItem.content?.videoUrl,
-                            genreId  = epgItem.content?.genreId ?: "Unknown"
+        ExpandableNavigationMenu(
+            modifier        = Modifier.align(Alignment.CenterStart),
+            navController   = navController,
+            sharedViewModel = sharedViewModel,
+            onNavMenuIntent = { _, _ -> }
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            HeroCarousel(
+                bannerList = banners,
+                navController = navController
+            )
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(start = 70.dp)) {
+                // ③ Switch to itemsIndexed so we know when it's the first category
+                itemsIndexed(homeCategories) { categoryIndex, category ->
+                    val epgList = epgChannels
+                        ?.filter { it.channelId in category.channels }
+                    val channelsForCategory = epgList
+                        ?.mapNotNull { epgItem ->
+                            epgItem.tv?.channel?.copy(
+                                logoUrl = epgItem.content?.thumbnailUrl,
+                                videoUrl = epgItem.content?.videoUrl,
+                                genreId = epgItem.content?.genreId ?: "Unknown"
+                            )
+                        } ?: emptyList()
+                    if (channelsForCategory.isNotEmpty()) {
+                        CategorySection(
+                            title = category.name,
+                            channels = channelsForCategory,
+                            navController = navController,
+                            sharedViewModel = sharedViewModel,
+                            categoryChannelIds = category.channels,
+                            firstChannelFocusRequester = if (categoryIndex == 0) firstChannelFocusRequester else null,
+                            isFirstCategory = (categoryIndex == 0)
                         )
-                    } ?: emptyList()
-
-                if (channelsForCategory.isNotEmpty()) {
-                    CategorySection(
-                        title                    = category.name,
-                        channels                 = channelsForCategory,
-                        navController            = navController,
-                        sharedViewModel          = sharedViewModel,
-                        categoryChannelIds       = category.channels,
-                        // ④ Pass down our focusRequester only on the *very first* category
-                        firstChannelFocusRequester = if (catIndex == 0) firstChannelFocusRequester else null,
-                        isFirstCategory          = (catIndex == 0)
-                    )
+                    }
                 }
             }
         }
-        ExpandableNavigationMenu(
-            navController      = navController,
-            sharedViewModel    = sharedViewModel,
-            onNavMenuIntent    = { _, _ -> },
-            modifier           = Modifier.align(Alignment.CenterStart)
-        )
     }
 }
 @OptIn(ExperimentalFoundationApi::class)
@@ -186,7 +189,7 @@ fun CategorySection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = screen_bg_color)
+            .background(Color.Black)
             .padding(vertical = 10.dp)
     ) {
         Text(
@@ -303,7 +306,8 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
+            .padding(start = 70.dp)
+            .height(200.dp)
     ) {
         // Load the banner image using AsyncImage.
         AsyncImage(

@@ -70,7 +70,6 @@ fun ChannelFingerprintOverlay(
                 val randY = (48..(screenHeight - 48)).random()
                 currentOffset = Offset(randX.toFloat(), randY.toFloat())
             } else {
-                 context.showToastS("posXPercent${screenWidth * posX} and posYPercent: ${screenHeight * posY}")
                 currentOffset = Offset(
                     x = screenWidth * posX,
                     y = screenHeight * posY

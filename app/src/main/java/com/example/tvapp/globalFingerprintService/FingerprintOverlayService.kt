@@ -342,7 +342,7 @@ class FingerprintOverlayService : Service() {
                 }
             }
 
-            mainHandler.post(fingerprintRunnable)
+            mainHandler.postDelayed(fingerprintRunnable,1000)
             scheduledRunnables.add(fingerprintRunnable)
         }
     }

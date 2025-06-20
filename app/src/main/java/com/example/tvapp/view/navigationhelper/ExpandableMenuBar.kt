@@ -43,7 +43,7 @@ fun ExpandableNavigationMenu(
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all","movies") }
+    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile","home","search","all","movies","app") }
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -58,6 +58,7 @@ fun ExpandableNavigationMenu(
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
             Destination.profile -> tabs?.indexOfFirst { it.name == "profile" } ?: -1
+            Destination.appsScreen -> tabs?.indexOfFirst { it.name == "app" } ?: -1
             Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1
             Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
             Destination.demoHome -> tabs?.indexOfFirst { it.name == "movies" } ?: -1
@@ -175,7 +176,7 @@ fun ExpandableNavigationMenu(
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             otherTabs.forEachIndexed { index, tab ->
                 val isFirstItem = index == 0
@@ -194,6 +195,7 @@ fun ExpandableNavigationMenu(
                         selectedIndex = index + 1
                         expanded = false
                         when (tab.name) {
+                            "app" -> navController.navigate(Destination.appsScreen)
                             "all" -> navController.navigate(Destination.channel)
                             "home" -> navController.navigate(Destination.homeScreen)
                             "search" -> navController.navigate(Destination.searchScreen)

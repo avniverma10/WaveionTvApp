@@ -17,5 +17,6 @@ object Destination {
     const val demoHome    = "demoHome"
     const val demoplayer      = "demoplayer"
     const val profile      = "profile"
+    const val appsScreen = "apps_screen"
 
 }

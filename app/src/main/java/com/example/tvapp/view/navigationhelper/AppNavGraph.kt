@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.tvapp.AppsScreen
 import com.example.tvapp.NotificationBanner
 import com.example.tvapp.otp.OtpScreen1
 import com.example.tvapp.search.SearchScreen
@@ -148,7 +149,6 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
 
             val filteredEPGList = sharedViewModel.filteredEPGList.collectAsState().value
 
-            // ✅ FIX GOES HERE
             val categoryEPGItems = if (categoryIds.isBlank()) {
                 filteredEPGList // Show all channels if no category filter applied
             } else {
@@ -173,6 +173,9 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.channel) {
             ChannelScreen(navController = navController, sharedViewModel = sharedViewModel)
+        }
+        composable(Destination.appsScreen) {
+            AppsScreen(navController, sharedViewModel)
         }
     }
 
