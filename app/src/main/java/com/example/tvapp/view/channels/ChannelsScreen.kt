@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -87,7 +88,18 @@ fun ChannelScreen(
     val filterState by sharedViewModel.filterState.collectAsState()
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
-    val firstChannelFocusRequester = remember { FocusRequester() }
+    val channelList = filteredContent.mapNotNull { epgItem ->
+        epgItem.tv?.channel?.copy(
+            videoUrl   = epgItem.content?.videoUrl,
+            logoUrl    = epgItem.content?.thumbnailUrl,
+            genreId    = epgItem.content?.genreId ?: "",
+            channelNo  = epgItem.content?.channelNo
+        )
+    }
+    val channelFocusRequesters = remember(channelList.size) {
+        List(channelList.size) { FocusRequester() }
+    }
+
     val isBannerVisible = showBanner && bannerList.isNotEmpty()
     var backPressCount by remember { mutableStateOf(0) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -116,20 +128,14 @@ fun ChannelScreen(
             languageSelectedIndex.value = -1
         }
     }
-
-    // 2) A separate “one-shot” effect for that initial focus move:
-    var hasDoneInitialFocus by remember { mutableStateOf(false) }
-    LaunchedEffect(filteredContent.isNotEmpty()) {
-        if (filteredContent.isNotEmpty() && !hasDoneInitialFocus) {
-            //gridState.scrollToItem(0)
-            firstChannelFocusRequester?.let { requester ->
-                try {
-                    requester.requestFocus()
-                } catch (e: IllegalStateException) {
-                    loge("FocusError", "FocusRequester not initialized ${e.message}")
-                }
-            }
-            hasDoneInitialFocus = true
+    var hasRestoredFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(channelList) {
+        if (channelList.isNotEmpty() && !hasRestoredFocus) {
+            // clamp the saved index into bounds
+            val idx = sharedViewModel.ChannelScreenlastSelectedChannelIndex.value
+                .coerceIn(0, channelList.lastIndex)
+            channelFocusRequesters[idx].requestFocus()
+            hasRestoredFocus = true
         }
     }
 //    BackHandler {
@@ -174,21 +180,12 @@ fun ChannelScreen(
                     LanguageMenu(
                         sharedViewModel = sharedViewModel,
                         selectedIndex = languageSelectedIndex,
-                        firstChannelFocusRequester = firstChannelFocusRequester,
+                        firstChannelFocusRequester  = channelFocusRequesters.firstOrNull() ?: FocusRequester(),
                         languageFocusRequesters = languageFocusRequesters,
                         categoryFocusRequesters = categoryFocusRequesters,
                         categorySelectedIndex = categorySelectedIndex
                     )
                 }
-                // Process channel list
-                val channelList = filteredContent.mapNotNull { epgItem ->
-                    epgItem.tv?.channel?.copy(
-                        videoUrl = epgItem.content?.videoUrl,
-                        logoUrl = epgItem.content?.thumbnailUrl,
-                        genreId = epgItem.content?.genreId ?: ""
-                    )
-                }
-
                 // Render channel list only when non-empty; otherwise, show a loading placeholder.
                 if (channelList.isNotEmpty()) {
                     LazyVerticalGrid(
@@ -205,10 +202,11 @@ fun ChannelScreen(
                                 ChannelList(
                                     sharedViewModel = sharedViewModel,
                                     channel = channel,
-                                    focusRequester = firstChannelFocusRequester,
+                                    focusRequester = channelFocusRequesters[index],
                                     isFirstChannel = isFirstChannel,
                                     isLastChannel = isLastChannel,
                                     onClick = { clickedChannel ->
+                                        sharedViewModel.updateChannelScreenLastSelectedChannelIndex(index)
                                         sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
                                             ?.let { channelItem ->
                                                 sharedViewModel.updateSelectedChannel(channelItem)
@@ -228,7 +226,9 @@ fun ChannelScreen(
                                 ChannelList(
                                     sharedViewModel = sharedViewModel,
                                     channel = channel,
+                                    focusRequester = channelFocusRequesters[index],
                                     onClick = { clickedChannel ->
+                                        sharedViewModel.updateChannelScreenLastSelectedChannelIndex(index)
                                         sharedViewModel.wtvEPGList.value?.find { it.content?.videoUrl == channel.videoUrl }
                                             ?.let { channelItem ->
                                                 sharedViewModel.updateSelectedChannel(channelItem)
@@ -355,16 +355,32 @@ fun ChannelList(
                     shape = RoundedCornerShape(8.dp)
                 )
         ) {
-            AsyncImage(
-                model = channel.logoUrl,
-                contentDescription = channel.displayName,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(10.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
+            Box {
+                AsyncImage(
+                    model = channel.logoUrl,
+                    contentDescription = channel.displayName,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+                channel.channelNo?.let { no ->
+                    Text(
+                        text = no.toString(),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(6.dp)
+                            .background(
+                                color = Color.Black.copy(alpha = 0.8f),
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                    )
+                }
+            }
         }
     }
 }

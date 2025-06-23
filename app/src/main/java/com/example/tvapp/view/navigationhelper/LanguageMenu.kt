@@ -96,6 +96,8 @@ fun LanguageMenu(
                     isFocused.value = it.isFocused
                     if (it.isFocused) {
                         selectedIndex.value = index
+                        sharedViewModel.updateLastSelectedChannelIndex(-1)
+                        sharedViewModel.updateLastFocusedChannel(-1)
                         val languageName = item.name ?: "Unknown"
                         sharedViewModel.updateLanguage(languageName)
                     }

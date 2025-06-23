@@ -111,10 +111,32 @@ open class SharedViewModel @Inject constructor(
     private val _currentPlaylist = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val currentPlaylist: StateFlow<List<EPGDataItem>> = _currentPlaylist
 
+    private val _lastSelectedChannelIndex = MutableStateFlow<Int>(-1)
+    val lastSelectedChannelIndex: StateFlow<Int> = _lastSelectedChannelIndex
+
+    private val _genreScreenLastGenreIndex = MutableStateFlow(0)
+    val genreScreenLastGenreIndex: StateFlow<Int> = _genreScreenLastGenreIndex
+
+    private val _genreScreenLastChannelIndex = MutableStateFlow(0)
+    val genreScreenLastChannelIndex: StateFlow<Int> = _genreScreenLastChannelIndex
+
+    private val _lastSearchSelectedIndex = MutableStateFlow(0)
+    val lastSearchSelectedIndex: StateFlow<Int> = _lastSearchSelectedIndex
+
+    private val _lastHomeCategory = MutableStateFlow(0)
+    val lastHomeCategory: StateFlow<Int> = _lastHomeCategory
+
+    private val _lastHomeChannel = MutableStateFlow(0)
+    val lastHomeChannel: StateFlow<Int> = _lastHomeChannel
+
+    var ChannelScreenlastSelectedChannelIndex = mutableStateOf(0)
+        private set
+
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
+
 
     init {
         //provideGlobalFingerprintInfo()
@@ -128,7 +150,6 @@ open class SharedViewModel @Inject constructor(
             _filterState.value = saved
             applyFilters()
         }
-
         // observe EPG changes continuously
         /*viewModelScope.launch {
            // observeEPGChanges(application).collect()
@@ -176,7 +197,7 @@ open class SharedViewModel @Inject constructor(
         wtvNetworkRepositoryImpl.getBanners(Constants.BASE_URL +"banners").collect { response ->
             when (response) {
                 is WTVListResponse.Success -> _bannerList.value = response.data
-                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")
+                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message} ")
             }
         }
     }
@@ -292,7 +313,8 @@ open class SharedViewModel @Inject constructor(
                         displayName = title,
                         logoUrl     = item.content.thumbnailUrl,
                         videoUrl    = item.content.videoUrl,
-                        genreId     = item.content.genreId ?: "Unknown"
+                        genreId     = item.content.genreId ?: "Unknown",
+                        channelNo   = item.content.channelNo
                     )
                 }
                 _searchResults.value = all
@@ -309,7 +331,8 @@ open class SharedViewModel @Inject constructor(
                     displayName = progTitle,
                     logoUrl     = item.content?.thumbnailUrl,
                     videoUrl    = item.content?.videoUrl,
-                    genreId     = item.content?.genreId ?: "Unknown"
+                    genreId     = item.content?.genreId ?: "Unknown",
+                    channelNo   = item.content?.channelNo
                 )
             }
             _searchResults.value = filtered
@@ -341,9 +364,8 @@ open class SharedViewModel @Inject constructor(
         prefs.selectedGenreIndex = selectedGenreIndex
         prefs.selectedChannelIndex = selectedChannelIndex
     }
-   // Persist into SharedPreferences on minimize
     fun persistToPlayerPrefs(prefs: PreferenceManager,selectedChannel:EPGDataItem) {
-       prefs.lastEpgDataItem = selectedChannel
+        prefs.lastEpgDataItem = selectedChannel
     }
 
 
@@ -521,6 +543,31 @@ open class SharedViewModel @Inject constructor(
         playerEventSource = null
         scrollEventSource?.cancel()
         scrollEventSource = null
+    }
+
+    fun updateLastSearchSelectedIndex(idx: Int) {
+        _lastSearchSelectedIndex.value = idx
+    }
+
+    fun updateLastSelectedChannelIndex(index: Int) {
+        _lastSelectedChannelIndex.value = index
+    }
+
+    fun updateGenreScreenLastGenreIndex(index: Int) {
+        _genreScreenLastGenreIndex.value = index
+    }
+
+    fun updateGenreScreenLastChannelIndex(index: Int) {
+        _genreScreenLastChannelIndex.value = index
+    }
+
+    fun updateChannelScreenLastSelectedChannelIndex(index: Int) {
+        ChannelScreenlastSelectedChannelIndex.value = index
+    }
+
+    fun updateLastHomeSelection(categoryIndex: Int, channelIndex: Int) {
+        _lastHomeCategory.value = categoryIndex
+        _lastHomeChannel.value = channelIndex
     }
 
     override fun onCleared() {

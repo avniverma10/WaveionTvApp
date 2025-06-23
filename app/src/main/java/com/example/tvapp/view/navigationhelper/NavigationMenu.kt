@@ -112,6 +112,12 @@ fun CategoryMenu(
                     }
                     .focusRequester(categoryFocusRequesters[index])
                     .focusable()
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            sharedViewModel.updateLastSelectedChannelIndex(-1)
+                            sharedViewModel.updateLastFocusedChannel(-1)
+                        }
+                    }
                     .onPreviewKeyEvent { keyEvent ->
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN

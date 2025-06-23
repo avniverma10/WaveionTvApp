@@ -81,5 +81,6 @@ data class Channel(
     val logoUrl: String? = null,
     val videoUrl: String? = null,
     val genreId: String, //  genreId for filtering
+    val channelNo: Int? = null,
     val availableProgramme: List<Programme>?= null
 )

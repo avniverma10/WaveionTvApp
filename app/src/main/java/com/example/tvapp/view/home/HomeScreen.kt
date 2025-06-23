@@ -79,6 +79,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var backPressCount by remember { mutableStateOf(0) }
     val focusManager = LocalFocusManager.current
+    val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
+    val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
 
     // 1) remember a state for your column
    // val columnState = rememberLazyListState()
@@ -159,6 +161,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                     if (channelsForCategory.isNotEmpty()) {
                         CategorySection(
                             title = category.name,
+                            categoryIndex = categoryIndex,
                             channels = channelsForCategory,
                             navController = navController,
                             sharedViewModel = sharedViewModel,
@@ -177,14 +180,26 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 fun CategorySection(
     title: String,
     channels: List<Channel>,
+    categoryIndex: Int,
     categoryChannelIds: List<String>,
     navController: NavController,
     sharedViewModel: SharedViewModel,
     firstChannelFocusRequester: FocusRequester? = null,
     isFirstCategory: Boolean = false
 ) {
+    val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
+    val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
     val rowState = rememberLazyListState()
-    // 1) Create a BringIntoViewRequester
+    val channelFocusRequesters = remember(channels) {
+        channels.map { FocusRequester() }
+    }
+    LaunchedEffect(lastCat, channels) {
+        if (lastCat == categoryIndex && channels.isNotEmpty()) {
+            val idx = lastChan.coerceIn(channels.indices)
+            rowState.animateScrollToItem(idx)
+            channelFocusRequesters[idx].requestFocus()
+        }
+    }
     val bringRequester = remember { BringIntoViewRequester() }
     Column(
         modifier = Modifier
@@ -211,16 +226,18 @@ fun CategorySection(
             // ⑤ Use itemsIndexed so we know when it's the first channel
             itemsIndexed(channels) { idx, channel ->
                 // only the first item of the first category gets our focusRequester
-                val modifier = if (isFirstCategory && idx == 0 && firstChannelFocusRequester != null) {
+                val baseModifier = if (isFirstCategory && idx == 0 && firstChannelFocusRequester != null) {
                     Modifier.focusRequester(firstChannelFocusRequester)
                 } else {
                     Modifier
                 }
-
+                val combinedModifier = baseModifier
+                    .focusRequester(channelFocusRequesters[idx])
                 ChannelBox(
                     channel = channel,
-                    modifier = modifier,
+                    modifier = combinedModifier,
                 ) { videoUrl ->
+                    sharedViewModel.updateLastHomeSelection(categoryIndex, idx)
                     val selectedItem = sharedViewModel.wtvEPGList.value
                         .firstOrNull { it.content?.videoUrl == videoUrl }
                         ?: return@ChannelBox

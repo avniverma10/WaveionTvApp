@@ -1,8 +1,6 @@
 package com.example.tvapp.search
 
 import android.app.Activity
-import android.os.Process
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,40 +8,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
@@ -51,18 +27,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.model.data.epgdata.Channel
-import com.example.tvapp.ui.theme.bg_card_color
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.ui.theme.screen_bg_color
+import com.example.tvapp.ui.theme.*
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
@@ -74,59 +46,60 @@ fun SearchScreen(
     navController: NavController,
     sharedViewModel: SharedViewModel
 ) {
-    val searchFieldFocusRequester = remember { FocusRequester() }
-    val firstThumbnailFocusRequester = remember { FocusRequester() }
-
     var searchText by remember { mutableStateOf("") }
-    val epgData by sharedViewModel.wtvEPGList.collectAsState()
+    val epgData       by sharedViewModel.wtvEPGList.collectAsState()
     val searchResults by sharedViewModel.searchResults.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val focusManager = LocalFocusManager.current
-    var backPressCount by remember { mutableStateOf(0) }
-    var showExitDialog by remember { mutableStateOf(false) }
+    val focusManager  = LocalFocusManager.current
+    val context       = LocalContext.current
 
-
+    var backCount by remember { mutableStateOf(0) }
+    var showExit by remember { mutableStateOf(false) }
     BackHandler {
-        backPressCount++
-
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
+        backCount++
+        if (backCount >= 2) showExit = true
+        else {
             focusManager.clearFocus(force = true)
             focusManager.moveFocus(FocusDirection.Left)
         }
     }
-    LaunchedEffect(Unit) {
-        backPressCount = 0
-        val listToFocus = if (searchText.isNotEmpty()) searchResults else epgData
-        if (listToFocus?.isNotEmpty() == true) {
-            firstThumbnailFocusRequester.requestFocus()
+    val displayed = if (searchText.isEmpty()) {
+        epgData.mapNotNull { item ->
+            item.tv?.channel?.copy(
+                logoUrl   = item.content?.thumbnailUrl,
+                videoUrl  = item.content?.videoUrl,
+                genreId   = item.content?.genreId ?: "Unknown",
+                channelNo = item.content?.channelNo
+            )
         }
+    } else {
+        searchResults
+    }
+    val lastIdx by sharedViewModel.lastSearchSelectedIndex.collectAsState()
+    var isFirst by rememberSaveable { mutableStateOf(true) }
+    val requesters = remember(displayed) {
+        displayed.map { FocusRequester() }
     }
 
     Box(
-        modifier = Modifier
+        Modifier
             .fillMaxSize()
             .background(Color(0xFF14161A))
     ) {
-        // Main content inset by collapsed menu width (70.dp)
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .background(screen_bg_color)
-                .padding(start = 70.dp)  // <-- inset so it never shifts
-                .padding(16.dp)         // your existing padding
+                .padding(start = 70.dp)
+                .padding(16.dp)
         ) {
-            // Search Box
+            // — Search field —
             OutlinedTextField(
                 value = searchText,
-                onValueChange = { newText ->
-                    searchText = newText
+                onValueChange = { txt ->
+                    searchText = txt
                     coroutineScope.launch {
-                        sharedViewModel.searchChannels(newText)
+                        sharedViewModel.searchChannels(txt)
                     }
                 },
                 modifier = Modifier
@@ -134,31 +107,18 @@ fun SearchScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFF2A2D32))
                     .padding(horizontal = 8.dp)
-                    .focusRequester(searchFieldFocusRequester)
-                    .onKeyEvent { event ->
-                        if (event.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
-                            event.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
+                    .onKeyEvent {
+                        if (it.nativeKeyEvent.keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN &&
+                            it.nativeKeyEvent.action == android.view.KeyEvent.ACTION_DOWN
                         ) {
-                            firstThumbnailFocusRequester.requestFocus()
+                            requesters.firstOrNull()?.requestFocus()
                             true
                         } else false
                     },
-                placeholder = {
-                    Text(
-                        "Movies, TV Shows and more",
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                },
+                placeholder = { Text("Movies, TV Shows and more", color = Color.Gray, fontSize = 16.sp) },
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = "Search Icon",
-                        tint = Color.Gray
-                    )
-                },
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = Color.Gray) },
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -174,92 +134,92 @@ fun SearchScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(Modifier.height(18.dp))
 
             Text(
                 text = if (searchText.isEmpty()) "Trending in India" else "Search Results",
                 style = TextStyle(
-                    fontSize = 18.sp,
-                    lineHeight = 28.01.sp,
-                    fontFamily = FontFamily(Font(com.android.caastv.R.font.figtree_light)),
+                    fontSize   = 18.sp,
+                    fontFamily = FontFamily(Font(R.font.figtree_light)),
                     fontWeight = FontWeight(600),
-                    color = Color.White
+                    color      = Color.White
                 ),
                 modifier = Modifier.padding(start = 30.dp)
             )
 
             LazyVerticalGrid(
-                columns = GridCells.Fixed(5),
+                columns        = GridCells.Fixed(5),
                 contentPadding = PaddingValues(16.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier       = Modifier.fillMaxSize()
             ) {
-                val channelsForEmpty = epgData?.mapNotNull { epgItem ->
-                    epgItem.tv?.channel?.copy(
-                        logoUrl = epgItem.content?.thumbnailUrl,
-                        videoUrl = epgItem.content?.videoUrl,
-                        genreId = epgItem.content?.genreId ?: "Unknown"
-                    )
-                }
-                val displayedChannels =
-                    if (searchText.isEmpty()) channelsForEmpty else searchResults
-                itemsIndexed(displayedChannels ?: emptyList()) { index, channel ->
-                    ChannelThumbnail(
-                        channel = channel,
-                        modifier = if (index == 0) Modifier.focusRequester(
-                            firstThumbnailFocusRequester
-                        ) else Modifier,
-                        onChannelClick = { url ->
-                            val allChannels = epgData
-                                ?.mapNotNull { it.tv?.channel?.copy(
-                                    logoUrl = it.content?.thumbnailUrl,
-                                    videoUrl = it.content?.videoUrl,
-                                    genreId  = it.content?.genreId.orEmpty()
-                                ) }
-                                .orEmpty()
-                            sharedViewModel.setCurrentPlaylist(
-                                allChannels.mapNotNull { ch ->
-                                    epgData.firstOrNull { it.content?.videoUrl == ch.videoUrl }
-                                },
-                                "All Channels"
-                            )
-                            sharedViewModel.updateLanguage(null)
-                            epgData?.find { it.content?.videoUrl == url }?.let { item ->
-                                sharedViewModel.updateSelectedChannel(item)
-                                navController.navigate(Destination.panMetroScreen)
+                itemsIndexed(displayed) { idx, channel ->
+                    val shouldFocus = remember(isFirst, displayed) {
+                        // on first compose → idx==0, else idx==lastIdx
+                        if (isFirst) idx == 0 else idx == lastIdx
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .focusRequester(requesters.getOrNull(idx) ?: FocusRequester())
+                            .padding(8.dp)
+                    ) {
+                        // immediately request when this box is in composition
+                        if (shouldFocus) {
+                            LaunchedEffect(Unit) {
+                                requesters[idx].requestFocus()
+                                isFirst = false
                             }
                         }
-                    )
+
+                        ChannelThumbnail(
+                            channel = channel,
+                            onChannelClick = { url ->
+                                sharedViewModel.updateLastSearchSelectedIndex(idx)
+                                // your existing navigation logic:
+                                val allChannels = epgData.mapNotNull { item ->
+                                    item.tv?.channel?.copy(
+                                        logoUrl   = item.content?.thumbnailUrl,
+                                        videoUrl  = item.content?.videoUrl,
+                                        genreId   = item.content?.genreId.orEmpty(),
+                                        channelNo = item.content?.channelNo
+                                    )
+                                }
+                                sharedViewModel.setCurrentPlaylist(
+                                    allChannels.mapNotNull { ch ->
+                                        epgData.firstOrNull { it.content?.videoUrl == ch.videoUrl }
+                                    },
+                                    "All Channels"
+                                )
+                                sharedViewModel.updateLanguage(null)
+                                epgData.find { it.content?.videoUrl == url }?.let {
+                                    sharedViewModel.updateSelectedChannel(it)
+                                    navController.navigate(Destination.panMetroScreen)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
 
-        // Overlay navigation menu:
+        // — side menu & exit dialog —
         ExpandableNavigationMenu(
-            navController = navController,
+            navController   = navController,
             sharedViewModel = sharedViewModel,
-            onNavMenuIntent = { tabInfo, selectedIndex ->
-                Log.d("SEARCH", "Selected Tab: ${tabInfo.displayName}, Index: $selectedIndex")
-            },
-            modifier = Modifier.align(Alignment.CenterStart)
+            onNavMenuIntent = { _, _ -> },
+            modifier        = Modifier.align(Alignment.CenterStart)
         )
-
-        // Exit confirmation dialog
-        if (showExitDialog) {
+        if (showExit) {
             CommonDialog(
-                showDialog = true,
-                title = "Exit App",
-                borderColor = Color.Transparent,
-                painter = painterResource(id = R.drawable.exit_icon),
-                message = "Are you sure you want to exit the app?",
+                showDialog        = true,
+                title             = "Exit App",
+                painter           = painterResource(id = R.drawable.exit_icon),
+                message           = "Are you sure you want to exit?",
                 confirmButtonText = "Yes",
-                onConfirm = {
-                    (context as? Activity)?.finishAffinity()
-//                    Process.killProcess(Process.myPid())
-                },
+                onConfirm         = { (context as? Activity)?.finishAffinity() },
                 dismissButtonText = "No",
-                onDismiss = { showExitDialog = false }
+                onDismiss         = { showExit = false }
             )
-
         }
     }
 }
@@ -267,16 +227,13 @@ fun SearchScreen(
 @Composable
 fun ChannelThumbnail(
     channel: Channel,
-    onChannelClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onChannelClick: (String) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
     Box(
-        modifier = modifier
-            .padding(8.dp)
-            .fillMaxSize()
+        Modifier
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)
             .background(color = bg_card_color, shape = RoundedCornerShape(8.dp))
@@ -286,16 +243,33 @@ fun ChannelThumbnail(
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { channel.videoUrl?.let(onChannelClick) }
+            .focusable(interactionSource = interactionSource)
     ) {
-        AsyncImage(
-            model = channel.logoUrl,
-            contentDescription = channel.displayName,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(10.dp)
-                .clip(RoundedCornerShape(8.dp))
-        )
+        Box {
+            AsyncImage(
+                model = channel.logoUrl,
+                contentDescription = channel.displayName,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+            channel.channelNo?.let { no ->
+                Text(
+                    text = no.toString(),
+                    color = Color.White, // or Black if that’s more visible
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.8f),    // 50% black
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                )
+            }
+        }
     }
 }

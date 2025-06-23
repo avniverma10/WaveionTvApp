@@ -75,6 +75,8 @@ fun PanmetroGenreScreen(
         selectedChannelIndex.value = channelIndex
         sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
     }
+    val lastGenreIndex by sharedViewModel.genreScreenLastGenreIndex.collectAsState()
+    val lastChannelIndex by sharedViewModel.genreScreenLastChannelIndex.collectAsState()
 
 
     BackHandler {
@@ -86,15 +88,15 @@ fun PanmetroGenreScreen(
     LaunchedEffect(Unit) {
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
-        genreViewModel.filterPanMetroChannelsByGenre()
-
+        val genreName = availableGenre.getOrNull(lastGenreIndex)?.name ?: "All"
+        genreViewModel.filterPanMetroChannelsByGenre(genreName)
     }
      LaunchedEffect(filteredChannels) {
               if (filteredChannels.isNotEmpty()) {
-                       // If there is at least one channel, move focus to channel list
-                       channelToGenreFocus.value = false
-                      selectedChannelIndex.value = 0
-                      channelListFocusRequester.requestFocus()
+                  channelToGenreFocus.value = false
+                  selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
+                  selectedChannelIndex.value = lastChannelIndex.coerceAtLeast(0)
+                  channelListFocusRequester.requestFocus()
                   } else {
                        // If empty, keep focus on the genre list
                        channelToGenreFocus.value = true
@@ -128,6 +130,7 @@ fun PanmetroGenreScreen(
                         // Left: Categories
                         GenreListMenu(
                             genres = availableGenre,
+                            sharedViewModel = sharedViewModel,
                             genreSelectedIndex = selectedGenreIndex,
                             channelToGenreFocus = channelToGenreFocus,
                             focusRequesters = genreFocusRequesters,

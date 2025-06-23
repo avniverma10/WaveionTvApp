@@ -52,11 +52,13 @@ import com.android.caastv.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 fun GenreListMenu(
+    sharedViewModel : SharedViewModel,
     genres: List<WTVGenre>,
     genreSelectedIndex: MutableState<Int>,
     channelToGenreFocus: MutableState<Boolean>,
@@ -73,8 +75,9 @@ fun GenreListMenu(
     val bottomArrowHighlighted by remember {
         mutableStateOf(false)
     }
-    LaunchedEffect(genreSelectedIndex) {
+    LaunchedEffect(genreSelectedIndex.value) {
         focusedIndex = if(genreSelectedIndex.value >0) genreSelectedIndex.value else 0
+        listState.animateScrollToItem(focusedIndex)
         focusRequesters.getOrNull(genreSelectedIndex.value)?.let { requester ->
             try {
                 requester.requestFocus()
@@ -114,59 +117,68 @@ fun GenreListMenu(
                 .padding(6.dp)
         ) {
             itemsIndexed(genres) { index, genre ->
-                NewCategoryMenuItem(
-                    categoryName = genre.name ?: "",
-                    isFocused = (index == focusedIndex),
-                    channelToGenreFocus= channelToGenreFocus,
-                    onSelectedIndex = (index == genreSelectedIndex.value),
-                    focusRequester = focusRequesters[index],
-                    onFocus = { onCategoryForward(index, genre) },
-                    onKeyEvent = { keyEvent ->
-                        channelToGenreFocus.value = false
-                        if (keyEvent.type == KeyEventType.KeyDown) {
-                            when (keyEvent.nativeKeyEvent.keyCode) {
-                                KeyEvent.KEYCODE_DPAD_UP -> {
-                                    // Only move up if not already at the first item.
-                                    if (focusedIndex > 0) {
-                                        focusedIndex--
-                                        // Scroll if the new focused item is not visible.
-                                        val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                        if (focusedIndex !in visibleIndices) {
-                                            coroutineScope.launch {
-                                                listState.animateScrollToItem(focusedIndex)
+           NewCategoryMenuItem(
+                        categoryName = genre.name ?: "",
+                        isFocused = (index == focusedIndex),
+                        channelToGenreFocus = channelToGenreFocus,
+                        onSelectedIndex = (index == genreSelectedIndex.value),
+                        focusRequester = focusRequesters[index],
+                        onFocus = { onCategoryForward(index, genre) },
+                        onKeyEvent = { keyEvent ->
+                            channelToGenreFocus.value = false
+                            if (keyEvent.type == KeyEventType.KeyDown) {
+                                when (keyEvent.nativeKeyEvent.keyCode) {
+                                    KeyEvent.KEYCODE_DPAD_UP -> {
+                                        // Only move up if not already at the first item.
+                                        if (focusedIndex > 0) {
+                                            focusedIndex--
+                                            // Scroll if the new focused item is not visible.
+                                            val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                            if (focusedIndex !in visibleIndices) {
+                                                coroutineScope.launch {
+                                                    listState.animateScrollToItem(focusedIndex)
+                                                }
                                             }
                                         }
+                                        true
                                     }
-                                    true
-                                }
-                                KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    // Only move down if not at the last item.
-                                    if (focusedIndex < genres.size - 1) {
-                                        focusedIndex++
-                                        val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                        if (focusedIndex !in visibleIndices) {
-                                            coroutineScope.launch {
-                                                listState.animateScrollToItem(focusedIndex)
-                                            }
-                                        }
-                                    }
-                                    true
-                                }
-                                KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                    true
-                                }
-                                KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    genreSelectedIndex.value = focusedIndex
-                                    genres.getOrNull(genreSelectedIndex.value)?.let { onCategoryForward(genreSelectedIndex.value, it) }
-                                    true
-                                }
 
-                                else -> false
-                            }
-                        } else false
-                    }
-                )
-            }
+                                    KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                        // Only move down if not at the last item.
+                                        if (focusedIndex < genres.size - 1) {
+                                            focusedIndex++
+                                            val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                            if (focusedIndex !in visibleIndices) {
+                                                coroutineScope.launch {
+                                                    listState.animateScrollToItem(focusedIndex)
+                                                }
+                                            }
+                                        }
+                                        true
+                                    }
+                                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                        true
+                                    }
+                                    KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                        genreSelectedIndex.value = focusedIndex
+                                        sharedViewModel.updateGenreScreenLastGenreIndex(focusedIndex)
+                                        sharedViewModel.updateGenreScreenLastChannelIndex(0)
+                                        genres.getOrNull(genreSelectedIndex.value)?.let {
+                                            onCategoryForward(
+                                                genreSelectedIndex.value,
+                                                it
+                                            )
+                                        }
+                                        true
+                                    }
+
+                                    else -> false
+                                }
+                            } else false
+                        }
+                    )
+                }
+
         }
         // Bottom arrow row.
         Row(

@@ -105,13 +105,22 @@ fun EPGContent(
     val scope = rememberCoroutineScope()
     val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
-
+    val channelFocusRequesters = remember(epgList) {
+        epgList.mapIndexed { idx, _ ->
+            if (idx == 0) firstChannelFocusRequester else FocusRequester()
+        }
+    }
+    val lastIndex by sharedViewModel.lastSelectedChannelIndex.collectAsState()
+    var isFirstComposition by rememberSaveable { mutableStateOf(true) }
     var hasDoneInitialFocus by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(epgList.isNotEmpty()) {
-        if (epgList.isNotEmpty() && !hasDoneInitialFocus) {
-            delay(100)                                     // wait a frame
-            firstChannelFocusRequester.requestFocus()      // focus first channel
-            hasDoneInitialFocus = true
+    LaunchedEffect(epgList) {
+        if (isFirstComposition && epgList.isNotEmpty()) {
+            delay(100)
+            channelFocusRequesters[0].requestFocus()
+            isFirstComposition = false
+        } else if (!isFirstComposition && lastIndex in epgList.indices) {
+            delay(100)
+            channelFocusRequesters[lastIndex].requestFocus()
         }
     }
     val programFocusRequesters = remember(epgList) {
@@ -212,6 +221,7 @@ fun EPGContent(
                                 isLastChannel = isLastChannel,
                                 onPlayClicked = { videoUrl ->
                                     sharedViewModel.updateLastFocusedChannel(channelIndex)
+                                    sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
                                     sharedViewModel.updateSelectedChannel(channelData)
                                     if (genre != "All Channels" && lang != "All Languages") {
                                         sharedViewModel.setCurrentPlaylist(epgList, genre)
@@ -220,7 +230,7 @@ fun EPGContent(
                                     navController.navigate(Destination.panMetroScreen)
                                 },
 //                                hasInitiallyFocused = hasInitiallyFocused,
-                                focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
+                                focusRequester = channelFocusRequesters[channelIndex],
                                 languageFocusRequesters = languageFocusRequesters,
                                 languageSelectedIndex = languageSelectedIndex,
                                 categoryFocusRequesters = categoryFocusRequesters,
@@ -267,6 +277,7 @@ fun EPGContent(
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                                            sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
                                                             sharedViewModel.setCurrentPlaylist(epgList)
                                                             epgList
                                                                 .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
@@ -488,7 +499,7 @@ fun ChannelInfo(
     isLastChannel: Boolean,
     onPlayClicked: (String?) -> Unit,
 //    hasInitiallyFocused: MutableState<Boolean>,
-    focusRequester: FocusRequester? = null,
+    focusRequester: FocusRequester,
     languageFocusRequesters: List<FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
     categoryFocusRequesters: List<FocusRequester>,
@@ -550,7 +561,7 @@ fun ChannelInfo(
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
-                .focusRequester(actualFocusRequester)
+                .focusRequester(focusRequester)
                 .focusable()
                 .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }

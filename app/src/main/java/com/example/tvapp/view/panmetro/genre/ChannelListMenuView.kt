@@ -204,10 +204,10 @@ fun ChannelListMenuScreen(
                                     }
                                     true
                                 }
-
                                 KeyEvent.KEYCODE_DPAD_CENTER -> {
                                     // val currentTime = System.currentTimeMillis()
                                     // val currentKey = keyEvent.key
+                                   sharedViewModel.updateGenreScreenLastChannelIndex(focusedIndex)
                                     if (filteredChannels.size > focusedIndex) {
                                         onPlayerScreenIntent(filteredChannels[focusedIndex])
                                     }

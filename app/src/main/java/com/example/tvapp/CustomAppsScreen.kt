@@ -38,7 +38,7 @@ import com.example.tvapp.CustomApps.AppItem
 
 
 private val staticApps = listOf(
-    AppItem("YouTube",    logoRes = com.android.caastv.R.drawable.youtube,     url = "https://youtube.com",       packageName = "com.google.android.youtube"),
+    AppItem("YouTube",    logoRes = com.android.caastv.R.drawable.youtube,     url = "https://youtube.com",       packageName = "com.google.android.youtube.tv"),
     AppItem("SonyLiv",    logoRes = com.android.caastv.R.drawable.sony_liv,    url = "https://sonyliv.com",       packageName = "com.sonyliv"),
     AppItem("JioHotstar", logoRes = com.android.caastv.R.drawable.jiohotstar, url = "https://hotstar.com",       packageName = "in.startv.hotstar"),
     AppItem("Zee5",       logoRes = com.android.caastv.R.drawable.zee_5,       url = "https://zee5.com",          packageName = "com.graymatrix.did"),
