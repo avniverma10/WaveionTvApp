@@ -21,6 +21,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,12 +41,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.*
+import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
+import kotlinx.coroutines.time.delay
 import java.io.File
+import java.time.Duration
 
 @Composable
 fun SplashScreen(
@@ -81,6 +86,7 @@ fun SplashScreen(
         }
     }
 
+    val downloadProgress = remember { mutableStateOf(0f) }
 
     val unknownSourcesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -233,7 +239,32 @@ fun SplashScreen(
             )
         }
     }
-
+    LaunchedEffect(downloadId) {
+        downloadProgress.value = 0f
+        downloadId?.let { id ->
+            var finished = false
+            while (!finished) {
+                val q = DownloadManager.Query().setFilterById(id)
+                dm.query(q)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val soFar = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                        val total  = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        if (total > 0) {
+                            downloadProgress.value = (soFar / total.toFloat()).coerceIn(0f, 1f)
+                        }
+                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            finished = true
+                            downloadProgress.value = 1f
+                        }
+                    }
+                }
+                if (!finished)   delay(Duration.ofMillis(300))        }
+        }
+    }
     DisposableEffect(downloadId) {
         if (downloadId != null && updateData != null) {
             val apkVersionName = updateData?.appVersion ?: "latest"
@@ -353,13 +384,32 @@ fun SplashScreen(
                 .align(Alignment.Center)
                 .size(600.dp)
         )
-
-        if (isUpdating) {
-            CircularProgressIndicator(
+        if (downloadId != null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
-            )
+                    .padding(bottom = 80.dp)
+            ) {
+                LinearProgressIndicator(
+                    progress = downloadProgress.value,
+                    modifier = Modifier
+                        .width(300.dp)
+                        .height(8.dp),
+                    color = base_color,
+                    trackColor = Color.LightGray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = if (downloadProgress.value < 1f)
+                        "Downloading update… ${(downloadProgress.value * 100).toInt()}%"
+                    else
+                        "Download complete!",
+                    color = Color.White
+                )
+            }
         }
     }
 }
