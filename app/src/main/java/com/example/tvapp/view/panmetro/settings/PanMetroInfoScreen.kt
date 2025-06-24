@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.first
 
 @Composable
 fun PanMetroInfoScreen(
+    username: String = "TEST 56",
     macId: String = "DTS-CB95-FQE",
     validity: String = "25/05/2025",
     appVersion: String = "1.3",
@@ -121,8 +122,8 @@ fun PanMetroInfoScreen(
                 InfoRow(label = "STB Model", value = Build.MODEL)
                 InfoRow(label = "Network ID", value = networkId)
                 InfoRow(label = "Network Name", value = networkName)
-              //  InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
-              //  InfoRow(label = "DRM VERSION", value = drmVersion)
+                //  InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
+                //  InfoRow(label = "DRM VERSION", value = drmVersion)
 
                 Spacer(modifier = Modifier.height(16.dp))
 

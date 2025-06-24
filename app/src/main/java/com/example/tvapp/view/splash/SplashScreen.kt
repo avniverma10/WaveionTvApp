@@ -1,7 +1,6 @@
 package com.example.tvapp.view.splash
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -13,27 +12,16 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import android.util.Log
-import android.view.ViewGroup
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,12 +33,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -58,57 +44,49 @@ import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.getIptvDeviceInfo
-import com.example.tvapp.extensions.hideKeyboard
-import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
-import com.example.tvapp.extensions.provideMacAddrLiveData
 import com.example.tvapp.extensions.showToastS
-import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ErrorDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
-import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
-import kotlinx.coroutines.flow.StateFlow
 import java.io.File
 
-
-@SuppressLint("ContextCastToActivity")
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController) {
+fun SplashScreen(
+    sharedViewModel: SharedViewModel,
+    navController: NavController
+) {
     val context = LocalContext.current
-    // Launcher for WRITE_EXTERNAL_STORAGE on API <= 28
-    val writePermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted ->
-            if (granted) {
-                // Either permission already granted, or API >= 29
-                sharedViewModel.onUserAcceptedUpdate()
-            } else {
-               context.showToastS("Storage permission denied")
-            }
-        }
-    )
-    val macAddress = sharedViewModel.provideApplicationContext()?.provideMacAddrLiveData()
-    val errorLoadingData by sharedViewModel.errorLoadingData.collectAsState()
-    val isInitializeData by sharedViewModel.isInitializeData.collectAsState()
-    val activity  = (context as? Activity)
+    val activity = (context as? Activity)
+
+    val errorLoadingData by sharedViewModel.errorLoadingData.collectAsStateWithLifecycle()
+    val isInitializeData by sharedViewModel.isInitializeData.collectAsStateWithLifecycle()
     var showExitDialog by remember { mutableStateOf(false) }
 
-    val showDialog by sharedViewModel.showUpdateDialog.collectAsState()
-    val updateData by sharedViewModel.appUpdateData.collectAsState()
-    //Download state
-    val downloadId by sharedViewModel.downloadId.collectAsState()
-    val timeValid by sharedViewModel.isTimeValid.collectAsState()
+    val showDialog by sharedViewModel.showUpdateDialog.collectAsStateWithLifecycle()
+    val updateData by sharedViewModel.appUpdateData.collectAsStateWithLifecycle()
+    val timeValid by sharedViewModel.isTimeValid.collectAsStateWithLifecycle()
+
+    val downloadId by sharedViewModel.downloadId.collectAsStateWithLifecycle()
     val isUpdating = downloadId != null
+
     val dm = remember {
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
     var pendingInstallIntent by remember { mutableStateOf<Intent?>(null) }
+
+    val writePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            sharedViewModel.onUserAcceptedUpdate()
+        } else {
+            context.showToastS("Storage permission denied")
+        }
+    }
 
 
     val unknownSourcesLauncher = rememberLauncherForActivityResult(
@@ -145,22 +123,22 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
     }
 
     LaunchedEffect(Unit) {
-        context.hideKeyboard()
+        PreferenceManager.clearSaveGenre()
+        PreferenceManager.clearSaveChannel()
         sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
     }
-    // 2) If the check completes and is invalid → show blocking dialog & return
+
     if (timeValid == false) {
         CommonDialog(
             showDialog = true,
             title = "Date & Time Error",
             message = null,
-            painter =  painterResource(id = R.drawable.media_error),
+            painter = painterResource(id = R.drawable.media_error),
             errorCode = null,
             errorMessage = "The date or time on your device appears incorrect. Please correct your system clock before continuing.",
-            borderColor = Color.Transparent,
             confirmButtonText = "Exit",
-            onConfirm ={
+            onConfirm = {
                 (context as? Activity)?.finishAffinity()
                 android.os.Process.killProcess(android.os.Process.myPid())
             },
@@ -176,28 +154,28 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
     }
 
-
-    LaunchedEffect(timeValid,isInitializeData, showDialog, errorLoadingData, isUpdating) {
+    LaunchedEffect(timeValid, isInitializeData, showDialog, errorLoadingData, isUpdating) {
         if (timeValid == false) return@LaunchedEffect
         if (!isInitializeData) return@LaunchedEffect
-        if (showDialog)         return@LaunchedEffect
-        if (isUpdating)         return@LaunchedEffect
+        if (showDialog) return@LaunchedEffect
+        if (isUpdating) return@LaunchedEffect
+
         if (errorLoadingData != null) {
-            //context.showToastS(errorLoadingData)
             showExitDialog = true
+            return@LaunchedEffect
         }
-        if(isInitializeData){
-            showExitDialog = false
-            if(PreferenceManager.isLoggedIn()){
-                navController.navigate(Destination.genreScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            }else{
-                navController.navigate(Destination.loginScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
+
+        showExitDialog = false
+        if (PreferenceManager.getLoginResponse() != null) {
+            navController.navigate(Destination.genreScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+        } else {
+            navController.navigate(Destination.loginScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
             }
         }
+
         sharedViewModel.isFromSplash.value = true
     }
     if (showDialog && updateData != null) {
@@ -358,34 +336,29 @@ fun SplashScreen(sharedViewModel: SharedViewModel, navController: NavController)
         }
     }
 
-
-
-    // Exit confirmation dialog
     if (showExitDialog) {
-        ErrorDialog(message = errorLoadingData?:"Server Error", onConfirmExit = {
-            sharedViewModel._errorLoadingData.value = null
-            showExitDialog = false
-            sharedViewModel.initializeAppRequiredData()
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        ErrorDialog(
+            message = errorLoadingData ?: "Server Error",
+            onConfirmExit = {
+                sharedViewModel._errorLoadingData.value = null
+                showExitDialog = false
+                sharedViewModel.initializeAppRequiredData()
+            },
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
-
-
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        val device = context.getIptvDeviceInfo().toJSONObject()
-       // context.showToastL(device.toString())
-      //  Log.e("macAddress::${macAddress?.value}","")
-     //   Log.e("logAllDrmInfo()","${logAllDrmInfo()}")
 
+        // center your animated logo
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
-                //.data(appManifestData?.splashUrl?:"https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png")
                 .diskCachePolicy(CachePolicy.ENABLED)    // cache image on disk
                 .memoryCachePolicy(CachePolicy.ENABLED)  // cache image in memory
                 .build(),

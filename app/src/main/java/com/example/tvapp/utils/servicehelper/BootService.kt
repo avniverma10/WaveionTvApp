@@ -1,11 +1,16 @@
 package com.example.tvapp.utils.servicehelper
 
-import android.app.*
-import android.content.*
-import android.os.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Intent
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.loge
 
 class BootService : Service() {
     override fun onCreate() {
@@ -14,17 +19,17 @@ class BootService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("BootService", "BootService started, preparing to launch MainActivity...")
+        loge("BootService", "BootService started, preparing to launch MainActivity...")
 
         Handler(Looper.getMainLooper()).postDelayed({
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             launchIntent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
             if (Settings.canDrawOverlays(this)) {
-                Log.d("BootService", "Launching MainActivity in foreground...")
+                loge("BootService", "Launching MainActivity in foreground...")
                 startActivity(launchIntent)
             } else {
-                Log.e("BootService", "SYSTEM_ALERT_WINDOW permission missing! Cannot bring app to foreground.")
+                loge("BootService", "SYSTEM_ALERT_WINDOW permission missing! Cannot bring app to foreground.")
             }
 
             stopSelf() // Stop service after launch
@@ -45,7 +50,7 @@ class BootService : Service() {
         return Notification.Builder(this, channelId)
             .setContentTitle("Boot Service Running")
             .setContentText("Launching the app immediately after boot")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.panlogin)
             .build()
     }
 }

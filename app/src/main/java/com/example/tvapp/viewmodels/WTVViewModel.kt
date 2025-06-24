@@ -1,65 +1,56 @@
 package com.example.tvapp.viewmodels
 
-
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.DownloadManager
-import android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
 import android.content.ContentValues
 import android.content.Context
-import android.content.Context.DOWNLOAD_SERVICE
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
-import android.os.Environment.DIRECTORY_DOWNLOADS
+import android.os.Environment
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.core.net.toUri
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyEPGData
-import com.example.tvapp.extensions.dataStore
-import com.example.tvapp.extensions.logReport
-import com.example.tvapp.extensions.provideProgramTime
+import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.showToastS
+import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.appupdate.AppUpdateData
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.notification.NotificationItem
 import com.example.tvapp.model.data.sse.TabItem
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.utils.Constants
-import com.example.tvapp.utils.network.heper.ConnectivityObserver
-import com.example.tvapp.utils.network.heper.NetworkStatus
-import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.utils.sealed.firstOrNullSuccess
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
-import okhttp3.sse.EventSource
-import okhttp3.sse.EventSourceListener
-import okhttp3.sse.EventSources
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -69,6 +60,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
 
+
 @HiltViewModel
 open class WTVViewModel @Inject constructor(
     private val application: Application,
@@ -77,8 +69,6 @@ open class WTVViewModel @Inject constructor(
     private val okHttpClient: OkHttpClient
 ) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
-
-    private val observer = ConnectivityObserver(application.applicationContext)
     private val _userIdeal = MutableStateFlow<Boolean>(false)
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
@@ -104,34 +94,34 @@ open class WTVViewModel @Inject constructor(
     private val _showUpdateDialog = MutableStateFlow(false)
     val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
 
-    // Expose the latest list of TabItems
-    // add at top of class
     private val _downloadId = MutableStateFlow<Long?>(null)
     val downloadId: StateFlow<Long?> = _downloadId.asStateFlow()
 
-    // Expose the latest list of TabItems
     private val _tabItemsFlow = MutableStateFlow<List<TabItem>>(emptyList())
     val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
+    private val _bannerMessage = MutableStateFlow<String?>(null)
+    val bannerMessage: StateFlow<String?> = _bannerMessage.asStateFlow()
+
     // Flag to ensure we start the SSE connection only once.
     private var startedSSE = false
+
+    // prevent double‐connecting
+    private var startedNotifSSE = false
+    private var skipFirst = true
+
     private val TAG = "TimeCheck"
 
-    @RequiresApi(Build.VERSION_CODES.M)
-    val networkStatus: StateFlow<NetworkStatus> =
-        observer.observe()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = NetworkStatus.Unavailable
-            )
-
-
+    companion object {
+        private const val NOTIF_CHANNEL_ID = "tv_app_notifications"
+        private const val NOTIF_CHANNEL_NAME = "TV App Updates"
+    }
 
     fun clearLogin() {
         viewModelScope.launch {
             loginPrefsRepository?.clearLoginInfo()
         }
     }
+
 
     /*fun updateEPGData(epgList: List<EPGDataItem>) {
         viewModelScope.launch {
@@ -143,13 +133,78 @@ open class WTVViewModel @Inject constructor(
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
     init {
-
-        // Start the SSE connection globally.
-     //   startSSE()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startNotificationSSE()
+        }
     }
 
-    fun initializeAppRequiredData(){
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startNotificationSSE() {
+        if (startedNotifSSE) return
+        startedNotifSSE = true
+
         viewModelScope.launch {
+            networkApiCallInterfaceImpl
+                .provideNotificationSSE(Constants.BASE_URL+"app/getNotification-sse")
+                .catch { loge("WTVViewModel", "SSE failed $it") }
+                .collect { item ->
+                    if (skipFirst) {
+                        skipFirst = false
+                    } else {
+                        showPushNotification(item)
+                    }
+                }
+        }
+    }
+
+    /** 3) Build and issue a local notification */
+    @SuppressLint("MissingPermission")
+    private fun showPushNotification(item: NotificationItem) {
+        _bannerMessage.value = item.message
+        // 1) Post the Toast on the main thread
+//        Handler(Looper.getMainLooper()).post {
+//            Toast.makeText(application, " ${item.message}", Toast.LENGTH_LONG).show()
+//        }
+        // (optional) clear after a delay so banner goes away
+        viewModelScope.launch {
+            delay(TimeUnit.MINUTES.toMillis(1))
+            _bannerMessage.value = null
+        }
+        loge("WTVViewModel", " showPushNotification: ${item.message}")
+
+        // 2) Check POST_NOTIFICATIONS permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(application, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("WTVViewModel", "Missing POST_NOTIFICATIONS permission!")
+            return
+        }
+        val builder = NotificationCompat.Builder(application, NOTIF_CHANNEL_ID)
+            .setSmallIcon(R.drawable.panlogin)
+            .setContentTitle("New message")
+            .setContentText(item.message)
+            .setAutoCancel(true)
+
+        NotificationManagerCompat.from(application)
+            .notify(item.id.hashCode(), builder.build())
+    }
+
+    fun initializeAppRequiredData() {
+        viewModelScope.launch {
+            //First call health check API
+            /*val healthCheckSuccess = async {
+                networkApiCallInterfaceImpl
+                    .provideServerTimeStamp("https://api-panmetro.caastv.com/api/app/health")
+                    .firstOrNullSuccess()
+            }.await()
+
+            if (healthCheckSuccess == null) {
+                Constants.applyBaseUrl(false)
+                provideApplicationContext().showToastS("Switching the Server now..")
+            }else{
+                provideApplicationContext().showToastS("Server is working now..")
+            }*/
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
@@ -161,15 +216,13 @@ open class WTVViewModel @Inject constructor(
                         it.genre?.let { c ->
                             genre.add(WTVGenre(name = "All"))
                             genre.addAll(c)
-
                         }
                         val language = arrayListOf<WTVLanguage>()
                         it.language?.let { c ->
                             language.add(WTVLanguage(name = "All"))
                             language.addAll(c)
-
                         }
-                        manifest.copy(genre= genre, language = language)
+                        manifest.copy(genre = genre, language = language)
                     }
             }.await()
             val epgDeferred = async {
@@ -177,41 +230,52 @@ open class WTVViewModel @Inject constructor(
                     .provideWTVEPGData(Constants.BASE_URL+"epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
-                        val epgList = epgData.filter { it.content?.published == true }
-                        epgList
+                        epgData
                     }
             }.await()
 
-            // Wait for all to complete (success or failure)
-            //if(manifestDeferred != null && epgDeferred != null){
-            Log.d("EPG","manifest ---> ${manifestDeferred} ")
-            Log.d("EPG"," epg ---> ${epgDeferred}")
 
-            if(manifestDeferred != null && epgDeferred != null){
+            // Wait for all to complete (success or failure)
+            if (manifestDeferred != null && epgDeferred != null) {
                 // **This line runs only after all of the above finish.**
-                manifestDeferred.let {
-                    application.applyAppManifest(it)
-                }
+                loge("manifestDeferred",manifestDeferred.toJSONObject().toString())
+                application.applyAppManifest(manifestDeferred)
                 val epgData = removeDuplicateEPG(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
                 epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
-                    ?.let(::updateSelectedChannel)?:kotlin.run {
-                    _selectedChannel.value =  epgData.getOrNull(0)!!
+                    ?.let(::updateSelectedChannel) ?: kotlin.run {
+                    epgData?.getOrNull(0)?.let {
+                        _selectedChannel.value = it
+                    } ?: run {
+                        _selectedChannel.value = EPGDataItem()
+                    }
                 }
                 _isInitializeData.value = true
-            }else{
+            } else {
                 var errorMsg = ""
                 // **This line runs only after all of the above finish.**
-                if(manifestDeferred==null){
+                if (manifestDeferred == null) {
                     errorMsg = "manifest api"
-                }else if(epgDeferred==null){
+                } else if (epgDeferred == null) {
                     errorMsg = "epg api"
                 }
                 _errorLoadingData.value = "Server api ${errorMsg} not responding yet!"
                 _isInitializeData.value = false
-                Log.e("_errorLoadingData","${_errorLoadingData}")
+                loge("_errorLoadingData", "${_errorLoadingData}")
             }
+            /*launch {
+                networkApiCallInterfaceImpl
+                    .provideWTVHomeData(Constants.BASE_URL+"homescreenCategory")
+                    .collect { response ->
+                        if (response is WTVListResponse.Success) {
+                            application.applyAppHome(response.data)
+                            logReport("applyAppHome:${response.data}")
+                        } else if (response is WTVListResponse.Failure) {
+                            logReport("applyAppHome error:${response.error.message}")
+                        }
+                    }
+            }*/
         }
     }
 
@@ -223,22 +287,23 @@ open class WTVViewModel @Inject constructor(
 
         val resp = okHttpClient.newCall(req).execute()
         if (!resp.isSuccessful) {
-            Log.e(TAG, "Health endpoint error: HTTP ${resp.code}")
-            throw IOException("Health check failed: ${resp.code}")
+            loge(TAG, "Health endpoint error: HTTP ${resp.code}")
+            provideApplicationContext().showToastS("Server not available!")
+           // throw IOException("Health check failed: ${resp.code}")
         }
         val bodyStr = resp.body!!.string()
-        Log.d(TAG, "Raw JSON response: $bodyStr")
+        loge(TAG, "Raw JSON response: $bodyStr")
         val timestampStr = JSONObject(bodyStr).getString("timestamp")
-        Log.d(TAG, "Parsed timestamp string: $timestampStr")
+        loge(TAG, "Parsed timestamp string: $timestampStr")
 
         val serverInst = try {
             Instant.parse(timestampStr)
         } catch (e: Exception) {
-            Log.e(TAG, "Instant.parse failed for $timestampStr", e)
+            loge(TAG, "Instant.parse failed for $timestampStr ${e.message}")
             throw e
         }
         val serverMs = serverInst.toEpochMilli()
-        Log.d(TAG, "Server epoch ms: $serverMs")
+        loge(TAG, "Server epoch ms: $serverMs")
         return serverMs
     }
 
@@ -251,12 +316,12 @@ open class WTVViewModel @Inject constructor(
     fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
         viewModelScope.launch {
             val valid = withContext(Dispatchers.IO) {
-                val serverMs   = fetchServerTimeMillis()
-                val deviceMs   = System.currentTimeMillis()
-                val drift      = abs(deviceMs - serverMs)
+                val serverMs = fetchServerTimeMillis()
+                val deviceMs = System.currentTimeMillis()
+                val drift = abs(deviceMs - serverMs)
 
                 // calendar‐date check
-                val zone       = ZoneId.systemDefault()
+                val zone = ZoneId.systemDefault()
                 val serverDate = Instant.ofEpochMilli(serverMs).atZone(zone).toLocalDate()
                 val deviceDate = Instant.ofEpochMilli(deviceMs).atZone(zone).toLocalDate()
 
@@ -293,68 +358,13 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-
-    fun startSSE() {
-        val client = OkHttpClient()
-        val gson = Gson()
-
-        if (startedSSE) return
-        startedSSE = true
-
-        val request = Request.Builder()
-            .url("https://nextwave.waveiontechnologies.com:5000/api/tabs/sse-tabs") // replace with your endpoint URL
-            .build()
-
-        val listener = object : EventSourceListener() {
-            override fun onOpen(eventSource: EventSource, response: Response) {
-                // Log or perform actions on open
-            }
-
-            override fun onEvent(
-                eventSource: EventSource,
-                id: String?,
-                type: String?,
-                data: String
-            ) {
-                // Update the global state with new event data.
-                logReport("SSE", "Event received: $data")
-                try {
-                    // Parse the JSON array into a List<TabItem>
-                    val itemType = object : TypeToken<List<TabItem>>() {}.type
-                    val items: List<TabItem> = gson.fromJson(data, itemType)
-                    _tabItemsFlow.value = items
-                } catch (e: Exception) {
-                    logReport("SSE", "Error parsing JSON: ${e.message}")
-                }
-            }
-
-            override fun onClosed(eventSource: EventSource) {
-                // Optionally handle close events.
-                logReport("SSE", "Connection closed")
-            }
-
-            override fun onFailure(
-                eventSource: EventSource,
-                t: Throwable?,
-                response: Response?
-            ) {
-                // Handle failures (and consider restarting the connection).
-                logReport("SSE", "Connection failed: ${t?.message}")
-            }
-        }
-
-        // Start the SSE connection.
-        EventSources.createFactory(client).newEventSource(request, listener)
-    }
-
-
-    fun updateSelectedChannel(selectedChannel:EPGDataItem){
-        _selectedChannel.value =  selectedChannel
+    fun updateSelectedChannel(selectedChannel: EPGDataItem) {
+        _selectedChannel.value = selectedChannel
         selectedChannel.tv?.programme?.let { providePlayableProgramData(it) }
     }
 
     //is user ideal since 10 sec
-    fun updateUserIdeal(isUserIdeal:Boolean) {
+    fun updateUserIdeal(isUserIdeal: Boolean) {
         _userIdeal.value = isUserIdeal
     }
 
@@ -364,6 +374,7 @@ open class WTVViewModel @Inject constructor(
     fun clearDownloadId() {
         _downloadId.value = null
     }
+
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
@@ -377,14 +388,14 @@ open class WTVViewModel @Inject constructor(
                 .getPackageInfo(application.packageName, 0)
                 .versionName
                 .orEmpty()
-            Log.d("App version","current version: $current, new version: ${update.appVersion} and isVersionHigher:>${shouldUpdateRequired(update.appVersion, current)}")
+
             // 2. only if the server’s version is higher do we prompt or download
             if (shouldUpdateRequired(update.appVersion, current)) {
                 _appUpdateData.value = update
                 handleAppUpdate(update)
             } else {
                 // 3. otherwise clear any stale state so we never re‐show
-                _appUpdateData.value    = null
+                _appUpdateData.value = null
                 _showUpdateDialog.value = false
             }
         }
@@ -396,7 +407,15 @@ open class WTVViewModel @Inject constructor(
             .getPackageInfo(application.packageName, 0)
             .versionName
             .orEmpty()
-        Log.d("App version","current version: $current, new version: ${update.appVersion} and isVersionHigher:>${shouldUpdateRequired(update.appVersion, current)}")
+        loge(
+            "App version",
+            "current version: $current, new version: ${update.appVersion} and isVersionHigher:>${
+                shouldUpdateRequired(
+                    update.appVersion,
+                    current
+                )
+            }"
+        )
 
         val needsUpdate = shouldUpdateRequired(update.appVersion, current)
         _showUpdateDialog.value = needsUpdate
@@ -413,30 +432,97 @@ open class WTVViewModel @Inject constructor(
         }
         return false
     }
+
     private fun shouldUpdateRequired(newVer: String, oldVer: String): Boolean {
         try {
-            val new = newVer.replace(".","").trim().toInt()
-            val old = oldVer.replace(".","").trim().toInt()
-            return new>old
-        }catch (ex: Exception){
-            return  false
+            val new = newVer.replace(".", "").trim().toInt()
+            val old = oldVer.replace(".", "").trim().toInt()
+            return new > old
+        } catch (ex: Exception) {
+            return false
         }
     }
+    @SuppressLint("MissingPermission")
+    fun downloadApk(apkUrl: String): Long {
+        // getApplication<T>() gives you your Application instance in an AndroidViewModel
+        val ctx = getApplication<Application>()
+        val dm  = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
 
-    private fun downloadApk(apkUrl: String): Long {
-        val dm = application.getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-        val req = DownloadManager.Request(apkUrl.toUri()).apply {
+        // construct a file in YOUR app’s external-files/Download directory
+
+        val destDir  = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)!!
+        // Clean up any previous APK files
+        cleanUpOldApks(destDir)
+
+        val fileName = "tvapp_${_appUpdateData.value?.appVersion}.apk"
+        val file     = File(destDir, fileName)
+        val destUri  = Uri.fromFile(file)
+
+        val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
             setTitle("Downloading v${_appUpdateData.value?.appVersion}")
-            setDestinationInExternalPublicDir(
-                DIRECTORY_DOWNLOADS,
-                "tvapp_${_appUpdateData.value?.appVersion}.apk"
-            )
-            setNotificationVisibility(VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // write into your app’s own folder (no storage permission needed)
+            setDestinationUri(destUri)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         }
+
         val id = dm.enqueue(req)
         _downloadId.value = id
         return id
+    }
+
+    /*fun downloadApk(apkUrl: String): Long {
+        val ctx = getApplication<Application>()
+        val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val version = _appUpdateData.value?.appVersion ?: "unknown"
+
+        // Create downloads directory if it doesn't exist
+        val destDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.apply {
+            if (!exists()) mkdirs()
+        } ?: run {
+            // Fallback to cache directory if downloads directory isn't available
+            ctx.cacheDir.apply {
+                if (!exists()) mkdirs()
+            }.also {
+                Log.w("ApkDownload", "Using cache directory as fallback for APK download")
+            }
+        }
+        // Clean up any previous APK files
+        cleanUpOldApks(destDir)
+
+        // Generate version-specific filename
+        val fileName = "tvapp_v${version}.apk"
+        val file = File(destDir, fileName)
+        val destUri = Uri.fromFile(file)
+
+        // Create download request
+        val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
+            setTitle("TVApp v$version")
+            setDescription("Downloading update")
+            setDestinationUri(destUri)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // Optional: set network requirements
+            setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE )
+            setAllowedOverRoaming(false)
+        }
+
+        // Enqueue download and store ID
+        val downloadId = dm.enqueue(req)
+        _downloadId.value = downloadId
+        return downloadId
+    }*/
+
+    private fun cleanUpOldApks(directory: File) {
+        try {
+            directory.listFiles()?.forEach { file ->
+                if (file.isFile && file.name.startsWith("tvapp_") && file.name.endsWith(".apk")) {
+                    file.delete()
+                    Log.d("ApkDownload", "Deleted old APK: ${file.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ApkDownload", "Error cleaning up old APKs", e)
+        }
     }
 
     /** Called from “Yes” button on dialog */
@@ -451,21 +537,15 @@ open class WTVViewModel @Inject constructor(
     }
 
 
-
-
-    fun providePlayableProgramData(programs: List<Programme>){
+    fun providePlayableProgramData(programs: List<Programme>) {
         val now = System.currentTimeMillis()
         val formatter = SimpleDateFormat("hh:mm a", Locale.US)
-        _filterAvailablePrograms.value =  programs
+        _filterAvailablePrograms.value = programs
             .asSequence()
             .filter { program ->
                 val start = program.startTime
-                val end   = program.endTime
-                Log.e("","start:${start} and end:${end}")
-                // Only include if both times are non-null and end is strictly in the future:
+                val end = program.endTime
                 if (start == null || end == null) return@filter false
-                // 1) Currently running: start <= now < end
-                // 2) Upcoming: now < start
                 (start <= now && now < end) || (now < start)
             }
             .distinctBy { it.startTime to it.endTime }
@@ -483,9 +563,18 @@ open class WTVViewModel @Inject constructor(
             }.toList()
     }
 
+
+    fun provideUserHash(){
+        viewModelScope.launch {
+           var hashResponse =  networkApiCallInterfaceImpl
+                .provideUserHash(Constants.BASE_URL+"userData?username="+ PreferenceManager.getUsername())
+                .firstOrNullSuccess()
+            hashResponse?.let {
+                PreferenceManager.saveHash(it.hash)
+            }
+        }
+    }
 }
-
-
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
     return items
         .filter { it.channelId != null }       // optional: drop null IDs

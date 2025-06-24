@@ -1,6 +1,7 @@
 package com.example.tvapp.model.repository.login
 
 import android.content.Context
+import androidx.annotation.Keep
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -10,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Keep
 @Singleton
 class LoginPrefsRepository @Inject constructor(
     @ApplicationContext private val context: Context

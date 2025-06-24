@@ -1,6 +1,7 @@
 package com.example.tvapp.extensions
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -9,7 +10,12 @@ import android.util.Base64
 import android.util.Log
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.tvapp.model.data.login.LoginInfo
+import com.example.tvapp.model.data.login.PkgDataDeserializer
+import com.example.tvapp.model.data.login.Pkgdata
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
@@ -20,6 +26,7 @@ import org.threeten.bp.format.DateTimeFormatter
 import java.io.File
 import java.io.IOException
 import java.io.UnsupportedEncodingException
+import java.lang.reflect.Type
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.net.NetworkInterface
@@ -218,7 +225,7 @@ fun String.toJsonObject(): JsonObject? {
     return try {
         Gson().fromJson(this, JsonObject::class.java)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -227,7 +234,7 @@ fun String.toJSONObject(): JSONObject? {
     return try {
         JSONObject(this)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -236,7 +243,7 @@ fun String.toJsonArray(): JsonArray? {
     return try {
         Gson().fromJson(this, JsonArray::class.java)
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         null
     }
 }
@@ -289,7 +296,7 @@ fun String.toUrlUtf(): String {
     return try {
         URLEncoder.encode(this, "UTF-8")
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         ""
     }
 }
@@ -298,7 +305,7 @@ fun String.decodeUrlUTF(): String {
     return try {
         URLDecoder.decode(this, "UTF-8")
     } catch (e: Throwable) {
-        Log.e("","${e.message}")
+        loge("","${e.message}")
         ""
     }
 }
@@ -345,7 +352,7 @@ fun String?.getDate(format: String, locale: Locale? = null): Date? {
             locale?.let { SimpleDateFormat(format, locale) } ?: SimpleDateFormat(format)
         dateFormat.parse(date)
     } catch (e: Exception) {
-        Log.e("","${e.message}")
+        this?.loge("","${e.message}")
         null
     }
 }
@@ -371,10 +378,30 @@ fun String?.getQueryParamFromUrl(key: String): String? {
             val videoUri = Uri.parse(it)
             return videoUri.getQueryParameter(key)
         } catch (e: java.lang.Exception) {
-            Log.e("","${e.message}")
+            loge("","${e.message}")
         }
     }
     return null
+}
+
+/**
+ * Deserialize this JSON `String` into a LoginInfo, while registering
+ * a custom JsonDeserializer<T> for the given `type`.
+ *
+ * @param T           the nested type you’re providing a custom deserializer for (e.g. PkgData)
+ * @param type        the Java Type (e.g. PkgData::class.java or a TypeToken.getParameterized(...) type)
+ * @param typeAdapter your JsonDeserializer<T> instance
+ *
+ * @return a LoginInfo object parsed from this JSON.
+ */
+fun String.convertIntoLoginResponse(
+    type: Type
+): LoginInfo {
+    val gson = GsonBuilder()
+        .registerTypeAdapter(Pkgdata::class.java, PkgDataDeserializer())
+        .create()
+
+    return gson.fromJson(this, type)
 }
 
 fun <T> String?.convertIntoModel(classRef: Class<T>): T? {
@@ -537,12 +564,12 @@ fun String.toBase64Encoded(): String {
     return Base64.encodeToString(this.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
 }
 
-
 fun String.toBase64UrlSafe(): String =
     Base64.encodeToString(
         this.toByteArray(Charsets.UTF_8),
         Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
     )
+
 
 /**
  * Maps common API status codes to user‐friendly messages.
@@ -724,3 +751,13 @@ fun currentProgramFilter(start:String?,end:String?): Boolean {
 
    // (start <= now && now < end) || (now < start)
 }
+
+/**
+ * Capitalizes the very first character of this string, lower-cases all the rest.
+ * If the string is empty, returns it unchanged.
+ */
+fun String.capitalizeFirstLetter(): String =
+    this.lowercase(Locale.getDefault())
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+
+

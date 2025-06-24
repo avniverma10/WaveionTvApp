@@ -3,7 +3,9 @@ package com.example.tvapp.model.wtvdatabase
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.annotation.Keep
 
+@Keep
 class EPGDbHelper(context: Context) : SQLiteOpenHelper(context, "wtv_epg.db", null, 1) {
 
     override fun onCreate(db: SQLiteDatabase) {

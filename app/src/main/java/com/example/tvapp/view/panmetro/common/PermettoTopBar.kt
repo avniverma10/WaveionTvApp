@@ -1,9 +1,11 @@
 package com.example.tvapp.view.panmetro.common
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -61,8 +63,7 @@ fun PermettoTopBar(topBGColor:Color?=Color.Black) {
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -70,28 +71,37 @@ fun PermettoTopBar(topBGColor:Color?=Color.Black) {
                 Box(
                     modifier = Modifier
                         .width(70.dp)
-                        .height((1.5).dp)
+                        .height((2).dp)
                         .background(Color(0xFF49FEDD))
                         .align(Alignment.CenterVertically)
                 )
                 // Logo or brand text
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        //.data("https://nextwave.waveiontechnologies.com:5000/uploads/banner/news5.jpg")
-                        .diskCachePolicy(CachePolicy.ENABLED)    // cache image on disk
-                        .memoryCachePolicy(CachePolicy.ENABLED)  // cache image in memory
-                        .build(),
-                    contentDescription = "Default Background",
-                    contentScale = ContentScale.Fit,
-                    error = painterResource(R.drawable.top_logo),        // Error state
-                    placeholder = painterResource(R.drawable.top_logo),  // Loading state
-
-                )
+                Box(modifier = Modifier
+                    .weight(.5f)
+                    .fillMaxHeight()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.top_corner),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.Center)
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 5.dp, bottom = 5.dp)
+                            .align(Alignment.Center)
+                    )
+                }
                 // Thin green line below
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height((1.5).dp)
+                        .height((2).dp)
                         .background(Color(0xFF49FEDD))
                         .align(Alignment.CenterVertically)
                         .padding(start = 5.dp, end = 10.dp)

@@ -3,13 +3,18 @@ package com.example.tvapp.viewmodels
 
 import android.app.Application
 import android.content.Context
-import android.content.SharedPreferences
 import android.database.ContentObserver
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.SavedStateHandle
+import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import com.example.tvapp.WTVApp
+import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
@@ -18,17 +23,26 @@ import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.filter.PanMetroGenreFilter
+import com.example.tvapp.model.data.message.ScrollMessageInfo
+import com.example.tvapp.model.data.sseresponse.GlobalSSEResponse
+import com.example.tvapp.model.data.sseresponse.PlayerSSEResponse
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
+import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.network.heper.ConnectivityObserver
+import com.example.tvapp.utils.network.heper.NetworkStatus
 import com.example.tvapp.utils.sealed.WTVListResponse
-import com.example.tvapp.viewmodels.player.PlayerViewModel
+import com.example.tvapp.utils.sealed.firstOrNullSuccess
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
@@ -36,14 +50,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import androidx.core.content.edit
-import com.example.tvapp.utils.Constants
-import com.example.tvapp.utils.uistate.PreferenceManager
 import okhttp3.OkHttpClient
-import kotlin.sequences.distinctBy
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -53,11 +70,23 @@ open class SharedViewModel @Inject constructor(
     private val filterPreferences: FilterPreferences,
     private val loginPrefsRepository: LoginPrefsRepository,
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
+    fun provideApplicationInstance() = application.applicationContext as? WTVApp
+    private val observer = ConnectivityObserver(application)
+
+    var isFromSplash = MutableStateFlow<Boolean>(false)
+
+    private var globalEventSource: EventSource? = null
+    private val _globalSSERules = MutableStateFlow<GlobalSSEResponse?>(null)
+    val globalSSERules: StateFlow<GlobalSSEResponse?> = _globalSSERules
+
+    private var playerEventSource: EventSource? = null
+    private val _playerSSERules = MutableStateFlow<PlayerSSEResponse?>(null)
+    val playerSSERules: StateFlow<PlayerSSEResponse?> = _playerSSERules
+
 
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
     val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
 
-    var isFromSplash = MutableStateFlow<Boolean>(false)
     private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
 
@@ -82,13 +111,44 @@ open class SharedViewModel @Inject constructor(
     private val _panMetroGenreState = MutableStateFlow(PanMetroGenreFilter())
     val panMetroGenreState: StateFlow<PanMetroGenreFilter> = _panMetroGenreState.asStateFlow()
 
+    private val _currentPlaylist = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val currentPlaylist: StateFlow<List<EPGDataItem>> = _currentPlaylist
+
+    private val _lastFocusedChannel = MutableStateFlow(0)
+    val lastFocusedChannel: StateFlow<Int> = _lastFocusedChannel
+
+    private val _lastSelectedChannelIndex = MutableStateFlow<Int>(-1)
+
+    val lastSelectedChannelIndex: StateFlow<Int> = _lastSelectedChannelIndex
+
+    private val _genreScreenLastGenreIndex = MutableStateFlow(0)
+    val genreScreenLastGenreIndex: StateFlow<Int> = _genreScreenLastGenreIndex
+
+    private val _genreScreenLastChannelIndex = MutableStateFlow(0)
+    val genreScreenLastChannelIndex: StateFlow<Int> = _genreScreenLastChannelIndex
+
+
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
     val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
 
+
+    fun updateGenreScreenLastGenreIndex(index: Int) {
+        _genreScreenLastGenreIndex.value = index
+    }
+
+    fun updateGenreScreenLastChannelIndex(index: Int) {
+        _genreScreenLastChannelIndex.value = index
+    }
+    // updater
+    fun updateLastSelectedChannelIndex(index: Int) {
+        _lastSelectedChannelIndex.value = index
+    }
     init {
+        //provideGlobalFingerprintInfo()
+        //provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
         viewModelScope.launch {
             isInitializeData
@@ -116,6 +176,14 @@ open class SharedViewModel @Inject constructor(
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.M)
+    val networkStatus: StateFlow<NetworkStatus> =
+        observer.observe()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = NetworkStatus.Unavailable
+            )
 
 
 
@@ -142,14 +210,6 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners("https://nextwave.waveiontechnologies.com:5000/api/banners").collect { response ->
-            when (response) {
-                is WTVListResponse.Success -> _bannerList.value = response.data
-                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message}")
-            }
-        }
-    }
 
     fun updateLastFocusedChannel(index: Int) {
         lastFocusedChannelIndex.value = index
@@ -223,8 +283,6 @@ open class SharedViewModel @Inject constructor(
     }
 
 
-
-
     private fun applyFilters() {
         val fullList = provideApplicationContext().coreEPGLiveData().value?:wtvEPGList.value
         val filter = _filterState.value
@@ -242,27 +300,6 @@ open class SharedViewModel @Inject constructor(
         _filteredEPGList.value = filtered?: arrayListOf()
     }
 
-    fun searchChannels(context: Context, query: String) {
-        viewModelScope.launch {
-            if (query.isBlank()) {
-                _searchResults.value = _epgChannels.value
-                return@launch
-            }
-            val epgList = fetchEPGList(context)
-            val filteredChannels = epgList.mapNotNull { epgItem ->
-                epgItem.tv?.channel?.takeIf { channel ->
-                    val name = channel.displayName ?: ""
-                    val genre = epgItem.content?.genreId ?: ""
-                    (name.contains(query, ignoreCase = true) || genre.contains(query, ignoreCase = true))
-                }?.copy(
-                    logoUrl = epgItem.content?.thumbnailUrl,
-                    videoUrl = epgItem.content?.videoUrl,
-                    genreId = epgItem.content?.genreId ?: "Unknown"
-                )
-            }
-            _searchResults.value = filteredChannels
-        }
-    }
 
     fun provideAvailableProgram(programs: List<Programme>): List<Programme> {
         val now = System.currentTimeMillis()
@@ -280,24 +317,187 @@ open class SharedViewModel @Inject constructor(
             .sortedBy { it.startTime }
     }
 
-    /** Persist into SharedPreferences on minimize */
-    fun persistToGenrePrefs(prefs: PreferenceManager,selectedGenreIndex:Int,selectedChannelIndex:Int) {
-        prefs.selectedGenreIndex = selectedGenreIndex
-        prefs.selectedChannelIndex = selectedChannelIndex
-    }
-   // Persist into SharedPreferences on minimize
-    fun persistToPlayerPrefs(prefs: PreferenceManager,selectedChannel:EPGDataItem) {
-       prefs.lastEpgDataItem = selectedChannel
+
+    fun provideGlobalSSERequest() {
+        var packageInfo:String?=null
+        var userInfo:String?="${PreferenceManager.getUsername()}"//${it.loginData.userId}:
+        val loginInfo = PreferenceManager.getLoginResponse()
+        loginInfo?.let {
+            packageInfo = it.pkgdata?.activepack?.joinToString(
+                separator = ","
+            ) { it.servicename }
+        }
+
+        // _globalFingerPrint.value = listOf(FingerprintRule(),FingerprintRule(),FingerprintRule(),FingerprintRule())
+        val queryBuilder = (Constants.BASE_URL + "app/combined-sse?")
+            .toUri()
+            .buildUpon()
+        // Only append if values are not null or blank
+        packageInfo?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("package", it)
+        }
+
+        userInfo?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("user", it)
+        }
+        loginInfo?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("region", it)
+        }
+
+        val sseUrl = queryBuilder.build().toString()
+        loge("finalUrl>",sseUrl)
+
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val withHeaders = original.newBuilder()
+                    .header("x-api-key", Constants.HEADER_TOKEN)
+                    .build()
+                chain.proceed(withHeaders)
+            }
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                loge("SSE>",sseUrl+data.toString())
+                try {
+                    data.toString()
+                        .convertIntoModel(GlobalSSEResponse::class.java)?.let {
+                            _globalSSERules.value = it
+                        }
+                } catch (e: Exception) {
+                    loge("SSE>", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("SSE>", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("SSE SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        globalEventSource = EventSources.createFactory(client).newEventSource(request, listener)
     }
 
+    fun providePlayerSSERequest(
+        channel: String?=null,//"1003:RAAPCHIK"
+    ) {
+        playerEventSource?.let {
+            playerEventSource?.cancel()
+            playerEventSource = null
+        }
+        val queryBuilder = (Constants.BASE_URL +"app/combined-sse?")
+            .toUri()
+            .buildUpon()
+        channel?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("liveChannel", it)
+        }
 
-    /** Persist into SharedPreferences on minimize */
-    fun restorePlayerPrefs(prefs: PreferenceManager) {
-        prefs.lastEpgDataItem?.let { updateSelectedChannel(it) }
+        PreferenceManager.getLoginResponse()?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("region", it)
+        }
+        val sseUrl = queryBuilder.build().toString()
+        loge("PlayerFingerprint url>",sseUrl)
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val withHeaders = original.newBuilder()
+                    .header("x-api-key", Constants.HEADER_TOKEN)
+                    .build()
+                chain.proceed(withHeaders)
+            }
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                loge("SSE >",sseUrl+data.toString())
+
+                try {
+                    data.toString()
+                        .convertIntoModel(PlayerSSEResponse::class.java)?.let {
+                            _playerSSERules.value = it
+                        }
+                    loge("SSE >", data.toString())
+
+                } catch (e: Exception) {
+                    loge("SSE ", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("SSE", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        playerEventSource = EventSources.createFactory(client).newEventSource(request, listener)
+    }
+
+    fun stopGlobalSSE() {
+        globalEventSource?.cancel()
+        globalEventSource = null
+    }
+    fun stopPlayerSSE() {
+        playerEventSource?.cancel()
+        playerEventSource = null
     }
 
     override fun onCleared() {
         filterPreferences.clearFilter(viewModelScope)
+        stopGlobalSSE()
+        stopPlayerSSE()
         super.onCleared()
     }
 }

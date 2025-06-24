@@ -1,7 +1,9 @@
 package com.example.tvapp.model.data.sse
 
+import androidx.annotation.Keep
 
 
+@Keep
 data class TabItem(
     val _id: String,
     val name: String,
@@ -14,6 +16,7 @@ data class TabItem(
 )
 
 
+@Keep
 data class Component(
     val name: String,
     val isVisible: Boolean?=false,

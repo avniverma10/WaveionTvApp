@@ -5,6 +5,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.tvapp.extensions.coreEPGLiveData
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
@@ -28,6 +29,34 @@ open class PlayerViewModel @Inject constructor(
     fun provideAvailableEPG() = application.coreEPGLiveData().value?: arrayListOf()
 
 
+    // Should be StateFlow or SharedFlow for Compose
+    val selectedEPG = MutableStateFlow<EPGDataItem?>(null)
+    val selectedProgram = MutableStateFlow<Programme?>(null)
+    val selectedTimeLeft = MutableStateFlow(0)
+
+    // Should be StateFlow or SharedFlow for Compose
+    val currentEPG = MutableStateFlow<EPGDataItem?>(null)
+    val currentProgram = MutableStateFlow<Programme?>(null)
+    val timeLeft = MutableStateFlow(0)
+
+    // Example update function
+    fun updateProgramInfo(selectedChannel: EPGDataItem?, program: Programme?, remainingTime: Int) {
+        loge("PlayerViewModel", "Updating program: $program, time: $remainingTime")
+        currentEPG.value = selectedChannel
+        currentProgram.value = program
+        timeLeft.value = remainingTime
+    }
+    // Example update function
+    fun updateSelectedProgramInfo(isSelected: Boolean) {
+        if(isSelected){
+            loge("PlayerViewModel", "Updating program: ${currentProgram.value}, time: ${timeLeft.value}")
+            selectedEPG.value = currentEPG.value
+            selectedProgram.value = currentProgram.value
+            selectedTimeLeft.value = timeLeft.value
+        }
+    }
+
+
     /**
      * Emits System.currentTimeMillis() immediately, then once every [intervalMillis].
      */
@@ -43,24 +72,8 @@ open class PlayerViewModel @Inject constructor(
     }.distinctUntilChanged()
 
 
-    private var _channel = MutableStateFlow<EPGDataItem>(EPGDataItem())
-    val selectedPlayerChannel: StateFlow<EPGDataItem> = _channel.asStateFlow()
-
-
-
-    private var _currentProgramMinutesLeft = MutableStateFlow<Int>(0)
-    val currentProgramMinutesLeft: StateFlow<Int> = _currentProgramMinutesLeft.asStateFlow()
-
-
-    fun updateSelectedPProgramInfo(selectedChannel:EPGDataItem){
-        _channel.value =  selectedChannel
-        selectedChannel.tv?.programme?.let { provideAvailablePrograms(it) }?.let {
-            it.getOrNull(0)?.let { it1 -> updateCurrentRunningProgramTimings(it1) }
-        }
-    }
-
-
-
+    private var _channel = MutableStateFlow<EPGDataItem?>(null)
+    val channel: StateFlow<EPGDataItem?> = _channel.asStateFlow()
 
     fun provideAvailablePrograms(programs: List<Programme>):List<Programme>{
         val now = System.currentTimeMillis()
@@ -87,19 +100,6 @@ open class PlayerViewModel @Inject constructor(
             }
     }
 
-    fun updateCurrentRunningProgramTimings(currentProgram:Programme){
-        val now = System.currentTimeMillis()
-        val diff = currentProgram.endTime?.minus(now)
-        (diff?.div(60000))?.toInt()?.let {
-            _currentProgramMinutesLeft.value = it
-        }
-    }
-
-    fun provideCurrentRunningProgramTimings(currentProgram:Programme?):Int{
-        val now = System.currentTimeMillis()
-        val diff = currentProgram?.endTime?.minus(now)
-        return (diff?.div(60000))?.toInt()?:0
-    }
 
     override fun onCleared() {
         super.onCleared()

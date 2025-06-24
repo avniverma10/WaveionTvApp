@@ -1,11 +1,14 @@
 package com.example.tvapp.model.data.epgdata
 
 import android.util.Log
+import androidx.annotation.Keep
+import com.example.tvapp.extensions.loge
 import com.google.gson.*
 import java.lang.reflect.Type
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Keep
 class CurrentDateTimeAdapter : JsonDeserializer<String> {
 
     private val serverFormat = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US).apply {
@@ -23,7 +26,7 @@ class CurrentDateTimeAdapter : JsonDeserializer<String> {
             val date: Date? = inputFormat.parse(json.asString)
             return date?.let { outputFormat.format(it) } ?: ""
         } catch (e: Exception) {
-            Log.e("CurrentDateTimeAdapter", "Parse Error: ${json.asString}", e)
+            loge("CurrentDateTimeAdapter", "Parse Error: ${json.asString} ${e.message}")
         }.toString()
     }
 }

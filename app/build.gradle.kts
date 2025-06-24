@@ -16,16 +16,24 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.0.19"
+        versionCode = 15
+        versionName = "1.0.20"
+
     }
 
     buildTypes {
         debug {
-            buildConfigField("String", "BUILD_TYPE", "\"dev\"")
+
+            val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
+            val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
+            buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
+            buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
         }
         release {
-            buildConfigField("String", "BUILD_TYPE", "\"live\"")
+            val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
+            val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
+            buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
+            buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the
             isShrinkResources =  true
@@ -112,7 +120,10 @@ dependencies {
     implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
+    //isoparser
+   // implementation(libs.isoparser)
    // If you don't use feature license encrypt, please comment line below
     implementation ("com.sigma.packer:sigma-packer:1.0.1")
+
 
 }

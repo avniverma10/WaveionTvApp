@@ -1,15 +1,17 @@
 package com.example.tvapp.model.data.manifest
 
 import android.util.Log
+import androidx.annotation.Keep
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class WTVManifest(
     var appName:String?="WaveTVApp",
     var logo:String?="https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
     var splashUrl:String?="https://waveiontechnologies.com/wp-content/uploads/2021/01/logo-header2.png",
-    var baseUrl:String? = "https://nextwave.waveiontechnologies.com:5000/api/",
+    var baseUrl:String? = "https://api-demo.caastv.com/api/",
     var styleNavigation:StyleNavigation?=null,
     var tab:List<TabInfo>?= null,
     var contact:Contact?=null,
@@ -22,6 +24,7 @@ data class WTVManifest(
     }
 }
 
+@Keep
 data class Contact(
     @SerializedName("__v")
     val version: Int?=0,
@@ -32,6 +35,7 @@ data class Contact(
     val website: String?=null
 )
 
+@Keep
 data class LandingChannel(
     val _id: String?=null,
     val title: String?=null,
@@ -43,8 +47,11 @@ data class LandingChannel(
     val version: Int?=0,
 )
 
+@Keep
 data class StyleNavigation(var fontName:String?="")
 
+
+@Keep
 data class TabInfo(
     @SerializedName("__v")
     val version: Int,
@@ -58,11 +65,14 @@ data class TabInfo(
     var categories:List<EPGCategory>?=null
 )
 
+@Keep
 data class Component(
     val _id: String,
     val isVisible: Boolean,
     val name: String
 )
+
+@Keep
 data class EPGCategory(var _id:String?="",
                        var name:String?="",
                        var published:Boolean=false,

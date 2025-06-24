@@ -1,5 +1,8 @@
 package com.example.tvapp.model.data.appupdate
 
+import androidx.annotation.Keep
+
+@Keep
 data class AppUpdateData(
     val _id: String,
     val appVersion: String,

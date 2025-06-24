@@ -14,6 +14,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.drm.ExoMediaDrm
 import androidx.media3.exoplayer.drm.MediaDrmCallback
+import com.example.tvapp.extensions.loge
 // import com.sigma.packer.SigmaDrmPacker
 import org.json.JSONException
 import org.json.JSONObject
@@ -71,12 +72,12 @@ class WidevineMediaDrmCallback(
             val jsonObject = JSONObject(String(responseData))
             // If you use feature license encryption, uncomment the next three lines:
             // val licenseInBase64 = SigmaDrmPacker.extractLicense(jsonObject.getString("license"))
-            // Log.e("WidevineDRM", "License Data: $licenseInBase64")
+            // loge("WidevineDRM", "License Data: $licenseInBase64")
             // return Base64.decode(licenseInBase64, Base64.DEFAULT)
             // Otherwise, simply decode the license:
             return Base64.decode(jsonObject.getString("license"), Base64.DEFAULT)
         } catch (e: JSONException) {
-            Log.e("WidevineDRM", "Error parsing DRM response: " + String(responseData), e)
+            loge("WidevineDRM", "Error parsing DRM response: ${String(responseData)} ${e.message}" )
             throw RuntimeException("Error parsing DRM response", e)
         }
     }

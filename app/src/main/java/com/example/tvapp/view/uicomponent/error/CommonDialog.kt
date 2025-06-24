@@ -1,5 +1,6 @@
 package com.example.tvapp.view.uicomponent.error
 
+import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border

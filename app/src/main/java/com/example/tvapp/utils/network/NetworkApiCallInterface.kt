@@ -28,7 +28,7 @@ interface NetworkApiCallInterface {
     fun makeTimestampRequest(@Url url: String): ServerTimeStamp
 
     @POST
-    fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>
+    fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String?>): Call<Any>
 
     /**
      * Make a POST request to a dynamic URL, with a JSON body and custom headers.

@@ -1,8 +1,12 @@
 package com.example.tvapp
 
 import android.app.Application
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
@@ -12,19 +16,37 @@ import com.example.tvapp.model.home.WTVHomeCategory
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class WTVApp : Application(), CoreComponentProvider{
-    private var wtvEGPLiveData: MutableLiveData<List<EPGDataItem>> = MutableLiveData()
-    private var wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
-    private var wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
-    private var wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
-    private var wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
-    private var macAddr: MutableLiveData<String> = MutableLiveData()
+class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
+    companion object {
+        /** True if any part of our app is visible in the foreground. */
+        @JvmStatic
+        var isInForeground: Boolean = false
+            private set
+    }
+    private val wtvEGPLiveData: MutableLiveData<List<EPGDataItem>> = MutableLiveData()
+    private val wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
+    private val wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
+    private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
+    private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
+    private val macAddr: MutableLiveData<String> = MutableLiveData()
 
     override fun onCreate() {
         super.onCreate()
+        // Register this Application as an observer of the overall process lifecycle:
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
+    // Called when the app’s first Activity comes to START (= any Activity visible).
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun onMoveToForeground() {
+        isInForeground = true
+    }
 
+    // Called when the app’s last visible Activity is STOPPED (i.e., no UI in front).
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    fun onMoveToBackground() {
+        isInForeground = false
+    }
 
 
     override fun provideEPGLiveData(): LiveData<List<EPGDataItem>>  = wtvEGPLiveData
@@ -56,8 +78,12 @@ class WTVApp : Application(), CoreComponentProvider{
     }
 
     override fun provideMacAddr(): LiveData<String> = macAddr
-
     override fun initializeMacAddr(data: String) {
         this.macAddr.value = data
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(this)
     }
 }

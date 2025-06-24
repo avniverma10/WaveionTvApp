@@ -1,22 +1,30 @@
 package com.example.tvapp.view.uicomponent
 
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.core.content.res.ResourcesCompat
 import androidx.media3.ui.PlayerView
+import com.android.panmetroiptv.R
 import java.security.MessageDigest
 import kotlin.random.Random
 
 
 fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
     val context = playerView.context
+    //FigTree Light font
+    val typeface = ResourcesCompat.getFont(context, R.font.figtree_light)
     val textView = TextView(context).apply {
         text = watermarkText
         setTextColor(Color.WHITE)
         textSize = 14f
-        alpha = 0.3f // Visible but subtle
+        alpha = 0.3f
+        setTypeface(typeface)
         setPadding(16, 16, 16, 16)
     }
 
@@ -58,7 +66,7 @@ fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
                     }
                 }
             }
-            handler.postDelayed(this, 50_00) //  Move every 10 seconds
+            handler.postDelayed(this, 2_000) //  Move every 10 seconds
         }
     }
 
@@ -76,6 +84,7 @@ fun addWatermarkToPlayer(playerView: PlayerView, watermarkText: String) {
         }
     })
 }
+
 
 // Generates watermark hash
 fun generateWatermark(userPhone: String?, deviceId: String): String {

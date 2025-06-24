@@ -2,7 +2,6 @@ package com.example.tvapp.di
 
 import android.content.Context
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
-import com.example.tvapp.utils.network.LoggingInterceptor
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -13,8 +12,6 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.Cache
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
@@ -93,13 +90,14 @@ object NetworkModule {
             init(null, trustAllCerts, SecureRandom())
         }
         val sslSocketFactory = sslContext.socketFactory
-        // 1) Interceptor that adds the API key header:
-        val apiKeyInterceptor = Interceptor { chain ->
-            val originalRequest = chain.request()
-            val requestWithApiKey = originalRequest.newBuilder()
+        // Interceptor that adds the API key header:
+        val headerInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            val builder = original.newBuilder()
+                .header("Accept", "application/json")
                 .header(API_KEY_HEADER, API_KEY_VALUE)
-                .build()
-            chain.proceed(requestWithApiKey)
+            val requestWithHeaders = builder.build()
+            chain.proceed(requestWithHeaders)
         }
         // Build and return the OkHttpClient
         return OkHttpClient.Builder()
@@ -108,10 +106,10 @@ object NetworkModule {
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .cache(cache)
-            .addInterceptor(apiKeyInterceptor)          // enable on-disk LRU
+            .addInterceptor(headerInterceptor)               // header
             .addInterceptor(offlineInterceptor)              // handles errors → cache
             .addNetworkInterceptor(networkCacheInterceptor)  // caches fresh responses
-            // Trust all SSL certificates (for debug/development only)
+            //Trust all SSL certificates (for debug/development only)
             .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
             .hostnameVerifier { _, _ -> true }
             .cache(null)

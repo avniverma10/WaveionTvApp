@@ -1,6 +1,5 @@
 package com.example.tvapp.view.panmetro.common
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,42 +25,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.provideProgramTime
-import com.example.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 
 
-@SuppressLint("StateFlowValueCalledInComposition")
 @Composable
-fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewModel) {
-    val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
-    val programList by sharedViewModel.filterAvailablePrograms.collectAsState()
-    val timestamp by playerViewModel.timestampFlow()
-        .collectAsState(initial = System.currentTimeMillis())
-
-
-    var programIndex = remember { 0 }
-
-    val currentProgram = remember(programIndex) {
-        programList.getOrNull(programIndex)
-    }
-
-    // 2) Format it once per emission
-    val timeLeft = remember(timestamp) {
-        val diff = programList.getOrNull(programIndex)?.endTime?.minus(timestamp) ?: 0
-        if( diff > 0){
-           val timeLeft = diff.div(60000).toInt()
-            if(timeLeft == 0){
-                1
-            }else{
-                timeLeft
-            }
-        }else{
-            programIndex +=1
-            (programList.getOrNull(programIndex)?.endTime?.minus(timestamp)?.div(60000))?.toInt()?:0
-        }
-    }
-
+fun TopOverlayInfo(playerViewModel: PlayerViewModel) {
+    val currentChannel by playerViewModel.selectedEPG.collectAsState()
+    val currentProgram by playerViewModel.selectedProgram.collectAsState()
+    val timeLeft by playerViewModel.selectedTimeLeft.collectAsState()
 
     Row(
         modifier = Modifier
@@ -73,7 +44,7 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
     ) {
         // Channel Logo
         AsyncImage(
-            model = selectedChannel.content?.thumbnailUrl,
+            model = currentChannel?.content?.thumbnailUrl,
             contentDescription = "Channel Logo",
             modifier = Modifier.size(70.dp)
         )
@@ -85,7 +56,7 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = selectedChannel.content?.title ?: "No Information Available",
+                text = currentChannel?.content?.title ?: "No Information Available",
                 style = TextStyle(
                     fontSize = 18.sp,
                     lineHeight = 28.01.sp,
@@ -95,6 +66,7 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
                 )
             )
             Spacer(modifier = Modifier.width(20.dp))
+            loge("AVNI","${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} ")
             Text(
                 text = "${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} • ${timeLeft} MIN LEFT",
                 color = Color.LightGray,

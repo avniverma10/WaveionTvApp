@@ -14,10 +14,10 @@ import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
-import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import kotlinx.coroutines.flow.first
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import com.example.tvapp.utils.uistate.PreferenceManager
 
 /**
  * Returns a MediaSourceFactory configured with a DRM session manager if needed.
@@ -119,7 +119,7 @@ suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="http
     val pwd = PreferenceManager.getPassword()//dataS?.get(DataStoreKeys.PASSWORD) ?: ""
 
     val macAddress = provideMacAddress()
-    Log.e("loginInfo>>","${uNamme},${pwd},>${macAddress}")
+    loge("loginInfo>>","${uNamme},${pwd},>${macAddress}")
     // Build URL with query parameters using OkHttp's HttpUrl builder.
     val httpUrl = defaultLicenseUrl.toUri().buildUpon()
         .appendQueryParameter("PlayState",      "1")
@@ -133,8 +133,8 @@ suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="http
         .build()
     val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?","https://drm.panmetroconvergence.com:4443?")
     logData?.put("licenseUrl",licenseUrl)
-    Log.e("loginInfo>",contentUrl.toString())
-    Log.e("loginInfo>",licenseUrl)
+    loge("loginInfo>",contentUrl.toString())
+    loge("loginInfo>",licenseUrl)
 
     return MediaItem.Builder()
         .setUri(contentUrl)

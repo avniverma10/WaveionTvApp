@@ -3,13 +3,10 @@ package com.example.tvapp.view.epg
 
 
 import android.app.Activity
-import android.os.Process
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,21 +38,16 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.appGenreLiveData
-import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.extensions.hideKeyboard
-import com.example.tvapp.extensions.logReport
-import com.example.tvapp.extensions.showToastS
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
-import com.example.tvapp.utils.Constants
-import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.utils.theme.screen_bg_color
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.CategoryMenu
-import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
-import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
@@ -68,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
+    HideKeyboardOnEnter()
     val context = LocalContext.current
 
 
@@ -75,21 +68,28 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
 
+
+
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
 
     val firstChannelFocusRequester = remember { FocusRequester() }
-    //hide keyboard forcefully
-    //HideKeyboardOnEnter()
+
     LaunchedEffect(Unit) {
-        context.hideKeyboard()
+        // Move focus to the first channel in your EPG content
         try {
             firstChannelFocusRequester.requestFocus()
         } catch (e: IllegalStateException) {
-            Log.e("FocusError", "FocusRequester not initialized", e)
+            loge("FocusError", "FocusRequester not initialized ${e.message}")
         }
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
+        //request for user hash
+        sharedViewModel?.provideUserHash()
 
+        PreferenceManager.clearSaveGenre()
+        PreferenceManager.clearSaveChannel()
     }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()
@@ -135,14 +135,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             showDialog = true,
             title = "Exit App",
             message = "Are you sure you want to exit the app?",
-            errorCode = null,
-            errorMessage = null,
             borderColor = Color.Transparent,
             painter = painterResource(id = R.drawable.exit_icon),
+            errorCode = null,
+            errorMessage = null,
             confirmButtonText = "Yes",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()
-                Process.killProcess(Process.myPid())
+//                Process.killProcess(Process.myPid())
             },
             dismissButtonText = "No",
             onDismiss = {
@@ -154,7 +154,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF14161A))
+            .background(screen_bg_color)
     ) {
         Column(
             modifier = Modifier
@@ -204,7 +204,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
         )
     }
 }

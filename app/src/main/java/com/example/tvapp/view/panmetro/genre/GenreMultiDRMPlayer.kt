@@ -31,7 +31,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -40,13 +39,19 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
+import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -56,10 +61,16 @@ fun GenreMultiDRMPlayer(
                         genreViewModel: GenreViewModel
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
+    val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
+    val playerView = remember {
+        mutableStateOf<PlayerView?>(null)
+    }
+
 
     // Mutable state for UI updates
     val isBuffering = rememberSaveable { mutableStateOf(false) }
@@ -75,57 +86,76 @@ fun GenreMultiDRMPlayer(
         WindowManager.LayoutParams.FLAG_SECURE
     )
 
-
-
-
-    // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
             .build()
             .apply {
-                addAnalyticsListener(object : AnalyticsListener {
-                    override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                        if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                            Log.d("DRM", "Keys loaded successfully")
-                        }
-                        if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                            Log.e("DRM", "Session manager error")
-                        }
-                    }
-                })
-                // Add a listener to handle playback errors.
-                addListener(object : Player.Listener {
-                    override fun onPlayerError(error: PlaybackException) {
-                        if (error.cause is HttpDataSource.HttpDataSourceException ) {
-                            // handle timeout: show a "Retry" UI
-                            val (displayCode, message) = playerErrorHandling(2002)
-                            errorCodeState = displayCode
-                            errorMessageState = message
-                            showErrorDialog = true
-                        } else {
-                            // handle other errors
-
-                            val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                                ?.responseCode
-                            var rawCode = httpCode ?: error.errorCode
-                            Log.e("rawCode","$rawCode")
-                            val (displayCode, message) = playerErrorHandling(rawCode)
-                            Log.e("rawCode","$displayCode")
-                            errorCodeState = displayCode
-                            errorMessageState = message
-                            showErrorDialog = true
-                        }
-
-
-
-                    }
-                })
+                // optional: any static setup
+                playWhenReady = true
             }
+    }
+
+    // Remember the player and recreate it when the DRM type changes
+    DisposableEffect(exoPlayer) {
+        // Analytics listener (unchanged)
+        val analyticsListener = object : AnalyticsListener {
+            override fun onEvents(player: Player, events: AnalyticsListener.Events) {
+                if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                    loge("DRM", "Keys loaded successfully")
+                }
+                if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                    loge("DRM", "Session manager error")
+                }
+            }
+        }
+
+        // Error listener
+        val errorListener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                // 1) Show your dialog
+                val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                    ?.responseCode
+                val rawCode = httpCode ?: error.errorCode
+                val (code, title, message) = playerErrorHandling(rawCode)
+                errorCodeState    = code
+                errorMessageState = message
+                showErrorDialog   = true
+
+                // 2) Schedule a retry in 0-2 minutes
+                scope.launch {
+                    val retryDelay = Random.nextLong(0L, 120_000L)
+                    loge("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                    delay(retryDelay)
+
+                    // re‐prepare the same live source
+                    exoPlayer.prepare()
+                    exoPlayer.playWhenReady = true
+                }
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    showErrorDialog = false
+                }
+            }
+        }
+        // Attach them
+        exoPlayer.addAnalyticsListener(analyticsListener)
+        exoPlayer.addListener(errorListener)
+
+        // Kick off the first playback
+        exoPlayer.prepare()
+
+
+        onDispose {
+            exoPlayer.removeAnalyticsListener(analyticsListener)
+            exoPlayer.removeListener(errorListener)
+            exoPlayer.release()
+        }
     }
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
-        Log.e("selectedVideoUrl>","$selectedChannelIndex")
+        loge("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
@@ -133,19 +163,18 @@ fun GenreMultiDRMPlayer(
             val drmData = HashMap<String,String>()
             drmData.put("DRMType",selectedVideoUrl.content?.drmType?:"")
             drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
-            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:"")
+            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
             val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
                 context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
             } else {
-                MediaItem.Builder()
-                    .setUri(url)
-                    .setMimeType(MimeTypes.APPLICATION_MPD) // DASH
-                    .build()
+                MediaItem.fromUri(url)
             }
-            Log.e("Requested Data>",drmData.toJSONObject().toString())
+            loge("Requested Data>",drmData.toJSONObject().toString())
             exoPlayer.setMediaItem(mediaItem)
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+            //make fingerprint request
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
         }
 
     }
@@ -160,9 +189,9 @@ fun GenreMultiDRMPlayer(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                val playerView = view.findViewById<PlayerView>(R.id.player_view)
+                playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-                playerView.apply {
+                playerView.value?.apply {
                     player = exoPlayer
                     useController = false
                     keepScreenOn = true
@@ -172,6 +201,17 @@ fun GenreMultiDRMPlayer(
 
             }
         )
+        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+            }
+        }
+
+        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(player= playerView.value, scrollMessageInfo = mutableStateOf(it))
+            }
+        }
 
         // Show Loading Indicator if Buffering
         Column(
@@ -197,6 +237,8 @@ fun GenreMultiDRMPlayer(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
+                exoPlayer.pause()
+            }else if (event == Lifecycle.Event.ON_STOP) {
                 exoPlayer.pause()
             }else if (event == Lifecycle.Event.ON_START) {
                 exoPlayer.play()

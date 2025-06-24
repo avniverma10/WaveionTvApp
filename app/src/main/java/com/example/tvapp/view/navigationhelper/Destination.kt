@@ -14,5 +14,8 @@ object Destination {
     const val genreScreen = "genreScreen"
     const val channel = "allchannels"
     const val settings = "settings"
+    const val demoHome    = "demoHome"
+    const val demoplayer      = "demoplayer"
+    const val profile      = "profile"
 
 }

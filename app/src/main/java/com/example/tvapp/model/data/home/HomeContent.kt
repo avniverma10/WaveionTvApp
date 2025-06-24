@@ -1,7 +1,9 @@
 package com.example.tvapp.model.data.home
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class HomeContent(
     @SerializedName("_id")
     val _id: String,
@@ -24,6 +26,7 @@ data class HomeContent(
 )
 
 
+@Keep
 data class HomeData(
     @SerializedName("_id")
     val _id: String,

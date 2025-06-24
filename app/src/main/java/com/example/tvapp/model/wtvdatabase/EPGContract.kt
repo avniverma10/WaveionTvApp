@@ -1,8 +1,10 @@
 package com.example.tvapp.model.wtvdatabase
 
 import android.net.Uri
+import androidx.annotation.Keep
 import androidx.core.net.toUri
 
+@Keep
 object EPGContract {
     const val AUTHORITY = "com.example.tvapp.provider"
     val BASE_URI: Uri = "content://$AUTHORITY".toUri()

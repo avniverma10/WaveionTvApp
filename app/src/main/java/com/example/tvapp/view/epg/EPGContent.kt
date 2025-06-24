@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -73,6 +74,7 @@ import com.example.tvapp.extensions.calculateProgramWidth
 import com.example.tvapp.extensions.calculateProgramsWidth
 import com.example.tvapp.extensions.formatTime
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -102,13 +104,22 @@ fun EPGContent(
     val currentTimeMillis = remember { mutableStateOf(System.currentTimeMillis()) }
     val rowStates = epgList.map { rememberLazyListState() }
     val scope = rememberCoroutineScope()
-
+    val channelFocusRequesters = remember(epgList) {
+        epgList.mapIndexed { idx, _ ->
+            if (idx == 0) firstChannelFocusRequester else FocusRequester()
+        }
+    }
+    val lastIndex by sharedViewModel.lastSelectedChannelIndex.collectAsState()
+    var isFirstComposition by rememberSaveable { mutableStateOf(true) }
     var hasDoneInitialFocus by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(epgList.isNotEmpty()) {
-        if (epgList.isNotEmpty() && !hasDoneInitialFocus) {
-            delay(100)                                     // wait a frame
-            firstChannelFocusRequester.requestFocus()      // focus first channel
-            hasDoneInitialFocus = true
+    LaunchedEffect(epgList) {
+        if (isFirstComposition && epgList.isNotEmpty()) {
+            delay(100)
+            channelFocusRequesters[0].requestFocus()
+            isFirstComposition = false
+        } else if (!isFirstComposition && lastIndex in epgList.indices) {
+            delay(100)
+            channelFocusRequesters[lastIndex].requestFocus()
         }
     }
     val programFocusRequesters = remember(epgList) {
@@ -127,6 +138,7 @@ fun EPGContent(
                 ?.requestFocus()
         }
     }
+
 
     if (epgList.isEmpty()) {
         Box(
@@ -149,7 +161,6 @@ fun EPGContent(
     val channelMap = epgList.associateBy { it.channelId }
     val hasInitiallyFocused = remember { mutableStateOf(false) }
     val leftPanelWidth = 180.dp
-
     //hide keyboard forcefully
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
@@ -211,16 +222,15 @@ fun EPGContent(
                                     sharedViewModel.updateLastFocusedChannel(channelIndex)
                                     epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
+                                        sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
+                                        sharedViewModel.updateSelectedChannel(channelData)
                                         navController.navigate(Destination.panMetroScreen) {
-//                                            PreferenceManager.selectedGenreIndex = 0
-//                                            PreferenceManager.selectedChannelIndex = 0
-                                            PreferenceManager.lastEpgDataItem = null
                                             // popUpTo(Destination.epgScreen) { inclusive = true }
                                         }
                                     }
                                 },
 //                                hasInitiallyFocused = hasInitiallyFocused,
-                                focusRequester = if (channelIndex == 0) firstChannelFocusRequester else null,
+                                focusRequester = channelFocusRequesters[channelIndex],
                                 languageFocusRequesters = languageFocusRequesters,
                                 languageSelectedIndex = languageSelectedIndex,
                                 categoryFocusRequesters = categoryFocusRequesters,
@@ -236,7 +246,7 @@ fun EPGContent(
                                     )
                             ) {
                                 val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
-                                Log.d("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
+                                loge("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
                                     .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
                                     val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
@@ -255,6 +265,11 @@ fun EPGContent(
                                                         .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
                                                 else Modifier
                                             )
+//                                            .focusProperties {
+//                                                if (channelIndex == 0) {
+//                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
+//                                                }
+//                                            }
                                             .onFocusChanged { isFocused.value = it.isFocused }
                                             .focusRequester(focusRequester)
                                             .focusable()
@@ -262,15 +277,14 @@ fun EPGContent(
                                                 if (keyEvent.type == KeyEventType.KeyDown) {
                                                     when (keyEvent.nativeKeyEvent.keyCode) {
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                                            epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
-                                                                sharedViewModel.updateSelectedChannel(channelItem)
-                                                                navController.navigate(Destination.panMetroScreen) {
-                                                                    PreferenceManager.selectedGenreIndex = 0
-                                                                    PreferenceManager.selectedChannelIndex = 0
-                                                                    PreferenceManager.lastEpgDataItem = null
-                                                                    // popUpTo(Destination.epgScreen) { inclusive = true }
+                                                            sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
+                                                            epgList
+                                                                .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
+                                                                ?.let { channelItem ->
+                                                                    sharedViewModel.updateSelectedChannel(channelItem)
+                                                                    navController.navigate(Destination.panMetroScreen) {
+                                                                    }
                                                                 }
-                                                            }
                                                             true
                                                         }
                                                         KeyEvent.KEYCODE_DPAD_DOWN -> {
@@ -416,9 +430,8 @@ fun EPGContent(
                         epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
                             navController.navigate(Destination.panMetroScreen) {
-                                PreferenceManager.selectedGenreIndex = 0
-                                PreferenceManager.selectedChannelIndex = 0
-                                PreferenceManager.lastEpgDataItem = null
+                                PreferenceManager.clearSaveGenre()
+                                PreferenceManager.clearSaveChannel()
                                 // popUpTo(Destination.epgScreen) { inclusive = true }
                             }
                         }
@@ -467,8 +480,7 @@ fun LeftPanelHeader(width: Dp) {
                 text = formattedTime,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.width(150.dp),
-                style = TextStyle(fontSize = 16.sp, lineHeight = 28.01.sp, fontFamily = FontFamily(Font(
-                    R.font.figtree_light)), fontWeight = FontWeight(600), color = Color(0xFFB5B5B5))
+                style = TextStyle(fontSize = 16.sp, lineHeight = 28.01.sp, fontFamily = FontFamily(Font(R.font.figtree_light)), fontWeight = FontWeight(600), color = Color(0xFFB5B5B5))
             )
             Spacer(modifier = Modifier.width(14.dp))
         }
@@ -484,7 +496,7 @@ fun ChannelInfo(
     isLastChannel: Boolean,
     onPlayClicked: (String?) -> Unit,
 //    hasInitiallyFocused: MutableState<Boolean>,
-    focusRequester: FocusRequester? = null,
+    focusRequester: FocusRequester,
     languageFocusRequesters: List<FocusRequester>,
     languageSelectedIndex: MutableState<Int>,
     categoryFocusRequesters: List<FocusRequester>,
@@ -546,7 +558,7 @@ fun ChannelInfo(
                     else Modifier
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
-                .focusRequester(actualFocusRequester)
+                .focusRequester(focusRequester)
                 .focusable()
                 .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }

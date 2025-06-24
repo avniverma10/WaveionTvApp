@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.login.LoginInfo
 import com.google.gson.Gson
 
 object PreferenceManager {
@@ -11,47 +12,30 @@ object PreferenceManager {
   private val gson = Gson()
 
   // Keys
-  private const val KEY_GENRE          = "selectedGenreIndex"
-  private const val KEY_CHANNEL        = "selectedChannelIndex"
-  private const val KEY_PLAYER_CHANNEL = "playerChannelIndex"
+  private const val KEY_GENRE          = "genre"
+  private const val KEY_CHANNEL        = "channel"
   private const val KEY_USERNAME   = "username"
   private const val KEY_PASSWORD   = "password"
+  private const val KEY_USER_INFO   = "userinfo"
+  private const val KEY_USER_HASH   = "userhash"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
     prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
   }
 
-  var selectedGenreIndex: Int
-    get() = prefs.getInt(KEY_GENRE, 0)
-    set(v) = prefs.edit() { putInt(KEY_GENRE, v) }
-
-  var selectedChannelIndex: Int
-    get() = prefs.getInt(KEY_CHANNEL, 0)
-    set(v) = prefs.edit() { putInt(KEY_CHANNEL, v) }
-
-
-  /** Persist the last‐seen EPGDataItem as JSON */
-  var lastEpgDataItem: EPGDataItem?
-    get() {
-      val json = prefs.getString(KEY_PLAYER_CHANNEL, null) ?: return null
-      return try {
-        gson.fromJson(json, EPGDataItem::class.java)
-      } catch (e: Exception) {
-        null
-      }
-    }
-    set(item) {
-      val editor = prefs.edit()
-      if (item == null) {
-        editor.remove(KEY_PLAYER_CHANNEL)
-      } else {
-        val json = gson.toJson(item)
-        editor.putString(KEY_PLAYER_CHANNEL, json)
-      }
-      editor.apply()
-    }
-
+  /** Save genre atomically */
+  fun saveGenre(genre: String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_GENRE, genre)
+    editor.apply()
+  }
+  /** Save genre atomically */
+  fun saveChannel(channel: String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_CHANNEL, channel)
+    editor.apply()
+  }
   /** Save username & password atomically */
   fun saveLogin(username: String, password: String) {
     val editor = prefs.edit()
@@ -60,11 +44,47 @@ object PreferenceManager {
     editor.apply()
   }
 
+  /** Save username & password atomically */
+  fun saveUserInfo(userInfo: LoginInfo) {
+    val json = Gson().toJson(userInfo)
+    val editor = prefs.edit()
+    editor.putString(KEY_USER_INFO, json)
+    editor.apply()
+  }
+  fun getLoginResponse(): LoginInfo? {
+    val json = prefs.getString(KEY_USER_INFO, null)
+      ?: return null
+    return Gson().fromJson(json, LoginInfo::class.java)
+  }
+
+  fun saveHash(hash:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_USER_HASH, hash)
+    editor.apply()
+  }
+
+
   /** Clear only the login keys */
   fun clearLogin(): Boolean {
     val editor = prefs.edit()
+    editor.remove(KEY_USER_INFO)
     editor.remove(KEY_USERNAME)
     editor.remove(KEY_PASSWORD)
+    editor.remove(KEY_USER_HASH)
+    return editor.commit()
+  }
+
+  /** Clear only the Genre keys */
+  fun clearSaveGenre(): Boolean {
+    val editor = prefs.edit()
+    editor.remove(KEY_GENRE)
+    return editor.commit()
+  }
+
+  /** Clear only the Genre keys */
+  fun clearSaveChannel(): Boolean {
+    val editor = prefs.edit()
+    editor.remove(KEY_CHANNEL)
     return editor.commit()
   }
 
@@ -72,5 +92,8 @@ object PreferenceManager {
   /** Helpers to read them back */
   fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
   fun getPassword(): String? = prefs.getString(KEY_PASSWORD, null)
-  fun isLoggedIn(): Boolean = getUsername() != null && getPassword() != null
+  fun provideUserHash(): String? = prefs.getString(KEY_USER_HASH, null)
+
+  fun getSavedGenre(): String? = prefs.getString(KEY_GENRE, null)
+  fun getSavedChannel(): String? = prefs.getString(KEY_CHANNEL, null)
 }

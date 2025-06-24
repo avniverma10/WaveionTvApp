@@ -1,3 +1,4 @@
+import androidx.annotation.Keep
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
@@ -12,6 +13,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+@Keep
 class TimestampAdapter : JsonDeserializer<Long>, JsonSerializer<Long> {
 
     private val dateFormat = SimpleDateFormat("yyyyMMdd", Locale.US)

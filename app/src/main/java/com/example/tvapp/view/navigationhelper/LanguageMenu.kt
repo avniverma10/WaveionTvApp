@@ -1,6 +1,5 @@
 package com.example.tvapp.view.navigationhelper
 
-import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,8 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,15 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.appGenreLiveData
-import com.example.tvapp.extensions.appLanguageLiveData
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
-import com.example.tvapp.model.data.genre.WTVGenre
-import com.example.tvapp.model.data.language.WTVLanguage
-import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -65,7 +56,6 @@ fun LanguageMenu(
     val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
 
     val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
-
 
     if (languageItems.isEmpty()) {
         return
@@ -105,6 +95,8 @@ fun LanguageMenu(
                     isFocused.value = it.isFocused
                     if (it.isFocused) {
                         selectedIndex.value = index
+                        sharedViewModel.updateLastSelectedChannelIndex(-1)
+                        sharedViewModel.updateLastFocusedChannel(-1)
                         val languageName = item.name ?: "Unknown"
                         sharedViewModel.updateLanguage(languageName)
                     }
@@ -123,7 +115,7 @@ fun LanguageMenu(
                                         try {
                                             requester.requestFocus()
                                         } catch (e: IllegalStateException) {
-                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                            loge("FocusError", "FocusRequester not initialized ${e.message}")
                                         }
                                     }
                                 }

@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro.genre
 
+import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -43,7 +45,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -53,249 +54,234 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.launch
+
 
 @Composable
 fun ChannelListMenuScreen(
     sharedViewModel: SharedViewModel,
     genreViewModel: GenreViewModel,
-    selectedChannelIndex : MutableState<Int>,
+    selectedChannelIndex: MutableState<Int>,
     channelListFocusRequester: FocusRequester,
     channelToGenreFocus: MutableState<Boolean>,
     onNavigateToGenre: () -> Unit,
     onVideoChange: (EPGDataItem, Int) -> Unit,
     onPlayerScreenIntent: (EPGDataItem) -> Unit,
 ) {
-
-    val context = LocalContext.current
     var focusedIndex by remember { mutableStateOf(0) }
     var previewChannelIndex by remember { mutableStateOf(0) }
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
-    val selectedChannelIndex by remember { mutableStateOf( selectedChannelIndex) }
-
-    LaunchedEffect(filteredChannels) {
-        focusedIndex = if(selectedChannelIndex.value >0) selectedChannelIndex.value else 0
-        previewChannelIndex = if(selectedChannelIndex.value >0) selectedChannelIndex.value else 0
-        filteredChannels.getOrNull(selectedChannelIndex.value)
-            ?.let { sharedViewModel.updateSelectedChannel(it) }
-    }
-
-    LaunchedEffect(Unit) {
-        context.hideKeyboard()
-        channelListFocusRequester.requestFocus()
-    }
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    val topArrowHighlighted by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 }
+    // Sync indices with selectedChannelIndex
+    LaunchedEffect(selectedChannelIndex.value) {
+        focusedIndex = selectedChannelIndex.value.coerceAtLeast(0)
+        previewChannelIndex = selectedChannelIndex.value.coerceAtLeast(0)
     }
-    val bottomArrowHighlighted by remember {
-        derivedStateOf {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            visibleItems.isNotEmpty() && visibleItems.last().index < listState.layoutInfo.totalItemsCount - 1
+
+    // Handle initial focus and scroll
+    LaunchedEffect(filteredChannels) {
+        if (filteredChannels.isNotEmpty()) {
+            try {
+                channelListFocusRequester.requestFocus()
+                coroutineScope.launch {
+                    listState.animateScrollToItem(focusedIndex)
+                }
+            } catch (e: Exception) {
+                Log.e("ChannelList", "Focus error: ${e.message}")
+            }
         }
     }
 
-    // Store last press info for double-click detection.
-    var lastPressTime by remember { mutableStateOf(0L) }
-    var lastKey by remember { mutableStateOf<Key?>(null) }
+    // Auto-scroll when focused item changes
+    LaunchedEffect(focusedIndex) {
+        if (focusedIndex != -1 && focusedIndex !in listState.layoutInfo.visibleItemsInfo.map { it.index }) {
+            coroutineScope.launch {
+                listState.animateScrollToItem(focusedIndex)
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
-            .fillMaxWidth(1f)
+            .fillMaxWidth()
             .fillMaxHeight()
             .background(Color(0xFF151414), shape = RoundedCornerShape(8.dp))
     ) {
-        // Top arrow row.
+        // Top arrow (fixed height)
         Row(
-            verticalAlignment = Alignment.Top,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(40.dp) // Fixed height
                 .padding(5.dp)
-                .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp))
+                .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp)),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             androidx.compose.material3.Icon(
                 imageVector = Icons.Filled.KeyboardArrowUp,
                 contentDescription = "Up Icon",
                 tint = Color.Gray,
-                modifier = Modifier
-                    .padding(end = 4.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
-        // Vertical list of channels.
-        LazyColumn(
-            state = listState,
+        // Main content area with weight
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(10.dp)
-                .focusRequester(channelListFocusRequester)
-                .focusable()
-                .onPreviewKeyEvent { keyEvent ->
-                    if (keyEvent.type == KeyEventType.KeyDown) {
-                        when (keyEvent.nativeKeyEvent.keyCode) {
-                            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                // Switch focus to the genre list.
-                                onNavigateToGenre()
-                                false
-                            }
-                            KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                if (focusedIndex < filteredChannels.size - 1) {
-                                    focusedIndex++
-                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                        previewChannelIndex = focusedIndex
-                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
-                                    }
-                                    // Scroll if needed.
-                                    val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                    if (focusedIndex !in visibleIndices) {
-                                        coroutineScope.launch {
-                                            listState.animateScrollToItem(focusedIndex)
-                                        }
-                                    }
-                                }
-                                true
-                            }
-                            KeyEvent.KEYCODE_DPAD_UP -> {
-                                if (focusedIndex > 0) {
-                                    focusedIndex--
-                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                        previewChannelIndex = focusedIndex
-                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
-                                    }
-                                    val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                    if (focusedIndex !in visibleIndices) {
-                                        coroutineScope.launch {
-                                            listState.animateScrollToItem(focusedIndex)
-                                        }
-                                    }
-
-                                }
-                                true
-                            }
-                            KeyEvent.KEYCODE_DPAD_CENTER -> {
-                               // val currentTime = System.currentTimeMillis()
-                               // val currentKey = keyEvent.key
-                                if(filteredChannels.size > focusedIndex) {
+                .fillMaxWidth()
+        ) {
+            if (filteredChannels.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No channels available\nGet back soon!",
+                        color = Color.White,
+                        fontSize = 18.sp,
+                        fontFamily = FontFamily(Font(R.font.figtree_medium)),
+                        fontWeight = FontWeight.Medium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(channelListFocusRequester)
+                        .focusable()
+                        .onPreviewKeyEvent { keyEvent ->
+                            handleKeyEvents(
+                                keyEvent = keyEvent,
+                                filteredChannels = filteredChannels,
+                                focusedIndex = focusedIndex,
+                                onNavigateToGenre = {
+                                    channelToGenreFocus.value = true
+                                    onNavigateToGenre()
+                                },
+                                onIndexChange = { newIndex ->
+                                    focusedIndex = newIndex
+                                    previewChannelIndex = newIndex
+                                    selectedChannelIndex.value = newIndex
+                                    onVideoChange(filteredChannels[newIndex], newIndex)
+                                },
+                                onSelectChannel = {
                                     onPlayerScreenIntent(filteredChannels[focusedIndex])
                                 }
-                                true
-                                /*if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
-                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                        onDoubleClickIntent(filteredChannels[focusedIndex])
-                                    }
-                                    true
-                                } else {
-                                    lastPressTime = currentTime
-                                    lastKey = currentKey
-                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                        previewChannelIndex = focusedIndex
-                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
-                                    }
-                                    false
-                                }*/
-                            }
-                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                    previewChannelIndex = focusedIndex
-                                    onVideoChange(filteredChannels[focusedIndex], focusedIndex)
-                                }
-                                true
-                            }
-                            else -> false
+                            )
                         }
-                    } else false
-                }
-        ) {
-            itemsIndexed(filteredChannels) { index, channel ->
-                NewChannelRow(
-                    channel = channel,
-                    isFocused = (index == focusedIndex),
-                    isPreview = (index == previewChannelIndex),
-                    onFocus = { newIndex ->
-                        focusedIndex = newIndex
-                        previewChannelIndex = newIndex
-                    },
-                    onVideoChange = { channelData, index ->
-                        previewChannelIndex = index
-                        onVideoChange(channelData, index)
+                ) {
+                    itemsIndexed(filteredChannels) { index, channel ->
+                        ChannelListItem(
+                            channel = channel,
+                            isFocused = index == focusedIndex,
+                            isPreview = index == previewChannelIndex,
+                            onFocus = {
+                                focusedIndex = index
+                                previewChannelIndex = index
+                                onVideoChange(channel, index)
+                            }
+                        )
                     }
-                )
+                }
             }
         }
 
-        // Bottom arrow row.
+        // Bottom arrow (fixed height)
         Row(
-            verticalAlignment = Alignment.Bottom,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(40.dp) // Fixed height
                 .padding(5.dp)
-                .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp))
-                .onPreviewKeyEvent { event -> if (event.type == KeyEventType.KeyUp) true else false }
+                .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp)),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             androidx.compose.material3.Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Down Icon",
                 tint = Color.Gray,
-                modifier = Modifier
-                    .padding(end = 4.dp)
-                    .fillMaxWidth()
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
 }
 
+private fun handleKeyEvents(
+    keyEvent: androidx.compose.ui.input.key.KeyEvent,
+    filteredChannels: List<EPGDataItem>,
+    focusedIndex: Int,
+    onNavigateToGenre: () -> Unit,
+    onIndexChange: (Int) -> Unit,
+    onSelectChannel: () -> Unit
+): Boolean {
+    if (keyEvent.type != KeyEventType.KeyDown) return false
 
+    return when (keyEvent.nativeKeyEvent.keyCode) {
+        KeyEvent.KEYCODE_DPAD_LEFT -> {
+            onNavigateToGenre()
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_DOWN -> {
+            if (focusedIndex < filteredChannels.lastIndex) {
+                onIndexChange(focusedIndex + 1)
+            }
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_UP -> {
+            if (focusedIndex > 0) {
+                onIndexChange(focusedIndex - 1)
+            }
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_CENTER -> {
+            onSelectChannel()
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_RIGHT -> true
+        else -> false
+    }
+}
 
 @Composable
-fun NewChannelRow(
+fun ChannelListItem(
     channel: EPGDataItem,
     isFocused: Boolean,
     isPreview: Boolean,
-    onFocus: (Int) -> Unit,
-    onVideoChange: (EPGDataItem, Int) -> Unit
+    onFocus: () -> Unit
 ) {
-    val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
-
-    val titleTextColor = if (isFocused || isPreview) Color(0xFF49FEDD) else Color.White
+    val titleColor = if (isFocused || isPreview) base_color else Color.White
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .focusable()
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    // When this row gains focus, trigger the video change,
-                    // and update the parent's focus and preview index.
-                    onVideoChange(channel, 0)
-                    // Depending on your use-case, you might want to pass the index from the parent.
-                    // Here, assume the parent lambda onFocus is invoked with the row index.
-                    // (This requires that you call onFocus(newIndex) from your LazyColumn.)
-                }
-            }
             .padding(8.dp)
+            .focusable()
+            .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .border(
                     width = if (isFocused) 1.dp else 0.dp,
-                    color = borderColor,
+                    color = if (isFocused) base_color else Color.Transparent,
                     shape = RoundedCornerShape(5.dp)
                 )
                 .background(Color(0xFF232020), shape = RoundedCornerShape(6.dp))
-                .padding(8.dp)
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(8.dp))
+            // Channel logo
             AsyncImage(
                 model = channel.content?.thumbnailUrl,
                 contentDescription = null,
@@ -305,29 +291,34 @@ fun NewChannelRow(
                     .padding(4.dp),
                 contentScale = ContentScale.Fit
             )
-            Spacer(modifier = Modifier.width(12.dp))
+
+            Spacer(Modifier.width(12.dp))
+
+            // Channel number
             Box(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .background(Color.White, shape = RoundedCornerShape(4.dp))
-                    .padding(horizontal = 2.dp, vertical = 2.dp)
+                    .background(Color.White, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
-                androidx.compose.material3.Text(
+                Text(
                     text = channel.content?.channelNo?.toString() ?: "--",
                     color = Color.Black,
                     fontSize = 11.sp
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+
+            Spacer(Modifier.width(8.dp))
+
+            // Channel title
             Text(
                 text = channel.content?.title ?: "",
-                color = titleTextColor, // Yellow if either focused or preview, otherwise white.
+                color = titleColor,
                 fontSize = 15.sp,
                 fontFamily = FontFamily(Font(R.font.figtree_medium)),
-                fontWeight = FontWeight(400),
+                fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f)
             )
         }
     }

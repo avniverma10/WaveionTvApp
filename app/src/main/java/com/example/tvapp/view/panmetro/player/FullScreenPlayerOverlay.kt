@@ -1,6 +1,6 @@
 package com.example.tvapp.view.panmetro.player
 
-import android.util.Log
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +26,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,22 +39,20 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.formatTime
-import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.panmetro.common.TopOverlayInfo
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
-import kotlin.div
-import kotlin.text.toInt
+import kotlin.math.abs
 
+@SuppressLint("UnrememberedMutableState")
 @Composable
 fun FullScreenPlayerOverlay(
     selectedIndex: MutableState<Int>,
@@ -63,6 +62,9 @@ fun FullScreenPlayerOverlay(
     channelFocusRequesters: List<FocusRequester>,
     onChannelFocused: (EPGDataItem) -> Unit
 ) {
+
+    val context = LocalContext.current
+    HideKeyboardOnEnter()
     val epgList = playerViewModel.provideAvailableEPG()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
@@ -70,7 +72,8 @@ fun FullScreenPlayerOverlay(
     val timestamp by playerViewModel.timestampFlow()
         .collectAsState(initial = System.currentTimeMillis())
 
-    val currentTimeStamp: MutableState<Long> = remember { mutableStateOf( timestamp) }
+    val currentTimeStamp: MutableState<Long> = remember { mutableLongStateOf( timestamp) }
+    val isSelectedChannel = remember { mutableStateOf( false) }
 
 
     // Constants for animations
@@ -83,10 +86,9 @@ fun FullScreenPlayerOverlay(
             it.content?.videoUrl == selectedChannel.content?.videoUrl
         }.coerceAtLeast(0)
         selectedIndex.value = idx
-        playerViewModel.updateSelectedPProgramInfo(selectedChannel)
         lazyListState.scrollToItem(idx)
+        isSelectedChannel.value = true
     }
-
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Top gradient overlay
@@ -112,7 +114,7 @@ fun FullScreenPlayerOverlay(
                 .background(topBarGradient)
                 .padding(horizontal = 24.dp, vertical = 13.dp)
         ) {
-            TopOverlayInfo(sharedViewModel= sharedViewModel,playerViewModel = playerViewModel)
+            TopOverlayInfo(playerViewModel=playerViewModel)
         }
 
         // Channel carousel at bottom
@@ -135,13 +137,16 @@ fun FullScreenPlayerOverlay(
                 ) { index, item ->
                     val isFocused = remember { mutableStateOf(false) }
                     val isSelected = selectedIndex.value == index
-
+                    if (isSelected && isSelectedChannel.value){
+                        playerViewModel.updateSelectedProgramInfo(true)
+                        isSelectedChannel.value = false
+                    }
                     // Calculate distance from center for scaling
                     val itemOffset = index - selectedIndex.value
                     val scale = when {
                         isSelected -> maxScale
                         else -> {
-                            val scaleFactor = 1f - (kotlin.math.abs(itemOffset) * 0.15f)
+                            val scaleFactor = 1f - (abs(itemOffset) * 0.15f)
                             scaleFactor.coerceIn(minScale, maxScale)
                         }
                     }
@@ -153,10 +158,9 @@ fun FullScreenPlayerOverlay(
 
                     ChannelCard(
                         playerViewModel = playerViewModel,
-                        epgDataItem = item,
+                        epgDataItem =item,
                         timestamp =  currentTimeStamp,
                         isFocused = isSelected,
-                        scale = animatedScale,
                         modifier = Modifier
                             .graphicsLayer {
                                 scaleX = animatedScale
@@ -185,9 +189,9 @@ private fun ChannelCard(
     epgDataItem: EPGDataItem,
     timestamp: MutableState<Long>,
     isFocused: Boolean,
-    scale: Float,
     modifier: Modifier
 ) {
+    val now = System.currentTimeMillis()
     val programList = epgDataItem.tv?.programme?.let {
         playerViewModel.provideAvailablePrograms(
             it
@@ -198,18 +202,16 @@ private fun ChannelCard(
 
     var currentProgram = remember(programIndex) {
         var program = programList?.getOrNull(programIndex.intValue)
-        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
         program
     }
 
     var nextProgram = remember(programIndex) {
         val nextIndex = programIndex.intValue+1
         var program = programList?.getOrNull(nextIndex)
-        Log.e("program","${program?.startTime} and ${program?.startFormatedTime}")
         program
     }
 
-    // 2) Format it once per emission
+    //Format it once per emission
     val timeLeft = remember(timestamp) {
         val diff = programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value) ?: 0
         if( diff > 0){
@@ -225,12 +227,6 @@ private fun ChannelCard(
         }
     }
 
-    /*LaunchedEffect(programList) {
-        currentProgram = programList?.getOrNull(0)
-        nextProgram = programList?.getOrNull(1)
-        currentProgram?.let { playerViewModel.updateCurrentRunningProgramTimings(it) }
-    }
-*/
 
     Box(
         modifier = modifier
@@ -242,6 +238,7 @@ private fun ChannelCard(
             )
             .then(
                 if (isFocused) {
+                    playerViewModel.updateProgramInfo(selectedChannel = epgDataItem,currentProgram,timeLeft)
                     Modifier.border(
                         width = 2.dp,
                         color = Color(0xFF49FEDD),
@@ -325,4 +322,10 @@ private fun ChannelCard(
             )
         }
     }
+}
+
+private fun formatTime(timeMillis: Long?): String {
+    return timeMillis?.let {
+        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it)
+    } ?: "--"
 }

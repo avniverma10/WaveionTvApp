@@ -1,6 +1,5 @@
 package com.example.tvapp.view.navigationhelper
 
-import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,8 +40,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -112,6 +111,14 @@ fun CategoryMenu(
                     }
                     .focusRequester(categoryFocusRequesters[index])
                     .focusable()
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            // clear out the old channel selection
+                            sharedViewModel.updateLastSelectedChannelIndex(-1)
+                            // (if you also track lastFocusedChannelIndex separately, clear that too)
+                            sharedViewModel.updateLastFocusedChannel(-1)
+                        }
+                    }
                     .onPreviewKeyEvent { keyEvent ->
                         if (keyEvent.type == KeyEventType.KeyDown &&
                             keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_DOWN
@@ -124,7 +131,7 @@ fun CategoryMenu(
                                         requester.requestFocus()
                                     }
                                 }
-                           // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
+                            // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }

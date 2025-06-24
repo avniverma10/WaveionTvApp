@@ -7,6 +7,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.Keep
 import com.example.tvapp.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@Keep
 data class DeviceInfo(
     val userId: String,
     val deviceType: String,
@@ -33,19 +35,6 @@ data class DeviceInfo(
 interface ApiServiceForDeviceInfo {
     @POST("deviceInfo")
     suspend fun sendDeviceInfo(@Body deviceInfo: DeviceInfo): Response<Void>
-}
-
-object RetrofitClientForDeviceInfo {
-    private val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(Constants.BASE_URL_API_1)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    val deviceInfoApi: ApiServiceForDeviceInfo by lazy {
-        retrofit.create(ApiServiceForDeviceInfo::class.java)
-    }
 }
 
 object DeviceInfoService {
@@ -82,21 +71,4 @@ object DeviceInfoService {
             active = isActive
         )
     }
-
-    suspend fun sendDeviceInfo(context: Context, userId: String, isActive: Boolean = true) =
-        withContext(Dispatchers.IO) {
-            val deviceInfo = collectDeviceInfo(context, userId, isActive)
-            Log.i("rishi -DeviceInfo", "sendDeviceInfo: deviceInfo $deviceInfo")
-            try {
-                Log.d("rishi -DeviceInfo", "Sending device info: $deviceInfo")
-                val response = RetrofitClientForDeviceInfo.deviceInfoApi.sendDeviceInfo(deviceInfo)
-                if (response.isSuccessful) {
-                    Log.d("rishi -DeviceInfo", "Device info sent successfully. Response Code: ${response.code()}")
-                } else {
-                    Log.e("rishi -DeviceInfo", "Failed to send device info. Response Code: ${response.code()}, Message: ${response.message()}")
-                }
-            } catch (e: Exception) {
-                Log.e("rishi -DeviceInfo", "Exception while sending device info", e)
-            }
-        }
 }

@@ -16,16 +16,16 @@ import java.util.UUID
 data class AndroidTvDrmInfo(
     var userName:String?=null,
     var userPassword:String?=null,
-    val drmScheme: String,
-    val widevineSecurityLevel: String,
-    val macId: String,
-    val deviceUniqueId: String,
-    val manufacturer: String,
-    val model: String,
-    val androidVersion: String,
-    val totalMemory: String,
-    val storageInfo: String,
-    val availableStorage: String
+    val drmScheme: String?=null,
+    val widevineSecurityLevel: String?=null,
+    val macId: String?=null,
+    val deviceUniqueId: String?=null,
+    val manufacturer: String?=null,
+    val model: String?=null,
+    val androidVersion: String?=null,
+    val totalMemory: String?=null,
+    val storageInfo: String?=null,
+    val availableStorage: String?=null
 )
 
 fun Context.getAndroidTvDrmInfo(): AndroidTvDrmInfo? {
@@ -86,7 +86,7 @@ fun Context.getTotalMemory(): String {
     return String.format(Locale.US, "%.2f GB", totalMemInGB)
 }
 
-fun AndroidTvDrmInfo.toHashMap(): HashMap<String, String> {
+fun AndroidTvDrmInfo.toHashMap(): HashMap<String, String?> {
     return hashMapOf(
         "userName" to (userName ?: ""),
         "userPassword" to (userPassword ?: ""),

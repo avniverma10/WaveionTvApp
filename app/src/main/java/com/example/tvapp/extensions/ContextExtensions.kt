@@ -9,13 +9,10 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkInfo
 import android.net.Uri
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
@@ -24,8 +21,6 @@ import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 import java.io.File
-import java.net.NetworkInterface
-import java.util.Locale
 
 
 val Context.dataStore by preferencesDataStore(name = "user_prefs")
@@ -98,7 +93,7 @@ fun Context.isInternetOn(): Boolean {
             val activeNetworkInfo: NetworkInfo? = connectivityManager.activeNetworkInfo
             return activeNetworkInfo?.isConnected ?: false
         } catch (e: Throwable) {
-            Log.e("",e.message?:"")
+            loge("",e.message?:"")
         }
     }
     return false

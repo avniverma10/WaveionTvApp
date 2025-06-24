@@ -4,7 +4,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.extensions.AndroidTvDrmInfo
-import com.example.tvapp.model.data.login.WTVLogin
+import com.example.tvapp.extensions.loge
+import com.example.tvapp.model.data.login.LoginInfo
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.repository.login.LoginRepositoryImpl
@@ -21,13 +22,7 @@ class LoginViewModel @Inject constructor(
     private val application: Application, private val loginRepositoryImpl: LoginRepositoryImpl, private val loginPrefsRepository: LoginPrefsRepository) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     var verificationId: String? = "000000"
 
-    fun saveLogin(username: String, password: String) {
-        viewModelScope.launch {
-            loginPrefsRepository.saveLoginInfo(username, password)
-        }
-    }
-
-    fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(WTVLogin?,String?)->Unit){
+    fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(LoginInfo?,String?)->Unit){
         viewModelScope.launch {
             // 3. Prepare headers and body
             val headers = mapOf(
@@ -35,11 +30,11 @@ class LoginViewModel @Inject constructor(
                 "Content-Type"  to "application/json"
             )
             // "uname":"PAN000014","paswrd":"1234566","macaddr":"123456789"
-            Log.e("MAC ID", "$androidTvDrmInfo.macId")
+            loge("MAC ID", "$androidTvDrmInfo.macId")
             val requestBody = hashMapOf(
                 "uname" to (androidTvDrmInfo.userName ?: ""),
                 "paswrd" to (androidTvDrmInfo.userPassword ?: ""),
-                "macaddr" to (androidTvDrmInfo.macId)
+                "macaddr" to (androidTvDrmInfo.macId?: "")
             )
             //loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
             loginRepositoryImpl.provideUserLogin(
@@ -53,7 +48,6 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
-
 
     // Send OTP
     fun sendOtp( authToken: String,phoneNumber: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {

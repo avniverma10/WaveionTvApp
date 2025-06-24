@@ -1,7 +1,9 @@
 package com.example.tvapp.model.data.banner
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class Banner(
     val _id: String,
     val name: String,

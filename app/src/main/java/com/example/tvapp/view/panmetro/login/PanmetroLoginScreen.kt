@@ -32,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +59,7 @@ import androidx.navigation.NavController
 import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toResponseMessage
@@ -68,27 +68,27 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.LoginViewModel
+import com.example.tvapp.viewmodels.SharedViewModel
 
 @Composable
 fun PanmetroLoginScreen(
+    sharedViewModel: SharedViewModel,
     loginViewModel: LoginViewModel?= hiltViewModel(),navController: NavController
 ) {
     HideKeyboardOnEnter()
     val context = LocalContext.current
     val macAddress = context.provideMacAddress()
-    val scope = rememberCoroutineScope()
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("PAN00005") }
+    var password by remember { mutableStateOf("123456") }
     var macId by remember { mutableStateOf(macAddress) }
-    var macUser by remember { mutableStateOf("MacUserId1") }
-    var rememberMe by remember { mutableStateOf(false) }
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
 
@@ -99,14 +99,26 @@ fun PanmetroLoginScreen(
     }
 
 
+
     // Exit confirmation dialog
     if (showExitDialog) {
-        ExitDialog(onConfirmExit = {
-            (context as? Activity)?.finishAffinity()
-            android.os.Process.killProcess(android.os.Process.myPid())
-        }, onDismiss = {
-            showExitDialog = false
-        })
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            message = "Are you sure you want to exit the app?",
+            borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.exit_icon),
+            errorCode = null,
+            errorMessage = null,
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+            }
+        )
     }
 
 
@@ -139,8 +151,8 @@ fun PanmetroLoginScreen(
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF7F00FF),
-                                        Color(0xFFE100FF)
+                                        Color(0xFF7C07F1),
+                                        Color(0xFFD30AEE)
                                     )
                                 ),
                                 shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp)
@@ -205,7 +217,7 @@ fun PanmetroLoginScreen(
                                         try {
                                             passwordFocusRequester.requestFocus()
                                         } catch (e: IllegalStateException) {
-                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                            loge("FocusError", "FocusRequester not initialized")
                                         }
                                     }
                                 ),
@@ -250,7 +262,7 @@ fun PanmetroLoginScreen(
                                         try {
                                             loginFocusRequester.requestFocus()
                                         } catch (e: IllegalStateException) {
-                                            Log.e("FocusError", "FocusRequester not initialized", e)
+                                            loge("FocusError", "FocusRequester not initialized")
                                         }
                                     }
                                 ),
@@ -283,14 +295,14 @@ fun PanmetroLoginScreen(
                                     .background(Color.Transparent, shape = RoundedCornerShape(4.dp))
                                     .padding(4.dp)
                                     .focusable(false), // optional if you also want to prevent input completely
-                                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
                                     focusedBorderColor = Color.Green,
                                     unfocusedBorderColor = Color.White,
                                     cursorColor = Color.Green,
                                     focusedLabelColor = Color.Green,
                                     unfocusedLabelColor = Color.White,
                                     textColor = Color.White, // hides from D-pad navigation and disables focus highlighting
-                                    ),
+                                ),
                                 enabled = false
 
                             )
@@ -313,7 +325,7 @@ fun PanmetroLoginScreen(
                                             msg = "password should not be blank"
                                         }
                                         if(isValid) {
-                                           context.hideKeyboard()
+                                            context.hideKeyboard()
                                             context.getAndroidTvDrmInfo()?.copy(
                                                 userName = username,
                                                 userPassword = password,
@@ -324,6 +336,7 @@ fun PanmetroLoginScreen(
                                                     if (response?.returncode?.equals("0",true) == true){
                                                         // On Login Success:
                                                         PreferenceManager.saveLogin(username, password)
+                                                        PreferenceManager.saveUserInfo(response)
                                                         context.hideKeyboard()
                                                         navController.navigate(Destination.genreScreen) {
                                                             popUpTo(Destination.loginScreen) { inclusive = true }
@@ -346,7 +359,7 @@ fun PanmetroLoginScreen(
                                         .focusRequester(loginFocusRequester),
                                     shape = RoundedCornerShape(30.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF8326EC), // Green background
+                                        containerColor = Color(0xFF7A17E8), // Green background
                                         contentColor = Color.White           // Text color
                                     )
                                 ) {
@@ -419,4 +432,5 @@ fun PanmetroLoginScreen(
         }
     }
 }
+
 

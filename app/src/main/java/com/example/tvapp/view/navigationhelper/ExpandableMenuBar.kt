@@ -1,6 +1,5 @@
 package com.example.tvapp.view.navigationhelper
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -33,6 +32,11 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
+import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideLandingResource
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.utils.theme.font_color_white
 
 @Composable
 fun ExpandableNavigationMenu(
@@ -55,8 +59,11 @@ fun ExpandableNavigationMenu(
         expanded = false
         val currentRoute = currentBackStackEntry?.destination?.route
         selectedIndex = when (currentRoute) {
-            // Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
-            //  Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
+            Destination.profile -> tabs?.indexOfFirst { it.name == "profile" } ?: -1
+            Destination.channel -> tabs?.indexOfFirst { it.name == "all" } ?: -1
+            Destination.homeScreen -> tabs?.indexOfFirst { it.name == "home" } ?: -1
+            Destination.demoHome -> tabs?.indexOfFirst { it.name == "movies" } ?: -1
+            Destination.searchScreen -> tabs?.indexOfFirst { it.name == "search" } ?: -1
             Destination.epgScreen -> tabs?.indexOfFirst { it.name == "epg" } ?: -1
             Destination.genreScreen -> tabs?.indexOfFirst { it.name == "channels" } ?: -1
             Destination.settings -> tabs?.indexOfFirst { it.name == "settings" } ?: -1
@@ -87,24 +94,11 @@ fun ExpandableNavigationMenu(
                             try {
                                 requester.requestFocus()
                             } catch (e: IllegalStateException) {
-                                Log.e("FocusError", "FocusRequester not initialized", e)
+                                loge("FocusError", "FocusRequester not initialized ${e.message}")
                             }
                         }
                     }
                 }
-
-                /*when {
-                    selectedIndex == -1 -> {
-                        selectedIndex = 0
-                        profileFocusRequester.requestFocus()
-                    }
-                    selectedIndex == 0 -> {
-                        profileFocusRequester.requestFocus()
-                    }
-                    else -> {
-                        focusRequesters.getOrNull(selectedIndex - 1)?.requestFocus()
-                    }
-                }*/
             }
         }
     }
@@ -152,20 +146,27 @@ fun ExpandableNavigationMenu(
                 selected = selectedIndex == 0,
                 expanded = expanded,
                 onFocus = { selectedIndex = 0 },
-                onClick = { expanded = true },
+                onClick = {
+                    selectedTabIndex = -1
+                    selectedIndex = 0
+                    expanded = false
+                    navController.navigate(Destination.profile)
+                },
                 focusRequester = profileFocusRequester,
                 nextFocusRequester = focusRequesters.firstOrNull(),
                 prevFocusRequester = null
             ) {
                 AsyncImage(
-                    model = profileTab?.iconUrl ?: "",
+                    model = profileTab?.iconUrl?:"",
                     contentDescription = profileTab?.displayName ?: "Profile",
                     modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                     colorFilter = if (selectedIndex == 0) {
-                        androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
+                        androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                     } else {
-                        null
-                    }
+                        androidx.compose.ui.graphics.ColorFilter.tint(font_color_white)
+                    },
+                    error = profileTab?.name?.provideLandingResource()?.let { painterResource(it) },        // Error state
+                    placeholder = profileTab?.name?.provideLandingResource()?.let { painterResource(it) }
                 )
                 if (expanded) {
                     Spacer(modifier = Modifier.width(5.dp))
@@ -178,7 +179,7 @@ fun ExpandableNavigationMenu(
                 }
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             otherTabs?.forEachIndexed { index, tab ->
                 val isFirstItem = index == 0
@@ -197,7 +198,10 @@ fun ExpandableNavigationMenu(
                         selectedIndex = index + 1
                         expanded = false
                         when (tab.name) {
-                            //"home" -> navController.navigate(Destination.homeScreen)
+                            "all" -> navController.navigate(Destination.channel)
+                            "home" -> navController.navigate(Destination.homeScreen)
+                            "search" -> navController.navigate(Destination.searchScreen)
+                            "movies" -> navController.navigate(Destination.demoHome)
                             "channels" -> navController.navigate(Destination.genreScreen)
                             "settings" -> navController.navigate(Destination.settings)
                             "epg" -> navController.navigate(Destination.epgScreen) {
@@ -208,14 +212,16 @@ fun ExpandableNavigationMenu(
                     }
                 ) {
                     AsyncImage(
-                        model = tab.iconUrl,
+                        model = tab.iconUrl?:"",
                         contentDescription = tab.displayName,
                         modifier = Modifier.size(36.dp).padding(vertical = 6.dp, horizontal = 4.dp).size(36.dp),
                         colorFilter = if (selectedIndex == index + 1) {
-                            androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF49FEDD))
+                            androidx.compose.ui.graphics.ColorFilter.tint(base_color)
                         } else {
-                            null
-                        }
+                            androidx.compose.ui.graphics.ColorFilter.tint(font_color_white)
+                        },
+                        error = tab.name?.provideLandingResource()?.let { painterResource(it) },        // Error state
+                        placeholder = tab.name?.provideLandingResource()?.let { painterResource(it) }
                     )
                     if (expanded) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -284,7 +290,7 @@ fun FocusableRow(
             .background(if (selected && expanded) Color.White.copy(alpha = 0.2f) else Color.Transparent)
             .border(
                 width = if (selected && expanded) 2.dp else 0.dp,
-                color = if (selected && expanded) Color(0xFF49FEDD) else Color.Transparent,
+                color = if (selected && expanded) base_color else Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
             )
             .clickable { onClick() },

@@ -1,4 +1,4 @@
-package com.example.tvapp.components
+package com.example.tvapp.view.navigationhelper
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

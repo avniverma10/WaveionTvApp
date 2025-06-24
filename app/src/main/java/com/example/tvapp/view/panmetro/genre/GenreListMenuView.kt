@@ -1,11 +1,8 @@
 package com.example.tvapp.view.panmetro.genre
 
-import android.R.attr.spacing
-import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -45,22 +41,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
 fun GenreListMenu(
+    sharedViewModel : SharedViewModel,
     genres: List<WTVGenre>,
     genreSelectedIndex: MutableState<Int>,
     channelToGenreFocus: MutableState<Boolean>,
@@ -69,7 +66,6 @@ fun GenreListMenu(
 ) {
     // Track which item is focused or selected.
     var focusedIndex by remember { mutableStateOf(0) }
-    val context = LocalContext.current
     // LazyListState to manage scrolling.
     val listState = rememberLazyListState()
     // Coroutine scope for launching suspend functions.
@@ -78,16 +74,14 @@ fun GenreListMenu(
     val bottomArrowHighlighted by remember {
         mutableStateOf(false)
     }
-    LaunchedEffect(Unit) {
-        context.hideKeyboard()
-    }
-    LaunchedEffect(genreSelectedIndex) {
+    LaunchedEffect(genreSelectedIndex.value) {
         focusedIndex = if(genreSelectedIndex.value >0) genreSelectedIndex.value else 0
+        listState.animateScrollToItem(focusedIndex)
         focusRequesters.getOrNull(genreSelectedIndex.value)?.let { requester ->
             try {
                 requester.requestFocus()
             } catch (e: IllegalStateException) {
-                Log.e("FocusError", "FocusRequester not initialized", e)
+                loge("FocusError", "FocusRequester not initialized ${e.message}")
             }
         }
     }
@@ -125,7 +119,7 @@ fun GenreListMenu(
                 NewCategoryMenuItem(
                     categoryName = genre.name ?: "",
                     isFocused = (index == focusedIndex),
-                    channelToGenreFocus= channelToGenreFocus,
+                    channelToGenreFocus = channelToGenreFocus,
                     onSelectedIndex = (index == genreSelectedIndex.value),
                     focusRequester = focusRequesters[index],
                     onFocus = { onCategoryForward(index, genre) },
@@ -138,7 +132,8 @@ fun GenreListMenu(
                                     if (focusedIndex > 0) {
                                         focusedIndex--
                                         // Scroll if the new focused item is not visible.
-                                        val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                        val visibleIndices =
+                                            listState.layoutInfo.visibleItemsInfo.map { it.index }
                                         if (focusedIndex !in visibleIndices) {
                                             coroutineScope.launch {
                                                 listState.animateScrollToItem(focusedIndex)
@@ -147,11 +142,13 @@ fun GenreListMenu(
                                     }
                                     true
                                 }
+
                                 KeyEvent.KEYCODE_DPAD_DOWN -> {
                                     // Only move down if not at the last item.
                                     if (focusedIndex < genres.size - 1) {
                                         focusedIndex++
-                                        val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                        val visibleIndices =
+                                            listState.layoutInfo.visibleItemsInfo.map { it.index }
                                         if (focusedIndex !in visibleIndices) {
                                             coroutineScope.launch {
                                                 listState.animateScrollToItem(focusedIndex)
@@ -160,12 +157,21 @@ fun GenreListMenu(
                                     }
                                     true
                                 }
+
                                 KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     true
                                 }
+
                                 KeyEvent.KEYCODE_DPAD_CENTER -> {
                                     genreSelectedIndex.value = focusedIndex
-                                    genres.getOrNull(genreSelectedIndex.value)?.let { onCategoryForward(genreSelectedIndex.value, it) }
+                                    sharedViewModel.updateGenreScreenLastGenreIndex(focusedIndex)
+                                    sharedViewModel.updateGenreScreenLastChannelIndex(0)
+                                    genres.getOrNull(genreSelectedIndex.value)?.let {
+                                        onCategoryForward(
+                                            genreSelectedIndex.value,
+                                            it
+                                        )
+                                    }
                                     true
                                 }
 
@@ -175,6 +181,7 @@ fun GenreListMenu(
                     }
                 )
             }
+
         }
         // Bottom arrow row.
         Row(
@@ -208,12 +215,12 @@ fun NewCategoryMenuItem(
     onFocus: () -> Unit,
     onKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean
 ) {
-    val borderColor = if (isFocused) Color(0xFF49FEDD) else Color.Transparent
+    val borderColor = if (isFocused) base_color else Color.Transparent
     val scale by animateFloatAsState(targetValue = if (isFocused && channelToGenreFocus.value) 1.3f else if (isFocused) 1.1f else 1f)
     val contentColor = if (categoryName == "All") {
-        if (isFocused) Color(0xFF49FEDD) else Color.White
+        if (isFocused) base_color else Color.White
     } else {
-        if (isFocused) Color(0xFF49FEDD) else Color.White
+        if (isFocused) base_color else Color.White
     }
     val borderWidth = 1.5.dp
 
@@ -263,28 +270,20 @@ fun NewCategoryMenuItem(
                     )
                 }
             } else {
-                Box(
+                Text(
+                    text = categoryName.toUpperCase(Locale.ROOT),
+                    color = contentColor,
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    fontFamily = FontFamily(Font(R.font.figtree_medium)),
+                    fontWeight = FontWeight(400),
                     modifier = Modifier
-                        .fillMaxWidth()                                      // ① fix the container width
-                        .background(Color(0xFF232020), RoundedCornerShape(6.dp))
-                        .padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
-                ) {
-                    Text(
-                        text = categoryName.toUpperCase(Locale.ROOT),
-                        color = contentColor,
-                        fontSize = 15.sp,
-                        maxLines = 1,
-                        fontFamily = FontFamily(Font(R.font.figtree_medium)),
-                        fontWeight = FontWeight(400),
-                        modifier = Modifier
-                            .basicMarquee(
-                            iterations         = Int.MAX_VALUE, // effectively infinite
-                        )
-                            .wrapContentWidth()
-                            .wrapContentHeight(Alignment.CenterVertically),
-                        overflow = TextOverflow.Clip
-                    )
-                }
+                        .fillMaxWidth()
+                        .background(Color(0xFF232020), shape = RoundedCornerShape(6.dp))
+                        .padding(start = 16.dp, end = 4.dp)
+                        .fillMaxHeight()
+                        .wrapContentHeight(Alignment.CenterVertically)
+                )
             }
         }
     }

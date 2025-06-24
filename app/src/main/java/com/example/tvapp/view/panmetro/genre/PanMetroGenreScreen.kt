@@ -1,8 +1,6 @@
 package com.example.tvapp.view.panmetro.genre
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,24 +21,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
-import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.manifest.TabInfo
+import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
@@ -49,6 +46,7 @@ import com.example.tvapp.view.uicomponent.ZoomInOutSwitcher
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun PanmetroGenreScreen(
@@ -56,40 +54,37 @@ fun PanmetroGenreScreen(
     sharedViewModel: SharedViewModel,
     genreViewModel: GenreViewModel= hiltViewModel()
 ) {
+    HideKeyboardOnEnter()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val epgList = genreViewModel.provideAvailableEPG()
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
+
+    val epgList = genreViewModel.provideAvailableEPG()
 
     val availableGenre = genreViewModel.provideAvailableGenre()
 
-     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
 
-    // Lift the selected genre index state.
     var channelToGenreFocus = remember { mutableStateOf(false) }
 
 
-    // 2. Use rememberSaveable with that Saver instead of plain remember
     val selectedGenreIndex: MutableState<Int> = remember { mutableStateOf( 0) }
     val selectedChannelIndex: MutableState<Int> = remember { mutableStateOf( 0) }
 
-
-    // FocusRequester for the channel list area.
     var genreListFocusRequester = remember { FocusRequester() }
     var channelListFocusRequester = remember { FocusRequester() }
 
-
-    // Create a list of FocusRequesters for the genre items.
     val genreFocusRequesters = remember(availableGenre) { List(availableGenre.size) { FocusRequester() } }
 
-
-
-    // When a channel is selected, update the video URL in the ViewModel.
     val onVideoChange: (EPGDataItem,Int) -> Unit = { channel,channelIndex ->
         selectedChannelIndex.value = channelIndex
         sharedViewModel.updateSelectedChannel(channel)  // This method should update selectedVideoUrl.
     }
+    val lastGenreIndex by sharedViewModel.genreScreenLastGenreIndex.collectAsState()
+    val lastChannelIndex by sharedViewModel.genreScreenLastChannelIndex.collectAsState()
 
 
     BackHandler {
@@ -97,47 +92,83 @@ fun PanmetroGenreScreen(
             popUpTo(Destination.genreScreen) { inclusive = true }
         }
     }
+
     LaunchedEffect(Unit) {
         context.hideKeyboard()
-        genreViewModel.filterPanMetroChannelsByGenre()
-
+        val genreName = availableGenre.getOrNull(lastGenreIndex)?.name ?: "All"
+        genreViewModel.filterPanMetroChannelsByGenre(genreName)
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
+        //request for user hash
+        sharedViewModel?.provideUserHash()
     }
-     LaunchedEffect(filteredChannels) {
-              if (filteredChannels.isNotEmpty()) {
-                       // If there is at least one channel, move focus to channel list
-                       channelToGenreFocus.value = false
-                      var defaultChannel: EPGDataItem? = epgList?.find { it.content?.ChannelID == appManifestData.value?.landingChannel?.channelId  }
-                      if(sharedViewModel.isFromSplash.value && defaultChannel != null){
-                          defaultChannel?.let {
-                              selectedChannelIndex.value = epgList?.indexOf(it)?:0
-                              sharedViewModel.updateSelectedChannel(it)
-                              sharedViewModel.isFromSplash.value = false
-                          }
-                      }else{
-                          selectedChannelIndex.value = 0
-                      }
-                      channelListFocusRequester.requestFocus()
-                  } else {
-                       // If empty, keep focus on the genre list
-                       channelToGenreFocus.value = true
-                       genreFocusRequesters
-                           .getOrNull(selectedGenreIndex.value)
-                           ?.let { it.requestFocus() }
-                   }
-     }
+
+    // Add this LaunchedEffect to handle initial focus and restoration
+    LaunchedEffect(filteredChannels, availableGenre) {
+        if (filteredChannels.isNotEmpty()) {
+            // Delay focus request to ensure components are ready
+            delay(100)
+            // Handle different cases for initial focus
+            when {
+                sharedViewModel.isFromSplash.value -> {
+                    val defaultChannel = epgList?.find {
+                        it.content?.ChannelID == appManifestData.value?.landingChannel?.channelId
+                    }
+                    defaultChannel?.let {
+                        selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
+                        selectedChannelIndex.value = epgList.indexOf(it).coerceAtLeast(0)
+                        sharedViewModel.updateGenreScreenLastChannelIndex(epgList.indexOf(it))
+                        sharedViewModel.updateSelectedChannel(it)
+                        sharedViewModel.isFromSplash.value = false
+                    }
+                }
+                PreferenceManager.getSavedChannel().isNotNullOrEmpty() -> {
+                    val selectedIndex = filteredChannels.indexOfFirst {
+                            channel -> channel.content?.ChannelID == PreferenceManager.getSavedChannel()
+                    }.coerceAtLeast(0)
+
+                    selectedChannelIndex.value = selectedIndex
+                    sharedViewModel.updateGenreScreenLastChannelIndex(selectedIndex)
+                    filteredChannels.getOrNull(selectedIndex)?.let {
+                        sharedViewModel.updateSelectedChannel(it)
+                    }
+                    PreferenceManager.clearSaveChannel()
+                }
+                else -> {
+                    selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
+                    selectedChannelIndex.value = lastChannelIndex.coerceAtLeast(0)
+                    filteredChannels.getOrNull(selectedChannelIndex.value)?.let {
+                        sharedViewModel.updateSelectedChannel(it)
+                    }
+                }
+            }
+            // Always request focus on the channel list after handling cases
+            try {
+                channelListFocusRequester.requestFocus()
+                channelToGenreFocus.value = false
+            } catch (e: Exception) {
+                loge("FocusError", "Channel focus failed: ${e.message}")
+            }
+        } else {
+            // Fallback to genre list if no channels
+            try {
+                genreFocusRequesters.getOrNull(selectedGenreIndex.value)?.requestFocus()
+                channelToGenreFocus.value = true
+            } catch (e: Exception) {
+                loge("FocusError", "Genre focus failed: ${e.message}")
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF1F3A6B)) // Example dark blue background
     ){
-        // Column to hold the top bar and main content
         Column(
             modifier = Modifier.fillMaxSize().background(Color.Black)
         ) {
-            // 1) Top bar with brand logo on left and date/time on right
             PermettoTopBar()
-//            GradientBackground(content = {
-            // 2) Main content row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,17 +182,18 @@ fun PanmetroGenreScreen(
                         // Left: Categories
                         GenreListMenu(
                             genres = availableGenre,
+                            sharedViewModel = sharedViewModel,
                             genreSelectedIndex = selectedGenreIndex,
                             channelToGenreFocus = channelToGenreFocus,
                             focusRequesters = genreFocusRequesters,
                             // On selection, update the index, filter channels, and move focus to the channel list.
                             onCategoryForward = { index, selectedGenre ->
-                                channelToGenreFocus.value = false
+                                selectedGenreIndex.value = index
                                 selectedChannelIndex.value = 0
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
-//                                channelListFocusRequester.requestFocus()
+                                channelListFocusRequester.requestFocus()
                             }
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -188,12 +220,8 @@ fun PanmetroGenreScreen(
                                 epgList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
                                     ?.let { channelItem ->
                                         navController.navigate(Destination.panMetroScreen) {
-                                            PreferenceManager.selectedGenreIndex = 0
-                                            PreferenceManager.selectedChannelIndex = 0
-                                            PreferenceManager.lastEpgDataItem = null
-                                            popUpTo(Destination.genreScreen) {
-                                                inclusive = true
-                                            }
+                                            PreferenceManager.clearSaveGenre()
+                                            PreferenceManager.clearSaveChannel()
                                         }
                                     }
                             }
@@ -226,14 +254,6 @@ fun PanmetroGenreScreen(
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
                                 ZoomInOutSwitcher()
-                                /*Image(
-                                    painter = painterResource(id = R.drawable.alliance_logo),
-                                    contentDescription = "Panmetro Logo",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize() // Stretch the image to fill the inner Box.
-                                        .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-                                )*/
                             }
                         }
 
@@ -245,30 +265,34 @@ fun PanmetroGenreScreen(
         }
     }
 
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                //context.showToastS("ON_STOP>${selectedGenreIndex.value} and ${selectedChannelIndex.value}")
-                sharedViewModel.persistToGenrePrefs(prefs = PreferenceManager,selectedGenreIndex=selectedGenreIndex.value, selectedChannelIndex = selectedChannelIndex.value)
+                genreViewModel.provideAvailableGenre()?.getOrNull(selectedGenreIndex.value)?.name?.let { PreferenceManager.saveGenre(it) }
+                filteredChannels?.getOrNull<EPGDataItem>(selectedChannelIndex.value)?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
             }else if (event == Lifecycle.Event.ON_START) {
-                if(PreferenceManager.selectedChannelIndex >0) {
-                   // context.showToastS("ON_RESUME>${PreferenceManager.selectedGenreIndex} and ${PreferenceManager.selectedChannelIndex}")
-                    selectedGenreIndex.value = PreferenceManager.selectedGenreIndex
-                    selectedChannelIndex.value = PreferenceManager.selectedChannelIndex
-                    availableGenre.getOrNull(selectedGenreIndex.value)?.let {
-                        genreViewModel.filterPanMetroChannelsByGenre(it.name)
-                        /*genreViewModel.filteredPanMetroChannels.value.getOrNull(sharedViewModel.selectedChannelIndex.value)
-                            ?.let { it1 -> sharedViewModel.updateSelectedChannel(it1) }*/
+                val savedGenre = PreferenceManager.getSavedGenre()
+                if (savedGenre.isNotNullOrEmpty()) {
+                    try {
+                        //Find and set genre index
+                        selectedGenreIndex.value = genreViewModel.provideAvailableGenre()
+                            ?.indexOfFirst { it.name == savedGenre } ?: 0
+                        sharedViewModel.updateGenreScreenLastGenreIndex(selectedGenreIndex.value)
+                    } catch (e: Exception) {
+                        loge("ChannelRestore", "Error restoring channel state $e")
+                    } finally {
+                        PreferenceManager.clearSaveGenre()
                     }
-                    PreferenceManager.selectedGenreIndex = 0
-                    PreferenceManager.selectedChannelIndex = 0
                 }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            sharedViewModel.stopPlayerSSE()
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+
+
 }
+
