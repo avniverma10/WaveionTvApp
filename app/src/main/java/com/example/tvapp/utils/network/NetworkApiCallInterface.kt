@@ -1,5 +1,6 @@
 package com.example.tvapp.utils.network
 
+import com.example.tvapp.model.crash.LogEntry
 import com.example.tvapp.model.data.validation.SendOTPRequest
 import com.example.tvapp.model.data.validation.ValidateOtpRequest
 import com.example.tvapp.model.timestamp.ServerTimeStamp
@@ -29,6 +30,8 @@ interface NetworkApiCallInterface {
 
     @POST
     fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String?>): Call<Any>
+    @POST
+    fun makeHttpPostCrashRequest(@Url url: String, @Body body: LogEntry): Response<Void>
 
     /**
      * Make a POST request to a dynamic URL, with a JSON body and custom headers.

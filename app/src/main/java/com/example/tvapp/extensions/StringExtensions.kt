@@ -627,8 +627,8 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
             "Source error",
             "The media source could not be loaded")
         6004 -> Triple(608,
-            "DRM licence server request failed",
-            "Please try again later.")
+            "You are not authorized to view this content.",
+            "No Package has been assigned or DRM License server not responding. Please check back later")
         4001 -> Triple(609,
             "This channel is temporarily unavailable.",
             "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")

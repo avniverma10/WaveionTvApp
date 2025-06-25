@@ -193,7 +193,9 @@ fun PanmetroGenreScreen(
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
-                                channelListFocusRequester.requestFocus()
+                                try {
+                                    channelListFocusRequester.requestFocus()
+                                }catch (ex: Exception){}
                             }
                         )
                         Spacer(modifier = Modifier.width(10.dp))

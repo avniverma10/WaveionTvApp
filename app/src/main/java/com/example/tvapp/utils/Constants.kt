@@ -9,6 +9,7 @@ object Constants {
     const val HEADER_TOKEN = "BUAA8JJkzfMI56y4BhEhU"
     const val DEV_BASE_URL = "https://api-dev.caastv.com/api/"
     var BASE_URL = "https://api-panmetro.caastv.com/api/"
+    var isServerRunning = false
 
     fun provideBaseUrl(isDevEnable: Boolean?=false): String{
           if (isDevEnable == true)

@@ -103,7 +103,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             SplashScreen(sharedViewModel = sharedViewModel, navController)
         }
         composable(Destination.loginScreen) {
-            PanmetroLoginScreen(sharedViewModel = sharedViewModel,navController = navController)
+            PanmetroLoginScreen(navController = navController)
         }
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)

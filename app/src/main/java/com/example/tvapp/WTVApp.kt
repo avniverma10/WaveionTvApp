@@ -34,6 +34,14 @@ class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
         super.onCreate()
         // Register this Application as an observer of the overall process lifecycle:
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+        // Setup crash handler
+       /* if (!BuildConfig.DEBUG) {
+            Thread.setDefaultUncaughtExceptionHandler( CustomCrashHandler(this))
+        }*/
+
+        // Initialize logging
+        //LogCollector.initialize(this);
     }
 
     // Called when the app’s first Activity comes to START (= any Activity visible).

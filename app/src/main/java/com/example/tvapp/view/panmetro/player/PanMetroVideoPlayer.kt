@@ -54,7 +54,6 @@ import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
-import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
@@ -116,6 +115,8 @@ fun PanMetroVideoPlayer(
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
+        //request for user hash
+        sharedViewModel.provideUserHash()
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
     }

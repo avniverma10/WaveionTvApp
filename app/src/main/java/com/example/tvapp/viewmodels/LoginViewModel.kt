@@ -29,12 +29,11 @@ class LoginViewModel @Inject constructor(
                 "Authorization" to "56fdsr237df325fv454v3v4532drferh",
                 "Content-Type"  to "application/json"
             )
-            // "uname":"PAN000014","paswrd":"1234566","macaddr":"123456789"
             loge("MAC ID", "$androidTvDrmInfo.macId")
             val requestBody = hashMapOf(
                 "uname" to (androidTvDrmInfo.userName ?: ""),
                 "paswrd" to (androidTvDrmInfo.userPassword ?: ""),
-                "macaddr" to (androidTvDrmInfo.macId?: "")
+                "macaddr" to ("00:15:C0:98:5F:0E")//(androidTvDrmInfo.macId?: "")
             )
             //loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
             loginRepositoryImpl.provideUserLogin(

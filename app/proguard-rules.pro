@@ -47,9 +47,21 @@
     @java.lang.Deprecated public *;
     @java.lang.Override public *;
 }
+
+# Keep ViewModels
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
+
+
+# Keep Parcelable implementations
 -keep class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator *;
 }
+
+# Keep Jetpack Compose runtime classes
+-keep class androidx.compose.runtime.** { *; }
+
 
 # Keep Retrofit and OkHttp classes
 -keep class retrofit2.** { *; }
@@ -58,6 +70,7 @@
 -keepattributes *Annotation*
 
 # Keep Retrofit interfaces
+-keep interface com.example.tvapp.utils.network.** { *; }
 -keepclasseswithmembers class * {
     @retrofit2.http.* <methods>;
 }
@@ -72,3 +85,21 @@
 -keep class com.google.gson.** { *; }
 -keep class org.codehaus.** { *; }
 -keep class com.fasterxml.** { *; }
+
+
+# Keep Hilt/Dagger generated code
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponentManagerHolder { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponentManager { *; }
+
+# Hilt specific rules
+-keep class dagger.hilt.internal.aggregatedroot.** { *; }
+-keep class hilt_aggregated_deps.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponentManagerHolder { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponentManager { *; }
+
+# Keep test classes
+-keep class * extends junit.framework.TestCase { *; }
+-keep class org.junit.** { *; }
+-keep class androidx.test.** { *; }

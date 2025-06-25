@@ -115,7 +115,7 @@ fun PanMetroInfoScreen(
                 InfoRow(label = "App version", value = context.packageManager
                     .getPackageInfo(context.packageName, 0)
                     .versionName?:appVersion)
-                InfoRow(label = "Android Version", value = Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
+                InfoRow(label = "Android Version", value = android.os.Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
                 InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
                 InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
                 InfoRow(label = "OTA", value = ota)

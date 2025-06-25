@@ -319,6 +319,11 @@ open class WTVViewModel @Inject constructor(
                 val serverMs = fetchServerTimeMillis()
                 val deviceMs = System.currentTimeMillis()
                 val drift = abs(deviceMs - serverMs)
+                if(serverMs >0){
+                    Constants.isServerRunning = true
+                }else{
+                    Constants.isServerRunning = false
+                }
 
                 // calendar‐date check
                 val zone = ZoneId.systemDefault()

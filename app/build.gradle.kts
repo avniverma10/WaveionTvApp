@@ -16,24 +16,25 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 15
-        versionName = "1.0.20"
+        versionCode = 16
+        versionName = "1.0.21"
 
     }
 
     buildTypes {
         debug {
-
             val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
             val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
             buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
             buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
+            buildConfigField("String", "BUILD_TYPE", "\"debug\"")
         }
         release {
             val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
             val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
             buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
             buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
+            buildConfigField("String", "BUILD_TYPE", "\"release\"")
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the
             isShrinkResources =  true
