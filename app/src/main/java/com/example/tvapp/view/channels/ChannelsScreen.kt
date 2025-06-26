@@ -1,10 +1,12 @@
 package com.example.tvapp.view.channels
 
 import android.app.Activity
+import android.os.Build
 import android.os.Process
 import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -58,7 +60,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
@@ -73,6 +74,7 @@ import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 
+@RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 @Composable
 fun ChannelScreen(
     navController: NavController,
@@ -131,10 +133,17 @@ fun ChannelScreen(
     var hasRestoredFocus by remember { mutableStateOf(false) }
     LaunchedEffect(channelList) {
         if (channelList.isNotEmpty() && !hasRestoredFocus) {
-            // clamp the saved index into bounds
+            // clamp into bounds
             val idx = sharedViewModel.ChannelScreenlastSelectedChannelIndex.value
                 .coerceIn(0, channelList.lastIndex)
-            channelFocusRequesters[idx].requestFocus()
+
+            channelFocusRequesters.getOrNull(idx)?.let { requester ->
+                try {
+                    requester.requestFocus()
+                } catch (t: Throwable) {
+                    Log.e("ChannelScreen", "couldn't restore focus to channel #$idx", t)
+                }
+            }
             hasRestoredFocus = true
         }
     }
@@ -269,23 +278,6 @@ fun ChannelScreen(
             modifier        = Modifier.align(Alignment.CenterStart)
         )
 
-        if (showExitDialog) {
-            CommonDialog(
-                showDialog = true,
-                title = "Exit App",
-                borderColor = Color.Transparent,
-                painter = painterResource(id = R.drawable.exit_icon),
-                message = "Are you sure you want to exit the app?",
-                confirmButtonText = "Yes",
-                onConfirm = {
-                    (context as? Activity)?.finishAffinity()
-//                    Process.killProcess(Process.myPid())
-                },
-                dismissButtonText = "No",
-                onDismiss = { showExitDialog = false }
-            )
-
-        }
     }
 }
 

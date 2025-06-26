@@ -66,7 +66,7 @@ open class SharedViewModel @Inject constructor(
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
 
-    var enableScrollingSSE = MutableStateFlow<Boolean>(false)
+    var isFromSplash = MutableStateFlow<Boolean>(false)
 
     private var globalEventSource: EventSource? = null
     private val _globalSSERules = MutableStateFlow<GlobalSSEResponse?>(null)

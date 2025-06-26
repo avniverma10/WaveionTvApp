@@ -2,16 +2,19 @@ package com.example.tvapp.view.navigationhelper
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -32,10 +35,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
@@ -68,13 +73,44 @@ fun CategoryMenu(
     if (menuItems.isEmpty()) {
         return
     }
-
+    val categoryIcons = listOf(
+        R.drawable.all_1,
+        R.drawable.ball,
+        R.drawable.news_feed_svgrepo_com,
+        R.drawable.religoius,
+        R.drawable.ball,
+        R.drawable.news_feed_svgrepo_com,
+        R.drawable.religoius,
+        R.drawable.all_1,
+        R.drawable.ball,
+        R.drawable.news_feed_svgrepo_com,
+        R.drawable.religoius,
+        R.drawable.ball,
+        R.drawable.news_feed_svgrepo_com,
+        R.drawable.religoius,
+    )
+    // only scroll when the selected index moves out of view
     LaunchedEffect(selectedIndex.value) {
-        coroutineScope.launch {
-            listState.animateScrollToItem(selectedIndex.value)
-            delay(50)
+        delay(50)
+        val visible = listState.layoutInfo.visibleItemsInfo
+        if (visible.isEmpty()) return@LaunchedEffect
+        val firstVisible  = visible.first().index
+        val lastVisible   = visible.last().index
+        val visibleCount  = visible.size
+        when {
+            selectedIndex.value < firstVisible -> {
+                listState.animateScrollToItem(selectedIndex.value)
+            }
+            selectedIndex.value > lastVisible -> {
+                val newFirst = (selectedIndex.value - visibleCount + 1).coerceAtLeast(0)
+                listState.animateScrollToItem(newFirst)
+            }
+            else -> {
+                // still fully in view, do nothing
+            }
         }
     }
+
 
     Column(
         modifier = Modifier
@@ -85,13 +121,16 @@ fun CategoryMenu(
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(53.dp),
+//            horizontalArrangement = Arrangement.spacedBy(53.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             itemsIndexed(menuItems) { index, item ->
+                val iconRes = categoryIcons.getOrElse(index) {
+                    R.drawable.news
+                }
                 val isFocused = remember { mutableStateOf(false) }
                 val isSelected = selectedIndex.value == index
-
+                val gap = if (isFocused.value || isSelected) 10.dp else 12.dp
                 val modifier = Modifier
                     .then(
                         when {
@@ -134,6 +173,7 @@ fun CategoryMenu(
                             true
                         } else false
                     }
+                    .padding(end = gap)
                 Box(
                     modifier = Modifier
                         .wrapContentWidth()
@@ -142,17 +182,40 @@ fun CategoryMenu(
                         .then(modifier),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = item.name?.toUpperCase(Locale.ROOT) ?: "",
-                        maxLines = 1,
-                        color = Color.White,
-                        style = TextStyle(
-                            fontSize = 17.sp,
-                            fontFamily = FontFamily(Font(R.font.figtree_light)),
-                            fontWeight = FontWeight(400)
-                        ),
-                        modifier = Modifier.align(Alignment.Center).padding(start = 10.dp, end = 10.dp)
-                    )
+                    if (isFocused.value || isSelected) {
+                        // expanded: icon + text
+                        Row(
+                            verticalAlignment    = Alignment.CenterVertically,
+                            horizontalArrangement= Arrangement.spacedBy(8.dp),
+                            modifier             = Modifier.padding(start = 8.dp)
+                        ) {
+                            Image(
+                                painter            = painterResource(iconRes),
+                                contentDescription = item.name,
+                                modifier           = Modifier.size(25.dp)
+                            )
+                            Text(
+                                text    = item.name.orEmpty().uppercase(Locale.ROOT),
+                                maxLines= 1,
+                                color   = Color.White,
+                                style   = TextStyle(
+                                    fontSize     = 17.sp,
+                                    fontFamily   = FontFamily(Font(R.font.figtree_light)),
+                                    fontWeight   = FontWeight(400)
+                                ),
+//                                modifier= Modifier
+//                                    .padding(start = 10.dp, end = 10.dp)
+                            )
+                        }
+                    } else {
+                        // collapsed: icon only
+                        Image(
+                            painter            = painterResource(iconRes),
+                            contentDescription = item.name,
+                            modifier           = Modifier.size(25.dp)
+                        )
+                    }
+
                 }
             }
         }

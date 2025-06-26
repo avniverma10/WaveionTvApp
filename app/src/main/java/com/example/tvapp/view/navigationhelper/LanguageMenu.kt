@@ -2,15 +2,18 @@ package com.example.tvapp.view.navigationhelper
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -30,6 +33,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
@@ -42,6 +50,7 @@ import com.example.tvapp.ui.theme.focus_background
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun LanguageMenu(
@@ -61,12 +70,44 @@ fun LanguageMenu(
     if (languageItems.isEmpty()) {
         return
     }
-
+    val categoryIcons = listOf(
+       R.drawable.english,
+        R.drawable.letter_hindi_a_svgrepo_com__3_,
+        R.drawable.english,
+        R.drawable.letter_hindi_a_svgrepo_com__3_,
+        R.drawable.english,
+        R.drawable.letter_hindi_a_svgrepo_com__3_,
+        R.drawable.english,
+        R.drawable.letter_hindi_a_svgrepo_com__3_,
+    )
     LaunchedEffect(selectedIndex.value) {
-        coroutineScope.launch {
-            listState.animateScrollToItem(selectedIndex.value)
-            delay(50)
-//            languageFocusRequesters.getOrNull(selectedIndex.value)?.requestFocus()
+        // let Compose lay out first
+        delay(50)
+
+        val visible = listState.layoutInfo.visibleItemsInfo
+        if (visible.isEmpty()) return@LaunchedEffect
+
+        val firstVisible  = visible.first().index
+        val lastVisible   = visible.last().index
+        val visibleCount  = visible.size
+
+        when {
+            // moved off the left edge?
+            selectedIndex.value < firstVisible -> {
+                // just snap that item to the front
+                listState.animateScrollToItem(selectedIndex.value)
+            }
+
+            // moved past the right edge?
+            selectedIndex.value > lastVisible -> {
+                // scroll so that the newly-selected item sits at the end of the viewport
+                val newFirst = (selectedIndex.value - visibleCount + 1).coerceAtLeast(0)
+                listState.animateScrollToItem(newFirst)
+            }
+
+            else -> {
+                // still fully in view, do nothing
+            }
         }
     }
 
@@ -76,12 +117,16 @@ fun LanguageMenu(
             .fillMaxWidth()
             .height(45.dp),
         contentPadding = PaddingValues(start = 25.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         itemsIndexed(languageItems) { index, item ->
+            val iconRes = categoryIcons.getOrElse(index) {
+                R.drawable.english
+            }
             val isSelected = selectedIndex.value == index
             val isFocused = remember { mutableStateOf(false) }
+            val gap = if (isFocused.value || isSelected) 36.dp else 16.dp
 
             val modifier = Modifier
                 .then(
@@ -145,18 +190,38 @@ fun LanguageMenu(
             Box(
                 modifier = modifier,
                 contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = item.name ?: "",
-                    color = Color.White,
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontSize = 14.sp,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily(
-                            androidx.compose.ui.text.font.Font(R.font.figtree_light)
-                        ),
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+            ) {  if (isFocused.value || isSelected) {
+                // expanded: icon + text
+                Row(
+                    verticalAlignment    = Alignment.CenterVertically,
+                    horizontalArrangement= Arrangement.spacedBy(8.dp),
+                    modifier             = Modifier.padding(horizontal = 8.dp)
+                ) {
+                    Image(
+                        painter            = painterResource(iconRes),
+                        contentDescription = item.name,
+                        modifier           = Modifier.size(32.dp)
                     )
+                    Text(
+                        text = item.name ?: "",
+                        color = Color.White,
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontFamily =FontFamily(
+                          Font(R.font.figtree_light)
+                            ),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                }
+            } else {
+                // collapsed: icon only
+                Image(
+                    painter            = painterResource(iconRes),
+                    contentDescription = item.name,
+                    modifier           = Modifier.size(20.dp)
                 )
+            }
             }
         }
     }

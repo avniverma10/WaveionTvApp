@@ -3,10 +3,13 @@ package com.example.tvapp.view
 
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
+import android.view.SoundEffectConstants
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -62,6 +65,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_DPAD_UP,
+                KeyEvent.KEYCODE_DPAD_DOWN,
+                KeyEvent.KEYCODE_DPAD_LEFT,
+                KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    window.decorView.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN)
+                }
+            }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     @Composable

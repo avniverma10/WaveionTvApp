@@ -249,7 +249,7 @@ open class WTVViewModel @Inject constructor(
                 val epgData = removeDuplicateEPG(epgDeferred)
                 _wtvEPGList.value = epgData
                 application.applyEPGData(epgData)
-                epgData.find { it.channelId == manifestDeferred.landingChannel?.ChannelID }
+                epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
                     ?.let(::updateSelectedChannel) ?: kotlin.run {
                     epgData?.getOrNull(0)?.let {
                         _selectedChannel.value = it
@@ -517,5 +517,6 @@ open class WTVViewModel @Inject constructor(
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
     return items
         .filter { it.channelId != null }       // optional: drop null IDs
-        .distinctBy { it.channelId }            // keep first of each channelId
+        .distinctBy { it.channelId }
+// keep first of each channelId
 }

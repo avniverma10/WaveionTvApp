@@ -3,6 +3,7 @@ package com.example.tvapp.view.epg
 import android.annotation.SuppressLint
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -84,6 +85,11 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -203,176 +209,240 @@ fun EPGContent(
             ) {
                 LazyColumn(modifier = Modifier.fillMaxSize().background(Color(0xFF2A3139))) {
                     itemsIndexed(epgList) { channelIndex, channelData ->
+                        val started = remember { mutableStateOf(false) }
+                        val bgColor by animateColorAsState(
+                            targetValue = if (started.value) Color(0xFF1A2124) else Color(0xFF27363B),
+                            animationSpec = tween(durationMillis = 600)
+                        )
+                        LaunchedEffect(Unit) {
+                            started.value = true
+                        }
                         val isFirstChannel = (channelIndex == 0)
                         val isLastChannel = (channelIndex == epgList.size - 1)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFF1A2124))
-                                .height(70.dp)
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        this@Column.AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(animationSpec = tween(500)) +
+                                    slideInHorizontally(
+                                        initialOffsetX = { fullWidth -> fullWidth / 8 },   // slide from the right 1/8th
+                                        animationSpec = tween(500)
+                                    )
                         ) {
-                            ChannelInfo(
-                                leftPanelWidth = 180.dp,
-                                channel = channelData,
-                                channelIndex = channelIndex,
-                                isFirstChannel = isFirstChannel,
-                                isLastChannel = isLastChannel,
-                                onPlayClicked = { videoUrl ->
-                                    sharedViewModel.updateLastFocusedChannel(channelIndex)
-                                    sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
-                                    sharedViewModel.updateSelectedChannel(channelData)
-                                    if (genre != "All Channels" && lang != "All Languages") {
-                                        sharedViewModel.setCurrentPlaylist(epgList, genre)
-                                        sharedViewModel.updateLanguage(lang)
-                                    }
-                                    navController.navigate(Destination.panMetroScreen)
-                                },
-//                                hasInitiallyFocused = hasInitiallyFocused,
-                                focusRequester = channelFocusRequesters[channelIndex],
-                                languageFocusRequesters = languageFocusRequesters,
-                                languageSelectedIndex = languageSelectedIndex,
-                                categoryFocusRequesters = categoryFocusRequesters,
-                                categorySelectedIndex = categorySelectedIndex
-                            )
-                            val rowState = rowStates[channelIndex]
-                            LazyRow(
-                                state = rowState,
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(
-                                        start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
-                                    )
+                                    .background(bgColor)
+                                    .height(70.dp)
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
-                                Log.d("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
-                                    .toString() })
-                                itemsIndexed(availableProgram) { programIndex, program ->
-                                    val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
-                                    val focusRequester = programFocusRequesters[channelIndex][programIndex]
-                                    val isFocused = remember { mutableStateOf(false) }
-                                    val isLastProgram = (programIndex == availableProgram.lastIndex)
-                                    Box(
-                                        modifier = Modifier
-                                            .width(programWidth)
-                                            .height(105.dp)
-                                            .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp))
-                                            .then(
-                                                if (isFocused.value)
-                                                    Modifier
-                                                        .border(1.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
-                                                        .background(Color(0x1A49FEDD), RoundedCornerShape(4.dp))
-                                                else Modifier
-                                            )
-//                                            .focusProperties {
-//                                                if (channelIndex == 0) {
-//                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
-//                                                }
-//                                            }
-                                            .onFocusChanged { isFocused.value = it.isFocused }
-                                            .focusRequester(focusRequester)
-                                            .focusable()
-                                            .onPreviewKeyEvent { keyEvent ->
-                                                if (keyEvent.type == KeyEventType.KeyDown) {
-                                                    when (keyEvent.nativeKeyEvent.keyCode) {
-                                                        KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                                            sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
-                                                            sharedViewModel.setCurrentPlaylist(epgList)
-                                                            epgList
-                                                                .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
-                                                                ?.let { channelItem ->
-                                                                    sharedViewModel.updateSelectedChannel(channelItem)
-                                                                    navController.navigate(Destination.panMetroScreen) {
-                                                                        PreferenceManager.lastEpgDataItem = null
+                                ChannelInfo(
+                                    leftPanelWidth = 180.dp,
+                                    channel = channelData,
+                                    channelIndex = channelIndex,
+                                    isFirstChannel = isFirstChannel,
+                                    isLastChannel = isLastChannel,
+                                    onPlayClicked = { videoUrl ->
+                                        sharedViewModel.updateLastFocusedChannel(channelIndex)
+                                        sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
+                                        sharedViewModel.updateSelectedChannel(channelData)
+                                        if (genre != "All Channels" && lang != "All Languages") {
+                                            sharedViewModel.setCurrentPlaylist(epgList, genre)
+                                            sharedViewModel.updateLanguage(lang)
+                                        }
+                                        navController.navigate(Destination.panMetroScreen)
+                                    },
+                    //                                hasInitiallyFocused = hasInitiallyFocused,
+                                    focusRequester = channelFocusRequesters[channelIndex],
+                                    languageFocusRequesters = languageFocusRequesters,
+                                    languageSelectedIndex = languageSelectedIndex,
+                                    categoryFocusRequesters = categoryFocusRequesters,
+                                    categorySelectedIndex = categorySelectedIndex
+                                )
+                                val rowState = rowStates[channelIndex]
+                                LazyRow(
+                                    state = rowState,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            start = maxOf(
+                                                0,
+                                                -((currentTimeMillis.value / 60000) % 2).toInt()
+                                            ).dp
+                                        )
+                                ) {
+                                    val availableProgram = sharedViewModel.provideAvailableProgram(
+                                        channelData.tv?.programme ?: arrayListOf()
+                                    )
+                                    Log.d("aProgram::>>>", availableProgram.joinToString(" | ") {
+                                        it.startTime?.formatTime()
+                                            .toString()
+                                    })
+                                    itemsIndexed(availableProgram) { programIndex, program ->
+                                        val programWidth = calculateProgramsWidth(
+                                            program.startTime ?: 0,
+                                            program.endTime ?: 0
+                                        )
+                                        val focusRequester =
+                                            programFocusRequesters[channelIndex][programIndex]
+                                        val isFocused = remember { mutableStateOf(false) }
+                                        val isLastProgram =
+                                            (programIndex == availableProgram.lastIndex)
+                                        Box(
+                                            modifier = Modifier
+                                                .width(programWidth)
+                                                .height(105.dp)
+                                                .background(
+                                                    Color(0xFF2A3139),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                )
+                                                .then(
+                                                    if (isFocused.value)
+                                                        Modifier
+                                                            .border(
+                                                                1.dp,
+                                                                Color(0xFF49FEDD),
+                                                                RoundedCornerShape(4.dp)
+                                                            )
+                                                            .background(
+                                                                Color(0x1A49FEDD),
+                                                                RoundedCornerShape(4.dp)
+                                                            )
+                                                    else Modifier
+                                                )
+                    //                                            .focusProperties {
+                    //                                                if (channelIndex == 0) {
+                    //                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
+                    //                                                }
+                    //                                            }
+                                                .onFocusChanged { isFocused.value = it.isFocused }
+                                                .focusRequester(focusRequester)
+                                                .focusable()
+                                                .onPreviewKeyEvent { keyEvent ->
+                                                    if (keyEvent.type == KeyEventType.KeyDown) {
+                                                        when (keyEvent.nativeKeyEvent.keyCode) {
+                                                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                                                sharedViewModel.updateLastSelectedChannelIndex(
+                                                                    channelIndex
+                                                                )
+                                                                sharedViewModel.setCurrentPlaylist(
+                                                                    epgList
+                                                                )
+                                                                epgList
+                                                                    .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
+                                                                    ?.let { channelItem ->
+                                                                        sharedViewModel.updateSelectedChannel(
+                                                                            channelItem
+                                                                        )
+                                                                        navController.navigate(
+                                                                            Destination.panMetroScreen
+                                                                        ) {
+                                                                            PreferenceManager.lastEpgDataItem =
+                                                                                null
+                                                                        }
                                                                     }
-                                                                }
-                                                            true
-                                                        }
-                                                        KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                                            val nextRowIdx = channelIndex + 1
-                                                            val nextRowFirst = programFocusRequesters
-                                                                .getOrNull(nextRowIdx)
-                                                                ?.getOrNull(0)
-                                                            val nextRowState = rowStates.getOrNull(nextRowIdx)
-                                                            if (nextRowFirst != null && nextRowState != null) {
-                                                                scope.launch {
-                                                                    // first scroll that LazyRow so item 0 is visible
-                                                                    nextRowState.animateScrollToItem(0)
-                                                                    // then give it a moment to bind
-                                                                    delay(50)
-                                                                    nextRowFirst.requestFocus()
-                                                                }
+                                                                true
                                                             }
-                                                            true
-                                                        }
 
-                                                        KeyEvent.KEYCODE_DPAD_UP -> {
-                                                            if (channelIndex == 0) {
-                                                                // **First row → send focus to the selected language**
-                                                                val langRequester = languageFocusRequesters
-                                                                    .getOrNull(languageSelectedIndex.value)
-                                                                if (langRequester != null) {
+                                                            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                                                val nextRowIdx = channelIndex + 1
+                                                                val nextRowFirst =
+                                                                    programFocusRequesters
+                                                                        .getOrNull(nextRowIdx)
+                                                                        ?.getOrNull(0)
+                                                                val nextRowState =
+                                                                    rowStates.getOrNull(nextRowIdx)
+                                                                if (nextRowFirst != null && nextRowState != null) {
                                                                     scope.launch {
-                                                                        delay(50)
-                                                                        try { langRequester.requestFocus() } catch (_: Exception) {}
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                // normal “go to previous row” behavior
-                                                                val prevRowIdx = channelIndex - 1
-                                                                val prevRowFirst = programFocusRequesters
-                                                                    .getOrNull(prevRowIdx)
-                                                                    ?.getOrNull(0)
-                                                                val prevRowState = rowStates.getOrNull(prevRowIdx)
-                                                                if (prevRowFirst != null && prevRowState != null) {
-                                                                    scope.launch {
-                                                                        prevRowState.animateScrollToItem(
+                                                                        // first scroll that LazyRow so item 0 is visible
+                                                                        nextRowState.animateScrollToItem(
                                                                             0
                                                                         )
+                                                                        // then give it a moment to bind
                                                                         delay(50)
-                                                                        prevRowFirst.requestFocus()
+                                                                        nextRowFirst.requestFocus()
                                                                     }
                                                                 }
+                                                                true
                                                             }
-                                                            true
+
+                                                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                                                if (channelIndex == 0) {
+                                                                    // **First row → send focus to the selected language**
+                                                                    val langRequester =
+                                                                        languageFocusRequesters
+                                                                            .getOrNull(
+                                                                                languageSelectedIndex.value
+                                                                            )
+                                                                    if (langRequester != null) {
+                                                                        scope.launch {
+                                                                            delay(50)
+                                                                            try {
+                                                                                langRequester.requestFocus()
+                                                                            } catch (_: Exception) {
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    // normal “go to previous row” behavior
+                                                                    val prevRowIdx =
+                                                                        channelIndex - 1
+                                                                    val prevRowFirst =
+                                                                        programFocusRequesters
+                                                                            .getOrNull(prevRowIdx)
+                                                                            ?.getOrNull(0)
+                                                                    val prevRowState =
+                                                                        rowStates.getOrNull(
+                                                                            prevRowIdx
+                                                                        )
+                                                                    if (prevRowFirst != null && prevRowState != null) {
+                                                                        scope.launch {
+                                                                            prevRowState.animateScrollToItem(
+                                                                                0
+                                                                            )
+                                                                            delay(50)
+                                                                            prevRowFirst.requestFocus()
+                                                                        }
+                                                                    }
+                                                                }
+                                                                true
+                                                            }
+                                                            else -> false
                                                         }
-                                                        else -> false
+                                                    } else false
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = program.title.orEmpty(),
+                                                color = Color.White,
+                                                fontSize = 15.sp,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Ellipsis,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .let { base ->
+                                                        if (isFocused.value) {
+                                                            // only when DPAD-focus lands here…
+                                                            base.basicMarquee(
+                                                                iterations = Int.MAX_VALUE,
+                                                                initialDelayMillis = 0,
+                                                                velocity = 30.dp
+                                                            )
+                                                        } else {
+                                                            base
+                                                        }
                                                     }
-                                                } else false
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = program.title.orEmpty(),
-                                            color = Color.White,
-                                            fontSize = 15.sp,
-                                            maxLines = 1,
-                                            softWrap = false,
-                                            overflow = TextOverflow.Ellipsis,
-                                            textAlign = TextAlign.Center,
+                                            )
+                                        }
+                                        Box(
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .let { base ->
-                                                    if (isFocused.value) {
-                                                        // only when DPAD-focus lands here…
-                                                        base.basicMarquee(
-                                                            iterations  = Int.MAX_VALUE,
-                                                            initialDelayMillis  = 0,
-                                                            velocity    = 30.dp
-                                                        )
-                                                    } else {
-                                                        base
-                                                    }
-                                                }
+                                                .fillMaxHeight()
+                                                .width(3.dp)
+                                                .background(Color(0xFF161D25))
                                         )
                                     }
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .width(3.dp)
-                                            .background(Color(0xFF161D25))
-                                    )
                                 }
                             }
                         }

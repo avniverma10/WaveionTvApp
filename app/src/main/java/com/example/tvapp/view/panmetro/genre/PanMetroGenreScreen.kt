@@ -1,4 +1,4 @@
-   package com.example.tvapp.view.panmetro.genre
+package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -36,10 +37,15 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.android.caastv.R
+import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.model.data.manifest.EPGCategory
+import com.example.tvapp.model.data.manifest.TabInfo
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
+import com.example.tvapp.view.uicomponent.ZoomInOutSwitcher
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
@@ -54,11 +60,14 @@ fun PanmetroGenreScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
+
     val epgList = genreViewModel.provideAvailableEPG()
 
     val availableGenre = genreViewModel.provideAvailableGenre()
 
-     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
 
     var channelToGenreFocus = remember { mutableStateOf(false) }
 
@@ -89,22 +98,51 @@ fun PanmetroGenreScreen(
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
         val genreName = availableGenre.getOrNull(lastGenreIndex)?.name ?: "All"
+        selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
         genreViewModel.filterPanMetroChannelsByGenre(genreName)
     }
-     LaunchedEffect(filteredChannels) {
-              if (filteredChannels.isNotEmpty()) {
-                  channelToGenreFocus.value = false
-                  selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
-                  selectedChannelIndex.value = lastChannelIndex.coerceAtLeast(0)
-                  channelListFocusRequester.requestFocus()
-                  } else {
-                       // If empty, keep focus on the genre list
-                       channelToGenreFocus.value = true
-                       genreFocusRequesters
-                           .getOrNull(selectedGenreIndex.value)
-                           ?.let { it.requestFocus() }
-                   }
-     }
+    LaunchedEffect(filteredChannels) {
+        if (filteredChannels.isNotEmpty()) {
+            // on splash → defaultChannel
+            val defaultChannel = epgList
+                ?.find { it.content?.ChannelID == appManifestData.value?.landingChannel?.channelId }
+            if (sharedViewModel.isFromSplash.value && defaultChannel != null) {
+                selectedChannelIndex.value = epgList?.indexOf(defaultChannel) ?: 0
+                sharedViewModel.updateSelectedChannel(defaultChannel)
+                sharedViewModel.isFromSplash.value = false
+
+                // safe focus
+                try {
+                    channelListFocusRequester.requestFocus()
+                } catch (t: Throwable) {
+                    Log.e("PanmetroGenre", "couldn't focus default splash channel", t)
+                }
+            }
+
+            channelToGenreFocus.value = false
+            selectedGenreIndex.value  = lastGenreIndex.coerceAtLeast(0)
+            selectedChannelIndex.value = lastChannelIndex.coerceAtLeast(0)
+
+            // safe focus again
+            try {
+                channelListFocusRequester.requestFocus()
+            } catch (t: Throwable) {
+                Log.e("PanmetroGenre", "couldn't focus restored channel #${selectedChannelIndex.value}", t)
+            }
+        } else {
+            // no channels → keep focus on genre
+            channelToGenreFocus.value = true
+            genreFocusRequesters
+                .getOrNull(selectedGenreIndex.value)
+                ?.let { req ->
+                    try {
+                        req.requestFocus()
+                    } catch (t: Throwable) {
+                        Log.e("PanmetroGenre", "couldn't focus genre #${selectedGenreIndex.value}", t)
+                    }
+                }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -130,14 +168,14 @@ fun PanmetroGenreScreen(
                         // Left: Categories
                         GenreListMenu(
                             genres = availableGenre,
-                            sharedViewModel = sharedViewModel,
                             genreSelectedIndex = selectedGenreIndex,
                             channelToGenreFocus = channelToGenreFocus,
                             focusRequesters = genreFocusRequesters,
                             // On selection, update the index, filter channels, and move focus to the channel list.
                             onCategoryForward = { index, selectedGenre ->
-                                channelToGenreFocus.value = false
+                                selectedGenreIndex.value = index
                                 selectedChannelIndex.value = 0
+                                sharedViewModel.updateGenreScreenLastGenreIndex(index)
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
@@ -172,6 +210,7 @@ fun PanmetroGenreScreen(
                                             .getOrNull(selectedGenreIndex.value)
                                             ?.name
                                             ?: "All"
+                                        sharedViewModel.updateGenreScreenLastChannelIndex(selectedChannelIndex.value)
                                         sharedViewModel.setCurrentPlaylist(channelsInThisGenre, genreName)
                                         sharedViewModel.updateLanguage(null)
                                         sharedViewModel.updateSelectedChannel(channelItem)

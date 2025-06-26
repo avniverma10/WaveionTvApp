@@ -135,7 +135,7 @@ fun ChannelListMenuScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No channels available\nGet back soon!",
+                    text = "Sorry, no channels available\nGet back soon!",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontFamily = FontFamily(Font(R.font.figtree_medium)),
@@ -144,75 +144,66 @@ fun ChannelListMenuScreen(
                 )
             }
         } else {
-            // Vertical list of channels.
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(10.dp)
-                    .focusRequester(channelListFocusRequester)
-                    .focusable()
-                    .onPreviewKeyEvent { keyEvent ->
-                        if (keyEvent.type == KeyEventType.KeyDown) {
-                            when (keyEvent.nativeKeyEvent.keyCode) {
-                                KeyEvent.KEYCODE_DPAD_LEFT -> {
-                                    // Switch focus to the genre list.
-                                    onNavigateToGenre()
-                                    false
-                                }
-
-                                KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                    if (focusedIndex < filteredChannels.size - 1) {
-                                        focusedIndex++
-                                        if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                            previewChannelIndex = focusedIndex
-                                            onVideoChange(
-                                                filteredChannels[focusedIndex],
-                                                focusedIndex
-                                            )
-                                        }
-                                        // Scroll if needed.
-                                        val visibleIndices =
-                                            listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                        if (focusedIndex !in visibleIndices) {
-                                            coroutineScope.launch {
-                                                listState.animateScrollToItem(focusedIndex)
-                                            }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f)
+                .padding(10.dp)
+                .focusRequester(channelListFocusRequester)
+                .focusable()
+                .onPreviewKeyEvent { keyEvent ->
+                    if (keyEvent.type == KeyEventType.KeyDown) {
+                        when (keyEvent.nativeKeyEvent.keyCode) {
+                            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                                // Switch focus to the genre list.
+                                onNavigateToGenre()
+                                false
+                            }
+                            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                                if (focusedIndex < filteredChannels.size - 1) {
+                                    focusedIndex++
+                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
+                                        previewChannelIndex = focusedIndex
+                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
+                                    }
+                                    // Scroll if needed.
+                                    val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                    if (focusedIndex !in visibleIndices) {
+                                        coroutineScope.launch {
+                                            listState.animateScrollToItem(focusedIndex)
                                         }
                                     }
-                                    true
                                 }
-
-                                KeyEvent.KEYCODE_DPAD_UP -> {
-                                    if (focusedIndex > 0) {
-                                        focusedIndex--
-                                        if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                            previewChannelIndex = focusedIndex
-                                            onVideoChange(
-                                                filteredChannels[focusedIndex],
-                                                focusedIndex
-                                            )
-                                        }
-                                        val visibleIndices =
-                                            listState.layoutInfo.visibleItemsInfo.map { it.index }
-                                        if (focusedIndex !in visibleIndices) {
-                                            coroutineScope.launch {
-                                                listState.animateScrollToItem(focusedIndex)
-                                            }
-                                        }
-
+                                true
+                            }
+                            KeyEvent.KEYCODE_DPAD_UP -> {
+                                if (focusedIndex > 0) {
+                                    focusedIndex--
+                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
+                                        previewChannelIndex = focusedIndex
+                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
                                     }
-                                    true
+                                    val visibleIndices = listState.layoutInfo.visibleItemsInfo.map { it.index }
+                                    if (focusedIndex !in visibleIndices) {
+                                        coroutineScope.launch {
+                                            listState.animateScrollToItem(focusedIndex)
+                                        }
+                                    }
+
                                 }
-                                KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    // val currentTime = System.currentTimeMillis()
-                                    // val currentKey = keyEvent.key
-                                   sharedViewModel.updateGenreScreenLastChannelIndex(focusedIndex)
-                                    if (filteredChannels.size > focusedIndex) {
-                                        onPlayerScreenIntent(filteredChannels[focusedIndex])
-                                    }
-                                    true
-                                    /*if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
+                                true
+                            }
+                            KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                // val currentTime = System.currentTimeMillis()
+                                // val currentKey = keyEvent.key
+                                selectedChannelIndex.value = focusedIndex
+                                onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                sharedViewModel.updateGenreScreenLastChannelIndex(focusedIndex)
+                                if(filteredChannels.size > focusedIndex) {
+                                    onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                }
+                                true
+                                /*if (currentKey == lastKey && (currentTime - lastPressTime) < 300L) {
                                     if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
                                         onDoubleClickIntent(filteredChannels[focusedIndex])
                                     }
@@ -226,38 +217,35 @@ fun ChannelListMenuScreen(
                                     }
                                     false
                                 }*/
-                                }
-
-                                KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                                    if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
-                                        previewChannelIndex = focusedIndex
-                                        onVideoChange(filteredChannels[focusedIndex], focusedIndex)
-                                    }
-                                    true
-                                }
-
-                                else -> false
                             }
-                        } else false
-                    }
-            ) {
-                itemsIndexed(filteredChannels) { index, channel ->
-                    NewChannelRow(
-                        channel = channel,
-                        isFocused = (index == focusedIndex),
-                        isPreview = (index == previewChannelIndex),
-                        onFocus = { newIndex ->
-                            focusedIndex = newIndex
-                            previewChannelIndex = newIndex
-                        },
-                        onVideoChange = { channelData, index ->
-                            previewChannelIndex = index
-                            onVideoChange(channelData, index)
+                            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                                if (filteredChannels.isNotEmpty() && focusedIndex < filteredChannels.size) {
+                                    previewChannelIndex = focusedIndex
+                                    onVideoChange(filteredChannels[focusedIndex], focusedIndex)
+                                }
+                                true
+                            }
+                            else -> false
                         }
-                    )
+                    } else false
                 }
+        ) {
+            itemsIndexed(filteredChannels) { index, channel ->
+                NewChannelRow(
+                    channel = channel,
+                    isFocused = (index == focusedIndex),
+                    isPreview = (index == previewChannelIndex),
+                    onFocus = { newIndex ->
+                        focusedIndex = newIndex
+                        previewChannelIndex = newIndex
+                    },
+                    onVideoChange = { channelData, index ->
+                        previewChannelIndex = index
+                        onVideoChange(channelData, index)
+                    }
+                )
             }
-        }
+        } }
 
         // Bottom arrow row.
         Row(
