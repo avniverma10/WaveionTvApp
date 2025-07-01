@@ -2,15 +2,12 @@
 package com.example.tvapp.model.timestamp
 
 import android.util.Log
-import androidx.annotation.Keep
-import com.example.tvapp.extensions.loge
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-@Keep
 data class ServerTimeStamp(
     val status: String,
     val timestamp: String
@@ -26,7 +23,7 @@ data class ServerTimeStamp(
             // 3) Return millis, or null if parse failed
             date?.time
         } catch (e: ParseException) {
-            loge("provideTimeStampValue", "Failed to parse timestamp: $timestamp ${e.message}")
+            Log.e("provideTimeStampValue", "Failed to parse timestamp: $timestamp", e)
             null
         }
     }
