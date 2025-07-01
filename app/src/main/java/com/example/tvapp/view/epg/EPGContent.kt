@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,6 +91,9 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
+import com.example.tvapp.ui.theme.bg_card_color
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -575,12 +579,28 @@ fun ChannelInfo(
     categoryFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
-    val actualFocusRequester = focusRequester ?: remember { FocusRequester() }
+
+    val gradientColors = channel.content
+        ?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.mapNotNull { runCatching {
+            Color(AndroidColor.parseColor(it.color))
+        }.getOrNull()
+        }
+        .orEmpty()
+
+    val brush = if (gradientColors.size >= 2) {
+        Brush.horizontalGradient(colors = gradientColors)
+    } else {
+        SolidColor(bg_card_color)
+    }
+
     val isFocused = remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .width(leftPanelWidth)
-            .background(Color(0xFF161D25))
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
@@ -625,35 +645,26 @@ fun ChannelInfo(
             modifier = Modifier
                 .width(120.dp)
                 .height(125.dp)
-                .then(
-                    if (isFocused.value)
-                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
-                    else Modifier
+                .background(brush = brush, shape = RoundedCornerShape(4.dp))
+                .border(
+                    width = if (isFocused.value) 2.dp else 0.dp,
+                    color = if (isFocused.value) Color(0xFF49FEDD) else Color.Transparent,
+                    shape = RoundedCornerShape(4.dp)
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
                 .focusRequester(focusRequester)
                 .focusable()
-                .clip(RoundedCornerShape(4.dp))
                 .clickable { onPlayClicked(channel.content?.videoUrl) }
         ) {
-//            if (channelIndex == 0 && !hasInitiallyFocused.value) {
-//                LaunchedEffect(Unit) {
-//                    actualFocusRequester.requestFocus()
-//                    hasInitiallyFocused.value = true
-//                }
-//            }
             AsyncImage(
                 model = channel.content?.thumbnailUrl,
-                contentDescription = "Channel Logo",
+                contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
-                    .padding(8.dp)
-                    .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
+                    .padding(8.dp),
                 contentScale = ContentScale.Fit
             )
         }
     }
 }
-
-

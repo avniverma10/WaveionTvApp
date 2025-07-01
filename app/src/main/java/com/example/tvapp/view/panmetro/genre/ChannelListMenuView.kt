@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -282,6 +283,18 @@ fun NewChannelRow(
 
     val titleTextColor = if (isFocused || isPreview) base_color else Color.White
 
+    val stops = channel.content?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+        .orEmpty()
+
+    // 2) make a brush (horizontal here, but you can respect angle if you want)
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+    }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -316,8 +329,8 @@ fun NewChannelRow(
                 model = channel.content?.thumbnailUrl,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(35.dp)
-                    .background(Color.Black, RoundedCornerShape(4.dp))
+                    .size(44.dp)
+                    .background(brush, shape = RoundedCornerShape(4.dp))
                     .padding(4.dp),
                 contentScale = ContentScale.Fit
             )

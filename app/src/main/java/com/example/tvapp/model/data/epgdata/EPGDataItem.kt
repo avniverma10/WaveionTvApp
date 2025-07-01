@@ -24,7 +24,7 @@ data class EPGDataItem(
 @Keep
 data class Tv(
     val channel: Channel?=null,
-    val programme: List<Programme>?= null
+    val programme: List<Programme>?= null,
 )
 @Keep
 data class Programme(
@@ -72,6 +72,8 @@ data class Content(
     val drmType: String?="cryptoguard",//{sigma, cryptoguard, None}
     val assetId: String?="546465f1-a54c-4146-b417-c5d5ac0d0802",
     val streamType: String?="",
+    @SerializedName("bgGradient")
+    val bgGradient: BgGradient? = null
 )
 @Keep
 data class Channel(
@@ -82,5 +84,18 @@ data class Channel(
     val videoUrl: String? = null,
     val genreId: String, //  genreId for filtering
     val channelNo: Int? = null,
-    val availableProgramme: List<Programme>?= null
+    val availableProgramme: List<Programme>?= null,
+    val bgGradient: BgGradient? = null
+)
+
+@Keep
+data class BgGradient(
+    val type: String,
+    val angle: Int,
+    val colors: List<GradientColor>
+)
+@Keep
+data class GradientColor(
+    val color: String,
+    val percentage: Int
 )

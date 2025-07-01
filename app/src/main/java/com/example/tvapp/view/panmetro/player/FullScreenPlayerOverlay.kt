@@ -33,13 +33,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -214,6 +217,21 @@ private fun ChannelCard(
     scale: Float,
     modifier: Modifier
 ) {
+    val stops = epgDataItem.content
+        ?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.mapNotNull {
+            runCatching { Color(android.graphics.Color.parseColor(it.color)) }
+                .getOrNull()
+        }
+        .orEmpty()
+
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        SolidColor(Color(0xFF2A3139))
+    }
     val now = System.currentTimeMillis()
     val programList = epgDataItem.tv?.programme?.let {
         playerViewModel.provideAvailablePrograms(
@@ -249,13 +267,6 @@ private fun ChannelCard(
             (programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value)?.div(60000))?.toInt()?:0
         }
     }
-
-    /*LaunchedEffect(programList) {
-        currentProgram = programList?.getOrNull(0)
-        nextProgram = programList?.getOrNull(1)
-        currentProgram?.let { playerViewModel.updateCurrentRunningProgramTimings(it) }
-    }
-*/
 
     Box(
         modifier = modifier
@@ -293,23 +304,23 @@ private fun ChannelCard(
                         color = Color.Black
                     )
                 }
-                // Channel Logo
-                AsyncImage(
-                    model = epgDataItem.content?.thumbnailUrl,
-                    contentDescription = "Channel Logo",
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
                     modifier = Modifier
-                        .background(Color.Transparent, RoundedCornerShape(4.dp))
-                        .width(50.dp)
-                        .height(50.dp)
-                        .padding(start = 5.dp)
-                )
-                /*Text(
-                    text = epgDataItem.content?.title
-                        ?: epgDataItem.displayName
-                        ?: "Unknown Channel",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF49FEDD)
-                )*/
+                        .height(40.dp).width(65.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(brush)
+                ) {
+                    // Channel Logo
+                    AsyncImage(
+                        model           = epgDataItem.content?.thumbnailUrl,
+                        contentDescription = null,
+                        modifier        = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp),
+                        contentScale    = ContentScale.Fit
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

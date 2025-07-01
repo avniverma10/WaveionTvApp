@@ -33,8 +33,10 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -155,7 +157,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                             epgItem.tv?.channel?.copy(
                                 logoUrl = epgItem.content?.thumbnailUrl,
                                 videoUrl = epgItem.content?.videoUrl,
-                                genreId = epgItem.content?.genreId ?: "Unknown"
+                                genreId = epgItem.content?.genreId ?: "Unknown",
+                                bgGradient = epgItem.content?.bgGradient
                             )
                         } ?: emptyList()
                     if (channelsForCategory.isNotEmpty()) {
@@ -259,6 +262,19 @@ fun ChannelBox(
     modifier: Modifier = Modifier,   // ← new
     onChannelClick: (String) -> Unit
 ) {
+
+    val stops = channel.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+        .orEmpty()
+
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        SolidColor(bg_card_color)
+    }
+
     var isFocused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue   = if (isFocused) 1.1f else 1f,
@@ -275,7 +291,7 @@ fun ChannelBox(
             .onFocusChanged { isFocused = it.isFocused }
             .focusable()
             .clip(RoundedCornerShape(8.dp))
-            .background(bg_card_color)
+            .background(brush, shape = RoundedCornerShape(8.dp))
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) base_color else Color.Transparent,
@@ -309,6 +325,18 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             repeatMode = RepeatMode.Reverse
         )
     )
+    if (bannerList.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .padding(start = 70.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = base_color)
+        }
+        return
+    }
     // Auto-scroll logic.
     LaunchedEffect(bannerList) {
         while (true) {

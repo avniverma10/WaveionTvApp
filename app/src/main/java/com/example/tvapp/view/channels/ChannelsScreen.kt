@@ -46,7 +46,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -95,7 +97,8 @@ fun ChannelScreen(
             videoUrl   = epgItem.content?.videoUrl,
             logoUrl    = epgItem.content?.thumbnailUrl,
             genreId    = epgItem.content?.genreId ?: "",
-            channelNo  = epgItem.content?.channelNo
+            channelNo  = epgItem.content?.channelNo,
+            bgGradient  = epgItem.content?.bgGradient
         )
     }
     val channelFocusRequesters = remember(channelList.size) {
@@ -294,6 +297,21 @@ fun ChannelList(
     languageFocusRequesters: List<FocusRequester>,
     categorySelectedIndex: MutableState<Int>
 ) {
+
+    val stops = channel.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+        .orEmpty()
+
+    val brush = when {
+        stops.size >= 2 && channel.bgGradient?.angle == 90 ->
+            Brush.horizontalGradient(stops)
+        stops.size >= 2 ->
+            Brush.verticalGradient(stops)
+        else ->
+            SolidColor(bg_card_color)   // your old fallback
+    }
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
@@ -340,7 +358,7 @@ fun ChannelList(
         Box(
             modifier = Modifier
                 .padding(8.dp)
-                .background(color = bg_card_color, shape = RoundedCornerShape(8.dp))
+                .background(brush = brush, shape = RoundedCornerShape(8.dp))
                 .border(
                     width = if (isFocused) 2.dp else 0.dp,
                     color = if (isFocused) base_color else Color.Transparent,

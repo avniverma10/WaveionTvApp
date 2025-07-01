@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,8 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -74,7 +77,7 @@ fun GenreMultiDRMPlayer(
 
     // Mutable state for UI updates
     val isBuffering = rememberSaveable { mutableStateOf(false) }
-
+    var isPlayerInitialized by remember { mutableStateOf(false) }
 
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorCodeState by remember { mutableStateOf(0) }
@@ -113,6 +116,7 @@ fun GenreMultiDRMPlayer(
         // Error listener
         val errorListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
+                isBuffering.value = false
                 // 1) Show your dialog
                 val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
                     ?.responseCode
@@ -137,6 +141,7 @@ fun GenreMultiDRMPlayer(
                 if (playbackState == Player.STATE_READY) {
                     showErrorDialog = false
                 }
+                isBuffering.value = (playbackState == Player.STATE_BUFFERING)
             }
         }
         // Attach them
@@ -158,6 +163,7 @@ fun GenreMultiDRMPlayer(
     LaunchedEffect(selectedVideoUrl) {
         loge("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            isPlayerInitialized = true
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false
@@ -177,6 +183,8 @@ fun GenreMultiDRMPlayer(
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
 
+        }?: run {
+            isPlayerInitialized = false
         }
 
     }
@@ -187,69 +195,91 @@ fun GenreMultiDRMPlayer(
             .fillMaxSize()
             .background(Color.Transparent)
     ) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                playerView.value = view.findViewById<PlayerView>(R.id.player_view)
-
-                playerView.value?.apply {
-                    player = exoPlayer
-                    useController = false
-                    keepScreenOn = true
-                }
-
-                view
-
-            }
-        )
-        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
-            playerSSERules?.fingerprints?.forEach {
-                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
-            }
-        }
-
-        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
-            playerSSERules?.scrollMessages?.forEach {
-                ScrollingMessageOverlay(player= playerView.value, scrollMessageInfo = mutableStateOf(it))
-            }
-        }
-
-        // Show Loading Indicator if Buffering
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (isBuffering.value) {
-                CircularProgressIndicator()
-            }
-        }
-
-        if (showErrorDialog) {
-            PlaybackErrorPreview(
-                errorCode    = errorCodeState,
-                errorMessage = errorMessageState,
-                modifier     = Modifier.align(Alignment.Center)
+        val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
+        if (!hasVideo && isBuffering.value ) {
+            Image(
+                painter = painterResource(id = R.drawable.caastv_icon_foreground),
+                contentDescription = "CAASTV Poster",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         }
+        if (hasVideo) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                    playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-    }
+                    playerView.value?.apply {
+                        player = exoPlayer
+                        useController = false
+                        keepScreenOn = true
+                    }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                exoPlayer.pause()
-            }else if (event == Lifecycle.Event.ON_START) {
-                exoPlayer.play()
+                    view
+
+                }
+            )
+            if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
+                playerSSERules?.fingerprints?.forEach {
+                    ChannelFingerprintOverlay(
+                        player = playerView.value,
+                        fingerprintRule = mutableStateOf(it)
+                    )
+                }
             }
+
+            if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
+                playerSSERules?.scrollMessages?.forEach {
+                    ScrollingMessageOverlay(
+                        player = playerView.value,
+                        scrollMessageInfo = mutableStateOf(it)
+                    )
+                }
+            }
+
+            // Show Loading Indicator if Buffering
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (isBuffering.value) {
+                    Image(
+                        painter = painterResource(id = R.drawable.caastv_icon_foreground),
+                        contentDescription = "Loading poster",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            if (showErrorDialog) {
+                PlaybackErrorPreview(
+                    errorCode = errorCodeState,
+                    errorMessage = errorMessageState,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            exoPlayer.run {
-                stop()
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) {
+                    exoPlayer.pause()
+                } else if (event == Lifecycle.Event.ON_START) {
+                    exoPlayer.play()
+                }
             }
-            lifecycleOwner.lifecycle.removeObserver(observer)
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                exoPlayer.run {
+                    stop()
+                }
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
         }
     }
 }

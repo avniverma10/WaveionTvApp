@@ -182,17 +182,19 @@ fun PanMetroInfoScreen(
                     InfoRow("Username", PreferenceManager.getUsername()?:"CaasTV")
                     InfoRow("MAC ID", context.provideMacAddress() ?: macId)
                     InfoRow("Validity", validity)
-                    InfoRow("App version", appVersion)
+                    InfoRow("App version", value = context.packageManager
+                        .getPackageInfo(context.packageName, 0)
+                        .versionName?:appVersion)
                     InfoRow("Android version", systemInfo?.androidVersion ?: androidVersion)
                     InfoRow("RAM", systemInfo?.totalMemory ?: ram)
                     InfoRow("Storage", systemInfo?.storageInfo ?: storage)
                     InfoRow("STB Model", Build.MODEL)
+                    InfoRow("Brand name", Build.BRAND)
                     InfoRow("Network name", networkName)
                     InfoRow("DRM ID", systemInfo?.drmScheme ?: drmId)
                 }
             }
         }
-
         // 3) render the confirmation dialog over everything
         if (showExitDialog) {
             CommonDialog(

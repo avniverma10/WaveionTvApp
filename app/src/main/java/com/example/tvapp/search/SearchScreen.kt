@@ -1,6 +1,7 @@
 package com.example.tvapp.search
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
@@ -69,7 +71,8 @@ fun SearchScreen(
                 logoUrl   = item.content?.thumbnailUrl,
                 videoUrl  = item.content?.videoUrl,
                 genreId   = item.content?.genreId ?: "Unknown",
-                channelNo = item.content?.channelNo
+                channelNo = item.content?.channelNo,
+                bgGradient = item.content?.bgGradient
             )
         }
     } else {
@@ -229,6 +232,14 @@ fun ChannelThumbnail(
     channel: Channel,
     onChannelClick: (String) -> Unit
 ) {
+    val brush = channel.bgGradient?.let { grad ->
+        val colors = grad.colors.map {
+            Color(android.graphics.Color.parseColor(it.color))
+        }
+        Brush.linearGradient(colors = colors)
+    } ?: Brush.verticalGradient(
+        colors = listOf(bg_card_color, bg_card_color)
+    )
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
 
@@ -236,7 +247,7 @@ fun ChannelThumbnail(
         Modifier
             .fillMaxWidth()
             .focusable(interactionSource = interactionSource)
-            .background(color = bg_card_color, shape = RoundedCornerShape(8.dp))
+            .background(brush, shape = RoundedCornerShape(8.dp))
             .border(
                 width = if (isFocused) 2.dp else 0.dp,
                 color = if (isFocused) base_color else Color.Transparent,

@@ -81,13 +81,12 @@ fun PanmetroLoginScreen(
 
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester    = remember { FocusRequester() }
-
     val buttonInteractionSource = remember { MutableInteractionSource() }
     val isButtonFocused by buttonInteractionSource.collectIsFocusedAsState()
-
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
-
     var showExitDialog by remember { mutableStateOf(false) }
+    var loginErrorMessage by remember { mutableStateOf<String?>(null) }
+
     BackHandler { showExitDialog = true }
 
     if (showExitDialog) {
@@ -289,7 +288,7 @@ fun PanmetroLoginScreen(
                                                 context.hideKeyboard()
                                                 navController.navigate(Destination.genreScreen)
                                             } else {
-                                                context.showToastS(errorMsg ?: "Login failed")
+                                                loginErrorMessage = errorMsg ?: "Unknown login error"
                                             }
                                         }
                                     )
@@ -325,6 +324,19 @@ fun PanmetroLoginScreen(
                     )
                 }
             }
+        }
+        if (loginErrorMessage != null) {
+            CommonDialog(
+                showDialog        = true,
+                title             = "Login Failed",
+                painter           = painterResource(id = R.drawable.login_fail),
+                message           = loginErrorMessage!!,
+                borderColor       = Color.Red,
+                confirmButtonText = "OK",
+                onConfirm         = { loginErrorMessage = null },
+                dismissButtonText = null,
+                onDismiss         = { loginErrorMessage = null }
+            )
         }
     }
 }
