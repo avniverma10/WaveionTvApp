@@ -158,7 +158,7 @@ fun FullScreenPlayerOverlay(
             ) {
                 itemsIndexed(
                     items = epgList,
-                    key = { index, item -> item.channelId ?: index }
+                    key   = { index, _ -> index }
                 ) { index, item ->
                     val isFocused = remember { mutableStateOf(false) }
                     val isSelected = selectedIndex.value == index

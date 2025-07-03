@@ -74,16 +74,20 @@ fun SearchScreen(
                 channelNo = item.content?.channelNo,
                 bgGradient = item.content?.bgGradient
             )
-        }
+        }.distinctBy { it._id }
     } else {
-        searchResults
+        searchResults.mapNotNull { result ->
+            val source = epgData.find { it.tv?.channel?._id == result._id }
+            result.copy(
+                bgGradient = source?.content?.bgGradient
+            )
+        }.distinctBy { it._id }
     }
     val lastIdx by sharedViewModel.lastSearchSelectedIndex.collectAsState()
     var isFirst by rememberSaveable { mutableStateOf(true) }
     val requesters = remember(displayed) {
         displayed.map { FocusRequester() }
     }
-
     Box(
         Modifier
             .fillMaxSize()
@@ -155,7 +159,13 @@ fun SearchScreen(
                 contentPadding = PaddingValues(16.dp),
                 modifier       = Modifier.fillMaxSize()
             ) {
-                itemsIndexed(displayed) { idx, channel ->
+                itemsIndexed(
+                    items = displayed,
+                    key   = {idx, ch  ->
+                        val k = "${ch._id}-${idx}"
+                        k
+                    }
+                ) { idx, channel ->
                     val shouldFocus = remember(isFirst, displayed) {
                         // on first compose → idx==0, else idx==lastIdx
                         if (isFirst) idx == 0 else idx == lastIdx
@@ -187,11 +197,15 @@ fun SearchScreen(
                                         channelNo = item.content?.channelNo
                                     )
                                 }
-                                sharedViewModel.setCurrentPlaylist(
-                                    allChannels.mapNotNull { ch ->
+                                val playlistItems = displayed
+                                    .mapNotNull { ch ->
                                         epgData.firstOrNull { it.content?.videoUrl == ch.videoUrl }
-                                    },
-                                    "All Channels"
+                                    }
+                                val title = if (searchText.isEmpty()) "Trending in India"
+                                else "Search Results"
+                                sharedViewModel.setCurrentPlaylist(
+                                    playlistItems,
+                                    title
                                 )
                                 sharedViewModel.updateLanguage(null)
                                 epgData.find { it.content?.videoUrl == url }?.let {
