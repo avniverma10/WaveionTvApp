@@ -71,7 +71,7 @@ open class PlayerViewModel @Inject constructor(
             }
             .distinctBy { it.startTime to it.endTime }
             .sortedBy { it.startTime }
-            .take(3)
+//            .take(3)
             .map { program ->
                 program.copy(
                     startFormatedTime = program.startTime
