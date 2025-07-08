@@ -137,6 +137,7 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
             borderColor = Color.Transparent,
             confirmButtonText ="Yes" ,
             onConfirm =  {
+                sharedViewModel.clearRecentlyWatched()
                 PreferenceManager.clearLogin()
                 showExitDialog = false
                 context.hideKeyboard()

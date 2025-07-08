@@ -207,6 +207,7 @@ fun PanMetroInfoScreen(
                 borderColor = Color.Transparent,
                 confirmButtonText ="Yes" ,
                 onConfirm =  {
+                    sharedViewModel.clearRecentlyWatched()
                     PreferenceManager.clearLogin()
                     showExitDialog = false
                     context.hideKeyboard()

@@ -137,6 +137,8 @@ open class SharedViewModel @Inject constructor(
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
 
+    private val _recentlyWatched = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val recentlyWatched: StateFlow<List<EPGDataItem>> = _recentlyWatched
 
     init {
         //provideGlobalFingerprintInfo()
@@ -146,9 +148,15 @@ open class SharedViewModel @Inject constructor(
             isInitializeData
                 .filter { it }        // only when it becomes true
                 .first()
-            val saved = filterPreferences.filterFlow.first() // <-- one-time load only
-            _filterState.value = saved
             applyFilters()
+        }
+        viewModelScope.launch {
+            wtvEPGList.collectLatest { epgList ->
+                val savedIds = PreferenceManager.recentChannelIds
+                _recentlyWatched.value = savedIds.mapNotNull { id ->
+                    epgList.firstOrNull { it.channelId == id }
+                }
+            }
         }
         // observe EPG changes continuously
         /*viewModelScope.launch {
@@ -159,7 +167,10 @@ open class SharedViewModel @Inject constructor(
                 filterPanMetroChannelsByGenre()
             }
         }*/
-
+        val savedIds = PreferenceManager.recentChannelIds
+        _recentlyWatched.value = savedIds.mapNotNull { id ->
+            wtvEPGList.value.firstOrNull { it.channelId == id }
+        }
         // load banners
         viewModelScope.launch {
             provideBanners()
@@ -568,6 +579,23 @@ open class SharedViewModel @Inject constructor(
     fun updateLastHomeSelection(categoryIndex: Int, channelIndex: Int) {
         _lastHomeCategory.value = categoryIndex
         _lastHomeChannel.value = channelIndex
+    }
+
+    fun recordRecentlyWatched(item: EPGDataItem) {
+        Log.d("SharedViewModel", "▶ recordRecentlyWatched: ${item.channelId}")
+        val current = _recentlyWatched.value.toMutableList()
+        current.removeAll { it.channelId == item.channelId }
+        current.add(0, item)
+        if (current.size > 20) current.removeLast()
+        _recentlyWatched.value = current
+        val ids = current.map { it.channelId.toString() }
+        Log.d("SharedViewModel", "↳ saving recents to prefs: $ids")
+        PreferenceManager.recentChannelIds = ids
+    }
+
+    fun clearRecentlyWatched() {
+        _recentlyWatched.value = emptyList()
+        PreferenceManager.clearRecentlyWatched()
     }
 
     override fun onCleared() {

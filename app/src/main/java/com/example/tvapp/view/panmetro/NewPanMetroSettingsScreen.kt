@@ -121,6 +121,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
                 confirmButtonText ="Yes" ,
                 onConfirm =  {
                     PreferenceManager.clearLogin()
+                    sharedViewModel.clearRecentlyWatched()
                     showExitDialog = false
                     context.hideKeyboard()
                     (context as? Activity)?.finishAffinity()

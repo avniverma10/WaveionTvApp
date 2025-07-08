@@ -56,6 +56,7 @@ import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
+import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.ui.theme.bg_card_color
 import com.example.tvapp.ui.theme.screen_bg_color
@@ -68,6 +69,7 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
@@ -83,6 +85,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val focusManager = LocalFocusManager.current
     val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
     val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
+    val recentlyWatched by sharedViewModel.recentlyWatched.collectAsState()
 
     // 1) remember a state for your column
    // val columnState = rememberLazyListState()
@@ -112,6 +115,24 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         }
     }
 
+    val displayCategories = remember(homeCategories, recentlyWatched) {
+        val list = mutableListOf<WTVHomeCategory>()
+
+        if (recentlyWatched.isNotEmpty()) {
+            list += WTVHomeCategory(
+                id        = "recent",
+                name      = "Recently Watched",
+                // ← use the real channelId field, not content._id
+                channels  = recentlyWatched.asReversed().mapNotNull { it.channelId },
+                order     = Int.MIN_VALUE,
+                createdAt = Instant.now().toString(),
+                updatedAt = Instant.now().toString(),
+                version   = 0
+            )
+        }
+        list += homeCategories
+        list
+    }
 
     // Exit confirmation dialog
     if (showExitDialog) {
@@ -148,29 +169,26 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 navController = navController
             )
             LazyColumn(modifier = Modifier.fillMaxSize().padding(start = 70.dp)) {
-                // ③ Switch to itemsIndexed so we know when it's the first category
-                itemsIndexed(homeCategories) { categoryIndex, category ->
-                    val epgList = epgChannels
-                        ?.filter { it.channelId in category.channels }
-                    val channelsForCategory = epgList
-                        ?.mapNotNull { epgItem ->
-                            epgItem.tv?.channel?.copy(
-                                logoUrl = epgItem.content?.thumbnailUrl,
-                                videoUrl = epgItem.content?.videoUrl,
-                                genreId = epgItem.content?.genreId ?: "Unknown",
-                                bgGradient = epgItem.content?.bgGradient
-                            )
-                        } ?: emptyList()
+                itemsIndexed(displayCategories) { categoryIndex, category ->
+                    val epgList = epgChannels.filter { it.channelId in category.channels }
+                    val channelsForCategory = epgList.mapNotNull { epgItem ->
+                        epgItem.tv?.channel?.copy(
+                            logoUrl    = epgItem.content?.thumbnailUrl,
+                            videoUrl   = epgItem.content?.videoUrl,
+                            genreId    = epgItem.content?.genreId ?: "Unknown",
+                            bgGradient = epgItem.content?.bgGradient
+                        )
+                    }
                     if (channelsForCategory.isNotEmpty()) {
                         CategorySection(
-                            title = category.name,
-                            categoryIndex = categoryIndex,
-                            channels = channelsForCategory,
-                            navController = navController,
-                            sharedViewModel = sharedViewModel,
-                            categoryChannelIds = category.channels,
-                            firstChannelFocusRequester = if (categoryIndex == 0) firstChannelFocusRequester else null,
-                            isFirstCategory = (categoryIndex == 0)
+                            title                    = category.name,
+                            categoryIndex            = categoryIndex,
+                            channels                 = channelsForCategory,
+                            navController            = navController,
+                            sharedViewModel          = sharedViewModel,
+                            categoryChannelIds       = category.channels,
+                            firstChannelFocusRequester = if (categoryIndex==0) firstChannelFocusRequester else null,
+                            isFirstCategory          = (categoryIndex == 0)
                         )
                     }
                 }

@@ -18,6 +18,7 @@ object PreferenceManager {
   private const val KEY_USERNAME   = "username"
   private const val KEY_PASSWORD   = "password"
   private const val KEY_USER_INFO   = "userinfo"
+  private const val KEY_RECENTS     = "recently_watched"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
@@ -54,6 +55,23 @@ object PreferenceManager {
       editor.apply()
     }
 
+  /** Save recently watched channels */
+  var recentChannelIds: List<String>
+    get() {
+      return try {
+        prefs.getStringSet(KEY_RECENTS, emptySet())!!.toList()
+      } catch (e: ClassCastException) {
+        // A legacy String was stored here—clear it and fall back
+        prefs.edit { remove(KEY_RECENTS) }
+        emptyList()
+      }
+    }
+    set(ids) {
+      prefs.edit {
+        putStringSet(KEY_RECENTS, ids.toSet())
+      }
+    }
+
   /** Save username & password atomically */
   fun saveLogin(username: String, password: String) {
     val editor = prefs.edit()
@@ -83,6 +101,10 @@ object PreferenceManager {
     return editor.commit()
   }
 
+  /** Clear recently watched */
+  fun clearRecentlyWatched() {
+    prefs.edit { remove(KEY_RECENTS) }
+  }
 
   /** Helpers to read them back */
   fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
