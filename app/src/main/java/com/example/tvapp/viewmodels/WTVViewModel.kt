@@ -220,12 +220,36 @@ open class WTVViewModel @Inject constructor(
                         val manifest = it
                         val genre = arrayListOf<WTVGenre>()
                         it.genre?.let { c ->
-                            genre.add(WTVGenre(name = "All"))
+                            val apiAllGenre = c.find { g ->
+                                g.name.equals("All", ignoreCase = true)
+                            }
+                            genre.add(
+                                WTVGenre(
+                                    _id = "all",
+                                    name = "All",
+                                    published = true,
+                                    version = 0,
+                                    CustomIconUrl = apiAllGenre?.CustomIconUrl,
+                                    defaultIcon = apiAllGenre?.defaultIcon ?: "All"
+                                )
+                            )
                             genre.addAll(c)
                         }
                         val language = arrayListOf<WTVLanguage>()
                         it.language?.let { c ->
-                            language.add(WTVLanguage(name = "All"))
+                            val apiAllLanguage = c.find { lang ->
+                                lang.name.equals("All", ignoreCase = true)
+                            }
+                            language.add(
+                                WTVLanguage(
+                                    _id = "all",
+                                    name = "All",
+                                    published = true,
+                                    version = 0,
+                                    CustomIconUrl = apiAllLanguage?.CustomIconUrl,
+                                    defaultIcon = apiAllLanguage?.defaultIcon ?: "All"
+                                )
+                            )
                             language.addAll(c)
                         }
                         manifest.copy(genre = genre, language = language)

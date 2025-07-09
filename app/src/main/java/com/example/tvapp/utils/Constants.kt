@@ -9,6 +9,7 @@ object Constants {
     const val HEADER_TOKEN = "BUAA8JJkzfMI56y4BhEhU"
     const val DEV_BASE_URL = "https://api-dev.caastv.com/api/"//"http://192.168.1.4:3001/api/"
     const val BASE_URL = "https://api-demo.caastv.com/api/"//"http://192.168.1.4:3001/api/"
+    const val BASE_ICON_URL = "https://api-demo.caastv.com/"
     const val BASE_URL_API_1 = "https://api-demo.caastv.com/api/tabs"
     const val BASE_URL_API_2 = "https://cpaas.messagecentral.com/"
     const val AUTH_TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLUE2OTBBODkwNDVCODRFOCIsImlhdCI6MTczOTI1MzI4NCwiZXhwIjoxODk2OTMzMjg0fQ.Zudk_A33gyu_raBnzrR0nGFkvYsQPiiuM_lSR3Hr0-0OCHoONeMlIffZResiQlmPbPF0LSsc_fKuJKVqszoRNQ"

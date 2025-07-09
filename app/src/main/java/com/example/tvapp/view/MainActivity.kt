@@ -36,33 +36,36 @@ class MainActivity : ComponentActivity() {
         PreferenceManager.init(applicationContext)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
-        overlayHelper = OverlayPermissionHelper(this).apply {
+        /*overlayHelper = OverlayPermissionHelper(this).apply {
             registerLauncher()
-        }
+        }*/
 
         setContent {
             TVAppTheme {
                 // observe overlay‐permission state
-                val hasOverlayPermission by overlayHelper.hasOverlayPermissionState
                 Box(modifier = Modifier.fillMaxSize()) {
-                    when {
-                        isFireTv -> {
-                            WTVApp()
-                        }
-                        hasOverlayPermission -> {
-                            WTVApp()
-                            LaunchedEffect(Unit) {
-                                overlayHelper.startOverlayServiceIfNeeded()
-                                overlayHelper.requestIgnoreBatteryOptimizationsIfNeeded()
-                            }
-                        }
-                        else -> {
-                            OverlayPermissionDialog {
-                                overlayHelper.requestOverlayPermission()
-                            }
-                        }
-                    }
+                    WTVApp()
                 }
+                /*val hasOverlayPermission by overlayHelper.hasOverlayPermissionState
+                  Box(modifier = Modifier.fillMaxSize()) {
+                      when {
+                          isFireTv -> {
+                              WTVApp()
+                          }
+                          hasOverlayPermission -> {
+                              WTVApp()
+                              LaunchedEffect(Unit) {
+                                  overlayHelper.startOverlayServiceIfNeeded()
+                                  overlayHelper.requestIgnoreBatteryOptimizationsIfNeeded()
+                              }
+                          }
+                          else -> {
+                              OverlayPermissionDialog {
+                                  overlayHelper.requestOverlayPermission()
+                              }
+                          }
+                      }
+                  }*/
             }
         }
     }

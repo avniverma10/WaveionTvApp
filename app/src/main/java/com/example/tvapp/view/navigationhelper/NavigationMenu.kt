@@ -44,16 +44,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
+import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.ui.theme.filter_selected_color
 import com.example.tvapp.ui.theme.base_color
 import com.example.tvapp.ui.theme.focus_background
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
-
 @Composable
 fun CategoryMenu(
     sharedViewModel: SharedViewModel,
@@ -65,38 +66,17 @@ fun CategoryMenu(
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
+    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre ?: emptyList()
 
-    val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
+    if (menuItems.isEmpty()) return
 
-
-    if (menuItems.isEmpty()) {
-        return
-    }
-    val categoryIcons = listOf(
-        R.drawable.all_1,
-        R.drawable.ball,
-        R.drawable.news_feed_svgrepo_com,
-        R.drawable.religoius,
-        R.drawable.ball,
-        R.drawable.news_feed_svgrepo_com,
-        R.drawable.religoius,
-        R.drawable.all_1,
-        R.drawable.ball,
-        R.drawable.news_feed_svgrepo_com,
-        R.drawable.religoius,
-        R.drawable.ball,
-        R.drawable.news_feed_svgrepo_com,
-        R.drawable.religoius,
-    )
-    // only scroll when the selected index moves out of view
     LaunchedEffect(selectedIndex.value) {
         delay(50)
         val visible = listState.layoutInfo.visibleItemsInfo
         if (visible.isEmpty()) return@LaunchedEffect
-        val firstVisible  = visible.first().index
-        val lastVisible   = visible.last().index
-        val visibleCount  = visible.size
+        val firstVisible = visible.first().index
+        val lastVisible = visible.last().index
+        val visibleCount = visible.size
         when {
             selectedIndex.value < firstVisible -> {
                 listState.animateScrollToItem(selectedIndex.value)
@@ -105,12 +85,8 @@ fun CategoryMenu(
                 val newFirst = (selectedIndex.value - visibleCount + 1).coerceAtLeast(0)
                 listState.animateScrollToItem(newFirst)
             }
-            else -> {
-                // still fully in view, do nothing
-            }
         }
     }
-
 
     Column(
         modifier = Modifier
@@ -121,13 +97,9 @@ fun CategoryMenu(
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.spacedBy(53.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             itemsIndexed(menuItems) { index, item ->
-                val iconRes = categoryIcons.getOrElse(index) {
-                    R.drawable.news
-                }
                 val isFocused = remember { mutableStateOf(false) }
                 val isSelected = selectedIndex.value == index
                 val gap = if (isFocused.value || isSelected) 10.dp else 12.dp
@@ -169,7 +141,6 @@ fun CategoryMenu(
                                         requester.requestFocus()
                                     }
                                 }
-                           // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }
@@ -183,41 +154,65 @@ fun CategoryMenu(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isFocused.value || isSelected) {
-                        // expanded: icon + text
                         Row(
                             verticalAlignment    = Alignment.CenterVertically,
                             horizontalArrangement= Arrangement.spacedBy(8.dp),
                             modifier             = Modifier.padding(start = 8.dp)
                         ) {
-                            Image(
-                                painter            = painterResource(iconRes),
+                            GenreIcon(
+                                customIconUrl = item.CustomIconUrl,
+                                defaultIconName = item.defaultIcon,
                                 contentDescription = item.name,
-                                modifier           = Modifier.size(25.dp)
+                                modifier = Modifier.size(25.dp)
                             )
                             Text(
-                                text    = item.name.orEmpty().uppercase(Locale.ROOT),
-                                maxLines= 1,
-                                color   = Color.White,
-                                style   = TextStyle(
-                                    fontSize     = 17.sp,
-                                    fontFamily   = FontFamily(Font(R.font.figtree_light)),
-                                    fontWeight   = FontWeight(400)
-                                ),
-//                                modifier= Modifier
-//                                    .padding(start = 10.dp, end = 10.dp)
+                                text = item.name.orEmpty().uppercase(Locale.ROOT),
+                                maxLines = 1,
+                                color = Color.White,
+                                style = TextStyle(
+                                    fontSize = 17.sp,
+                                    fontFamily = FontFamily(Font(R.font.figtree_light)),
+                                    fontWeight = FontWeight(400)
+                                )
                             )
                         }
                     } else {
-                        // collapsed: icon only
-                        Image(
-                            painter            = painterResource(iconRes),
+                        GenreIcon(
+                            customIconUrl = item.CustomIconUrl,
+                            defaultIconName = item.defaultIcon,
                             contentDescription = item.name,
-                            modifier           = Modifier.size(25.dp)
+                            modifier = Modifier.size(25.dp)
                         )
                     }
-
                 }
             }
         }
     }
 }
+
+@Composable
+fun GenreIcon(
+    customIconUrl: String?,
+    defaultIconName: String?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier
+) {
+    val baseUrlForDefault = Constants.BASE_ICON_URL+"uploads/genreIcon/DefaultIcons"
+    val (imageUrl, source) = when {
+        !customIconUrl.isNullOrBlank() ->
+            customIconUrl to "customIconUrl"
+        !defaultIconName.isNullOrBlank() ->
+            "$baseUrlForDefault/${defaultIconName}.svg" to "defaultIcon"
+        else ->
+            null to "none"
+    }
+    if (!imageUrl.isNullOrBlank()) {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = contentDescription,
+            modifier = modifier
+        )
+    }
+}
+
+
