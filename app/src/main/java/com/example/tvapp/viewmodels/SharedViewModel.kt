@@ -501,9 +501,11 @@ open class SharedViewModel @Inject constructor(
 
         loginInfo?.loginData?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("region", it)
+        }?: run {
+            queryBuilder.appendQueryParameter("region", "01")
         }
 
-        queryBuilder.appendQueryParameter("appversion","caastv_${application.packageManager
+        queryBuilder.appendQueryParameter("appVersion","caastv_${application.packageManager
             .getPackageInfo(application.packageName, 0)
             .versionName}")
 
