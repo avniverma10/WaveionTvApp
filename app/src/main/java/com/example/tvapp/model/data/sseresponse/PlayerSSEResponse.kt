@@ -4,7 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 data class PlayerSSEResponse(
     val fingerprints: List<PlayerFingerprint>,
-    val scrollMessages: List<ScrollMessage>
+    val scrollMessages: List<ScrollMessage>,
+    val forceMessages: List<ForceMessage>
 )
 
 data class PlayerFingerprint(

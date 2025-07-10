@@ -45,7 +45,7 @@ import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
 import com.example.tvapp.model.data.manifest.TabInfo
-import com.example.tvapp.ui.theme.screen_bg_color
+import com.example.tvapp.utils.theme.screen_bg_color
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
@@ -84,6 +84,12 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         } catch (e: IllegalStateException) {
             loge("FocusError", "FocusRequester not initialized ${e.message}")
         }
+
+        //request for user hash
+        sharedViewModel?.provideUserHash()
+
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
     }
     val categories = appManifestData.value?.genre?: arrayListOf()
     val languages = appManifestData.value?.language?: arrayListOf()

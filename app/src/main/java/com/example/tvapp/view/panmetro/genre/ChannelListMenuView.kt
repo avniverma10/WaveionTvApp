@@ -55,7 +55,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.launch
@@ -198,9 +198,8 @@ fun ChannelListMenuScreen(
                                 // val currentTime = System.currentTimeMillis()
                                 // val currentKey = keyEvent.key
                                 selectedChannelIndex.value = focusedIndex
-                                onPlayerScreenIntent(filteredChannels[focusedIndex])
-                                sharedViewModel.updateGenreScreenLastChannelIndex(focusedIndex)
                                 if(filteredChannels.size > focusedIndex) {
+                                    sharedViewModel.updateGenreScreenLastChannelIndex(focusedIndex)
                                     onPlayerScreenIntent(filteredChannels[focusedIndex])
                                 }
                                 true

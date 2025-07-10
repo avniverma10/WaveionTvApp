@@ -1,5 +1,6 @@
 package com.example.tvapp.view.panmetro.genre
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +52,7 @@ import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 
+@SuppressLint("StateFlowValueCalledInComposition", "UnrememberedMutableState")
 @Composable
 fun PanmetroGenreScreen(
     navController: NavController,
@@ -70,6 +73,9 @@ fun PanmetroGenreScreen(
     val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
 
     var channelToGenreFocus = remember { mutableStateOf(false) }
+    val selectedVideoUrl by remember(sharedViewModel.selectedChannel.value) {
+        mutableStateOf(sharedViewModel.selectedChannel)
+    }
 
 
     val selectedGenreIndex: MutableState<Int> = remember { mutableStateOf( 0) }
@@ -89,7 +95,7 @@ fun PanmetroGenreScreen(
 
 
     BackHandler {
-        navController.navigate(Destination.epgScreen) {
+        navController.navigate(Destination.homeScreen) {
 //            popUpTo(Destination.genreScreen) { inclusive = true }
         }
     }
@@ -97,6 +103,9 @@ fun PanmetroGenreScreen(
     LaunchedEffect(Unit) {
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
+        //request for user hash
+        sharedViewModel?.provideUserHash()
+
         val genreName = availableGenre.getOrNull(lastGenreIndex)?.name ?: "All"
         selectedGenreIndex.value = lastGenreIndex.coerceAtLeast(0)
         genreViewModel.filterPanMetroChannelsByGenre(genreName)

@@ -41,7 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.*
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.ErrorDialog
@@ -124,6 +124,19 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
+        /*if (PreferenceManager.getLoginResponse()?.loginData != null || PreferenceManager.getUsername()?.isNotNullOrEmpty() == true) {
+           context.showToastS(PreferenceManager.getUsername()+">>>>>")
+            sharedViewModel.validateUserLogin(
+                userName = PreferenceManager.getUsername()?:"",
+                userPassword = PreferenceManager.getPassword()?:"",
+                onLoginResponse = { response, errorMsg ->
+                    if (response != null) {
+                        PreferenceManager.saveUserInfo(
+                            response
+                        )
+                    }
+                })
+        }*/
     }
 
     if (timeValid == false) {

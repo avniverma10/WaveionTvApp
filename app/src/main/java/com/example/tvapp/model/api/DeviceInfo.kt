@@ -35,18 +35,6 @@ interface ApiServiceForDeviceInfo {
     suspend fun sendDeviceInfo(@Body deviceInfo: DeviceInfo): Response<Void>
 }
 
-object RetrofitClientForDeviceInfo {
-    private val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(Constants.BASE_URL_API_1)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    val deviceInfoApi: ApiServiceForDeviceInfo by lazy {
-        retrofit.create(ApiServiceForDeviceInfo::class.java)
-    }
-}
 
 object DeviceInfoService {
     @SuppressLint("HardwareIds")

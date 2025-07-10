@@ -6,7 +6,9 @@ import com.google.gson.annotations.SerializedName
 @Keep
 data class GlobalSSEResponse(
     val fingerprints: List<Fingerprint>,
-    val scrollMessages: List<ScrollMessage>
+    val scrollMessages: List<ScrollMessage>,
+    val forceMessages: List<ForceMessage>,
+    val packageUpdates: List<PackageUpdate>
 )
 
 @Keep
@@ -64,3 +66,33 @@ data class ScrollMessage(
     val updatedAt: String?=null,
     val messageScope: String?="GLOBAL"
 )
+
+
+@Keep
+data class ForceMessage(
+    @SerializedName("__v")
+    val version: Int?=null,
+    val _id: String?=null,
+    val titleFontFamily: String?=null,
+    val titleFontColorHex: String?="#ffffff",
+    val titleFontTransparency: String?=".5",
+    val titleFontSizeDp: Int?=16,//min 12 and max 50-60
+    val createdAt: String?=null,
+    val messageFontColorHex: String?="#000000",
+    val messageFontFamily: String?=null,
+    val messageFontSizeDp: Int?=12,//min 12 and max 50-60
+    val messageFontTransparency: String?=".5",
+    val messageBackgroundTransparency: String?=".5",
+    val messageBackgroundColorHex: String?="#000000",
+    val id: String?=null,
+    val messageTitle: String?=null,
+    val message: String?=null,
+    val messageName: String?=null,
+    val duration: Long?=10,//for random case handling required it default is 10
+    val updatedAt: String?=null,
+    val messageScope: String?="GLOBAL",
+    val enabled: Boolean?=null,
+    val forcePush: Boolean?=null
+)
+
+data class PackageUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)

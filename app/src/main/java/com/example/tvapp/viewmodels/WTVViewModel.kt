@@ -65,9 +65,15 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import com.android.caastv.R
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.Programme
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.network.UrlManager
+import com.example.tvapp.utils.uistate.PreferenceManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import org.json.JSONObject
@@ -200,7 +206,7 @@ open class WTVViewModel @Inject constructor(
             return
         }
         val builder = NotificationCompat.Builder(application, NOTIF_CHANNEL_ID)
-            .setSmallIcon(R.drawable.gtpl_logo)
+            .setSmallIcon(R.drawable.app_logo)
             .setContentTitle("New message")
             .setContentText(item.message)
             .setAutoCancel(true)
@@ -214,7 +220,7 @@ open class WTVViewModel @Inject constructor(
             // This scope will suspend until ALL async children complete
             val manifestDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVManifest(Constants.BASE_URL +"manifest")
+                    .provideWTVManifest(UrlManager.getCurrentBaseUrl() +"manifest")
                     .firstOrNullSuccess()
                     ?.let {
                         val manifest = it
@@ -229,7 +235,7 @@ open class WTVViewModel @Inject constructor(
                                     name = "All",
                                     published = true,
                                     version = 0,
-                                    CustomIconUrl = apiAllGenre?.CustomIconUrl,
+                                    customIconUrl = apiAllGenre?.customIconUrl,
                                     defaultIcon = apiAllGenre?.defaultIcon ?: "All"
                                 )
                             )
@@ -246,7 +252,7 @@ open class WTVViewModel @Inject constructor(
                                     name = "All",
                                     published = true,
                                     version = 0,
-                                    CustomIconUrl = apiAllLanguage?.CustomIconUrl,
+                                    customIconUrl = apiAllLanguage?.customIconUrl,
                                     defaultIcon = apiAllLanguage?.defaultIcon ?: "All"
                                 )
                             )
@@ -257,7 +263,7 @@ open class WTVViewModel @Inject constructor(
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData(Constants.BASE_URL +"epg-files/join-epg-content")
+                    .provideWTVEPGData(UrlManager.getCurrentBaseUrl() +"epg-files/join-epg-content")
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
@@ -296,7 +302,7 @@ open class WTVViewModel @Inject constructor(
             }
             launch {
                 networkApiCallInterfaceImpl
-                    .provideWTVHomeData(Constants.BASE_URL +"homescreenCategory")
+                    .provideWTVHomeData(UrlManager.getCurrentBaseUrl() +"homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
                             application.applyAppHome(response.data)
@@ -407,7 +413,7 @@ open class WTVViewModel @Inject constructor(
     fun checkForAppUpdate() = viewModelScope.launch {
         _isProgress.value = true
         val resp = networkApiCallInterfaceImpl
-            .provideAppUpdateInfo(Constants.BASE_URL +"app/appupdate")
+            .provideAppUpdateInfo(UrlManager.getCurrentBaseUrl() +"app/appupdate")
             .firstOrNullSuccess()
         _isProgress.value = false
 
@@ -516,7 +522,7 @@ open class WTVViewModel @Inject constructor(
             .filter { program ->
                 val start = program.startTime
                 val end = program.endTime
-                loge("", "start:${start} and end:${end}")
+                //loge("", "start:${start} and end:${end}")
                 // Only include if both times are non-null and end is strictly in the future:
                 if (start == null || end == null) return@filter false
                 // 1) Currently running: start <= now < end
@@ -536,6 +542,99 @@ open class WTVViewModel @Inject constructor(
                         ?: "--"
                 )
             }.toList()
+    }
+
+
+    fun provideUserHash(){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.provideUserHash(UrlManager.getCurrentBaseUrl()+"userData?username="+ PreferenceManager.getUsername()).collect { response ->
+                val macId = application.provideMacAddress()?:""
+                when (response) {
+                    is WTVResponse.Success -> {
+                        if(response.data.hash.isNotNullOrEmpty()) {
+                            PreferenceManager.saveHash(response.data.hash)
+                        }else{
+                            val requestBody = hashMapOf<String, String>().apply {
+                                PreferenceManager.getUsername()?.let { put("username", it) }
+                                macId?.let { put("macId", it) }
+                            }
+
+                            networkApiCallInterfaceImpl.registerUserHash(
+                                hashUrl = UrlManager.getCurrentBaseUrl()+"userData",
+                                requestBody = requestBody).collect { response ->
+                                when (response) {
+                                    is WTVResponse.Success -> {
+                                        provideApplicationContext().showToastS(response.data.toString())
+                                        if(response.data.hash.isNotNullOrEmpty()) {
+                                            PreferenceManager.saveHash(response.data.hash)
+                                        }
+                                    }
+
+                                    is WTVResponse.Failure -> {
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    is WTVResponse.Failure -> {
+
+
+                        val requestBody = hashMapOf<String, String>().apply {
+                            PreferenceManager.getUsername()?.let { put("username", it) }
+                            macId?.let { put("macId", it) }
+                        }
+
+                        networkApiCallInterfaceImpl.registerUserHash(
+                            hashUrl = UrlManager.getCurrentBaseUrl()+"userData",
+                            requestBody = requestBody).collect { response ->
+                            when (response) {
+                                is WTVResponse.Success -> {
+                                    provideApplicationContext().showToastS(response.data.toString())
+                                    if(response.data.hash.isNotNullOrEmpty()) {
+                                        PreferenceManager.saveHash(response.data.hash)
+                                    }
+                                }
+
+                                is WTVResponse.Failure -> {
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    fun validateUserLogin(userName: String,userPassword: String,onLoginResponse:(LoginResponseData?,String?)->Unit){
+        viewModelScope.launch {
+            val requestBody = hashMapOf(
+                "username" to (userName),
+                "password" to (userPassword)
+            )
+            networkApiCallInterfaceImpl.provideUserLogin(
+                loginUrl = UrlManager.getCurrentBaseUrl()+"app/tv-users/login",
+                requestBody = requestBody).collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
+                }
+            }
+        }
+    }
+
+    fun packageUpdate(){
+        viewModelScope.launch {
+            val requestBody = hashMapOf<String, Any>(
+                "username" to (PreferenceManager.getUsername() ?: ""),
+                "packageUpdate" to 0
+            )
+            networkApiCallInterfaceImpl.provideUserProfileCMS(
+                requestBody = requestBody).collect { response ->
+            }
+        }
     }
 }
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {

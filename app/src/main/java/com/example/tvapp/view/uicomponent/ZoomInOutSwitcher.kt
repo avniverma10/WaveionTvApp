@@ -36,8 +36,8 @@ fun ZoomInOutSwitcher(
     val pages: List<@Composable () -> Unit> = listOf(
         {
             Image(
-                painter = painterResource(id = R.drawable.alliance_logo),
-                contentDescription = "Panmetro Logo",
+                painter = painterResource(id = R.drawable.app_logo),
+                contentDescription = "CaasTV Logo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize() // Stretch the image to fill the inner Box.
@@ -47,7 +47,7 @@ fun ZoomInOutSwitcher(
         },
         {
             Image(
-                painter = painterResource(id = R.drawable.panmetro_brand),
+                painter = painterResource(id = R.drawable.app_logo),
                 contentDescription = "Panmetro Logo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

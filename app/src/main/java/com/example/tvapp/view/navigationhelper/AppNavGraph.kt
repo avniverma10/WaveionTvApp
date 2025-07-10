@@ -1,12 +1,16 @@
 package com.example.tvapp.view.navigationhelper
 
+import ForceMessageDialog
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -15,10 +19,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.tvapp.AppsScreen
-import com.example.tvapp.NotificationBanner
-import com.example.tvapp.otp.OtpScreen1
-import com.example.tvapp.search.SearchScreen
+import com.example.tvapp.view.appscreen.AppsScreen
+import com.example.tvapp.view.notificationbanner.NotificationBanner
+import com.example.tvapp.view.otp.OtpScreen1
+import com.example.tvapp.view.search.SearchScreen
+import com.example.tvapp.utils.network.error.GlobalErrorHandler
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.DemoHomeScreen
@@ -29,12 +35,11 @@ import com.example.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.CaastvVideoPlayer
-import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
-import com.example.tvapp.view.profile.Profile
 import com.example.tvapp.view.profile.ProfileScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
+import com.example.tvapp.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.example.tvapp.viewmodels.SharedViewModel
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -45,7 +50,19 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
-    val scrollMessageItems by sharedViewModel.scrollMessageItemsFlow.collectAsState()
+    //In your composable function or ViewModel
+    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+
+    LaunchedEffect(globalSSERules) {
+        if((globalSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.clear()
+            globalSSERules?.forceMessages?.forEach { message ->
+                dialogStates.add(ForceMessageDialogState(message,true))
+            }
+        }else{
+            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         WTVPlayerNavHost(
@@ -62,6 +79,22 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
             )
         }
 
+        //Show dialogs
+        if((globalSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.forEachIndexed { index, dialogState ->
+                if(dialogStates[index].show) {
+                    ForceMessageDialog(
+                        showDialog = true,
+                        forceMessage = dialogState.message,
+                        onConfirm = {
+                            // Mark this dialog as dismissed
+                            dialogStates[index] = dialogState.copy(show = false)
+                        }
+                    )
+                }
+            }
+        }
+
         if((globalSSERules?.fingerprints?.size ?: 0) > 0){
             globalSSERules?.fingerprints?.forEach {
                 GlobalFingerprintOverlay(mutableStateOf(it))
@@ -73,6 +106,28 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                 ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
             }
         }
+
+
+        if((globalSSERules?.packageUpdates?.size ?: 0) > 0){
+            globalSSERules?.packageUpdates?.forEach {
+                if(it.packageUpdate == 1){
+                    sharedViewModel.validateUserLogin(
+                        userName = PreferenceManager.getUsername()?:"",
+                        userPassword = PreferenceManager.getUsername()?:"",
+                        onLoginResponse = { response, errorMsg ->
+                            if (response != null) {
+                                PreferenceManager.saveUserInfo(response)
+                                sharedViewModel.provideGlobalSSERequest()
+                                sharedViewModel.packageUpdate()
+                            }
+
+                        })
+                }
+            }
+        }
+
+        // Global error handler (will show on top when needed)
+        GlobalErrorHandler()
     }
 }
 

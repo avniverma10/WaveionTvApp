@@ -10,7 +10,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -25,11 +34,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -41,11 +54,18 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
+import coil3.compose.rememberAsyncImagePainter
+import coil3.gif.GifDecoder
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.android.caastv.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
+import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.view.panmetro.player.CenteredAudioVisualizer
+import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.example.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
@@ -54,14 +74,15 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.collections.orEmpty
 import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
 @Composable
 fun GenreMultiDRMPlayer(
     selectedChannelIndex : MutableState<Int>,
-                        sharedViewModel: SharedViewModel,
-                        genreViewModel: GenreViewModel
+    sharedViewModel: SharedViewModel,
+    genreViewModel: GenreViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -75,7 +96,11 @@ fun GenreMultiDRMPlayer(
     }
 
 
+
+
+
     // Mutable state for UI updates
+    var isAudio = remember { mutableStateOf(false) }
     val isBuffering = rememberSaveable { mutableStateOf(false) }
     var isPlayerInitialized by remember { mutableStateOf(false) }
 
@@ -163,6 +188,11 @@ fun GenreMultiDRMPlayer(
     LaunchedEffect(selectedVideoUrl) {
         loge("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedVideoUrl?.content?.contentType.equals("audio",true)){
+                isAudio.value = true
+            }else{
+                isAudio.value = false
+            }
             isPlayerInitialized = true
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
@@ -205,6 +235,17 @@ fun GenreMultiDRMPlayer(
             )
         }
         if (hasVideo) {
+            val stops = selectedVideoUrl.content?.bgGradient
+                ?.colors
+                ?.sortedBy { it.percentage }
+                ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+                .orEmpty()
+
+            val brush = if (stops.size >= 2) {
+                Brush.horizontalGradient(stops)
+            } else {
+                Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+            }
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
@@ -221,6 +262,53 @@ fun GenreMultiDRMPlayer(
 
                 }
             )
+
+            if(isAudio.value){
+
+                val gifPainter = rememberAsyncImagePainter(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data("file:///android_asset/tiled_bar_anim.gif")
+                        .decoderFactory(GifDecoder.Factory())
+                        .build(),
+                    contentScale = ContentScale.FillWidth,
+                )
+
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                        .background(brush, shape = RoundedCornerShape(0.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.6f)
+                            .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.5f)
+                            .clip(MaterialTheme.shapes.medium),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedAudio(
+                            isSongPlaying = true,
+                            channel = selectedVideoUrl
+                        )
+                    }
+
+                    //CenteredAudioVisualizer(isAudio= isAudio.value, brush = brush, modifier = Modifier)
+                    /*Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .aspectRatio(13f / 9f)
+                            .background(Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedAudio(
+                            isSongPlaying = true,
+                            channel = selectedVideoUrl
+                        )
+                    }*/
+                }
+            }
             if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
                 playerSSERules?.fingerprints?.forEach {
                     ChannelFingerprintOverlay(

@@ -3,8 +3,10 @@ package com.example.tvapp.model.data.login
 import com.google.gson.annotations.SerializedName
 
 data class LoginResponseData(
+    val code: String?=null,
+    val message: String?=null,
     @SerializedName("data")
-    val loginData: Data
+    val loginData: Data?=null
 )
 
 data class Data(
@@ -12,8 +14,12 @@ data class Data(
     val packageExpiryDate: String,
     val packages: List<Package>,
     val userId: String,
-    val username: String
-)
+    val username: String,
+    val regionCode: String?="01"
+){
+    fun provideUserRegionCode()= regionCode?:"01"
+}
+
 
 data class Channel(
     val ChannelID: String,

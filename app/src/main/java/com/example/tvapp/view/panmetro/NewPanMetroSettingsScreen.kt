@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.hideKeyboard
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu

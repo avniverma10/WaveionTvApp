@@ -5,6 +5,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.NetworkInfo
@@ -12,11 +14,25 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.util.Log
+import android.view.Gravity
 import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.preferencesDataStore
+import coil3.compose.rememberAsyncImagePainter
+import coil3.gif.GifDecoder
+import coil3.request.ImageRequest
+import com.android.caastv.R
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
@@ -25,6 +41,7 @@ import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
 import java.io.File
+import java.lang.Exception
 import java.net.NetworkInterface
 import java.util.Locale
 
@@ -113,6 +130,9 @@ fun Context.isInternetOn(): Boolean {
     return false
 }
 
+fun Context.dpToPx(dp: Int = 16): Int {
+    return (dp * resources.displayMetrics.density).toInt()
+}
 
 fun Context?.showToastL(message: String?) {
     this?.let { context ->
@@ -128,6 +148,95 @@ fun Context?.showToastS(message: String?) {
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
         }
     }
+}
+
+fun Context?.showToastServer(
+    message: String?,
+    duration: Int = Toast.LENGTH_LONG // Longer duration for server errors
+) {
+    this?.let { context ->
+        message?.let { text ->
+            // Create styled message with red dot and error code
+            val styledMessage = SpannableStringBuilder().apply {
+                // Add red dot (Unicode + color)
+                append("● ") // Red dot symbol
+                setSpan(
+                    ForegroundColorSpan(android.graphics.Color.RED),
+                    0, 1,
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+
+                // Add error code if provided
+                /*errorCode?.let {
+                    append("$it | ")
+                    setSpan(
+                        ForegroundColorSpan(android.graphics.Color.RED),
+                        2, 2 + it.length + 2,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }*/
+
+                // Add main message (white)
+                append(text)
+            }
+
+            val toast = Toast.makeText(context, styledMessage, duration)
+            // Customize toast appearance
+            toast.apply {
+                // Position (default to top-right)
+                setGravity(
+                    Gravity.TOP or Gravity.RIGHT,
+                    0,
+                    dpToPx(50)
+                )
+
+                view?.let { view ->
+                    // Dark semi-transparent background
+                    view.setBackgroundColor(android.graphics.Color.parseColor("#99000000"))
+
+                    // TextView styling
+                    view.findViewById<TextView>(android.R.id.message)?.apply {
+                        setTextColor(android.graphics.Color.WHITE)
+                        textSize = 14f
+                        setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+                        gravity = Gravity.CENTER_VERTICAL
+                    }
+                }
+                show()
+            }
+        }
+    }
+}
+
+
+
+fun Context.showTopRightToast(
+    message: String,
+    duration: Int = Toast.LENGTH_SHORT,
+    xOffset: Int = 16,    // in dp
+    yOffset: Int = 50      // in dp
+) {
+    val toast = Toast.makeText(this, message, duration)
+
+    // Position the toast (top-right)
+    toast.setGravity(
+        Gravity.TOP or Gravity.END,
+        dpToPx(xOffset),   // Convert dp to pixels
+        dpToPx(yOffset)    // Convert dp to pixels
+    )
+
+    // Customize toast appearance
+    toast.view?.apply {
+        setBackgroundColor(android.graphics.Color.parseColor("#CC1A1A1A")) // Semi-transparent dark background
+
+        findViewById<TextView>(android.R.id.message)?.apply {
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 14f
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+        }
+    }
+
+    toast.show()
 }
 
 /**
@@ -175,7 +284,7 @@ fun Context.findMyDeviceId(): String? {
             contentResolver,
             Settings.Secure.ANDROID_ID
         )
-    } catch (e: java.lang.Exception) {
+    } catch (e: Exception) {
         return ""
     }
 }
@@ -204,7 +313,7 @@ fun Context.provideFileFromUri(uri: Uri?): File? {
         inputStream.copyTo(file.outputStream())
         inputStream.close()
         return file
-    } catch (ex: java.lang.Exception) {
+    } catch (ex: Exception) {
         return null
     }
 }
@@ -233,3 +342,76 @@ fun Context.hideKeyboard() {
         imm.hideSoftInputFromWindow(token, 0)
     }
 }
+
+/*
+
+@Composable
+fun Context.provideGif(fileName:String, type:String):Painter?{
+   return when(type) {
+        "url" -> rememberAsyncImagePainter(
+            model = ImageRequest.Builder(this)
+                .data(fileName)
+                .decoderFactory(GifDecoder.Factory())
+                .listener(
+                    onError = { _, result ->
+                        // onGifLoadingFailed(result.throwable)
+                    }
+                )
+                .build(),
+            placeholder = painterResource(R.drawable.caastv_icon_foreground),
+            error = painterResource(R.drawable.caastv_icon_foreground)
+        )
+
+        "drawable" -> painterResource(id = gifResId)
+
+        "asset" -> rememberAsyncImagePainter(
+            model = ImageRequest.Builder(this)
+                .data("file:///android_asset/$fileName")
+                .decoderFactory(GifDecoder.Factory())
+                .listener(
+                    onError = { _, result ->
+                        // onGifLoadingFailed(result.throwable)
+                    }
+                )
+                .build()
+        )
+
+        else -> null
+    }
+}*/
+
+
+/**
+ * Launches the given package if it is installed and has a launcher activity.
+ *
+ * @return true if we launched it, false if the app isn’t present / launchable.
+ */
+fun Context.launchPackageIfInstalled(packageName: String): Boolean {
+    val pm: PackageManager = packageManager
+
+    // ── Option A: quickest attempt — returns null if not installed *or* not visible
+    val launchIntent: Intent? = pm.getLaunchIntentForPackage(packageName)
+
+    if (launchIntent != null) {
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(launchIntent)
+        return true
+    }
+
+    // ── Option B: double-check with PackageManager in case the app simply has no LAUNCHER
+    val installed = try {
+        if (Build.VERSION.SDK_INT >= 33) {
+            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(packageName, 0)
+        }
+        true   // no NameNotFoundException → package exists
+    } catch (_: PackageManager.NameNotFoundException) {
+        false
+    }
+
+    // You might show a toast/dialog if !installed
+    return false
+}
+

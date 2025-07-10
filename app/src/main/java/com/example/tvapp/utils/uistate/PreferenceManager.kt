@@ -18,6 +18,7 @@ object PreferenceManager {
   private const val KEY_USERNAME   = "username"
   private const val KEY_PASSWORD   = "password"
   private const val KEY_USER_INFO   = "userinfo"
+  private const val KEY_USER_HASH   = "userhash"
   private const val KEY_RECENTS     = "recently_watched"
 
   /** Must be called once in your Application or Activity */
@@ -87,6 +88,15 @@ object PreferenceManager {
     editor.putString(KEY_USER_INFO, json)
     editor.apply()
   }
+
+
+  fun saveHash(hash:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_USER_HASH, hash)
+    editor.apply()
+  }
+
+
   fun getLoginResponse(): LoginResponseData? {
     val json = prefs.getString(KEY_USER_INFO, null)
       ?: return null
@@ -98,6 +108,9 @@ object PreferenceManager {
   fun clearLogin(): Boolean {
     val editor = prefs.edit()
     editor.remove(KEY_USER_INFO)
+    editor.remove(KEY_USERNAME)
+    editor.remove(KEY_PASSWORD)
+    editor.remove(KEY_USER_HASH)
     return editor.commit()
   }
 
@@ -109,5 +122,5 @@ object PreferenceManager {
   /** Helpers to read them back */
   fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
   fun getPassword(): String? = prefs.getString(KEY_PASSWORD, null)
-  fun isLoggedIn(): Boolean = getUsername() != null && getPassword() != null
+  fun provideUserHash(): String? = prefs.getString(KEY_USER_HASH, null)
 }

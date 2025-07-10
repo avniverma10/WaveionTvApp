@@ -1,5 +1,6 @@
 package com.example.tvapp.view.uicomponent.fingerprint
 
+import android.content.Context
 import android.text.TextUtils
 import android.view.ViewGroup
 import android.widget.TextView
@@ -25,10 +26,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
+import com.example.tvapp.extensions.capitalizeFirstLetter
 import com.example.tvapp.extensions.getFloatValue
 import com.example.tvapp.extensions.getIntValue
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.model.data.message.ScrollMessageInfo
 import com.example.tvapp.model.data.sseresponse.ScrollMessage
+import com.example.tvapp.utils.uistate.PreferenceManager
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -107,7 +111,7 @@ fun ScrollingMessageOverlay(
             },
             update = { tv ->
                 // Always update text *and* color (and bg if you like)
-                tv.text = scrollMessageInfo.value.message.orEmpty()
+                tv.text = context.checkPatternMatchInfo(scrollMessageInfo.value.message.orEmpty())
                 tv.setTextColor(fontColor.toArgb())
                 tv.textSize = scrollMessageInfo.value.fontSizeDp.toString().getFloatValue()
                 tv.marqueeRepeatLimit = scrollMessageInfo.value.repeatCount?.toString().getIntValue()  // infinite
@@ -115,3 +119,20 @@ fun ScrollingMessageOverlay(
         )
     }
 }
+
+
+
+
+fun Context.checkPatternMatchInfo(message:String):String{
+    /* var modifiedMessage = message
+    if(message.contains("$$@User")){
+        modifiedMessage = message.replace("$$@User"," ${PreferenceManager.getUsername()} ")
+    }else if(message.contains("$$@Mac")){
+        modifiedMessage = message.replace("$$@Mac"," ${this.provideMacAddress()} ")
+    }else if(message.contains("$$@Package")){
+        modifiedMessage = message.replace("$$@Package"," ${PreferenceManager.getLoginResponse()?.pkgdata?.activepack?.map { it.servicename }?.joinToString(",")?.capitalizeFirstLetter()} ")
+    }*/
+    return  message.replace("$$@User"," ${PreferenceManager.getUsername()} ").replace("$$@Mac"," ${this.provideMacAddress()} ").replace("$$@Package"," ${PreferenceManager.getLoginResponse()?.let {
+        it.loginData?.packages?.joinToString( ",") { it.packageName }}?.capitalizeFirstLetter()} ")
+}
+

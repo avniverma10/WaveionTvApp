@@ -8,13 +8,12 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
-import com.android.caastv.R
-import com.example.tvapp.CustomApps.AppItem
 import com.example.tvapp.WTVApp
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
@@ -30,6 +29,7 @@ import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.network.UrlManager
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
@@ -205,7 +205,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners(Constants.BASE_URL +"banners").collect { response ->
+        wtvNetworkRepositoryImpl.getBanners(UrlManager.getCurrentBaseUrl() +"banners").collect { response ->
             when (response) {
                 is WTVListResponse.Success -> _bannerList.value = response.data
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message} ")
@@ -386,18 +386,18 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun provideGlobalSSERequest() {
+        val loginInfo = PreferenceManager.getLoginResponse()
         var packageInfo:String?=null
         var userInfo:String?=null
-        PreferenceManager.getLoginResponse()?.let {
-            packageInfo = it.loginData.packages.joinToString(
+        loginInfo?.let {
+            packageInfo = it.loginData?.packages?.joinToString(
                 separator = ","
             ) { it.packageName }
 
-            userInfo = "${it.loginData.userId}:${it.loginData.username}"
+            userInfo = "${it.loginData?.userId}:${it.loginData?.username}"
         }
 
-        // _globalFingerPrint.value = listOf(FingerprintRule(),FingerprintRule(),FingerprintRule(),FingerprintRule())
-        val queryBuilder = (Constants.BASE_URL + "app/combined-sse?")
+        val queryBuilder = (UrlManager.getCurrentBaseUrl() + "app/combined-sse?")
             .toUri()
             .buildUpon()
         // Only append if values are not null or blank
@@ -407,6 +407,19 @@ open class SharedViewModel @Inject constructor(
 
         userInfo?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("user", it)
+        }
+        loginInfo?.loginData?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("region", it)
+        }?: run {
+            queryBuilder.appendQueryParameter("region", "01")
+        }
+
+        queryBuilder.appendQueryParameter("appVersion","caastv_${application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName}")
+
+        application.provideMacAddress()?.let {
+            queryBuilder.appendQueryParameter("macId", it)
         }
 
         val sseUrl = queryBuilder.build().toString()
@@ -471,17 +484,31 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun providePlayerSSERequest(
-        channel: String?=null,//"1003:RAAPCHIK"
+        channel: String?=null,
     ) {
+
+        val loginInfo = PreferenceManager.getLoginResponse()
         playerEventSource?.let {
             playerEventSource?.cancel()
             playerEventSource = null
         }
-        val queryBuilder = (Constants.BASE_URL +"app/combined-sse?")
+        val queryBuilder = (UrlManager.getCurrentBaseUrl() +"app/combined-sse?")
             .toUri()
             .buildUpon()
         channel?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("liveChannel", it)
+        }
+
+        loginInfo?.loginData?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("region", it)
+        }
+
+        queryBuilder.appendQueryParameter("appversion","caastv_${application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName}")
+
+        application.provideMacAddress()?.let {
+            queryBuilder.appendQueryParameter("macId", it)
         }
         val sseUrl = queryBuilder.build().toString()
         loge("PlayerFingerprint url>",sseUrl)
@@ -546,15 +573,15 @@ open class SharedViewModel @Inject constructor(
         playerEventSource = EventSources.createFactory(client).newEventSource(request, listener)
     }
 
-
-    fun stopFingerPrintSSE() {
+    fun stopGlobalSSE() {
         globalEventSource?.cancel()
         globalEventSource = null
+    }
+    fun stopPlayerSSE() {
         playerEventSource?.cancel()
         playerEventSource = null
-        scrollEventSource?.cancel()
-        scrollEventSource = null
     }
+
 
     fun updateLastSearchSelectedIndex(idx: Int) {
         _lastSearchSelectedIndex.value = idx
@@ -598,9 +625,11 @@ open class SharedViewModel @Inject constructor(
         PreferenceManager.clearRecentlyWatched()
     }
 
+
     override fun onCleared() {
         filterPreferences.clearFilter(viewModelScope)
-        stopFingerPrintSSE()
+        stopGlobalSSE()
+        stopPlayerSSE()
         super.onCleared()
     }
 }

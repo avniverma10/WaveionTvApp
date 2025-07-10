@@ -1,9 +1,7 @@
 package com.example.tvapp.view.panmetro.player
 
-import android.annotation.SuppressLint
+import ForceMessageDialog
 import android.app.Activity
-import android.content.Context
-import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -14,11 +12,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,18 +27,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -56,6 +62,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
+import coil3.compose.rememberAsyncImagePainter
+import coil3.gif.GifDecoder
+import coil3.request.ImageRequest
 import com.android.caastv.R
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
@@ -63,20 +72,18 @@ import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.utils.uistate.PreferenceManager
-import com.example.tvapp.view.navigationhelper.Destination
-import com.example.tvapp.view.playeroverlay.FullScreenPlayerOverlay
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
+import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
-import com.example.tvapp.view.uicomponent.generateWatermark
-import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
+import com.example.tvapp.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.net.SocketTimeoutException
+import kotlin.collections.orEmpty
 import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
@@ -93,6 +100,7 @@ fun PanMetroVideoPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
+    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -110,11 +118,28 @@ fun PanMetroVideoPlayer(
     var errorCodeState by remember { mutableStateOf(0) }
     var errorMessageState by remember { mutableStateOf("") }
     var errorTitleState by remember { mutableStateOf("") }
+    var isAudio = remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(playerSSERules) {
+        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.clear()
+            playerSSERules?.forceMessages?.forEach { message ->
+                dialogStates.add(ForceMessageDialogState(message,true))
+            }
+        }else{
+            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+        }
+    }
 
     //hide keyboard forcefully
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
+        //request for user hash
+        sharedViewModel.provideUserHash()
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
     }
     //Finally return the MutableState
     val selectedChannelIndex = remember {mutableIntStateOf(0) }
@@ -139,6 +164,17 @@ fun PanMetroVideoPlayer(
     var overlayHideJob by remember { mutableStateOf<Job?>(null) }
 
 
+    val stops = selectedChannel.content?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+        .orEmpty()
+
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+    }
 
     // Function to handle overlay visibility
     fun showOverlay() {
@@ -231,6 +267,11 @@ fun PanMetroVideoPlayer(
             it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
         }
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedChannel?.content?.contentType.equals("audio",true)){
+                isAudio.value = true
+            }else{
+                isAudio.value = false
+            }
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false
@@ -266,20 +307,6 @@ fun PanMetroVideoPlayer(
         navController.popBackStack()
     }
 
-
-    fun playNextChannel() {
-        if (selectedChannelIndex.intValue < (epgList.lastIndex )) {
-            selectedChannelIndex.intValue++
-            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
-        }
-    }
-
-    fun playPreviousChannel() {
-        if (selectedChannelIndex.intValue > 0) {
-            selectedChannelIndex.intValue--
-            sharedViewModel.updateSelectedChannel(epgList[selectedChannelIndex.intValue])
-        }
-    }
 
 
     Box(
@@ -367,15 +394,89 @@ fun PanMetroVideoPlayer(
                     player = exoPlayer
                     useController = false
                     keepScreenOn = true
-                   // addWatermarkToPlayer(this, provideWatermarkHash(context))
-
-                    // addLogoToPlayer(this)
+                    PreferenceManager.provideUserHash()?.let {
+                        addWatermarkToPlayer(this,it)
+                    }
                 }
 
                 view
 
             }
         )
+
+        if(isAudio.value){
+            val gifPainter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/tiled_bar_anim.gif")
+                    .decoderFactory(GifDecoder.Factory())
+                    .build(),
+                contentScale = ContentScale.FillWidth,
+            )
+
+
+            //playerViewModel.initPlayer(exoPlayer)
+           // AudioExoplayerPlayerScreen(navController = navController,sharedViewModel= sharedViewModel,playerViewModel= playerViewModel)
+           // AudioPlayerScreen(exoPlayer = exoPlayer)
+            /*Box(modifier = Modifier.fillMaxSize()
+                .background(brush, shape = RoundedCornerShape(0.dp)),
+                contentAlignment = Alignment.Center) {
+                AudioVisualizerCompose(
+                    exoPlayer = exoPlayer,
+                    gifAssetPath= "tiled_bar_anim.gif",
+                    isPlaying = true,
+                    currentTime = 0L,
+                    totalTime = 20L,
+                    onPlayPause = {
+                       // viewModel.togglePlayback()
+                    },
+                    onSliderChange = {
+                       // viewModel.seekTo(it.toLong())
+                    }
+                )
+            }*/
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .background(brush, shape = RoundedCornerShape(0.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.8f)
+                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f)
+                        .clip(MaterialTheme.shapes.medium),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedAudio(
+                        isSongPlaying = true,
+                        channel = selectedChannel
+                    )
+
+                    /*Image(
+                        painter = gifPainter,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        contentScale = ContentScale.Crop
+                    )*/
+                }
+            }
+        }
+
+
+        //Show dialogs
+        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.forEachIndexed { index, dialogState ->
+                ForceMessageDialog(
+                    showDialog = true,
+                    forceMessage = dialogState.message,
+                    onConfirm = {
+                        // Mark this dialog as dismissed
+                        dialogStates[index] = dialogState.copy(show = false)
+                    }
+                )
+            }
+        }
 
         if((playerSSERules?.fingerprints?.size ?: 0) > 0){
             playerSSERules?.fingerprints?.forEach {
@@ -388,23 +489,6 @@ fun PanMetroVideoPlayer(
                 ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
             }
         }
-//        Row(
-//            verticalAlignment = Alignment.Top,
-//            modifier = Modifier.size(width = 150.dp, height = 100.dp)
-//                .align(Alignment.TopEnd)
-//        ){
-//            Image(
-//                painter = painterResource(R.drawable.player_logo),
-//                contentDescription = null,
-//                modifier = Modifier.padding(20.dp)
-//            )
-//        }
-        /*ZoomInOutSwitcher(
-            epgDataItem = sharedViewModel.selectedChannel, modifier = Modifier
-            .size(width = 200.dp, height = 150.dp)
-            .align(Alignment.TopEnd)
-            .padding(end = 16.dp))*/
-
 
         if (showErrorDialog) {
             val borderColor = remember(errorCodeState) {
@@ -473,12 +557,3 @@ fun PanMetroVideoPlayer(
 
 
 }
-
-@SuppressLint("HardwareIds")
-fun provideWatermarkHash(context: Context):String{
-    // Device ID
-    val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-    return generateWatermark(null, deviceId)
-}
-
-

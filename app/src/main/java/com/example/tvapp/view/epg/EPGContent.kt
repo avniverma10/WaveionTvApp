@@ -93,7 +93,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
-import com.example.tvapp.ui.theme.bg_card_color
+import com.example.tvapp.utils.theme.bg_card_color
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
@@ -255,7 +255,7 @@ fun EPGContent(
                                         }
                                         navController.navigate(Destination.panMetroScreen)
                                     },
-                    //                                hasInitiallyFocused = hasInitiallyFocused,
+                                    //                                hasInitiallyFocused = hasInitiallyFocused,
                                     focusRequester = channelFocusRequesters[channelIndex],
                                     languageFocusRequesters = languageFocusRequesters,
                                     languageSelectedIndex = languageSelectedIndex,
@@ -277,10 +277,6 @@ fun EPGContent(
                                     val availableProgram = sharedViewModel.provideAvailableProgram(
                                         channelData.tv?.programme ?: arrayListOf()
                                     )
-                                    Log.d("aProgram::>>>", availableProgram.joinToString(" | ") {
-                                        it.startTime?.formatTime()
-                                            .toString()
-                                    })
                                     itemsIndexed(availableProgram) { programIndex, program ->
                                         val programWidth = calculateProgramsWidth(
                                             program.startTime ?: 0,
@@ -313,11 +309,11 @@ fun EPGContent(
                                                             )
                                                     else Modifier
                                                 )
-                    //                                            .focusProperties {
-                    //                                                if (channelIndex == 0) {
-                    //                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
-                    //                                                }
-                    //                                            }
+                                                //                                            .focusProperties {
+                                                //                                                if (channelIndex == 0) {
+                                                //                                                    up = languageFocusRequesters.getOrNull(languageSelectedIndex.value)!!
+                                                //                                                }
+                                                //                                            }
                                                 .onFocusChanged { isFocused.value = it.isFocused }
                                                 .focusRequester(focusRequester)
                                                 .focusable()

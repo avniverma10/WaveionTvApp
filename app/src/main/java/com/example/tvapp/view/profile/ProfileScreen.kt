@@ -35,7 +35,7 @@ import com.example.tvapp.extensions.capitalizeFirstLetter
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.manifest.EPGCategory
-import com.example.tvapp.ui.theme.screen_bg_color
+import com.example.tvapp.utils.theme.screen_bg_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog

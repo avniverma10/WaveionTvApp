@@ -16,16 +16,33 @@ android {
         applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.19"
+        versionCode = 9
+        versionName = "1.0.27"
     }
 
     buildTypes {
+
         debug {
-            buildConfigField("String", "BUILD_TYPE", "\"dev\"")
+            val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
+            val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
+            buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
+            buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
+            buildConfigField("String", "BUILD_TYPE", "\"debug\"")
+
+            isMinifyEnabled = true
+            // Enables resource shrinking, which is performed by the
+            isShrinkResources =  true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
-            buildConfigField("String", "BUILD_TYPE", "\"live\"")
+            val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
+            val secondaryBaseUrl = System.getenv("SECONDARY_BASE_URL")
+            buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
+            buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
+            buildConfigField("String", "BUILD_TYPE", "\"release\"")
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the
             isShrinkResources =  true
@@ -77,6 +94,8 @@ dependencies {
 
     // Coroutines
     implementation(libs.bundles.coroutines)
+    // Coroutines
+    implementation(libs.work.runtime)
     // Coil
     implementation(libs.bundles.coil)
     // Dagger - Hilt
@@ -122,4 +141,6 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
 
 
+    // Add this to your app/build.gradle dependencies
+    implementation("com.google.errorprone:error_prone_annotations:2.23.0")
 }

@@ -134,7 +134,6 @@ fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://cryp
         .appendQueryParameter("DeviceTypeName", "Android TV".toBase64UrlSafe())
         .build()
     val licenseUrl = httpUrl.toString().replace("https://cryptoguard.waveiontechnologies.com:4443/?","https://cryptoguard.waveiontechnologies.com:4443?")
-    logData?.put("licenseUrl",licenseUrl)
     loge("loginInfo>",contentUrl.toString())
     loge("loginInfo>",licenseUrl)
 

@@ -623,6 +623,41 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
     }
 
 
+/**
+ * Maps HTTP, NGINX, and Cloudflare status/error *[errorCode]*s to a
+ * Triple of **internal code**, **title**, and **human‑readable description** that can be
+ * displayed in the player UI.
+ *
+ * The internal codes here start at **701** to stay clear of the 6xx range already used by
+ */
+fun serverErrorHandling(errorCode: Int): Triple<Int, String, String> = when (errorCode) {
+    204 -> Triple(701, "No Content", "The server processed the request but returned no content.")
+    205 -> Triple(702, "Reset Content", "Please refresh or reset the view and try again.")
+    400 -> Triple(703, "Bad Request", "The request was malformed or invalid.")
+    401 -> Triple(704, "Unauthorized", "Authentication failed or is missing.")
+    403 -> Triple(705, "Forbidden", "You don't have permission to access this resource.")
+    404 -> Triple(706, "Not Found", "The requested resource couldn't be located.")
+    405 -> Triple(707, "Method Not Allowed", "This request method isn't supported for the resource.")
+    408 -> Triple(708, "Request Timeout", "The server timed out waiting for the request.")
+    500 -> Triple(709, "Internal Server Error", "The server encountered an unexpected condition.")
+    502 -> Triple(710, "Bad Gateway", "Invalid response from an upstream server.")
+    503 -> Triple(711, "Service Unavailable", "The server is temporarily unable to handle the request.")
+    504 -> Triple(712, "Gateway Timeout", "No timely response from an upstream server.")
+    // NGINX‑specific codes
+    444 -> Triple(713, "No Response", "The server closed the connection without a response.")
+    495 -> Triple(714, "SSL Certificate Error", "The client certificate is invalid.")
+    496 -> Triple(715, "SSL Certificate Required", "A valid client certificate is required.")
+    // Cloudflare codes
+    520 -> Triple(716, "Unknown Error", "Unexpected response from the origin server.")
+    521 -> Triple(717, "Web Server Down", "The origin server refused connections.")
+    522 -> Triple(718, "Connection Timed Out", "Cloudflare couldn't reach the origin server in time.")
+    523 -> Triple(719, "Origin Unreachable", "The origin server could not be reached.")
+    524 -> Triple(720, "Timeout Occurred", "The origin didn't send a timely HTTP response.")
+    525 -> Triple(721, "SSL Handshake Failed", "Cloudflare couldn't negotiate SSL/TLS with the origin server.")
+    526 -> Triple(722, "Invalid SSL Certificate", "The origin's SSL certificate is invalid.")
+    530 -> Triple(723, "Invalid Hostname", "Cloudflare couldn't resolve the origin hostname.")
+    else -> Triple(errorCode, "Unknown Server Error", "An unrecognized error occurred (code $errorCode).")
+}
 
 // Usage:
 val wifiMac = "wlan0".getMacAddress()      // Wi‑Fi

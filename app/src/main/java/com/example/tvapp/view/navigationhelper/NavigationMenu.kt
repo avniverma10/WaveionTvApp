@@ -47,9 +47,9 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
-import com.example.tvapp.ui.theme.filter_selected_color
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.ui.theme.focus_background
+import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -160,7 +160,7 @@ fun CategoryMenu(
                             modifier             = Modifier.padding(start = 8.dp)
                         ) {
                             GenreIcon(
-                                customIconUrl = item.CustomIconUrl,
+                                customIconUrl = item.customIconUrl,
                                 defaultIconName = item.defaultIcon,
                                 contentDescription = item.name,
                                 modifier = Modifier.size(25.dp)
@@ -178,7 +178,7 @@ fun CategoryMenu(
                         }
                     } else {
                         GenreIcon(
-                            customIconUrl = item.CustomIconUrl,
+                            customIconUrl = item.customIconUrl,
                             defaultIconName = item.defaultIcon,
                             contentDescription = item.name,
                             modifier = Modifier.size(25.dp)

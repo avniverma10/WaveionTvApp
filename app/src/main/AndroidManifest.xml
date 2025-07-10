@@ -18,8 +18,17 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
-
+    <queries>
+        <package android:name="com.google.android.youtube.tv" />
+        <package android:name="com.sonyliv" />
+        <package android:name="in.startv.hotstar" />
+        <package android:name="com.graymatrix.did" />
+        <package android:name="com.android.vending" />
+    </queries>
 
     <uses-feature
         android:name="android.hardware.touchscreen"
@@ -42,7 +51,8 @@
         android:label="CAASTV"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.TVApp">
+        android:theme="@style/Theme.TVApp"
+        android:hardwareAccelerated="true">
         <activity
             android:name="com.example.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
@@ -73,7 +83,7 @@
             android:exported="false" />
 
         <service
-            android:name="com.example.tvapp.globalFingerprintService.FingerprintOverlayService"
+            android:name="com.example.tvapp.utils.servicehelper.FingerprintOverlayService"
             android:exported="false"
             android:stopWithTask="false"
             tools:ignore="ForegroundServicePermission"

@@ -22,6 +22,8 @@ import javax.inject.Inject
 open class PlayerViewModel @Inject constructor(
     private val application: Application,
 ) : ViewModel(){
+
+
     fun provideAvailableEPG() = application.coreEPGLiveData().value?: arrayListOf()
 
 

@@ -14,16 +14,14 @@ import com.example.tvapp.model.data.language.WTVLanguage
 import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.home.WTVHomeCategory
+import com.example.tvapp.utils.crash.logs.CrashLogger
+import com.example.tvapp.utils.crash.logs.LogUploader
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 @HiltAndroidApp
 class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
-    companion object {
-        /** True if any part of our app is visible in the foreground. */
-        @JvmStatic
-        var isInForeground: Boolean = false
-            private set
-    }
+    //@Inject lateinit var logUploader: LogUploader
     private val wtvEGPLiveData: MutableLiveData<List<EPGDataItem>> = MutableLiveData()
     private val wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
     private val wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
@@ -31,11 +29,20 @@ class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
     private val macAddr: MutableLiveData<String> = MutableLiveData()
     private var userInfo: LoginResponseData? = null
+    companion object {
+        /** True if any part of our app is visible in the foreground. */
+        @JvmStatic
+        var isInForeground: Boolean = false
+            private set
+    }
 
     override fun onCreate() {
         super.onCreate()
         // Register this Application as an observer of the overall process lifecycle:
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
+
+       // logUploader.scheduleAutoUpload()
     }
 
     // Called when the app’s first Activity comes to START (= any Activity visible).

@@ -1,4 +1,3 @@
-// File: MainActivity.kt
 package com.example.tvapp.view
 
 import android.os.Build
@@ -9,16 +8,14 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.example.tvapp.globalFingerprintService.OverlayPermissionDialog
-import com.example.tvapp.globalFingerprintService.OverlayPermissionHelper
+import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionDialog
+import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionHelper
 import com.example.tvapp.utils.theme.TVAppTheme
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.WTVPlayerApp
-import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -26,7 +23,6 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private lateinit var overlayHelper: OverlayPermissionHelper
     private val sharedViewModel: SharedViewModel by viewModels()
-    private val loginViewModel : LoginViewModel by viewModels()
 
     private val isFireTv: Boolean
         get() = Build.MANUFACTURER.equals("Amazon", ignoreCase = true)

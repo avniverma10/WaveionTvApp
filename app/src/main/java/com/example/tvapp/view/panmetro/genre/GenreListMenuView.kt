@@ -51,7 +51,7 @@ import androidx.tv.material3.Text
 import com.android.caastv.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.genre.WTVGenre
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.theme.base_color
 import kotlinx.coroutines.launch
 import java.util.Locale
 

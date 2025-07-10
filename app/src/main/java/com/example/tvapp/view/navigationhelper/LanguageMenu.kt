@@ -47,9 +47,9 @@ import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
-import com.example.tvapp.ui.theme.filter_selected_color
-import com.example.tvapp.ui.theme.base_color
-import com.example.tvapp.ui.theme.focus_background
+import com.example.tvapp.utils.theme.filter_selected_color
+import com.example.tvapp.utils.theme.base_color
+import com.example.tvapp.utils.theme.focus_background
 import com.example.tvapp.utils.Constants
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
@@ -171,7 +171,7 @@ fun LanguageMenu(
                         modifier = Modifier.padding(horizontal = 4.dp)
                     ) {
                         LanguageIcon(
-                            customIconUrl = item.CustomIconUrl,
+                            customIconUrl = item.customIconUrl,
                             defaultIconName = item.defaultIcon,
                             contentDescription = item.name,
                             modifier = Modifier.size(40.dp)
@@ -190,7 +190,7 @@ fun LanguageMenu(
                     }
                 } else {
                     LanguageIcon(
-                        customIconUrl = item.CustomIconUrl,
+                        customIconUrl = item.customIconUrl,
                         defaultIconName = item.defaultIcon,
                         contentDescription = item.name,
                         modifier = Modifier.size(34.dp)

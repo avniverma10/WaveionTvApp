@@ -3,18 +3,22 @@ package com.example.tvapp.model.repository.common
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
+import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.toJSONArray
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.appupdate.AppUpdateResponse
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.hash.HashInfo
 import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginResponseData
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.data.notification.NotificationItem
 import com.example.tvapp.model.home.WTVHomeCategory
 import com.example.tvapp.utils.network.NetworkApiCallInterface
+import com.example.tvapp.utils.network.UrlManager
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
 import com.google.gson.Gson
@@ -38,17 +42,23 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         try {
             val response = networkApiCallInterface.makeHttpGetRequest(manifestUrl).execute()
             if (response.isSuccessful && response.body() != null) {
+                loge("manifestUrl","$manifestUrl ::${response.body()}")
                 val manifest = response.body()?.toJSONObject()?.toString()
                     .convertIntoModel(WTVManifest::class.java)
                 manifest?.let {
                     // Optionally save manifest data into ContentProvider or DB here
                     emit(WTVResponse.Success(it))
+                    loge("manifestUrl","$manifestUrl ::${it}")
                 } ?: throw Exception("Failed to parse manifest")
             } else {
+                loge("manifestUrl","$manifestUrl ::${Throwable("Invalid response received")}")
+
                 emit(WTVResponse.Failure(Throwable("Invalid response received")))
             }
         } catch (e: Exception) {
             emit(WTVResponse.Failure(e))
+            loge("manifestUrl","$manifestUrl ::${e}")
+
         }
     }.flowOn(Dispatchers.IO)
 
@@ -98,12 +108,18 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             if (response.isSuccessful && response.body() != null) {
                 val epgData: List<EPGDataItem>? = response.body()?.toJSONArray().toString()
                     .convertIntoModels(object : TypeToken<List<EPGDataItem>>() {})
+
+                loge("epgContentUrl","$epgContentUrl ::${epgData.toString()}")
                 // Optionally save EPG data into ContentProvider or DB here
                 emit(WTVListResponse.Success(epgData!!))
             } else {
+
+                loge("epgContentUrl","$epgContentUrl ::${Throwable("Invalid response received")}")
                 emit(WTVListResponse.Failure(Throwable("Invalid response received")))
             }
         } catch (e: Exception) {
+
+            loge("epgContentUrl","$epgContentUrl ::${e}")
             emit(WTVListResponse.Failure(e))
         }
     }.flowOn(Dispatchers.IO)
@@ -189,26 +205,6 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun provideServerTimeStamp(healthUrl: String): Flow<WTVResponse<Long>> =
-        flow {
-            val response = networkApiCallInterface
-                .makeHttpGetRequest(healthUrl)
-                .execute()
-
-            if (response.isSuccessful && response.body() != null) {
-                val bodyStr      = response.body()!!.toJSONObject()?.getString("timestamp")
-                val serverMs     = Instant.parse(bodyStr).toEpochMilli()
-                emit(WTVResponse.Success(serverMs))
-            } else {
-                emit(WTVResponse.Failure(Throwable("Health check HTTP ${response.code()}")))
-            }
-        }
-            .catch { e ->
-                // Now we only catch *real* IO/parse errors, not the internal AbortFlowException
-                emit(WTVResponse.Failure(e))
-            }
-            .flowOn(Dispatchers.IO)
-
     suspend fun provideHomeContent(homeContentUrl:String): Flow<List<HomeData>> = flow {
         try {
             val response = networkApiCallInterface.makeHttpGetRequest(homeContentUrl).execute()
@@ -225,4 +221,87 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO) // <-- This moves the emission to the IO thread
 
+
+    suspend fun provideUserHash(hashUrl: String): Flow<WTVResponse<HashInfo>> =
+        flow {
+            try {
+                val response = networkApiCallInterface
+                    .makeHttpGetRequest(hashUrl)
+                    .execute()
+                if (response.isSuccessful) {
+                    val hashInfo = response.body()?.toJSONObject()?.toString()
+                        .convertIntoModel(HashInfo::class.java)
+                    hashInfo?.let {
+                        loge("hashUrl>",hashUrl+hashInfo.toString())
+
+                        // Optionally save manifest data into ContentProvider or DB here
+                        emit(WTVResponse.Success(hashInfo))
+                    } ?: throw Exception("Failed to parse hashInfo")
+                } else {
+                    emit(WTVResponse.Failure(Throwable("Invalid response received")))
+                }
+            } catch (e: Exception) {
+                emit(WTVResponse.Failure(e))
+            }
+        }.flowOn(Dispatchers.IO)
+
+    suspend fun registerUserHash(hashUrl: String,requestBody: HashMap<String, String>): Flow<WTVResponse<HashInfo>> =
+        flow {
+            try {
+                val response = networkApiCallInterface
+                    .makeHttpPostRequest(hashUrl,requestBody)
+                    .execute()
+                if (response.isSuccessful) {
+                    val hashInfo = response.body()?.toJSONObject()?.toString()
+                        .convertIntoModel(HashInfo::class.java)
+                    hashInfo?.let {
+                        loge("hashUrl>",hashUrl+hashInfo.toString())
+
+                        // Optionally save manifest data into ContentProvider or DB here
+                        emit(WTVResponse.Success(hashInfo))
+                    } ?: throw Exception("Failed to parse hashInfo")
+                } else {
+                    emit(WTVResponse.Failure(Throwable("Invalid response received")))
+                }
+            } catch (e: Exception) {
+                emit(WTVResponse.Failure(e))
+            }
+        }.flowOn(Dispatchers.IO)
+
+    suspend fun provideUserLogin(
+        loginUrl: String,
+        requestBody: HashMap<String, String>
+    ): Flow<WTVResponse<LoginResponseData>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl, body = requestBody).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val login = response.body()?.toJSONObject()?.toString()
+                    .convertIntoModel(LoginResponseData::class.java)
+                login?.let {
+                    // Optionally save manifest data into ContentProvider or DB here
+                    emit(WTVResponse.Success(it))
+                } ?: throw Exception("Failed to parse manifest")
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun provideUserProfileCMS(
+        requestBody: HashMap<String, Any>
+    ): Flow<WTVResponse<Boolean>> = flow {
+        try {
+            loge("url:","app/package-update> ${requestBody}")
+            val response = networkApiCallInterface.makeHttpAnyPostRequest(url= UrlManager.getCurrentBaseUrl()+"app/package-update", body = requestBody).execute()
+            if (response.isSuccessful  && response.body() != null) {
+                emit(WTVResponse.Success(true))
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
 }

@@ -34,7 +34,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import com.example.tvapp.extensions.loge
-import com.example.tvapp.ui.theme.base_color
+import com.example.tvapp.utils.theme.base_color
 
 @Composable
 fun ExpandableNavigationMenu(

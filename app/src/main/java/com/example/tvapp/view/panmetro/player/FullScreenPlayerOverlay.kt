@@ -1,11 +1,9 @@
-package com.example.tvapp.view.playeroverlay
+package com.example.tvapp.view.panmetro.player
 
-import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -51,16 +48,14 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.formatTime
-import com.example.tvapp.extensions.provideProgramTime
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.view.panmetro.common.TopOverlayInfo
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun FullScreenPlayerOverlay(
@@ -168,7 +163,7 @@ fun FullScreenPlayerOverlay(
                     val scale = when {
                         isSelected -> maxScale
                         else -> {
-                            val scaleFactor = 1f - (kotlin.math.abs(itemOffset) * 0.15f)
+                            val scaleFactor = 1f - (abs(itemOffset) * 0.15f)
                             scaleFactor.coerceIn(minScale, maxScale)
                         }
                     }

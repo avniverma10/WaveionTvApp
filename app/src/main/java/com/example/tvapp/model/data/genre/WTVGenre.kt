@@ -10,6 +10,7 @@ data class WTVGenre(
     val published: Boolean,
     @SerializedName("__v")
     val version: Int,
-    val CustomIconUrl: String?,
+    @SerializedName("CustomIconUrl")
+    val customIconUrl: String?,
     val defaultIcon: String
 )
