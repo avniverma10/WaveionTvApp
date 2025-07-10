@@ -148,6 +148,8 @@ open class SharedViewModel @Inject constructor(
             isInitializeData
                 .filter { it }        // only when it becomes true
                 .first()
+            val saved = filterPreferences.filterFlow.first() // <-- one-time load only
+            _filterState.value = saved
             applyFilters()
         }
         viewModelScope.launch {

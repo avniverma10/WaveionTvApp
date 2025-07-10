@@ -157,16 +157,22 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             //val channelId = backStackEntry.arguments?.getString("channelId")
 //            PanMetroVideoPlayer(navController,sharedViewModel)
             CaastvVideoPlayer(navController,sharedViewModel) //Remove this to use the PanMetroVidePlayer
-             }
+        }
         composable(Destination.demoHome) {
             DemoHomeScreen(
                 navController   = navController,
                 sharedViewModel = sharedViewModel
             )
         }
-        composable(Destination.demoplayer) {
+        composable(
+            route = Destination.demoplayer + "/{videoUrl}",
+            arguments = listOf(
+                navArgument("videoUrl") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val videoUrl = backStackEntry.arguments?.getString("videoUrl") ?: ""
             DemoPlayerScreen(
-                url    = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8",
+                url = videoUrl,
                 onBack = { navController.popBackStack() }
             )
         }

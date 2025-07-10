@@ -81,8 +81,8 @@ fun PanmetroLoginScreen(
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
 
-    var username   by remember { mutableStateOf("") }
-    var password   by remember { mutableStateOf("") }
+    var username   by remember { mutableStateOf("tccl") }
+    var password   by remember { mutableStateOf("123") }
     var macId      by remember { mutableStateOf(macAddress) }
 
     val usernameFocusRequester = remember { FocusRequester() }
@@ -290,26 +290,22 @@ fun PanmetroLoginScreen(
                         }
                         if (valid) {
                             (context as? Activity)?.hideKeyboard()
-                            context.getAndroidTvDrmInfo()
-                                ?.copy(userName = username, userPassword = password)
-                                ?.let { info ->
-                                    sharedViewModel.validateUserLogin(
-                                        userName = username,
-                                        userPassword = password,
-                                        onLoginResponse = { response, errorMsg ->
-                                            if (response?.loginData != null) {
-                                                PreferenceManager.saveLogin(username, password)
-                                                PreferenceManager.saveUserInfo(response)
-                                                sharedViewModel.provideGlobalSSERequest()
-                                                context.hideKeyboard()
-                                                navController.navigate(Destination.genreScreen)
-                                            } else {
-                                                loginErrorMessage = errorMsg ?: "Unknown login error"
-                                            }
+                            sharedViewModel.validateUserLogin(
+                                userName = username,
+                                userPassword = password,
+                                onLoginResponse = { response, errorMsg ->
+                                    if (response?.loginData != null) {
+                                        PreferenceManager.saveLogin(username, password)
+                                        PreferenceManager.saveUserInfo(response)
+                                        sharedViewModel.provideGlobalSSERequest()
+                                        context.hideKeyboard()
+                                        navController.navigate(Destination.homeScreen)
+                                    } else {
+                                        loginErrorMessage = errorMsg ?: "Unknown login error"
+                                    }
 
-                                        }
-                                    )
                                 }
+                            )
                         } else {
                             context.showToastS(msg)
                         }

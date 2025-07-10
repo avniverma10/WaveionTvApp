@@ -185,7 +185,7 @@ fun SplashScreen(
             PreferenceManager.getLoginResponse()?.let {
                 context.applyUserInfo(it)
             }
-            navController.navigate(Destination.genreScreen) {
+            navController.navigate(Destination.homeScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
         } else {

@@ -78,27 +78,23 @@ fun PanMetroInfoScreen(
     networkName: String = "TCCL",
     drmId: String = "102",
     navController: NavController,
-    sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel,
+    onOkClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val systemInfo = context.getAndroidTvDrmInfo()
 
-    /* 1) track whether to show the confirmation dialog */
+    /* track whether to show the confirmation dialog */
     var showExitDialog by remember { mutableStateOf(false) }
 
-    //hide keyboard forcefully
-    HideKeyboardOnEnter()
-    LaunchedEffect(Unit) {
-        context.hideKeyboard()
-    }
 
     Log.d("PanMetroInfoScreen", "showExitDialog: $showExitDialog")
     // intercept back-press as “logout” as well
     BackHandler {
-        navController.navigate(Destination.settings)
+        onOkClick()
     }
 
-    // 2) track focus state
+    //track focus state
     val logoutInteractionSource = remember { MutableInteractionSource() }
     val isLogoutFocused by logoutInteractionSource.collectIsFocusedAsState()
     val scope = rememberCoroutineScope()
@@ -106,7 +102,23 @@ fun PanMetroInfoScreen(
 
     //auto-focus the Logout button
     val logoutRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { logoutRequester.requestFocus() }
+
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+        logoutRequester.requestFocus()
+    }
+
+
+    val okButtonFocusRequester = remember { FocusRequester() }
+
+    //hide keyboard forcefully
+    //HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+        okButtonFocusRequester.requestFocus()
+    }
 
     Scaffold(
         containerColor = Color(0xFF1A1A1D),
@@ -118,7 +130,7 @@ fun PanMetroInfoScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { showExitDialog = true },
+                    onClick = { onOkClick() },
                     modifier = Modifier
                         .focusRequester(logoutRequester)
                         .focusable(interactionSource = logoutInteractionSource)
@@ -138,7 +150,7 @@ fun PanMetroInfoScreen(
                     ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Logout", fontSize = 16.sp)
+                    Text("OK", fontSize = 16.sp)
                 }
             }
         }
@@ -157,12 +169,12 @@ fun PanMetroInfoScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(R.drawable.app_logo),
+                    painter = painterResource(R.drawable.tccl_logo),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("CAASTV", color = Color.White, fontSize = 18.sp)
+                Text("TCCL", color = Color.White, fontSize = 18.sp)
             }
 
             Spacer(Modifier.height(32.dp))
@@ -202,56 +214,6 @@ fun PanMetroInfoScreen(
                 }
             }
         }
-        //render the confirmation dialog over everything
-        if (showExitDialog) {
-            CommonDialog(
-                showDialog = true,
-                title = "Logout App",
-                message = "Are you sure you want to logout and exit the app?",
-                painter = painterResource(id = R.drawable.logout_icon),
-                errorCode = null,
-                errorMessage = null,
-                borderColor = Color.Transparent,
-                confirmButtonText ="Yes" ,
-                onConfirm =  {
-                    sharedViewModel.clearRecentlyWatched()
-                    PreferenceManager.clearLogin()
-                    showExitDialog = false
-                    context.hideKeyboard()
-                    (context as? Activity)?.finishAffinity()
-
-                },
-                dismissButtonText = "No",
-                onDismiss = { showExitDialog = false }
-            )
-        }
     }
 }
-
-
-@Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Label remains black
-        Text(
-            text = label.uppercase(),
-            fontSize = 16.sp,
-            color = Color.White,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value.uppercase(),
-            fontSize = 16.sp,
-            color = Color.White,
-            textAlign = TextAlign.Start,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
 

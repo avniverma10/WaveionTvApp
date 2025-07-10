@@ -302,8 +302,8 @@ fun PanMetroVideoPlayer(
 //    }
 
     BackHandler {
-        sharedViewModel.updateLanguage(null)                         // clear language filter
-        sharedViewModel.updateGenre(null)                            // clear genre filter
+        //sharedViewModel.updateLanguage(null)                         // clear language filter
+        //sharedViewModel.updateGenre(null)                            // clear genre filter
         sharedViewModel.setCurrentPlaylist(emptyList(), "All Channels")
         navController.popBackStack()
     }

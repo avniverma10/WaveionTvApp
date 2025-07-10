@@ -231,7 +231,7 @@ fun GenreMultiDRMPlayer(
             Image(
                 painter = painterResource(id = R.drawable.tccl_transparent),
                 contentDescription = "TCCL Poster",
-                modifier = Modifier.width(100.dp).height(100.dp),
+                modifier = Modifier.width(200.dp).height(200.dp),
                 contentScale = ContentScale.Fit
             )
         }
@@ -338,7 +338,7 @@ fun GenreMultiDRMPlayer(
                     Image(
                         painter = painterResource(id = R.drawable.tccl_transparent),
                         contentDescription = "Loading poster",
-                        modifier = Modifier.width(100.dp).height(100.dp),
+                        modifier = Modifier.width(200.dp).height(200.dp),
                         contentScale = ContentScale.Fit
                     )
                 }

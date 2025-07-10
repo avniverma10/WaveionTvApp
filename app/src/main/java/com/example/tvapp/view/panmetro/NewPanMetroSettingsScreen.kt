@@ -55,6 +55,7 @@ import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.panmetro.settings.AppInfoScreen
 import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
@@ -138,10 +139,8 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         }
     }
     if (showInfo) {
-        PanMetroInfoScreen(
-            navController = navController,
-            sharedViewModel = sharedViewModel
-//            onOkClick = { showInfo = false }
+        AppInfoScreen(
+            onOkClick = { showInfo = false }
         )
     }
 }
