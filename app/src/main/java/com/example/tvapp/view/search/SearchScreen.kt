@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.utils.theme.*
 import com.example.tvapp.view.navigationhelper.Destination

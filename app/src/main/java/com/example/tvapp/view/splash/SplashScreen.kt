@@ -19,14 +19,29 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -35,12 +50,15 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.android.caastv.R
-import com.example.tvapp.extensions.*
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import com.android.tccl.R
+import com.example.tvapp.extensions.applyUserInfo
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
@@ -124,19 +142,6 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
-        /*if (PreferenceManager.getLoginResponse()?.loginData != null || PreferenceManager.getUsername()?.isNotNullOrEmpty() == true) {
-           context.showToastS(PreferenceManager.getUsername()+">>>>>")
-            sharedViewModel.validateUserLogin(
-                userName = PreferenceManager.getUsername()?:"",
-                userPassword = PreferenceManager.getPassword()?:"",
-                onLoginResponse = { response, errorMsg ->
-                    if (response != null) {
-                        PreferenceManager.saveUserInfo(
-                            response
-                        )
-                    }
-                })
-        }*/
     }
 
     if (timeValid == false) {
@@ -389,40 +394,27 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.White)
     ) {
-        AnimatedSvgFromAssets(
-            assetFileName = "splash_logo.svg",
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(600.dp)
+
+        // center your animated logo
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .diskCachePolicy(CachePolicy.ENABLED)    // cache image on disk
+                .memoryCachePolicy(CachePolicy.ENABLED)  // cache image in memory
+                .build(),
+            contentDescription = "Default Background",
+            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.align(Alignment.Center).wrapContentWidth(),
+            error = painterResource(R.drawable.tccl_boot_logo),        // Error state
+            placeholder = painterResource(R.drawable.tccl_boot_logo)   // Loading state
         )
-        if (downloadId != null) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+        if (isUpdating) {
+            CircularProgressIndicator(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp)
-            ) {
-                LinearProgressIndicator(
-                    progress = downloadProgress.value,
-                    modifier = Modifier
-                        .width(300.dp)
-                        .height(8.dp),
-                    color = base_color,
-                    trackColor = Color.LightGray
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = if (downloadProgress.value < 1f)
-                        "Downloading update… ${(downloadProgress.value * 100).toInt()}%"
-                    else
-                        "Download complete!",
-                    color = Color.White
-                )
-            }
+                    .padding(bottom = 32.dp)
+            )
         }
     }
 }

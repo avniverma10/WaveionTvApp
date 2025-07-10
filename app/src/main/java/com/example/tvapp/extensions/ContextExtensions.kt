@@ -32,7 +32,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.di.CoreComponentProvider
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
@@ -358,8 +358,8 @@ fun Context.provideGif(fileName:String, type:String):Painter?{
                     }
                 )
                 .build(),
-            placeholder = painterResource(R.drawable.caastv_icon_foreground),
-            error = painterResource(R.drawable.caastv_icon_foreground)
+            placeholder = painterResource(R.drawable.tccl_transparent),
+            error = painterResource(R.drawable.tccl_transparent)
         )
 
         "drawable" -> painterResource(id = gifResId)

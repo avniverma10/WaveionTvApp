@@ -64,7 +64,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideMacAddress

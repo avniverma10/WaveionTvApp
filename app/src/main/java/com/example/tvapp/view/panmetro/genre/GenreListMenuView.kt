@@ -48,7 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.utils.theme.base_color

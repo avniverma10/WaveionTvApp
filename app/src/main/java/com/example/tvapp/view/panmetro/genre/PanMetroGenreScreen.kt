@@ -38,8 +38,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.epgdata.EPGDataItem
@@ -100,7 +101,10 @@ fun PanmetroGenreScreen(
         }
     }
 
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
         //request for user hash
@@ -247,6 +251,7 @@ fun PanmetroGenreScreen(
                                 genreViewModel = genreViewModel
                             )
                         }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight(1f)
@@ -257,14 +262,8 @@ fun PanmetroGenreScreen(
                                     .fillMaxSize() // Force the inner Box to fill the outer Box.
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.banner3),
-                                    contentDescription = "Panmetro Logo",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize() // Stretch the image to fill the inner Box.
-                                        .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-                                )
+
+                                ZoomInOutSwitcher()
                             }
                         }
 

@@ -56,9 +56,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
@@ -67,6 +66,7 @@ import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -94,7 +94,10 @@ fun PanmetroLoginScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var loginErrorMessage by remember { mutableStateOf<String?>(null) }
 
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         usernameFocusRequester.requestFocus()
     }
 
@@ -135,13 +138,13 @@ fun PanmetroLoginScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.drawable.app_logo),
+                painter = painterResource(R.drawable.tccl_logo),
                 contentDescription = "App Logo",
                 modifier = Modifier.size(50.dp)
             )
             Spacer(Modifier.width(12.dp))
             Text(
-                text = "CAASTV",
+                text = "TCCL",
                 color = Color.White,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
@@ -157,7 +160,7 @@ fun PanmetroLoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Welcome to CAASTV",
+                text = "Welcome to TCCL",
                 color = Color.White,
                 fontSize = 25.sp,
                 fontWeight = FontWeight.Bold,

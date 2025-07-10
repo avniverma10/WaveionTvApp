@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -32,12 +33,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.launchPackageIfInstalled
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.customapp.AppItem
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -55,6 +58,12 @@ fun AppsScreen(
     sharedViewModel: SharedViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
 
     Box(
         modifier = Modifier

@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.with
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,10 +22,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.android.caastv.R
+import com.android.tccl.R
 import kotlinx.coroutines.delay
 
 
@@ -36,9 +38,9 @@ fun ZoomInOutSwitcher(
     val pages: List<@Composable () -> Unit> = listOf(
         {
             Image(
-                painter = painterResource(id = R.drawable.app_logo),
-                contentDescription = "CaasTV Logo",
-                contentScale = ContentScale.Crop,
+                painter = painterResource(id = R.drawable.tccl_boot_logo),
+                contentDescription = "TCCL Logo",
+                contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .fillMaxSize() // Stretch the image to fill the inner Box.
                     .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
@@ -46,14 +48,18 @@ fun ZoomInOutSwitcher(
 
         },
         {
-            Image(
-                painter = painterResource(id = R.drawable.app_logo),
-                contentDescription = "Panmetro Logo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize() // Stretch the image to fill the inner Box.
-                    .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
-            )
+            Box (modifier = Modifier
+                .fillMaxSize() // Stretch the image to fill the inner Box.
+                .clip(RoundedCornerShape(16.dp))){
+                Image(
+                    painter = painterResource(id = R.drawable.tccl_transparent),
+                    contentDescription = "TCCL Logo",
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier
+                        .fillMaxSize() // Stretch the image to fill the inner Box.
+                        .background(Color.White) // Adjust the corner radius as needed.
+                )
+            }
         }
     )
 
@@ -78,10 +84,10 @@ fun ZoomInOutSwitcher(
                 initialScale = 0.8f,
                 animationSpec = tween(1200, easing = LinearEasing)
             ) + fadeIn(tween(1200))) with
-            (scaleOut(
-                targetScale = 0.8f,
-                animationSpec = tween(1200, easing = LinearEasing)
-            ) + fadeOut(tween(1200)))
+                    (scaleOut(
+                        targetScale = 0.8f,
+                        animationSpec = tween(1200, easing = LinearEasing)
+                    ) + fadeOut(tween(1200)))
         }
     ) { target ->
         // Render the current page

@@ -63,6 +63,7 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
@@ -74,6 +75,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -115,6 +117,12 @@ fun ChannelScreen(
     val focusManager = LocalFocusManager.current
     val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
+
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
     // Set selected index only if there is data
     // 1) Keep the old effect for updating your indices:
     LaunchedEffect(filterState, categories, languages) {

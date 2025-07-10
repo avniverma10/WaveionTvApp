@@ -23,7 +23,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.components.GradientBackground
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.text.input.ImeAction

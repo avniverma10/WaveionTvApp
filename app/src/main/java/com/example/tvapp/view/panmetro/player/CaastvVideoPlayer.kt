@@ -64,7 +64,7 @@ import androidx.navigation.NavController
 import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
@@ -76,6 +76,7 @@ import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.Job
@@ -138,6 +139,8 @@ fun CaastvVideoPlayer(
             selectedChannel?.let { sharedViewModel.recordRecentlyWatched(it) }
         }
     }
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
     }

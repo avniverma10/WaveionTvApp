@@ -39,8 +39,9 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
@@ -61,7 +62,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
-    HideKeyboardOnEnter()
     val context = LocalContext.current
 
 
@@ -77,7 +77,10 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         // Move focus to the first channel in your EPG content
         try {
             firstChannelFocusRequester.requestFocus()

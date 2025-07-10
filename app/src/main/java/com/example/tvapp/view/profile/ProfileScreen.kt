@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.capitalizeFirstLetter
 import com.example.tvapp.extensions.hideKeyboard

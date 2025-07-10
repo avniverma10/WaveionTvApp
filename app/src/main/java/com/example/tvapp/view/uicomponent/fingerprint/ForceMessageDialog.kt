@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.getFloatValue
 import com.example.tvapp.model.data.sseresponse.ForceMessage
 import kotlinx.coroutines.delay

@@ -15,11 +15,11 @@ fun HideKeyboardOnEnter() {
   val kbCtrl     = LocalSoftwareKeyboardController.current
 
   LaunchedEffect(Unit) {
-    // 1️⃣ remove focus so no TextField is “active”
+    //remove focus so no TextField is “active”
     focusMgr.clearFocus(force = true)
-    // 2️⃣ ask Compose to hide IME
+    //ask Compose to hide IME
     kbCtrl?.hide()
-    // 3️⃣ fallback via WindowInsets
+    //fallback via WindowInsets
     ViewCompat.getWindowInsetsController(view)
       ?.hide(WindowInsetsCompat.Type.ime())
   }

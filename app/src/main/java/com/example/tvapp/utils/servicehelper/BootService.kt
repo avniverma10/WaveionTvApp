@@ -5,7 +5,7 @@ import android.content.*
 import android.os.*
 import android.provider.Settings
 import android.util.Log
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
 
 class BootService : Service() {

@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.showToastServer
 import com.example.tvapp.utils.network.ErrorHandler

@@ -53,13 +53,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -74,7 +75,7 @@ fun PanMetroInfoScreen(
     ram: String = "2 GB",
     storage: String = "32 GB",
     stbModel: String = "DTP1731",
-    networkName: String = "CAASTV",
+    networkName: String = "TCCL",
     drmId: String = "102",
     navController: NavController,
     sharedViewModel: SharedViewModel
@@ -84,6 +85,12 @@ fun PanMetroInfoScreen(
 
     /* 1) track whether to show the confirmation dialog */
     var showExitDialog by remember { mutableStateOf(false) }
+
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
 
     Log.d("PanMetroInfoScreen", "showExitDialog: $showExitDialog")
     // intercept back-press as “logout” as well
@@ -97,7 +104,7 @@ fun PanMetroInfoScreen(
     val scope = rememberCoroutineScope()
 
 
-    // 2) auto-focus the Logout button
+    //auto-focus the Logout button
     val logoutRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { logoutRequester.requestFocus() }
 
@@ -179,7 +186,7 @@ fun PanMetroInfoScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    InfoRow("Username", PreferenceManager.getUsername()?:"CaasTV")
+                    InfoRow("Username", PreferenceManager.getUsername()?:"TCCL")
                     InfoRow("MAC ID", context.provideMacAddress() ?: macId)
                     InfoRow("Validity", validity)
                     InfoRow("App version", value = context.packageManager
@@ -195,7 +202,7 @@ fun PanMetroInfoScreen(
                 }
             }
         }
-        // 3) render the confirmation dialog over everything
+        //render the confirmation dialog over everything
         if (showExitDialog) {
             CommonDialog(
                 showDialog = true,

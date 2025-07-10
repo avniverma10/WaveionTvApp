@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,7 +59,7 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
@@ -228,10 +229,10 @@ fun GenreMultiDRMPlayer(
         val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
         if (!hasVideo && isBuffering.value ) {
             Image(
-                painter = painterResource(id = R.drawable.caastv_icon_foreground),
-                contentDescription = "CAASTV Poster",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                painter = painterResource(id = R.drawable.tccl_transparent),
+                contentDescription = "TCCL Poster",
+                modifier = Modifier.width(100.dp).height(100.dp),
+                contentScale = ContentScale.Fit
             )
         }
         if (hasVideo) {
@@ -335,10 +336,10 @@ fun GenreMultiDRMPlayer(
             ) {
                 if (isBuffering.value) {
                     Image(
-                        painter = painterResource(id = R.drawable.caastv_icon_foreground),
+                        painter = painterResource(id = R.drawable.tccl_transparent),
                         contentDescription = "Loading poster",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        modifier = Modifier.width(100.dp).height(100.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
             }

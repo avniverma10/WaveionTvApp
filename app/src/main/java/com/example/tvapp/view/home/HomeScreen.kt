@@ -50,9 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
@@ -65,6 +66,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -92,7 +94,10 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         //columnState.scrollToItem(0)
         firstChannelFocusRequester?.let { requester ->
             try {

@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
@@ -57,6 +57,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -71,7 +72,11 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var backPressCount by remember { mutableStateOf(0) }
+
+    //hide keyboard forcefully
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         firstMenuItemFocusRequester.requestFocus()
     }
 

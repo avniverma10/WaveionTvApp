@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil3.compose.AsyncImage
-import com.android.caastv.R
+import com.android.tccl.R
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 
 
