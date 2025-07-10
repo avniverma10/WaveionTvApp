@@ -170,7 +170,7 @@ open class WTVViewModel @Inject constructor(
 
         viewModelScope.launch {
             networkApiCallInterfaceImpl
-                .provideNotificationSSE("https://api-demo.caastv.com/api/app/getNotification-sse")
+                .provideNotificationSSE(UrlManager.getCurrentBaseUrl() +"app/getNotification-sse")
                 .catch { loge("WTVViewModel", "SSE failed $it") }
                 .collect { item ->
                     if (skipFirst) {
@@ -318,7 +318,7 @@ open class WTVViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun fetchServerTimeMillis(): Long {
         val req = Request.Builder()
-            .url("https://api-panmetro.caastv.com/api/app/health")
+            .url(UrlManager.getCurrentBaseUrl() +"app/health")
             .get().build()
 
         val resp = okHttpClient.newCall(req).execute()
