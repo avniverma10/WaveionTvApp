@@ -50,6 +50,8 @@ import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 data class Banner(
     @DrawableRes val image: Int,
@@ -76,6 +78,8 @@ fun DemoHomeScreen(
     val watchNowRequester = remember { FocusRequester() }
     val context = LocalContext.current
 
+    val fixedUrl = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
+    val encodedUrl = URLEncoder.encode(fixedUrl, StandardCharsets.UTF_8.toString())
 
     LaunchedEffect(Unit) {
         delay(100)
@@ -169,7 +173,7 @@ fun DemoHomeScreen(
                 val playInteraction = remember { MutableInteractionSource() }
                 val playFocused by playInteraction.collectIsFocusedAsState()
                 Button(
-                    onClick = { navController.navigate(Destination.demoplayer) },
+                    onClick = { navController.navigate("${Destination.demoplayer}/$encodedUrl") },
                     interactionSource = playInteraction,
                     shape = RoundedCornerShape(4.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -335,6 +339,9 @@ fun CategorySection(
     title: String,
     items: List<Int>
 ) {
+    val fixedUrl = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
+    val encodedUrl = URLEncoder.encode(fixedUrl, StandardCharsets.UTF_8.toString())
+
     Text(title, style = MaterialTheme.typography.headlineSmall, color = Color.White)
     Spacer(Modifier.height(8.dp))
     LazyRow(
@@ -355,7 +362,7 @@ fun CategorySection(
                     .clip(RoundedCornerShape(8.dp))
                     .then(if (focused) Modifier.border(2.dp, base_color, RoundedCornerShape(8.dp)) else Modifier)
                     .focusable(interactionSource = interaction)
-                    .clickable { navController.navigate(Destination.demoplayer) }
+                    .clickable { navController.navigate("${Destination.demoplayer}/$encodedUrl") }
             ) {
                 Image(
                     painter           = painterResource(resId),

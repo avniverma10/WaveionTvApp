@@ -1,6 +1,8 @@
 package com.example.tvapp.view.home
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Process
 import android.util.Log
 import androidx.activity.compose.BackHandler
@@ -11,6 +13,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -20,9 +24,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -235,7 +242,7 @@ fun CategorySection(
             text = title,
             modifier = Modifier.padding(start = 16.dp, bottom = 5.dp),
             style = TextStyle(
-                fontSize = 19.sp,
+                fontSize = 21.sp,
                 fontFamily = FontFamily(Font(R.font.figtree_light)),
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White
@@ -350,7 +357,7 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .height(230.dp)
                 .padding(start = 70.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -365,9 +372,12 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             selectedIndex = (selectedIndex + 1) % bannerList.size
         }
     }
+    val playInteraction = remember { MutableInteractionSource() }
+    val playFocused by playInteraction.collectIsFocusedAsState()
+    val watchNowRequester = remember { FocusRequester() }
     val selectedBanner = bannerList[selectedIndex]
     // Use a default video URL (adjust as needed)
-    val videoUrl = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
+    val videoUrl = selectedBanner.bannerContentLink ?: ""
     val encodedUrl = URLEncoder.encode(videoUrl, StandardCharsets.UTF_8.toString())
     Box(
         modifier = Modifier
@@ -381,8 +391,22 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp),
+                .height(330.dp),
             contentScale = ContentScale.Crop
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(330.dp) // same as banner height
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black
+                        )
+                    )
+                )
         )
         Column(
             modifier = Modifier
@@ -411,36 +435,40 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                onClick = {
-                    navController.navigate("homeplayer/$encodedUrl") },
+                onClick = {    if (videoUrl.contains("youtube.com", ignoreCase = true)) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    intent.setPackage("com.google.android.youtube")
+                    val context = navController.context
+                    if (intent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(intent)
+                    } else {
+                        // fallback: browser
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(videoUrl)))
+                    }
+                } else {
+                    navController.navigate("${Destination.demoplayer}/$encodedUrl")
+                }
+                 },
+                interactionSource = playInteraction,
+                shape = RoundedCornerShape(4.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (playFocused) Color(0xFF50776E) else Color.White,
+                    contentColor   = if (playFocused) Color.White      else Color.Black
+                ),
                 modifier = Modifier
-                    .padding(8.dp)
-                    .onFocusChanged { isButtonFocused = it.isFocused }
-                    .focusable()
-                    .border(
-                        if (isButtonFocused) 2.dp else 0.dp,
-                        if (isButtonFocused) base_color else Color.Transparent,
-                        shape = RoundedCornerShape(6.dp)
+                    .height(48.dp)
+                    .focusRequester(watchNowRequester)
+                    .then(
+                        if (playFocused)
+                            Modifier.border(2.dp, base_color, RoundedCornerShape(4.dp))
+                        else Modifier
                     )
-                    .clip(RoundedCornerShape(6.dp)),
-                shape = RectangleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                    .focusable(interactionSource = playInteraction)
             ) {
-                Text(
-                    text = "Watch Now",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontFamily = FontFamily(Font(R.font.figtree_light)),
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Black
-                    )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Image(
-                    painter = painterResource(id = R.drawable.play),
-                    contentDescription = "Play Icon",
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(4.dp))
+                Text("Watch Now", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
         }
         Row(
