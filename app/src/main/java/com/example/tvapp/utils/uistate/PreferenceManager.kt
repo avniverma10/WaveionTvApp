@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.login.LoginResponseData
+import com.example.tvapp.model.data.settings.AppSettings
 import com.google.gson.Gson
 
 object PreferenceManager {
@@ -20,6 +21,7 @@ object PreferenceManager {
   private const val KEY_USER_INFO   = "userinfo"
   private const val KEY_USER_HASH   = "userhash"
   private const val KEY_RECENTS     = "recently_watched"
+  private const val KEY_APP_SETTINGS     = "appSettings"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
@@ -80,6 +82,13 @@ object PreferenceManager {
     editor.putString(KEY_PASSWORD, password)
     editor.apply()
   }
+  /** Save username & password atomically */
+  fun saveAppSettings(appSettings: AppSettings) {
+    val json = Gson().toJson(appSettings)
+    val editor = prefs.edit()
+    editor.putString(KEY_APP_SETTINGS, json)
+    editor.apply()
+  }
 
   /** Save username & password atomically */
   fun saveUserInfo(userInfo: LoginResponseData) {
@@ -101,6 +110,12 @@ object PreferenceManager {
     val json = prefs.getString(KEY_USER_INFO, null)
       ?: return null
     return Gson().fromJson(json, LoginResponseData::class.java)
+  }
+
+  fun getAppSettings(): AppSettings? {
+    val json = prefs.getString(KEY_APP_SETTINGS, null)
+      ?: return null
+    return Gson().fromJson(json, AppSettings::class.java)
   }
 
 

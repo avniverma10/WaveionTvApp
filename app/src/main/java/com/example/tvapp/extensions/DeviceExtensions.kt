@@ -17,6 +17,11 @@ import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 
+import android.net.LinkAddress
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
+
 
 @SuppressLint("HardwareIds", "MissingPermission")
 fun Context.getIptvDeviceInfo(): Map<String, String?> {
@@ -167,7 +172,7 @@ fun isSchemeSupported(): Boolean =
 @SuppressLint("HardwareIds")
 fun Context.getMacAddress(): String? {
     try {
-        // 1) Try Wi-Fi manager (may return 02:00:00:00:00:00 on Android 6+)
+        // Try Wi-Fi manager (may return 02:00:00:00:00:00 on Android 6+)
         //    Only works if the app has ACCESS_WIFI_STATE and Wi-Fi is enabled.
         val wifiMgr = getApplicationContext().getSystemService(Context.WIFI_SERVICE) as? WifiManager
         val wifiInfo = wifiMgr?.connectionInfo
@@ -176,7 +181,7 @@ fun Context.getMacAddress(): String? {
             return macFromWifi.uppercase(Locale.US)
         }
 
-        // 2) Fall back to NetworkInterface enumeration
+        // Fall back to NetworkInterface enumeration
         val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
         for (intf in interfaces) {
             // prefer wlan0 (Wi-Fi) or eth0 (Ethernet) if present
@@ -221,4 +226,74 @@ fun logAllDrmInfo() {
             // not supported—ignore
         }
     }
+}
+
+
+fun Context.getIPAddress(): String? {
+    try {
+        val interfaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+        for (intf in interfaces) {
+            for (addr in Collections.list(intf.inetAddresses)) {
+                if (!addr.isLoopbackAddress) {
+                    val sAddr = addr.hostAddress?.uppercase(Locale.US)
+                    if (sAddr != null) {
+                        // Prefer IPv4 for simplicity, but you can remove this check if you want IPv6
+                        val isIPv4 = sAddr.indexOf(':') < 0
+                        if (isIPv4) {
+                            return sAddr
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return null
+}
+
+// For Wi-Fi IP address specifically
+fun Context.getWifiIPAddress(): String? {
+    try {
+        val wifiMgr = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val wifiInfo = wifiMgr.connectionInfo
+        val ip = wifiInfo.ipAddress
+        return String.format(
+            Locale.US,
+            "%d.%d.%d.%d",
+            ip and 0xff,
+            ip shr 8 and 0xff,
+            ip shr 16 and 0xff,
+            ip shr 24 and 0xff
+        )
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
+
+/**
+ * Best-effort IP detector.
+ * Returns the first non-loopback, non-link-local address—preferring IPv4.
+ */
+fun Context.getDeviceIpAddress(): String? {
+    val cm = getSystemService(ConnectivityManager::class.java) ?: return null
+    val lp = cm.getLinkProperties(cm.activeNetwork) ?: return null
+
+    // 1️⃣ Prefer non-link-local IPv4
+    lp.linkAddresses
+        .map(LinkAddress::getAddress)
+        .firstOrNull { it is Inet4Address && !it.isLinkLocalAddress && !it.isLoopbackAddress }
+        ?.let { return it.hostAddress }
+
+    // 2️⃣ Fallback to non-link-local IPv6
+    lp.linkAddresses
+        .map(LinkAddress::getAddress)
+        .firstOrNull { it is Inet6Address && !it.isLinkLocalAddress && !it.isLoopbackAddress }
+        ?.let { addr ->
+            return addr.hostAddress.substringBefore('%') // strip scope id
+        }
+
+    return null
 }

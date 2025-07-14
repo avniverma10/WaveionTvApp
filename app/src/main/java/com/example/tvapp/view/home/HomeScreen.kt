@@ -68,6 +68,7 @@ import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.bg_card_color
 import com.example.tvapp.utils.theme.screen_bg_color
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.ExitDialog
@@ -278,7 +279,11 @@ fun CategorySection(
                     sharedViewModel.setCurrentPlaylist(categoryEpg, title)
                     sharedViewModel.updateLanguage(null)
                     sharedViewModel.updateSelectedChannel(selectedItem)
-                    navController.navigate(Destination.panMetroScreen)
+                    if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                        navController.navigate(Destination.animationPlayer)
+                    }else{
+                        navController.navigate(Destination.panMetroScreen)
+                    }
                 }
             }
         }

@@ -5,7 +5,7 @@ import okhttp3.HttpUrl
 object UrlManager {
     private val primaryBaseUrl = "https://api-demo.caastv.com/api/"//https://api-demo.caastv.com/api/"
     private val alternateBaseUrl = "https://api-demo.caastv.com/api/"
-    
+
     @Volatile
     private var currentBaseUrl = primaryBaseUrl
 

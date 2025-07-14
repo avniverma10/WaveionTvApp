@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.0.27"
+        versionCode = 10
+        versionName = "1.0.28"
     }
 
     buildTypes {

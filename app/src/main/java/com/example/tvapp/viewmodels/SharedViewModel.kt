@@ -148,6 +148,8 @@ open class SharedViewModel @Inject constructor(
             isInitializeData
                 .filter { it }        // only when it becomes true
                 .first()
+            val saved = filterPreferences.filterFlow.first() // <-- one-time load only
+            _filterState.value = saved
             applyFilters()
         }
         viewModelScope.launch {
@@ -421,6 +423,11 @@ open class SharedViewModel @Inject constructor(
         application.provideMacAddress()?.let {
             queryBuilder.appendQueryParameter("macId", it)
         }
+
+        /*application.getIPAddress()?.let {
+            Log.d("deviceIP>",it)
+            queryBuilder.appendQueryParameter("deviceIP", it)
+        }*/
 
         val sseUrl = queryBuilder.build().toString()
         loge("finalUrl>",sseUrl)

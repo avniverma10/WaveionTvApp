@@ -1,9 +1,8 @@
-package com.example.tvapp.view.panmetro
+package com.example.tvapp.view.panmetro.settings
 
 
 
 import android.app.Activity
-import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -47,19 +45,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 import androidx.navigation.NavController
 import com.android.caastv.R
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
-import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
-import com.example.tvapp.view.panmetro.settings.PanMetroInfoScreen
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.viewmodels.SharedViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 
 
 @Composable
@@ -69,6 +63,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     val firstMenuItemFocusRequester = remember { FocusRequester() }
 
     var showInfo by remember { mutableStateOf(false) }
+    var appSettingsDialog by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var backPressCount by remember { mutableStateOf(0) }
     LaunchedEffect(Unit) {
@@ -95,6 +90,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     ) {
         NewMainSettingsContent(
             onInfoClick = { showInfo = true },
+            onPreferencesClick = { appSettingsDialog = true },
             onLogoutClick = { showExitDialog = true },
             firstMenuItemFocusRequester = firstMenuItemFocusRequester,
             modifier = Modifier
@@ -133,22 +129,31 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         }
     }
     if (showInfo) {
-        PanMetroInfoScreen(
-            navController = navController,
-            sharedViewModel = sharedViewModel
-//            onOkClick = { showInfo = false }
+        SystemInfoDialog(
+           onBack = { showInfo = false }
         )
     }
+
+    if (appSettingsDialog) {
+        AppSettingsDialog(
+            onToggle = { appSettings->
+                PreferenceManager.saveAppSettings(appSettings)
+            },
+            onBack = { appSettingsDialog = false }
+        )
+    }
+
 }
 @Composable
 fun NewMainSettingsContent(
     onInfoClick: () -> Unit,
+    onPreferencesClick: () -> Unit,
     onLogoutClick: () -> Unit,
     firstMenuItemFocusRequester: FocusRequester,
     modifier: Modifier = Modifier  // our injected requester
 ) {
-    val menuItems = listOf("Info", "Logout")
-    val menuIcons = listOf(R.drawable.info, R.drawable.logout)
+    val menuItems = listOf("Info","Preferences", "Logout")
+    val menuIcons = listOf(R.drawable.info,R.drawable.settings, R.drawable.logout)
     val menuData  = menuItems.zip(menuIcons)
 
     Row(
@@ -174,7 +179,7 @@ fun NewMainSettingsContent(
                 .padding(padding)
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 verticalArrangement   = Arrangement.spacedBy(itemSpacing),
                 modifier = Modifier
@@ -193,6 +198,7 @@ fun NewMainSettingsContent(
                         onClick   = {
                             when (title) {
                                 "Info"   -> onInfoClick()
+                                "Preferences"   -> onPreferencesClick()
                                 "Logout" -> onLogoutClick()
                             }
                         }
@@ -216,7 +222,7 @@ fun NewMenuItemCard(
 
     Card(
         modifier = modifier                         // ← apply it here
-            .size(width = 100.dp, height = 160.dp)
+            .size(width = 100.dp, height = 150.dp)
             .onFocusChanged { isFocused = it.isFocused }
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }

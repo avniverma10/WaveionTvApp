@@ -1,6 +1,7 @@
 package com.example.tvapp.utils
 
 import com.example.tvapp.model.data.genre.WTVGenre
+import com.example.tvapp.model.data.settings.AppSettings
 
 object Constants {
     var genre:List<WTVGenre>?= null

@@ -287,26 +287,22 @@ fun PanmetroLoginScreen(
                         }
                         if (valid) {
                             (context as? Activity)?.hideKeyboard()
-                            context.getAndroidTvDrmInfo()
-                                ?.copy(userName = username, userPassword = password)
-                                ?.let { info ->
-                                    sharedViewModel.validateUserLogin(
-                                        userName = username,
-                                        userPassword = password,
-                                        onLoginResponse = { response, errorMsg ->
-                                            if (response?.loginData != null) {
-                                                PreferenceManager.saveLogin(username, password)
-                                                PreferenceManager.saveUserInfo(response)
-                                                sharedViewModel.provideGlobalSSERequest()
-                                                context.hideKeyboard()
-                                                navController.navigate(Destination.genreScreen)
-                                            } else {
-                                                loginErrorMessage = errorMsg ?: "Unknown login error"
-                                            }
+                            sharedViewModel.validateUserLogin(
+                                userName = username,
+                                userPassword = password,
+                                onLoginResponse = { response, errorMsg ->
+                                    if (response?.loginData != null) {
+                                        PreferenceManager.saveLogin(username, password)
+                                        PreferenceManager.saveUserInfo(response)
+                                        sharedViewModel.provideGlobalSSERequest()
+                                        context.hideKeyboard()
+                                        navController.navigate(Destination.genreScreen)
+                                    } else {
+                                        loginErrorMessage = errorMsg ?: "Unknown login error"
+                                    }
 
-                                        }
-                                    )
                                 }
+                            )
                         } else {
                             context.showToastS(msg)
                         }

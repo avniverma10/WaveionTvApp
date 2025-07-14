@@ -64,11 +64,13 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appManifestLiveData
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.bg_card_color
 import com.example.tvapp.utils.theme.screen_bg_color
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.CategoryMenu
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
@@ -226,7 +228,11 @@ fun ChannelScreen(
                                                     sharedViewModel.setCurrentPlaylist(filteredContent, genre)
                                                     sharedViewModel.updateLanguage(lang)
                                                 }
-                                                navController.navigate(Destination.panMetroScreen)
+                                                if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                                    navController.navigate(Destination.animationPlayer)
+                                                }else{
+                                                    navController.navigate(Destination.panMetroScreen)
+                                                }
                                             }
                                     },
                                     languageFocusRequesters = languageFocusRequesters,
@@ -248,7 +254,11 @@ fun ChannelScreen(
                                                     sharedViewModel.setCurrentPlaylist(filteredContent, genre)
                                                     sharedViewModel.updateLanguage(lang)
                                                 }
-                                                navController.navigate(Destination.panMetroScreen)
+                                                if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                                    navController.navigate(Destination.animationPlayer)
+                                                }else{
+                                                    navController.navigate(Destination.panMetroScreen)
+                                                }
                                             }
                                     },
                                     isFirstChannel = isFirstChannel,

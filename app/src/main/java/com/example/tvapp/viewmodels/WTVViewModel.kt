@@ -314,32 +314,41 @@ open class WTVViewModel @Inject constructor(
             }
         }
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun fetchServerTimeMillis(): Long {
-        val req = Request.Builder()
-            .url(UrlManager.getCurrentBaseUrl() +"app/health")
-            .get().build()
+    private suspend fun fetchServerTimeMillis(): Long? {
+        return try {
+            val req = Request.Builder()
+                .url(UrlManager.getCurrentBaseUrl() + "app/health")
+                .get()
+                .build()
 
-        val resp = okHttpClient.newCall(req).execute()
-        if (!resp.isSuccessful) {
-            loge(TAG, "Health endpoint error: HTTP ${resp.code}")
-            throw IOException("Health check failed: ${resp.code}")
-        }
-        val bodyStr = resp.body!!.string()
-        loge(TAG, "Raw JSON response: $bodyStr")
-        val timestampStr = JSONObject(bodyStr).getString("timestamp")
-        loge(TAG, "Parsed timestamp string: $timestampStr")
+            val resp = okHttpClient.newCall(req).execute()
 
-        val serverInst = try {
-            Instant.parse(timestampStr)
+            if (!resp.isSuccessful) {
+                loge(TAG, "Health endpoint error: HTTP ${resp.code}")
+                // Instead of throwing, return null and let the caller handle it
+                return null
+            }
+
+            val bodyStr = resp.body?.string() ?: run {
+                loge(TAG, "Empty response body")
+                return null
+            }
+
+            try {
+                val timestampStr = JSONObject(bodyStr).getString("timestamp")
+                val serverInst = Instant.parse(timestampStr)
+                val serverMs = serverInst.toEpochMilli()
+                loge(TAG, "Server epoch ms: $serverMs")
+                serverMs
+            } catch (e: Exception) {
+                loge(TAG, "JSON parsing failed: ${e.message}")
+                null
+            }
         } catch (e: Exception) {
-            loge(TAG, "Instant.parse failed for $timestampStr ${e.message}")
-            throw e
+            loge(TAG, "Network error: ${e.message}")
+            null
         }
-        val serverMs = serverInst.toEpochMilli()
-        loge(TAG, "Server epoch ms: $serverMs")
-        return serverMs
     }
 
     /**
@@ -350,19 +359,28 @@ open class WTVViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
         viewModelScope.launch {
-            val valid = withContext(Dispatchers.IO) {
-                val serverMs = fetchServerTimeMillis()
-                val deviceMs = System.currentTimeMillis()
-                val drift = abs(deviceMs - serverMs)
+            try {
+                val valid = withContext(Dispatchers.IO) {
+                    val serverMs = fetchServerTimeMillis() ?: run {
+                        // If we can't get server time, assume invalid (or adjust logic as needed)
+                        return@withContext false
+                    }
 
-                // calendar‐date check
-                val zone = ZoneId.systemDefault()
-                val serverDate = Instant.ofEpochMilli(serverMs).atZone(zone).toLocalDate()
-                val deviceDate = Instant.ofEpochMilli(deviceMs).atZone(zone).toLocalDate()
+                    val deviceMs = System.currentTimeMillis()
+                    val drift = abs(deviceMs - serverMs)
 
-                (serverDate == deviceDate) && (drift <= thresholdMs)
+                    // calendar-date check
+                    val zone = ZoneId.systemDefault()
+                    val serverDate = Instant.ofEpochMilli(serverMs).atZone(zone).toLocalDate()
+                    val deviceDate = Instant.ofEpochMilli(deviceMs).atZone(zone).toLocalDate()
+
+                    (serverDate == deviceDate) && (drift <= thresholdMs)
+                }
+                _isTimeValid.value = valid
+            } catch (e: Exception) {
+                loge(TAG, "Error in time validation: ${e.message}")
+                _isTimeValid.value = false
             }
-            _isTimeValid.value = valid
         }
     }
 
