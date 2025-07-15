@@ -285,17 +285,31 @@ fun BottomFullScreenPlayerOverlay(
 
                 Spacer(Modifier.width(16.dp))
 
-                // 4) Breaking-News banner
-                Image(
-                    painter         = painterResource(id = R.drawable.banner1),
-                    contentDescription = null,
-                    contentScale    = ContentScale.Crop,
-                    modifier         = Modifier
-                        .width(200.dp)
-                        .height(130.dp)
-                        .padding(top = 25.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                )
+                //Breaking-News banner
+
+                nowProg?.imageUrl?.getOrNull(0)?.let {
+                    AsyncImage(
+                        model           = nowProg?.imageUrl?.getOrNull(0)?.name,
+                        contentDescription = null,
+                        contentScale    = ContentScale.FillBounds,
+                        modifier         = Modifier
+                            .width(200.dp)
+                            .height(130.dp)
+                            .padding(top = 25.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                }?:run {
+                    Image(
+                        painter         = painterResource(id = R.drawable.banner1),
+                        contentDescription = null,
+                        contentScale    = ContentScale.Crop,
+                        modifier         = Modifier
+                            .width(200.dp)
+                            .height(130.dp)
+                            .padding(top = 25.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                }
             }
 
             // —— Next: … ——

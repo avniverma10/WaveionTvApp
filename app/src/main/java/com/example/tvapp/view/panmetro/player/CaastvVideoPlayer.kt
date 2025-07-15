@@ -92,7 +92,6 @@ fun CaastvVideoPlayer(
 ) {
 
     var isAudio = remember { mutableStateOf(false) }
-
     val context = LocalContext.current
     val playlist by sharedViewModel.currentPlaylist.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
@@ -138,6 +137,7 @@ fun CaastvVideoPlayer(
             selectedChannel?.let { sharedViewModel.recordRecentlyWatched(it) }
         }
     }
+
     LaunchedEffect(Unit) {
         context.hideKeyboard()
     }

@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.api
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,8 +18,8 @@ android {
         applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.0.28"
+        versionCode = 11
+        versionName = "1.0.29"
     }
 
     buildTypes {
@@ -28,6 +30,7 @@ android {
             buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
             buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
             buildConfigField("String", "BUILD_TYPE", "\"debug\"")
+            buildConfigField("String", "YOUTUBE_API_KEY", "\"${System.getenv("YOUTUBE_API_KEY")}\"")
 
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the
@@ -43,6 +46,8 @@ android {
             buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
             buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
             buildConfigField("String", "BUILD_TYPE", "\"release\"")
+
+            buildConfigField("String", "YOUTUBE_API_KEY", "\"${System.getenv("YOUTUBE_API_KEY")}\"")
             isMinifyEnabled = true
             // Enables resource shrinking, which is performed by the
             isShrinkResources =  true
@@ -73,6 +78,7 @@ android {
 }
 
 dependencies {
+    //implementation(files("libs/YouTubeAndroidPlayerApi.jar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform(libs.androidx.compose.bom))
@@ -143,4 +149,5 @@ dependencies {
 
     // Add this to your app/build.gradle dependencies
     implementation("com.google.errorprone:error_prone_annotations:2.23.0")
+   // implementation("com.google.android.youtube:android-youtube-player:12.1.0")
 }

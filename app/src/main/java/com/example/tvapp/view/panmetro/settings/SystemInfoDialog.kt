@@ -35,10 +35,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.media3.common.C.WIDEVINE_UUID
 import com.example.tvapp.extensions.AndroidTvDrmInfo
 import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.utils.uistate.PreferenceManager
+import java.util.UUID
 
 @Composable
 fun SystemInfoDialog(
@@ -136,7 +138,7 @@ fun SystemInfoDialog(
                             contentColor   = Color(0xFF00E5FF)
                         ),
                     ) {
-                        Text("Logout", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                        Text("Back", fontSize = 18.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }

@@ -120,6 +120,17 @@ fun PanMetroVideoPlayer(
     var errorTitleState by remember { mutableStateOf("") }
     var isAudio = remember { mutableStateOf(false) }
 
+    var watchJob by remember { mutableStateOf<Job?>(null) }
+
+
+    // whenever the channel changes…
+    LaunchedEffect(selectedChannel) {
+        watchJob?.cancel()
+        watchJob = scope.launch {
+            delay(300_000L) // 5 minutes
+            selectedChannel?.let { sharedViewModel.recordRecentlyWatched(it) }
+        }
+    }
 
     LaunchedEffect(playerSSERules) {
         if((playerSSERules?.forceMessages?.size ?: 0) > 0){
@@ -258,6 +269,7 @@ fun PanMetroVideoPlayer(
             exoPlayer.removeAnalyticsListener(analyticsListener)
             exoPlayer.removeListener(errorListener)
             exoPlayer.release()
+            watchJob?.cancel()
         }
     }
 
@@ -538,6 +550,7 @@ fun PanMetroVideoPlayer(
                 exoPlayer.release()
                 overlayHideJob?.cancel()
                 lifecycleOwner.lifecycle.removeObserver(observer)
+                watchJob?.cancel()
             }
         }
         if (isOverlayVisible && selectedChannelIndex.intValue >=0) {

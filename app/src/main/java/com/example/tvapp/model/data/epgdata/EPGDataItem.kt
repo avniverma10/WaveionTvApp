@@ -25,6 +25,7 @@ data class EPGDataItem(
 data class Tv(
     val channel: Channel?=null,
     val programme: List<Programme>?= null,
+    val epgFormat: String?= null,//MASTER and TYPE1
 )
 @Keep
 data class Programme(
@@ -41,6 +42,19 @@ data class Programme(
     val date: String?="20250212",
     val desc: String?="Covering the top highlight of day from across the globe.",
     val title: String?="News Panorama",
+    @SerializedName("ImageUrl")
+    val imageUrl: List<ImageUrl>?=null,
+    val director: String?=null,
+    val episodenumber: String?=null,
+    val genre: Genre?=null,
+    val parentalrating: String?=null,
+    val producer: String?=null,
+    val programmeid: String?=null,
+    val releaseyear: String?=null,
+    val starcast: String?=null,
+    @SerializedName("sub-genr")
+    val subGenr: SubGenre?=null,
+    val writer: String?=null,
     var watchedAt: Long? = null, // Add timestamp to track when watched
     var isVisible: Boolean = false, // Add timestamp to check current watchableProgram
     @Volatile
@@ -48,6 +62,8 @@ data class Programme(
     @Volatile
     var endFormatedTime:String?=null
 )
+
+
 @Keep
 data class Content(
     val ChannelID: String?="67a6ff5b72bb0101dcc82ad4",
@@ -80,12 +96,38 @@ data class Channel(
     val _id: String?="ZEE_SALAAM_RS-0.10",
     @SerializedName("display-name")
     val displayName: String?="ZEE SALAAM RS-0.10",
+    @SerializedName("Category")
+    val category: String?=null,
+    @SerializedName("channel-desc")
+    val channelDesc: String?=null,
+    @SerializedName("channel-descshort")
+    val channelDescshort: String?=null,
+    @SerializedName("ChannelLogo")
+    val channelLogo: List<Any>?=null,
     val logoUrl: String? = null,
     val videoUrl: String? = null,
     val genreId: String, //  genreId for filtering
     val channelNo: Int? = null,
     val availableProgramme: List<Programme>?= null,
     val bgGradient: BgGradient? = null
+){
+    fun provideLogo(size:String?=null):String?{
+        size?.let {
+            return (channelLogo?.find { logo-> (logo as? ChannelLogoInfo)?.size.equals(size,true) }?:channelLogo?.getOrNull(0)).toString()
+        }?:run {
+            channelLogo?.getOrNull(0)
+        }
+        return null
+    }
+}
+
+
+@Keep
+data class ChannelLogoInfo(
+    @SerializedName("_")
+    val url: String,
+    @SerializedName("_size")
+    val size: String
 )
 
 @Keep
@@ -98,4 +140,25 @@ data class BgGradient(
 data class GradientColor(
     val color: String,
     val percentage: Int
+)
+@Keep
+data class SubGenre(
+    @SerializedName("_")
+    val name: String,
+    @SerializedName("_lang")
+    val lang: String
+)
+@Keep
+data class Genre(
+    @SerializedName("_")
+    val name: String,
+    @SerializedName("_lang")
+    val lang: String
+)
+@Keep
+data class ImageUrl(
+    @SerializedName("_")
+    val name: String,
+    @SerializedName("_lang")
+    val lang: String
 )
