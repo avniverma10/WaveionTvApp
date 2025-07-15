@@ -23,9 +23,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -58,6 +61,7 @@ fun AppsScreen(
     sharedViewModel: SharedViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val menuFocusRequester = remember { FocusRequester() }
 
     //hide keyboard forcefully
     HideKeyboardOnEnter()
@@ -119,7 +123,11 @@ fun AppsScreen(
             navController = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { _, _ -> },
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 }

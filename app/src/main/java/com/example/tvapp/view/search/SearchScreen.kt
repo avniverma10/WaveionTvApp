@@ -53,17 +53,11 @@ fun SearchScreen(
     val coroutineScope = rememberCoroutineScope()
     val focusManager  = LocalFocusManager.current
     val context       = LocalContext.current
+    val menuFocusRequester = remember { FocusRequester() }
 
     var backCount by remember { mutableStateOf(0) }
     var showExit by remember { mutableStateOf(false) }
-    BackHandler {
-        backCount++
-        if (backCount >= 2) showExit = true
-        else {
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
-    }
+
     val displayed = if (searchText.isEmpty()) {
         epgData.mapNotNull { item ->
             item.tv?.channel?.copy(
@@ -223,7 +217,11 @@ fun SearchScreen(
             navController   = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { _, _ -> },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier        = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         if (showExit) {
             CommonDialog(

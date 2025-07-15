@@ -11,6 +11,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionDialog
 import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionHelper
 import com.example.tvapp.utils.theme.TVAppTheme
@@ -29,6 +30,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hideKeyboard()
         PreferenceManager.init(applicationContext)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 

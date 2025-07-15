@@ -68,7 +68,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
-
+    val menuFocusRequester = remember { FocusRequester() }
 
 
     // Observe the SSE event flow.
@@ -109,8 +109,6 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val languageFocusRequesters = remember(languages) {
         List(languages.size) { FocusRequester() }
     }
-
-
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
 
@@ -125,34 +123,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
     val genreSelectedIndex = remember { mutableStateOf(0) }
 
-    var showExitDialog by remember { mutableStateOf(false) }
 
-    BackHandler {
-        showExitDialog = true
-    }
-
-
-    // Exit confirmation dialog
-    if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Exit App",
-            message = "Are you sure you want to exit the app?",
-            borderColor = Color.Transparent,
-            painter = painterResource(id = R.drawable.exit_icon),
-            errorCode = null,
-            errorMessage = null,
-            confirmButtonText = "Yes",
-            onConfirm = {
-                (context as? Activity)?.finishAffinity()
-//                Process.killProcess(Process.myPid())
-            },
-            dismissButtonText = "No",
-            onDismiss = {
-                showExitDialog = false
-            }
-        )
-    }
 
     Box(
         modifier = Modifier
@@ -204,10 +175,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(
             navController   = navController,
             sharedViewModel = sharedViewModel,
+            menuFocusRequester = menuFocusRequester,
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+            modifier = Modifier.align(Alignment.CenterStart),
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 }

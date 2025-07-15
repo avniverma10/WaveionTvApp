@@ -117,6 +117,7 @@ fun ChannelScreen(
     val focusManager = LocalFocusManager.current
     val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
+    val menuFocusRequester = remember { FocusRequester() }
 
     //hide keyboard forcefully
     HideKeyboardOnEnter()
@@ -286,9 +287,12 @@ fun ChannelScreen(
             onNavMenuIntent = { tabInfo, _ ->
                 // no-op or update categories if needed
             },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier        = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
-
     }
 }
 

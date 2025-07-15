@@ -90,14 +90,12 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     // Observe the SSE event flow.
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    var backPressCount by remember { mutableStateOf(0) }
     val focusManager = LocalFocusManager.current
     val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
     val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
     val recentlyWatched by sharedViewModel.recentlyWatched.collectAsState()
+    val menuFocusRequester = remember { FocusRequester() }
 
-    // 1) remember a state for your column
-    // val columnState = rememberLazyListState()
 
     val firstChannelFocusRequester = remember { FocusRequester() }
 
@@ -116,18 +114,6 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
-    }
-    BackHandler {
-        backPressCount++
-
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
     }
 
     val displayCategories = remember(homeCategories, recentlyWatched) {
@@ -149,23 +135,6 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         list
     }
 
-    // Exit confirmation dialog
-    if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Exit App",
-            borderColor = Color.Transparent,
-            painter = painterResource(id = R.drawable.exit_icon),
-            message = "Are you sure you want to exit the app?",
-            confirmButtonText = "Yes",
-            onConfirm = {
-                (context as? Activity)?.finishAffinity()
-//                Process.killProcess(Process.myPid())
-            },
-            dismissButtonText = "No",
-            onDismiss = { showExitDialog = false }
-        )
-    }
 
     Box(
         modifier = Modifier
@@ -173,10 +142,14 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             .background(Color.Black)
     ) {
         ExpandableNavigationMenu(
-            modifier        = Modifier.align(Alignment.CenterStart),
+            modifier        = Modifier.align(Alignment.CenterStart) .focusRequester(menuFocusRequester),
             navController   = navController,
             sharedViewModel = sharedViewModel,
-            onNavMenuIntent = { _, _ -> }
+            onNavMenuIntent = { _, _ -> },
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         Column(modifier = Modifier.fillMaxSize()) {
             HeroCarousel(

@@ -72,7 +72,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    var backPressCount by remember { mutableStateOf(0) }
+    val menuFocusRequester = remember { FocusRequester() }
 
     //hide keyboard forcefully
     HideKeyboardOnEnter()
@@ -80,20 +80,8 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
         context.hideKeyboard()
         firstMenuItemFocusRequester.requestFocus()
     }
-
     val focusManager = LocalFocusManager.current
-    BackHandler {
-        backPressCount++
 
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -106,14 +94,18 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF2A2D32))
-                .padding(start = 70.dp)         // <<< inset so it never shifts
+                .padding(start = 70.dp)
         )
 
         ExpandableNavigationMenu(
             navController   = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { _, _ -> },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier        = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         if (showExitDialog) {
             CommonDialog(
