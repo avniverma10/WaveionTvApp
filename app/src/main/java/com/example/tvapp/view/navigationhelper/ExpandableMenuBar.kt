@@ -1,5 +1,6 @@
 package com.example.tvapp.view.navigationhelper
 
+import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -32,16 +33,21 @@ import com.example.tvapp.viewmodels.SharedViewModel
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import com.android.panmetroiptv.R
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideLandingResource
 import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.theme.font_color_white
+import com.example.tvapp.view.uicomponent.error.CommonDialog
 
 @Composable
 fun ExpandableNavigationMenu(
     navController: NavController,
     sharedViewModel: SharedViewModel,
+    menuFocusRequester: FocusRequester,
+    onBackPressed: () -> Unit,
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -49,11 +55,17 @@ fun ExpandableNavigationMenu(
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }
-    val menuFocusRequester = remember { FocusRequester() }
+    var showExitDialog by remember { mutableStateOf(false) }
+    var backPressCount by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     var lastClickTime by remember { mutableStateOf(0L) }
-
+    val context = LocalContext.current
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val profileTab = tabs?.find { it.name == "profile" }
+    val profileTabIndex = tabs?.indexOf(profileTab)?:0
+    val otherTabs = tabs?.drop(1) ?: emptyList()
+    val profileFocusRequester = remember { FocusRequester() }
+    val focusRequesters = List(otherTabs.size) { FocusRequester() }
 
     LaunchedEffect(currentBackStackEntry) {
         expanded = false
@@ -71,16 +83,39 @@ fun ExpandableNavigationMenu(
         }
     }
 
-    if (expanded) {
-        BackHandler { expanded = false }
+    BackHandler {
+        onBackPressed()
     }
 
-    val profileTab = tabs?.find { it.name == "profile" }
-    val profileTabIndex = tabs?.indexOf(profileTab)?:0
-    val otherTabs = profileTab?.let{tabs?.drop(1) ?: emptyList()}
-
-    val profileFocusRequester = remember { FocusRequester() }
-    val focusRequesters = List(otherTabs?.size?:0) { FocusRequester() }
+    if (showExitDialog) {
+        CommonDialog(
+            showDialog = true,
+            title = "Exit App",
+            borderColor = Color.Transparent,
+            painter = painterResource(id = R.drawable.exit_icon),
+            message = "Are you sure you want to exit the app?",
+            confirmButtonText = "Yes",
+            onConfirm = {
+                (context as? Activity)?.finishAffinity()
+//                Process.killProcess(Process.myPid())
+            },
+            dismissButtonText = "No",
+            onDismiss = {
+                showExitDialog = false
+                if (selectedIndex <= 0) {
+                    profileFocusRequester.requestFocus()
+                } else {
+                    focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
+                        try {
+                            requester.requestFocus()
+                        } catch (e: IllegalStateException) {
+//                            loge("FocusError", "FocusRequester not initialized ${e.message}")
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     LaunchedEffect(expanded) {
         if (expanded) {
@@ -107,27 +142,35 @@ fun ExpandableNavigationMenu(
         modifier = Modifier
             .fillMaxHeight()
             .zIndex(4f)
-            .focusRequester(menuFocusRequester)
-            .onFocusChanged { focusState ->
-                if (focusState.isFocused) {
-                    expanded = true
-                }
-            }
-            .focusable()
-            .onPreviewKeyEvent { keyEvent ->
-                when (keyEvent.nativeKeyEvent.keyCode) {
-                    android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        expanded = false
-                        false
-                    }
-                    else -> false
-                }
-            }
     ) {
         Column(
             modifier = Modifier
                 .width(if (expanded) 280.dp else 70.dp)
                 .fillMaxHeight()
+                .focusRequester(menuFocusRequester)
+                .onFocusChanged { state ->
+                    if (state.isFocused) {
+                        expanded = true
+                    }
+                }
+                .onPreviewKeyEvent { keyEvent ->
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        android.view.KeyEvent.KEYCODE_BACK -> {
+                            backPressCount++
+                            if (backPressCount > 1) {
+                                showExitDialog = true
+                                backPressCount = 0
+                            }
+                            menuFocusRequester.requestFocus()
+                            true
+                        }
+                        android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                            expanded = false
+                            false
+                        }
+                        else -> false
+                    }
+                }
                 .animateContentSize()
                 .focusable()
                 .drawBehind {

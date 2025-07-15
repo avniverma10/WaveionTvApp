@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -67,7 +68,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
-
+    val menuFocusRequester = remember { FocusRequester() }
 
 
     // Observe the SSE event flow.
@@ -201,10 +202,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(
             navController   = navController,
             sharedViewModel = sharedViewModel,
+            menuFocusRequester = menuFocusRequester,
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+            modifier = Modifier.align(Alignment.CenterStart),
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 }

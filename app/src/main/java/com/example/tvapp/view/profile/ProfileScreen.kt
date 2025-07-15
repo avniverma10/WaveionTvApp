@@ -51,6 +51,7 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
     val focusRequester = remember { FocusRequester() }
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
+    val menuFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         // Move focus to the first channel in your EPG content
@@ -109,7 +110,11 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+            modifier = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 

@@ -60,24 +60,15 @@ fun SettingsScreen(navController: NavController, sharedViewModel: SharedViewMode
 
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    var backPressCount by remember { mutableStateOf(0) }
+    val menuFocusRequester = remember { FocusRequester() }
+
+    //hide keyboard forcefully
     LaunchedEffect(Unit) {
         firstMenuItemFocusRequester.requestFocus()
     }
 
     val focusManager = LocalFocusManager.current
-    BackHandler {
-        backPressCount++
 
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -97,7 +88,11 @@ fun SettingsScreen(navController: NavController, sharedViewModel: SharedViewMode
             navController   = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { _, _ -> },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier        = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         if (showExitDialog) {
             CommonDialog(
