@@ -63,6 +63,7 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.model.data.banner.Banner
@@ -76,6 +77,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.navigationhelper.LanguageMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -117,8 +119,13 @@ fun ChannelScreen(
     val focusManager = LocalFocusManager.current
     val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
-    // Set selected index only if there is data
-    // 1) Keep the old effect for updating your indices:
+    val menuFocusRequester = remember { FocusRequester() }
+
+    HideKeyboardOnEnter()
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+    }
+
     LaunchedEffect(filterState, categories, languages) {
         if (categories.isNotEmpty()) {
             categorySelectedIndex.value =
@@ -288,7 +295,11 @@ fun ChannelScreen(
             onNavMenuIntent = { tabInfo, _ ->
                 // no-op or update categories if needed
             },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier  = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
 
     }

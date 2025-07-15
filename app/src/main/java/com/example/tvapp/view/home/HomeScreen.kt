@@ -60,6 +60,7 @@ import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appHomeLiveData
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.epgdata.Channel
@@ -73,6 +74,7 @@ import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -94,13 +96,13 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
     val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
     val recentlyWatched by sharedViewModel.recentlyWatched.collectAsState()
-
-    // 1) remember a state for your column
-   // val columnState = rememberLazyListState()
-
+    val menuFocusRequester = remember { FocusRequester() }
     val firstChannelFocusRequester = remember { FocusRequester() }
 
+
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         //columnState.scrollToItem(0)
         firstChannelFocusRequester?.let { requester ->
             try {
@@ -112,18 +114,6 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
-    }
-    BackHandler {
-        backPressCount++
-
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
     }
 
     val displayCategories = remember(homeCategories, recentlyWatched) {
@@ -145,34 +135,20 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         list
     }
 
-    // Exit confirmation dialog
-    if (showExitDialog) {
-        CommonDialog(
-            showDialog = true,
-            title = "Exit App",
-            borderColor = Color.Transparent,
-            painter = painterResource(id = R.drawable.exit_icon),
-            message = "Are you sure you want to exit the app?",
-            confirmButtonText = "Yes",
-            onConfirm = {
-                (context as? Activity)?.finishAffinity()
-//                Process.killProcess(Process.myPid())
-            },
-            dismissButtonText = "No",
-            onDismiss = { showExitDialog = false }
-        )
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
         ExpandableNavigationMenu(
-            modifier        = Modifier.align(Alignment.CenterStart),
+            modifier        = Modifier.align(Alignment.CenterStart) .focusRequester(menuFocusRequester),
             navController   = navController,
             sharedViewModel = sharedViewModel,
-            onNavMenuIntent = { _, _ -> }
+            onNavMenuIntent = { _, _ -> },
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         Column(modifier = Modifier.fillMaxSize()) {
             HeroCarousel(

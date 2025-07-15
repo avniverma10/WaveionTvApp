@@ -53,6 +53,7 @@ import com.example.tvapp.utils.theme.base_color
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.example.tvapp.view.uicomponent.error.CommonDialog
+import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.example.tvapp.viewmodels.SharedViewModel
 
 
@@ -65,24 +66,14 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     var showInfo by remember { mutableStateOf(false) }
     var appSettingsDialog by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
-    var backPressCount by remember { mutableStateOf(0) }
+    val menuFocusRequester = remember { FocusRequester() }
+    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         firstMenuItemFocusRequester.requestFocus()
     }
-
     val focusManager = LocalFocusManager.current
-    BackHandler {
-        backPressCount++
 
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -103,7 +94,11 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             navController   = navController,
             sharedViewModel = sharedViewModel,
             onNavMenuIntent = { _, _ -> },
-            modifier        = Modifier.align(Alignment.CenterStart)
+            modifier        = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
         if (showExitDialog) {
             CommonDialog(

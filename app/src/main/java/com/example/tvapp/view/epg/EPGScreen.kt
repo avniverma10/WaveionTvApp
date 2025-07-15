@@ -41,6 +41,7 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
 import com.example.tvapp.extensions.appManifestLiveData
+import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.model.data.banner.Banner
 import com.example.tvapp.model.data.manifest.EPGCategory
@@ -68,16 +69,15 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
-
-
-
-    // Observe the SSE event flow.
+    val menuFocusRequester = remember { FocusRequester() }
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
-
     val firstChannelFocusRequester = remember { FocusRequester() }
+    HideKeyboardOnEnter()
+
 
     LaunchedEffect(Unit) {
+        context.hideKeyboard()
         // Move focus to the first channel in your EPG content
         try {
             firstChannelFocusRequester.requestFocus()
@@ -201,10 +201,14 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
         ExpandableNavigationMenu(
             navController   = navController,
             sharedViewModel = sharedViewModel,
+            menuFocusRequester = menuFocusRequester,
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+            modifier = Modifier.align(Alignment.CenterStart),
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 }

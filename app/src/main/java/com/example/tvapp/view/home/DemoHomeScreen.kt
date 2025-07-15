@@ -80,24 +80,14 @@ fun DemoHomeScreen(
 
     val fixedUrl = "https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8"
     val encodedUrl = URLEncoder.encode(fixedUrl, StandardCharsets.UTF_8.toString())
+    val menuFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         delay(100)
         watchNowRequester.requestFocus()
     }
     val focusManager = LocalFocusManager.current
-    BackHandler {
-        backPressCount++
 
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
-        }
-    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -243,7 +233,11 @@ fun DemoHomeScreen(
             onNavMenuIntent = { _, _ -> },
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .width(menuWidth)
+                .width(menuWidth),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
 
         // Exit confirmation dialog

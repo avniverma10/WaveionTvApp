@@ -54,6 +54,7 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     var backPressCount by remember { mutableStateOf(0) }
     val focusManager = LocalFocusManager.current
+    val menuFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
         // Move focus to the first channel in your EPG content
@@ -61,20 +62,6 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
             focusRequester.requestFocus()
         } catch (e: IllegalStateException) {
             loge("FocusError", "FocusRequester not initialized ${e.message}")
-        }
-    }
-
-
-    BackHandler {
-        backPressCount++
-
-        if (backPressCount >= 2) {
-            // Show exit confirmation if pressed back twice
-            showExitDialog = true
-        } else {
-            // First back: just clear focus and move left as before
-            focusManager.clearFocus(force = true)
-            focusManager.moveFocus(FocusDirection.Left)
         }
     }
 
@@ -120,7 +107,11 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
             onNavMenuIntent = { tabInfo, _ ->
                 menuItems = tabInfo.categories ?: emptyList()
             },
-            modifier = Modifier.align(Alignment.CenterStart)  // ← overlay
+            modifier = Modifier.align(Alignment.CenterStart),
+            menuFocusRequester = menuFocusRequester,
+            onBackPressed = {
+                menuFocusRequester.requestFocus()
+            }
         )
     }
 
