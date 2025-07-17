@@ -2,6 +2,7 @@ package com.example.tvapp.di
 
 import androidx.annotation.Keep
 import androidx.lifecycle.LiveData
+import com.example.tvapp.model.data.customapp.InventoryApp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -21,6 +22,7 @@ interface CoreComponentProvider {
     fun initializeLanguage(data: List<WTVLanguage>)
     fun provideHomeLiveData(): LiveData<List<WTVHomeCategory>>
     fun initializeHome(data: List<WTVHomeCategory>)
+    fun provideInventoryApps(data: List<InventoryApp>): LiveData<List<InventoryApp>>
     fun provideMacAddr(): LiveData<String>
     fun initializeMacAddr(data: String)
     fun provideUserInfo(): LoginResponseData?

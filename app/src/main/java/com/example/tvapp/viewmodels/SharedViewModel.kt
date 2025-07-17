@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
 import com.example.tvapp.WTVApp
+import com.example.tvapp.extensions.applyAppInventoryApp
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
@@ -18,6 +19,7 @@ import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
 import com.example.tvapp.model.data.banner.Banner
+import com.example.tvapp.model.data.customapp.InventoryApp
 import com.example.tvapp.model.data.epgdata.Channel
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -137,6 +140,9 @@ open class SharedViewModel @Inject constructor(
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
 
+    private val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
+    val inventoryApps: StateFlow<List<InventoryApp>> = _inventoryApps.asStateFlow()
+
     private val _recentlyWatched = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val recentlyWatched: StateFlow<List<EPGDataItem>> = _recentlyWatched
 
@@ -177,6 +183,9 @@ open class SharedViewModel @Inject constructor(
         viewModelScope.launch {
             provideBanners()
         }
+        viewModelScope.launch {
+            fetchInventoryApps()
+        }
     }
 
     fun setCurrentPlaylist(list: List<EPGDataItem>) {
@@ -189,6 +198,20 @@ open class SharedViewModel @Inject constructor(
         program.watchedAt = System.currentTimeMillis()
         _wishlist.value += program
         clearWishlistPopup()
+    }
+
+    fun fetchInventoryApps() {
+        viewModelScope.launch {
+            wtvNetworkRepositoryImpl
+                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
+                .catch { }
+                .collect { resp ->
+                    if (resp is WTVListResponse.Success) {
+                        _inventoryApps.value = resp.data
+                        application.applyAppInventoryApp(resp.data)
+                    }
+                }
+        }
     }
 
     fun onShowWishlistPopup(program: Programme) { _wishlistPopupProgram.value = program }

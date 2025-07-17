@@ -20,14 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LinearProgressIndicator
 import com.example.tvapp.model.data.epgdata.Programme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,11 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -59,7 +52,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 @Composable
-fun BottomFullScreenPlayerOverlay(
+fun CaastvPlayerOverlay(
     channel: EPGDataItem,
     sharedViewModel: SharedViewModel,
     playerViewModel: PlayerViewModel,
@@ -68,8 +61,6 @@ fun BottomFullScreenPlayerOverlay(
 ) {
 
     val nowMs   by playerViewModel.timestampFlow().collectAsState(initial = System.currentTimeMillis())
-
-
     val programmes = remember(channel) {
         channel.tv
             ?.programme
@@ -80,19 +71,9 @@ fun BottomFullScreenPlayerOverlay(
     val targetIndex = (baseIndex + programmeIndex).coerceIn(0, programmes.lastIndex)
     val nowProg  = programmes.getOrNull(targetIndex)
     val maxIndex = programmes.lastIndex
-
     val safeTargetIndex = (baseIndex + programmeIndex).coerceIn(0, maxIndex)
     val nextProgActual = programmes.getOrNull(safeTargetIndex + 1)
     val nextProg = nextProgActual ?: programmes.lastOrNull()
-    Log.d("Overlay", "----- Programme list for channel: ${channel.content?.title} -----")
-    programmes.forEachIndexed { idx, prog ->
-        Log.d("Overlay", "[$idx] ${prog.title} (${prog.startTime?.formatTime()} - ${prog.endTime?.formatTime()})")
-    }
-    Log.d("Overlay", "baseIndex = $baseIndex")
-    Log.d("Overlay", "programmeIndex = $programmeIndex")
-    Log.d("Overlay", "targetIndex = $targetIndex")
-    Log.d("Overlay", "nowProg = ${nowProg?.title}")
-    Log.d("Overlay", "nextProg = ${nextProg?.title}")
 
 
     val progFraction = remember(nowProg, nowMs) {
@@ -112,7 +93,6 @@ fun BottomFullScreenPlayerOverlay(
         }
         .orEmpty()
 
-    Log.d("AVNI22","stops --> $stops")
     val logoBrush = if (stops.size >= 2) {
         Brush.horizontalGradient(stops)
     } else {
@@ -223,7 +203,6 @@ fun BottomFullScreenPlayerOverlay(
 
                 Spacer(Modifier.width(12.dp))
 
-                // 3) Up‐arrow + separator + Options: ♡ 🔊 🔤
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(end = 16.dp)

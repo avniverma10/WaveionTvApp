@@ -1,5 +1,6 @@
 package com.example.tvapp.model.repository.common
 
+import android.util.Log
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
@@ -8,6 +9,7 @@ import com.example.tvapp.extensions.toJSONArray
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.appupdate.AppUpdateResponse
 import com.example.tvapp.model.data.banner.Banner
+import com.example.tvapp.model.data.customapp.InventoryApp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.hash.HashInfo
@@ -181,6 +183,34 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                     .convertIntoModels(object : TypeToken<List<WTVHomeCategory>>() {})
                 // Optionally save EPG data into ContentProvider or DB here
                 emit(WTVListResponse.Success(epgData!!))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun provideWTVInventoryApps(url: String): Flow<WTVListResponse<InventoryApp>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpGetRequest(url).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()
+                if (body is Map<*, *>) {
+                    val dataList = body["data"]
+                    if (dataList is List<*>) {
+                        val json = Gson().toJson(dataList)
+                        val apps: List<InventoryApp> = Gson().fromJson(
+                            json,
+                            object : TypeToken<List<InventoryApp>>() {}.type
+                        )
+                        emit(WTVListResponse.Success(apps))
+                    } else {
+                        emit(WTVListResponse.Failure(Throwable("Missing 'data' list in body")))
+                    }
+                } else {
+                    emit(WTVListResponse.Failure(Throwable("Body is not a map")))
+                }
             } else {
                 emit(WTVListResponse.Failure(Throwable("Invalid response received")))
             }

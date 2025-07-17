@@ -8,14 +8,10 @@ import android.view.LayoutInflater
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -61,15 +56,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
-import coil3.compose.rememberAsyncImagePainter
-import coil3.gif.GifDecoder
-import coil3.request.ImageRequest
 import com.android.caastv.R
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
-import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
@@ -486,7 +477,7 @@ fun CaastvVideoPlayer(
         }
         if (isOverlayVisible && selectedChannelIndex.intValue >=0) {
             epgList.getOrNull(previewChannelIndex.intValue)?.let {
-                BottomFullScreenPlayerOverlay(
+                CaastvPlayerOverlay(
                     channel = it,
                     sharedViewModel = sharedViewModel,
                     playerViewModel = playerViewModel,

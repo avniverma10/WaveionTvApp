@@ -34,6 +34,7 @@ import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
 import com.android.caastv.R
 import com.example.tvapp.di.CoreComponentProvider
+import com.example.tvapp.model.data.customapp.InventoryApp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -97,6 +98,8 @@ fun Context.appHomeLiveData() =
 fun Context.applyAppHome(data: List<WTVHomeCategory>) =
     (applicationContext as? CoreComponentProvider)?.initializeHome(data)
 
+fun Context.applyAppInventoryApp(data: List<InventoryApp>) =
+    (applicationContext as? CoreComponentProvider)?.provideInventoryApps(data)
 
 fun Context.appLanguageLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideLanguageLiveData()

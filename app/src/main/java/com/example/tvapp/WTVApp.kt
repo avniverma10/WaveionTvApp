@@ -8,6 +8,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.tvapp.di.CoreComponentProvider
+import com.example.tvapp.model.data.customapp.InventoryApp
 import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
@@ -26,6 +27,7 @@ class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
     private val wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
     private val wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
     private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
+    private val wtvInventoryApp: MutableLiveData<List<InventoryApp>> = MutableLiveData()
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
     private val macAddr: MutableLiveData<String> = MutableLiveData()
     private var userInfo: LoginResponseData? = null
@@ -75,6 +77,8 @@ class WTVApp : Application(), CoreComponentProvider, LifecycleObserver {
     }
 
     override fun provideLanguageLiveData(): LiveData<List<WTVLanguage>>  = wtvLanguage
+
+    override fun provideInventoryApps(data: List<InventoryApp>): LiveData<List<InventoryApp>> = wtvInventoryApp
 
     override fun initializeLanguage(data: List<WTVLanguage>) {
         this.wtvLanguage.postValue(data)
