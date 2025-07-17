@@ -2,6 +2,7 @@ package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -36,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -260,6 +262,8 @@ fun ChannelListItem(
     onFocus: () -> Unit
 ) {
     val titleColor = if (isFocused || isPreview) base_color else Color.White
+    val scale by animateFloatAsState(targetValue = if (isFocused) 1.05f else if (isFocused && isPreview) 1f else .9f)
+
 
     Box(
         modifier = Modifier
@@ -267,6 +271,7 @@ fun ChannelListItem(
             .height(60.dp)
             .padding(8.dp)
             .focusable()
+            .scale(scale)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         Row(

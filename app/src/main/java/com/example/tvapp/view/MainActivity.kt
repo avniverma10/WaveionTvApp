@@ -2,6 +2,7 @@ package com.example.tvapp.view
 
 import android.os.Build
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.globalFingerprintService.OverlayPermissionDialog
 import com.example.tvapp.globalFingerprintService.OverlayPermissionHelper
 import com.example.tvapp.utils.uistate.PreferenceManager
@@ -62,6 +64,25 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+
+    /*override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_HOME) {
+            // Optional: Handle at activity level
+            showToastS("Please Exist the App First!")
+            return true
+        }
+        *//*if (event?.action == KeyEvent.ACTION_UP) {
+            when (event.keyCode) {
+                *//**//* Most AOSP remotes use 289 for “TV Home”.
+                   Replace / add the code(s) your box spits out (adb logcat). *//**//*
+                KeyEvent.KEYCODE_HOME, 289        -> bus.post(RemoteKey.TV_HOME)
+                KeyEvent.KEYCODE_DPAD_CENTER,
+                KeyEvent.KEYCODE_ENTER               -> bus.post(RemoteKey.OK)
+            }
+        }*//*
+        return super.onKeyDown(keyCode, event)
+    }*/
 
     @Composable
     private fun WTVApp() {

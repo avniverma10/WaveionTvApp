@@ -24,7 +24,7 @@ class LoginViewModel @Inject constructor(
 
     fun validateUserLogin(androidTvDrmInfo: AndroidTvDrmInfo,onLoginResponse:(LoginInfo?,String?)->Unit){
         viewModelScope.launch {
-            // 3. Prepare headers and body
+            //Prepare headers and body
             val headers = mapOf(
                 "Authorization" to "56fdsr237df325fv454v3v4532drferh",
                 "Content-Type"  to "application/json"
@@ -33,7 +33,7 @@ class LoginViewModel @Inject constructor(
             val requestBody = hashMapOf(
                 "uname" to (androidTvDrmInfo.userName ?: ""),
                 "paswrd" to (androidTvDrmInfo.userPassword ?: ""),
-                "macaddr" to ("00:15:C0:98:5F:0E")//(androidTvDrmInfo.macId?: "")
+                "macaddr" to (androidTvDrmInfo.macId?: "")
             )
             //loginRepositoryImpl.provideUserLogin("https://nextwave.waveiontechnologies.com:5000/api/android/appLogin",androidTvDrmInfo.toHashMap()).collect { response ->
             loginRepositoryImpl.provideUserLogin(

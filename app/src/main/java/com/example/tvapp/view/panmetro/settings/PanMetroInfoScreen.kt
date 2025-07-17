@@ -54,7 +54,7 @@ fun PanMetroInfoScreen(
     androidVersion: String = "11",
     ram: String = "2 GB",
     storage: String = "32.0 GB",
-    ota: String = "Lasted",
+    ota: String = "Latest",
     stbModel: String = "DTP1731",
     networkId: String = "1",
     networkName: String = "Panmetro Convergence \n Pvt Ltd",
@@ -111,15 +111,15 @@ fun PanMetroInfoScreen(
                 // Info rows
                 InfoRow(label = "Username", value = PreferenceManager.getUsername()?:"Panmetro")
                 InfoRow(label = "MAC ID", value = context.provideMacAddress()?:"")
-                InfoRow(label = "Validity", value = validity)
+                //InfoRow(label = "Validity", value = validity)
                 InfoRow(label = "App version", value = context.packageManager
                     .getPackageInfo(context.packageName, 0)
                     .versionName?:appVersion)
-                InfoRow(label = "Android Version", value = android.os.Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
-                InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
-                InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
+                //InfoRow(label = "Android Version", value = android.os.Build.VERSION.SDK_INT.toString()?:systemInfo?.androidVersion?:androidVersion)
+                //InfoRow(label = "RAM", value = systemInfo?.totalMemory?:ram)
+                //InfoRow(label = "Storage", value = systemInfo?.storageInfo?:storage)
                 InfoRow(label = "OTA", value = ota)
-                InfoRow(label = "STB Model", value = Build.MODEL)
+                InfoRow(label = "Model", value = Build.MODEL)
                 InfoRow(label = "Network ID", value = networkId)
                 InfoRow(label = "Network Name", value = networkName)
                 //  InfoRow(label = "DRM ID", value = systemInfo?.drmScheme?:drmId)
@@ -138,7 +138,7 @@ fun PanMetroInfoScreen(
                         .height(38.dp),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text(text = "OK", fontSize = 18.sp)
+                    Text(text = "Back", fontSize = 18.sp)
                 }
 
 

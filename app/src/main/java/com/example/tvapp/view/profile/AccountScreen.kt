@@ -103,7 +103,7 @@ fun ProfilesSection(
   ) {
     Text("Profiles", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
 
-    Button(
+    /*Button(
       onClick = onEditProfile,
       shape = RoundedCornerShape(10.dp),
       border = BorderStroke(1.dp, Color(0xFF444444)),
@@ -116,7 +116,7 @@ fun ProfilesSection(
       Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White, modifier = Modifier.size(16.dp))
       Spacer(Modifier.width(4.dp))
       Text("Edit Profile", color = Color.White)
-    }
+    }*/
   }
 
   Spacer(Modifier.height(12.dp))
@@ -155,7 +155,7 @@ fun ProfilesSection(
       }
     }
     // “Add” button
-    item {
+    /*item {
       Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(72.dp)
@@ -172,7 +172,7 @@ fun ProfilesSection(
         Spacer(Modifier.height(8.dp))
         Text("Add", color = Color.White, fontSize = 13.sp)
       }
-    }
+    }*/
   }
 }
 
@@ -186,7 +186,7 @@ fun SubscriptionAndDevicesSection(
   onLogout: (DeviceInfo) -> Unit
 ) {
   Column(modifier = Modifier.fillMaxWidth()) {
-    Text("Subscription & Devices", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+    Text("Package Details", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(12.dp))
 
     // Plan row
@@ -198,9 +198,9 @@ fun SubscriptionAndDevicesSection(
       Column {
         Text(subscription.planName, color = Color(0xFF01D8A0), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(5.dp))
-        Text("Next payment on ${subscription.nextPaymentDate}", color = Color(0xFFAAAAAA), fontSize = 14.sp)
+        Text("Expiry on : ${subscription.nextPaymentDate}", color = Color(0xFFAAAAAA), fontSize = 14.sp)
       }
-      Text("Upgrade Plan", color = Color.White, modifier = Modifier
+     /* Text("Upgrade Plan", color = Color.White, modifier = Modifier
         .background(
           brush = Brush.horizontalGradient(
             listOf(Color(0xFF3ADCAB), Color(0xFF00A3FF))
@@ -214,13 +214,28 @@ fun SubscriptionAndDevicesSection(
         )
         .padding(horizontal = 16.dp, vertical = 8.dp)
 
-      )
+      )*/
     }
 
     Spacer(Modifier.height(16.dp))
 
+    Button(
+      onClick = { onLogout(thisDevice) },
+      border = BorderStroke(1.dp, Color(0xFF444444)),
+      shape = RoundedCornerShape(10.dp),
+      colors = ButtonDefaults.buttonColors(
+        Color(0xFF444444),
+        contentColor   = Color.White
+      ),
+      contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+      Icon(Icons.Default.ExitToApp, contentDescription = "Log Out", tint = Color.White, modifier = Modifier.size(16.dp))
+      Spacer(Modifier.width(4.dp))
+      Text("Log Out", color = Color.White)
+    }
+
     // Mobile number row
-    Row(
+    /*Row(
       modifier = Modifier.fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.SpaceBetween
@@ -230,7 +245,7 @@ fun SubscriptionAndDevicesSection(
         Spacer(Modifier.height(5.dp))
         Text(registeredMobile, color = Color(0xFFCCCCCC), fontSize = 14.sp)
       }
-      /*Button(
+      Button(
         onClick = onUpdateMobile,
         border = BorderStroke(1.dp, Color(0xFF444444)),
         shape = RoundedCornerShape(10.dp),
@@ -241,10 +256,10 @@ fun SubscriptionAndDevicesSection(
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
       ) {
         Text("Update", color = Color.White)
-      }*/
-    }
+      }
+    }*/
 
-    Spacer(Modifier.height(24.dp))
+    /*Spacer(Modifier.height(24.dp))
 
     Row {
       Box(modifier = Modifier.weight(.55f)) {
@@ -258,15 +273,15 @@ fun SubscriptionAndDevicesSection(
 
       Spacer(Modifier.width(20.dp))
 
-      /*Box(modifier = Modifier.weight(.45f)){
+      *//*Box(modifier = Modifier.weight(.45f)){
         // Other Devices
         DeviceListSection(
           title = "Other Devices",
           devices = otherDevices,
           onLogout = onLogout
         )
-      }*/
-    }
+      }*//*
+    }*/
   }
 }
 

@@ -10,7 +10,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,17 +27,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -59,6 +68,7 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
+import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
@@ -87,12 +97,28 @@ fun PanMetroVideoPlayer(
     val scope = rememberCoroutineScope()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
     var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+
+    var isAudio = remember { mutableStateOf(false) }
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
     val channelRequesters = remember(epgList) {
         List((epgList.size)) { FocusRequester() }
     }
+
+
+    val stops = selectedChannel.content?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+        .orEmpty()
+
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+    }
+
 
     LaunchedEffect(playerSSERules) {
         if((playerSSERules?.forceMessages?.size ?: 0) > 0){
@@ -238,6 +264,11 @@ fun PanMetroVideoPlayer(
             it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
         }
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedChannel?.content?.contentType.equals("audio",true)){
+                isAudio.value = true
+            }else{
+                isAudio.value = false
+            }
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false
@@ -382,6 +413,27 @@ fun PanMetroVideoPlayer(
     if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
         playerSSERules?.scrollMessages?.forEach {
             ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+        }
+    }
+
+    if (isAudio.value) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+                .background(brush, shape = RoundedCornerShape(0.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.8f)
+                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.7f)
+                    .clip(MaterialTheme.shapes.medium),
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedAudio(
+                    isSongPlaying = true,
+                    channel = selectedChannel
+                )
+            }
         }
     }
 

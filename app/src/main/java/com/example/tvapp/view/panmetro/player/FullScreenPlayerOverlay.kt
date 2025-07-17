@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -266,15 +267,27 @@ private fun ChannelCard(
                     )
                 }
                 // Channel Logo
-                AsyncImage(
-                    model = epgDataItem.content?.thumbnailUrl,
-                    contentDescription = "Channel Logo",
-                    modifier = Modifier
-                        .background(Color.Transparent, RoundedCornerShape(4.dp))
-                        .width(50.dp)
-                        .height(50.dp)
-                        .padding(start = 5.dp)
-                )
+                currentProgram?.imageUrl?.getOrNull(0)?.let {
+                    AsyncImage(
+                        model           = it .name,
+                        contentDescription = "Channel Logo",
+                        modifier = Modifier
+                            .background(Color.Transparent, RoundedCornerShape(4.dp))
+                            .width(50.dp)
+                            .height(50.dp)
+                            .padding(start = 5.dp)
+                    )
+                }?:run {
+                    AsyncImage(
+                        model           = epgDataItem.content?.thumbnailUrl,
+                        contentDescription = "Channel Logo",
+                        modifier = Modifier
+                            .background(Color.Transparent, RoundedCornerShape(4.dp))
+                            .width(50.dp)
+                            .height(50.dp)
+                            .padding(start = 5.dp)
+                    )
+                }
                 /*Text(
                     text = epgDataItem.content?.title
                         ?: epgDataItem.displayName

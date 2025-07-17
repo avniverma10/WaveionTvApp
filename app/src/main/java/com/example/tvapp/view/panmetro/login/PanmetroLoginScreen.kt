@@ -95,8 +95,8 @@ fun PanmetroLoginScreen(
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
-    var username by remember { mutableStateOf("PAN00005") }
-    var password by remember { mutableStateOf("123456") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var macId by remember { mutableStateOf(macAddress) }
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
