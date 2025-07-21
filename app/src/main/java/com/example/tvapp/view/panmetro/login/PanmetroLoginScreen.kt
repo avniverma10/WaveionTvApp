@@ -1,7 +1,6 @@
 package com.example.tvapp.view.panmetro.login
 
 import android.app.Activity
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,12 +15,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imeNestedScroll
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +46,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -62,10 +56,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.android.panmetroiptv.R
-import com.example.tvapp.extensions.getAndroidTvDrmInfo
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.provideMacAddress
@@ -75,21 +67,18 @@ import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.navigationhelper.Destination
 import com.example.tvapp.view.panmetro.common.PermettoTopBar
-import com.example.tvapp.view.uicomponent.ExitDialog
 import com.example.tvapp.view.uicomponent.GradientBackground
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
-import com.example.tvapp.viewmodels.LoginViewModel
 import com.example.tvapp.viewmodels.SharedViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PanmetroLoginScreen(
-    loginViewModel: LoginViewModel?= hiltViewModel(),navController: NavController
+    sharedViewModel: SharedViewModel,navController: NavController
 ) {
     HideKeyboardOnEnter()
     val context = LocalContext.current
-    val macAddress = context.provideMacAddress()
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -97,7 +86,7 @@ fun PanmetroLoginScreen(
     val loginFocusRequester = remember { FocusRequester() }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var macId by remember { mutableStateOf(macAddress) }
+    var macId by remember { mutableStateOf(sharedViewModel.deviceMacAddr.value) }
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
 
@@ -359,42 +348,38 @@ fun PanmetroLoginScreen(
                                             }
                                             if (isValid) {
                                                 context.hideKeyboard()
-                                                context.getAndroidTvDrmInfo()?.copy(
-                                                    userName = username,
-                                                    userPassword = password,
-                                                    macId = macId ?: ""
-                                                )?.let { deviceLoginInfo ->
-                                                    loginViewModel?.validateUserLogin(
-                                                        androidTvDrmInfo = deviceLoginInfo,
-                                                        onLoginResponse = { response, errorMsg ->
-                                                            // Optionally handle click for navigation
-                                                            if (response?.returncode?.equals(
-                                                                    "0",
-                                                                    true
-                                                                ) == true
+                                                sharedViewModel.validateUserLogin(
+                                                    uName = username,
+                                                    paswrd = password,
+                                                    macId = macId?:"",
+                                                    onLoginResponse = { response, errorMsg ->
+                                                        // Optionally handle click for navigation
+                                                        if (response?.returncode?.equals(
+                                                                "0",
+                                                                true
+                                                            ) == true
+                                                        ) {
+                                                            // On Login Success:
+                                                            PreferenceManager.saveLogin(
+                                                                username,
+                                                                password
+                                                            )
+                                                            PreferenceManager.saveUserInfo(
+                                                                response
+                                                            )
+                                                            context.hideKeyboard()
+                                                            navController.navigate(
+                                                                Destination.genreScreen
                                                             ) {
-                                                                // On Login Success:
-                                                                PreferenceManager.saveLogin(
-                                                                    username,
-                                                                    password
-                                                                )
-                                                                PreferenceManager.saveUserInfo(
-                                                                    response
-                                                                )
-                                                                context.hideKeyboard()
-                                                                navController.navigate(
-                                                                    Destination.genreScreen
-                                                                ) {
-                                                                    popUpTo(Destination.loginScreen) {
-                                                                        inclusive = true
-                                                                    }
+                                                                popUpTo(Destination.loginScreen) {
+                                                                    inclusive = true
                                                                 }
-                                                            } else {
-                                                                context.showToastS(response?.returncode?.toResponseMessage())
-
                                                             }
-                                                        })
-                                                }
+                                                        } else {
+                                                            context.showToastS(response?.returncode?.toResponseMessage())
+
+                                                        }
+                                                    })
                                             } else {
                                                 context.showToastS(msg)
                                             }

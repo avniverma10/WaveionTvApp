@@ -25,11 +25,15 @@ interface NetworkApiCallInterface {
     @GET
     fun makeHttpGetRequest(@Url url: String): Call<Any>
 
+
+    @POST
+    fun makeHttpAnyPostRequest(@Url url: String, @Body body: HashMap<String, Any>): Call<Any>
+
     @GET
     fun makeTimestampRequest(@Url url: String): ServerTimeStamp
 
     @POST
-    fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String?>): Call<Any>
+    fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>
 //    @POST
 //    fun makeHttpPostCrashRequest(@Url url: String, @Body body: LogEntry): Response<Void>
 

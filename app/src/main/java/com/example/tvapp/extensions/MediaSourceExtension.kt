@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.example.tvapp.model.data.epgdata.EPGDataItem
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.mediahelper.CryptoguardDrmCallback
 import com.example.tvapp.view.wtvplayer.WidevineMediaDrmCallback
 import kotlinx.coroutines.flow.first
@@ -113,7 +114,7 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 
 //for Cryptoguard DRM
 @OptIn(UnstableApi::class)
-suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="https://drm.panmetroconvergence.com:4443/", contentUrl:String?=null, contentId:String?=null, logData:HashMap<String,String>?=null): MediaItem {
+suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String= Constants.DRM_LICENSE_BASE+"/", contentUrl:String?=null, contentId:String?=null, logData:HashMap<String,String>?=null): MediaItem {
     val dataS = dataStore?.data?.first()
     val uNamme = PreferenceManager.getUsername()?:""//dataS?.get(DataStoreKeys.USERNAME) ?: ""
     val pwd = PreferenceManager.getPassword()//dataS?.get(DataStoreKeys.PASSWORD) ?: ""
@@ -131,7 +132,7 @@ suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String="http
         .appendQueryParameter("ContentUrl",     contentUrl?.toBase64UrlSafe())
         .appendQueryParameter("DeviceTypeName", "Android TV".toBase64UrlSafe())
         .build()
-    val licenseUrl = httpUrl.toString().replace("https://drm.panmetroconvergence.com:4443/?","https://drm.panmetroconvergence.com:4443?")
+    val licenseUrl = httpUrl.toString().replace(Constants.DRM_LICENSE_BASE+"/?",Constants.DRM_LICENSE_BASE+"?")
     logData?.put("licenseUrl",licenseUrl)
     loge("loginInfo>",contentUrl.toString())
     loge("loginInfo>",licenseUrl)

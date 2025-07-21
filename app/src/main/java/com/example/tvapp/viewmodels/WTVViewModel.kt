@@ -18,9 +18,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.AndroidTvDrmInfo
 import com.example.tvapp.extensions.applyAppManifest
 import com.example.tvapp.extensions.applyEPGData
+import com.example.tvapp.extensions.isNotNullOrEmpty
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.model.data.appupdate.AppUpdateData
@@ -28,12 +31,14 @@ import com.example.tvapp.model.data.epgdata.EPGDataItem
 import com.example.tvapp.model.data.epgdata.Programme
 import com.example.tvapp.model.data.genre.WTVGenre
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginInfo
 import com.example.tvapp.model.notification.NotificationItem
 import com.example.tvapp.model.data.sse.TabItem
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
 import com.example.tvapp.model.repository.login.LoginPrefsRepository
 import com.example.tvapp.model.wtvdatabase.EPGContract
 import com.example.tvapp.utils.Constants
+import com.example.tvapp.utils.sealed.WTVResponse
 import com.example.tvapp.utils.sealed.firstOrNullSuccess
 import com.example.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
@@ -282,10 +287,13 @@ open class WTVViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun fetchServerTimeMillis(): Long? {
         return try {
+            val healthAPI = Constants.BASE_URL + "app/health"
             val req = Request.Builder()
-                .url(Constants.BASE_URL + "app/health")
+                .url(healthAPI)
                 .get()
                 .build()
+
+            loge(TAG, healthAPI)
 
             val resp = okHttpClient.newCall(req).execute()
 
@@ -583,17 +591,103 @@ open class WTVViewModel @Inject constructor(
             }.toList()
     }
 
-
     fun provideUserHash(){
         viewModelScope.launch {
-           var hashResponse =  networkApiCallInterfaceImpl
-                .provideUserHash(Constants.BASE_URL+"userData?username="+ PreferenceManager.getUsername())
-                .firstOrNullSuccess()
-            hashResponse?.let {
-                PreferenceManager.saveHash(it.hash)
+            networkApiCallInterfaceImpl.provideUserHash(Constants.BASE_URL+"userData?username="+ PreferenceManager.getUsername()).collect { response ->
+                val macId = application.provideMacAddress()?:""
+                when (response) {
+                    is WTVResponse.Success -> {
+                        if(response.data.hash.isNotNullOrEmpty()) {
+                            PreferenceManager.saveHash(response.data.hash)
+                        }else{
+                            val requestBody = hashMapOf<String, String>().apply {
+                                PreferenceManager.getUsername()?.let { put("username", it) }
+                                macId?.let { put("macId", it) }
+                            }
+
+                            networkApiCallInterfaceImpl.registerUserHash(
+                                hashUrl = Constants.BASE_URL+"userData",
+                                requestBody = requestBody).collect { response ->
+                                when (response) {
+                                    is WTVResponse.Success -> {
+                                        provideApplicationContext().showToastS(response.data.toString())
+                                        if(response.data.hash.isNotNullOrEmpty()) {
+                                            PreferenceManager.saveHash(response.data.hash)
+                                        }
+                                    }
+
+                                    is WTVResponse.Failure -> {
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    is WTVResponse.Failure -> {
+                        val requestBody = hashMapOf<String, String>().apply {
+                            PreferenceManager.getUsername()?.let { put("username", it) }
+                            macId?.let { put("macId", it) }
+                        }
+
+                        networkApiCallInterfaceImpl.registerUserHash(
+                            hashUrl = Constants.BASE_URL+"userData",
+                            requestBody = requestBody).collect { response ->
+                            when (response) {
+                                is WTVResponse.Success -> {
+                                    provideApplicationContext().showToastS(response.data.toString())
+                                    if(response.data.hash.isNotNullOrEmpty()) {
+                                        PreferenceManager.saveHash(response.data.hash)
+                                    }
+                                }
+
+                                is WTVResponse.Failure -> {
+
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+
+
+    fun validateUserLogin(uName:String,paswrd:String,macId:String,onLoginResponse:(LoginInfo?,String?)->Unit){
+        viewModelScope.launch {
+            //Prepare headers and body
+            val headers = mapOf(
+                "Authorization" to "56fdsr237df325fv454v3v4532drferh",
+                "Content-Type"  to "application/json"
+            )
+            val requestBody = hashMapOf(
+                "uname" to (uName),
+                "paswrd" to (paswrd ),
+                "macaddr" to (macId)
+            )
+            networkApiCallInterfaceImpl.provideUserLogin(
+                loginUrl = Constants.LOGIN_SMS_BASE+"osmsapi/cryptodrm/logincheck",
+                headers = headers,
+                requestBody = requestBody).collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
+                }
+            }
+        }
+    }
+
+    fun packageUpdate(){
+        viewModelScope.launch {
+            val requestBody = hashMapOf<String, Any>(
+                "username" to (PreferenceManager.getUsername() ?: ""),
+                "packageUpdate" to 0
+            )
+            networkApiCallInterfaceImpl.provideUserProfileCMS(
+                requestBody = requestBody).collect { response ->
+            }
+        }
+    }
+
 }
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
     return items

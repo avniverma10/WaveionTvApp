@@ -7,7 +7,8 @@ import com.google.gson.annotations.SerializedName
 data class GlobalSSEResponse(
     val fingerprints: List<Fingerprint>,
     val scrollMessages: List<ScrollMessage>,
-    val forceMessages: List<ForceMessage>
+    val forceMessages: List<ForceMessage>,
+    val packageUpdates: List<PackageUpdate>
 )
 
 @Keep
@@ -93,3 +94,6 @@ data class ForceMessage(
     val enabled: Boolean?=null,
     val forcePush: Boolean?=null
 )
+
+
+data class PackageUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)

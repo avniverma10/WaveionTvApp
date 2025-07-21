@@ -18,6 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.tvapp.NotificationBanner
+import com.example.tvapp.extensions.provideMacAddress
+import com.example.tvapp.utils.uistate.PreferenceManager
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.panmetro.settings.SettingsScreen
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
@@ -92,6 +94,25 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                 ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
             }
         }
+
+
+        if((globalSSERules?.packageUpdates?.size ?: 0) > 0){
+            globalSSERules?.packageUpdates?.forEach {
+                if(it.packageUpdate == 1){
+                    sharedViewModel.validateUserLogin(
+                        uName = PreferenceManager.getUsername()?:"",
+                        paswrd = PreferenceManager.getUsername()?:"",
+                        macId = sharedViewModel.deviceMacAddr.value,
+                        onLoginResponse = { response, errorMsg ->
+                            if (response != null) {
+                                PreferenceManager.saveUserInfo(response)
+                                sharedViewModel.provideGlobalSSERequest()
+                                sharedViewModel.packageUpdate()
+                            }
+                        })
+                }
+            }
+        }
     }
 }
 
@@ -103,7 +124,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             SplashScreen(sharedViewModel = sharedViewModel, navController)
         }
         composable(Destination.loginScreen) {
-            PanmetroLoginScreen(navController = navController)
+            PanmetroLoginScreen(sharedViewModel= sharedViewModel,navController = navController)
         }
         composable(Destination.epgScreen) {
             EPGScreen(navController, sharedViewModel)

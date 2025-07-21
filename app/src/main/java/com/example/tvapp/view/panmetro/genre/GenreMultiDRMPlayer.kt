@@ -53,6 +53,7 @@ import androidx.media3.ui.PlayerView
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.android.panmetroiptv.R
+import com.example.tvapp.extensions.extractYouTubeId
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
@@ -64,6 +65,11 @@ import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.genre.GenreViewModel
+import com.techit.youtubelib.PlayerConstants
+import com.techit.youtubelib.interfaces.YouTubePlayer
+import com.techit.youtubelib.listeners.AbstractYouTubePlayerListener
+import com.techit.youtubelib.options.IFramePlayerOptions
+import com.techit.youtubelib.view.YouTubePlayerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -83,7 +89,11 @@ fun GenreMultiDRMPlayer(
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
 
+    // Mutable state for UI updates
     var isAudio = remember { mutableStateOf(false) }
+    var isYoutube = remember { mutableStateOf(false) }
+    val youtubeId = remember { mutableStateOf<String?>(null) }
+
     // Mutable state for UI updates
     val isBuffering = rememberSaveable { mutableStateOf(false) }
 
@@ -118,11 +128,13 @@ fun GenreMultiDRMPlayer(
         // Analytics listener (unchanged)
         val analyticsListener = object : AnalyticsListener {
             override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                    loge("DRM", "Keys loaded successfully")
-                }
-                if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                    loge("DRM", "Session manager error")
+                if(!isYoutube.value) {
+                    if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                        loge("DRM", "Keys loaded successfully")
+                    }
+                    if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                        loge("DRM", "Session manager error")
+                    }
                 }
             }
         }
@@ -130,33 +142,37 @@ fun GenreMultiDRMPlayer(
         // Error listener
         val errorListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                isBuffering.value = false
-                //Show your dialog
-                val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                    ?.responseCode
-                val rawCode = httpCode ?: error.errorCode
-                val (code, title, message) = playerErrorHandling(rawCode)
-                errorCodeState    = code
-                errorMessageState = message
-                showErrorDialog   = true
+                if(!isYoutube.value) {
+                    isBuffering.value = false
+                    //Show your dialog
+                    val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                        ?.responseCode
+                    val rawCode = httpCode ?: error.errorCode
+                    val (code, title, message) = playerErrorHandling(rawCode)
+                    errorCodeState = code
+                    errorMessageState = message
+                    showErrorDialog = true
 
-                //Schedule a retry in 0-2 minutes
-                scope.launch {
-                    val retryDelay = Random.nextLong(0L, 120_000L)
-                    loge("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
-                    delay(retryDelay)
+                    //Schedule a retry in 0-2 minutes
+                    scope.launch {
+                        val retryDelay = Random.nextLong(0L, 120_000L)
+                        loge("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                        delay(retryDelay)
 
-                    // re‐prepare the same live source
-                    exoPlayer.prepare()
-                    exoPlayer.playWhenReady = true
+                        // re‐prepare the same live source
+                        exoPlayer.prepare()
+                        exoPlayer.playWhenReady = true
+                    }
                 }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    showErrorDialog = false
-                }
+                if(!isYoutube.value) {
+                    if (playbackState == Player.STATE_READY) {
+                        showErrorDialog = false
+                    }
 
-                isBuffering.value = (playbackState == Player.STATE_BUFFERING)
+                    isBuffering.value = (playbackState == Player.STATE_BUFFERING)
+                }
             }
         }
         // Attach them
@@ -180,25 +196,39 @@ fun GenreMultiDRMPlayer(
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             if(selectedVideoUrl?.content?.contentType.equals("audio",true)){
                 isAudio.value = true
+            }else if(selectedVideoUrl?.content?.contentType.equals("youtube",true)){
+                isYoutube.value = true
+                youtubeId.value = selectedVideoUrl?.content?.videoUrl?.extractYouTubeId()
             }else{
                 isAudio.value = false
+                isYoutube.value = false
             }
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false
-            val drmData = HashMap<String,String>()
-            drmData.put("DRMType",selectedVideoUrl.content?.drmType?:"")
-            drmData.put("contentId",selectedVideoUrl.content?.assetId?:"")
-            drmData.put("contentUrl",selectedVideoUrl.content?.videoUrl?:""?:"")
-            val mediaItem = if (selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource(contentUrl = selectedVideoUrl.content?.videoUrl, contentId = selectedVideoUrl.content?.assetId, logData = drmData)
-            } else {
-                MediaItem.fromUri(url)
+            if(!isYoutube.value) {
+                val drmData = HashMap<String, String>()
+                drmData.put("DRMType", selectedVideoUrl.content?.drmType ?: "")
+                drmData.put("contentId", selectedVideoUrl.content?.assetId ?: "")
+                drmData.put("contentUrl", selectedVideoUrl.content?.videoUrl ?: "" ?: "")
+                val mediaItem = if (selectedVideoUrl.content?.drmType.equals(
+                        "cryptoguard",
+                        ignoreCase = true
+                    )
+                ) {
+                    context.provideCryptoGuardMediaSource(
+                        contentUrl = selectedVideoUrl.content?.videoUrl,
+                        contentId = selectedVideoUrl.content?.assetId,
+                        logData = drmData
+                    )
+                } else {
+                    MediaItem.fromUri(url)
+                }
+                loge("Requested Data>", drmData.toJSONObject().toString())
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             }
-            loge("Requested Data>",drmData.toJSONObject().toString())
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
         }
@@ -206,134 +236,187 @@ fun GenreMultiDRMPlayer(
     }
 
 
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Transparent)
     ) {
-
         val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
-        if (!hasVideo && isBuffering.value) {
+        if (!hasVideo && isBuffering.value ) {
             Image(
                 painter = painterResource(id = R.drawable.panlogin),
                 contentDescription = "CAASTV Poster",
-                modifier = Modifier.size(200.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
         }
-        if (hasVideo) {
-            val stops = selectedVideoUrl.content?.bgGradient
-                ?.colors
-                ?.sortedBy { it.percentage }
-                ?.map { Color(android.graphics.Color.parseColor(it.color)) }
-                .orEmpty()
-
-            val brush = if (stops.size >= 2) {
-                Brush.horizontalGradient(stops)
-            } else {
-                Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
-            }
+        if(isYoutube.value){
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
-                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                    playerView.value = view.findViewById<PlayerView>(R.id.player_view)
-
-                    playerView.value?.apply {
-                        player = exoPlayer
-                        useController = false
+                    YouTubePlayerView(ctx).apply {
+                        enableAutomaticInitialization = false           // 🔑
                         keepScreenOn = true
+
+                        val opts = IFramePlayerOptions.Builder()
+                            .controls(0)
+                            .fullscreen(0)
+                            .autoplay(1)
+                            .rel(0)
+                            .build()
+
+                        initialize(object : AbstractYouTubePlayerListener() {
+                            override fun onReady(player: YouTubePlayer) {
+                                /*val ui = DefaultPlayerUiController(ytView, player).apply {
+                                    showSeekBar(false)       // hide progress bar
+                                    showYouTubeButton(false) // hide “Y” logo
+                                    showVideoTitle(false)    // hide title
+                                }
+                                player.setCustomPlayerUi(ui.rootView)*/
+
+                                youtubeId.value?.let {
+                                    Log.e("loadYoutubeVideo","$youtubeId")
+                                    player.loadVideo(it, 0f)
+                                    // youtubeId.value = it
+                                }
+                            }
+
+                            override fun onError(
+                                youTubePlayer: YouTubePlayer,
+                                error: PlayerConstants.PlayerError
+                            ) {
+                                isBuffering.value = false
+                                super.onError(youTubePlayer, error)
+                            }
+                        }, opts)
                     }
-
-                    view
-
-                }
+                },
+                update = { view ->
+                    // If the composable is still alive but the videoId changed, load the new video
+                    /* if (lastVideoId.value != videoId) {
+                         *//*view.getYouTubePlayerWhenReady { youTubePlayer ->
+                            youTubePlayer.loadVideo(videoId, 0f)
+                            lastVideoId.value = videoId
+                        }*//*
+                    }*/
+                },
+                onRelease = { view -> view.release() }    // called when the composable leaves the tree
             )
+        }else{
+            if (hasVideo) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                        playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-            if (isAudio.value) {
-                Box(
-                    modifier = Modifier.fillMaxSize()
-                        .background(brush, shape = RoundedCornerShape(0.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
+                        playerView.value?.apply {
+                            player = exoPlayer
+                            useController = false
+                            keepScreenOn = true
+                        }
 
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.6f)
-                            .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.5f)
-                            .clip(MaterialTheme.shapes.medium),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedAudio(
-                            isSongPlaying = true,
-                            channel = selectedVideoUrl
-                        )
+                        view
+
                     }
-                }
-            }
-
-            if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
-                playerSSERules?.fingerprints?.forEach {
-                    ChannelFingerprintOverlay(
-                        player = playerView.value,
-                        fingerprintRule = mutableStateOf(it)
-                    )
-                }
-            }
-
-            if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
-                playerSSERules?.scrollMessages?.forEach {
-                    ScrollingMessageOverlay(
-                        player = playerView.value,
-                        scrollMessageInfo = mutableStateOf(it)
-                    )
-                }
-            }
-
-
-            // Show Loading Indicator if Buffering
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (isBuffering.value) {
-                    Image(
-                        painter = painterResource(id = R.drawable.panlogin),
-                        contentDescription = "Loading poster",
-                        modifier = Modifier.size(200.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            if (showErrorDialog) {
-                PlaybackErrorPreview(
-                    errorCode = errorCodeState,
-                    errorMessage = errorMessageState,
-                    modifier = Modifier.align(Alignment.Center)
                 )
             }
-
         }
-    }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                exoPlayer.pause()
-            }else if (event == Lifecycle.Event.ON_STOP) {
-                exoPlayer.pause()
-            }else if (event == Lifecycle.Event.ON_START) {
-                exoPlayer.play()
+
+        val stops = selectedVideoUrl.content?.bgGradient
+            ?.colors
+            ?.sortedBy { it.percentage }
+            ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+            .orEmpty()
+
+        val brush = if (stops.size >= 2) {
+            Brush.horizontalGradient(stops)
+        } else {
+            Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+        }
+
+
+        if(isAudio.value){
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .background(brush, shape = RoundedCornerShape(0.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.6f)
+                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.5f)
+                        .clip(MaterialTheme.shapes.medium),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedAudio(
+                        isSongPlaying = true,
+                        channel = selectedVideoUrl
+                    )
+                }
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            exoPlayer.run {
-                stop()
+        if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(
+                    player = playerView.value,
+                    fingerprintRule = mutableStateOf(it)
+                )
             }
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+
+        if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(
+                    player = playerView.value,
+                    scrollMessageInfo = mutableStateOf(it)
+                )
+            }
+        }
+
+        // Show Loading Indicator if Buffering
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (isBuffering.value) {
+                Image(
+                    painter = painterResource(id = R.drawable.panlogin),
+                    contentDescription = "Loading poster",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
+        if (showErrorDialog) {
+            PlaybackErrorPreview(
+                errorCode = errorCodeState,
+                errorMessage = errorMessageState,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) {
+                    exoPlayer.pause()
+                }else if (event == Lifecycle.Event.ON_STOP) {
+                    exoPlayer.pause()
+                }else if (event == Lifecycle.Event.ON_START) {
+                    exoPlayer.play()
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                exoPlayer.run {
+                    stop()
+                }
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
         }
     }
 }

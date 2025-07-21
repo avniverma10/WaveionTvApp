@@ -1,6 +1,8 @@
 package com.example.tvapp.model.repository.common
 
 import androidx.annotation.Keep
+import androidx.compose.ui.unit.Constraints
+import com.example.tvapp.extensions.convertIntoLoginResponse
 import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.convertIntoModels
 import com.example.tvapp.extensions.logReport
@@ -15,9 +17,11 @@ import com.example.tvapp.model.data.hash.HashInfo
 import com.example.tvapp.model.data.health.HealthAPIResponse
 import com.example.tvapp.model.data.home.HomeData
 import com.example.tvapp.model.data.language.WTVLanguage
+import com.example.tvapp.model.data.login.LoginInfo
 import com.example.tvapp.model.data.manifest.WTVManifest
 import com.example.tvapp.model.notification.NotificationItem
 import com.example.tvapp.model.home.WTVHomeCategory
+import com.example.tvapp.utils.Constants
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.example.tvapp.utils.sealed.WTVListResponse
 import com.example.tvapp.utils.sealed.WTVResponse
@@ -247,4 +251,70 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                 emit(WTVResponse.Failure(e))
             }
         }.flowOn(Dispatchers.IO)
+
+
+    suspend fun registerUserHash(hashUrl: String,requestBody: HashMap<String, String>): Flow<WTVResponse<HashInfo>> =
+        flow {
+            try {
+                val response = networkApiCallInterface
+                    .makeHttpPostRequest(hashUrl,requestBody)
+                    .execute()
+                if (response.isSuccessful) {
+                    val hashInfo = response.body()?.toJSONObject()?.toString()
+                        .convertIntoModel(HashInfo::class.java)
+                    hashInfo?.let {
+                        loge("hashUrl>",hashUrl+hashInfo.toString())
+
+                        // Optionally save manifest data into ContentProvider or DB here
+                        emit(WTVResponse.Success(hashInfo))
+                    } ?: throw Exception("Failed to parse hashInfo")
+                } else {
+                    emit(WTVResponse.Failure(Throwable("Invalid response received")))
+                }
+            } catch (e: Exception) {
+                emit(WTVResponse.Failure(e))
+            }
+        }.flowOn(Dispatchers.IO)
+
+
+    suspend fun provideUserLogin(
+        loginUrl: String,
+        headers: Map<String, String>,
+        requestBody: HashMap<String, String>
+    ): Flow<WTVResponse<LoginInfo>> = flow {
+        try {
+            loge("url:","$loginUrl ${requestBody}")
+            val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,headers= headers, body = requestBody).execute()
+            if (response.isSuccessful && response.body() != null) {
+                loge("response:","${response.body()}")
+
+                val loginInfo = response.body()?.toJSONObject()?.toString()?.convertIntoLoginResponse(LoginInfo::class.java)
+                loginInfo?.let {
+                    // Optionally save manifest data into ContentProvider or DB here
+                    emit(WTVResponse.Success(it))
+                } ?: throw Exception("Failed to parse provideUserLogin")
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+
+    suspend fun provideUserProfileCMS(
+        requestBody: HashMap<String, Any>
+    ): Flow<WTVResponse<Boolean>> = flow {
+        try {
+            loge("url:","app/package-update> ${requestBody}")
+            val response = networkApiCallInterface.makeHttpAnyPostRequest(url= Constants.BASE_URL +"app/package-update", body = requestBody).execute()
+            if (response.isSuccessful  && response.body() != null) {
+                emit(WTVResponse.Success(true))
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
 }

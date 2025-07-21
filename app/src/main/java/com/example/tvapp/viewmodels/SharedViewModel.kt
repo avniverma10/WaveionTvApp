@@ -15,6 +15,7 @@ import com.example.tvapp.extensions.convertIntoModel
 import com.example.tvapp.extensions.coreEPGLiveData
 import com.example.tvapp.extensions.logReport
 import com.example.tvapp.extensions.loge
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.model.data.DataStoreManager
 import com.example.tvapp.model.data.FilterPreferences
 import com.example.tvapp.model.data.FilterState
@@ -72,7 +73,7 @@ open class SharedViewModel @Inject constructor(
 ) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
     fun provideApplicationInstance() = application.applicationContext as? WTVApp
     private val observer = ConnectivityObserver(application)
-
+    var deviceMacAddr = MutableStateFlow<String>("")
     var isFromSplash = MutableStateFlow<Boolean>(false)
 
     private var globalEventSource: EventSource? = null
@@ -328,10 +329,10 @@ open class SharedViewModel @Inject constructor(
             ) { it.servicename }
         }
 
-        // _globalFingerPrint.value = listOf(FingerprintRule(),FingerprintRule(),FingerprintRule(),FingerprintRule())
         val queryBuilder = (Constants.BASE_URL + "app/combined-sse?")
             .toUri()
             .buildUpon()
+
         // Only append if values are not null or blank
         packageInfo?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("package", it)
@@ -340,8 +341,19 @@ open class SharedViewModel @Inject constructor(
         userInfo?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("user", it)
         }
+
         loginInfo?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("region", it)
+        }?: run {
+            queryBuilder.appendQueryParameter("region", "01")
+        }
+
+        queryBuilder.appendQueryParameter("appVersion","panmetro_${application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName}")
+
+        deviceMacAddr?.value?.let {
+            queryBuilder.appendQueryParameter("macId", it)
         }
 
         val sseUrl = queryBuilder.build().toString()
@@ -421,6 +433,16 @@ open class SharedViewModel @Inject constructor(
 
         PreferenceManager.getLoginResponse()?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("region", it)
+        }?: run {
+            queryBuilder.appendQueryParameter("region", "01")
+        }
+
+        queryBuilder.appendQueryParameter("appVersion","panmetro_${application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName}")
+
+        application.provideMacAddress()?.let {
+            queryBuilder.appendQueryParameter("macId", it)
         }
         val sseUrl = queryBuilder.build().toString()
         loge("PlayerFingerprint url>",sseUrl)

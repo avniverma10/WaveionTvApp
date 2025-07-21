@@ -18,30 +18,6 @@ import javax.inject.Inject
 
 @Keep
 class LoginRepositoryImpl @Inject constructor(private val networkApiCallInterface: NetworkApiCallInterface) {
-    suspend fun provideUserLogin(
-        loginUrl: String,
-        headers: Map<String, String>,
-        requestBody: HashMap<String, String>
-    ): Flow<WTVResponse<LoginInfo>> = flow {
-        try {
-            loge("url:","$loginUrl ${requestBody}")
-            val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,headers= headers, body = requestBody).execute()
-            if (response.isSuccessful && response.body() != null) {
-                loge("response:","${response.body()}")
-
-                val loginInfo = response.body()?.toJSONObject()?.toString()?.convertIntoLoginResponse(LoginInfo::class.java)
-                loginInfo?.let {
-                    // Optionally save manifest data into ContentProvider or DB here
-                    emit(WTVResponse.Success(it))
-                } ?: throw Exception("Failed to parse manifest")
-            } else {
-                emit(WTVResponse.Failure(Throwable("Invalid response received")))
-            }
-        } catch (e: Exception) {
-            emit(WTVResponse.Failure(e))
-        }
-    }.flowOn(Dispatchers.IO)
-
 
     suspend fun sendOtp(
         url: String,

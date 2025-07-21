@@ -2,6 +2,7 @@ package com.example.tvapp.di
 
 import android.content.Context
 import com.example.tvapp.model.repository.common.WTVNetworkRepositoryImpl
+import com.example.tvapp.utils.network.LoggingInterceptor
 import com.example.tvapp.utils.network.NetworkApiCallInterface
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -89,7 +90,7 @@ object NetworkModule {
         val sslContext = SSLContext.getInstance("TLS").apply {
             init(null, trustAllCerts, SecureRandom())
         }
-        val sslSocketFactory = sslContext.socketFactory
+        //val sslSocketFactory = sslContext.socketFactory
         // Interceptor that adds the API key header:
         val headerInterceptor = Interceptor { chain ->
             val original = chain.request()
@@ -106,13 +107,14 @@ object NetworkModule {
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .cache(cache)
-            .addInterceptor(headerInterceptor)               // header
+            .addInterceptor(headerInterceptor) // header
+            //.addInterceptor(LoggingInterceptor())
             .addInterceptor(offlineInterceptor)              // handles errors → cache
             .addNetworkInterceptor(networkCacheInterceptor)  // caches fresh responses
             //Trust all SSL certificates (for debug/development only)
-            .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }
-            .cache(null)
+           // .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+          //  .hostnameVerifier { _, _ -> true }
+           // .cache(null)
             .build()
     }
 

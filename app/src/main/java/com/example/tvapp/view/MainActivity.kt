@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.tvapp.extensions.provideMacAddress
 import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.globalFingerprintService.OverlayPermissionDialog
 import com.example.tvapp.globalFingerprintService.OverlayPermissionHelper
@@ -33,6 +34,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PreferenceManager.init(applicationContext)
+        //Init macId
+        sharedViewModel.deviceMacAddr.value = provideMacAddress().toString()
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         overlayHelper = OverlayPermissionHelper(this).apply {

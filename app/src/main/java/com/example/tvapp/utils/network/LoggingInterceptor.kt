@@ -8,9 +8,9 @@ import okhttp3.Response
 class LoggingInterceptor:Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
        val request = chain.request()
-        loge("Request::","${request}")
+        loge("API: Request::","${request}")
        val response = chain.proceed(request)
-       // loge("Response::", response.body?.string().toString())
+        loge("API: Response::", response.body?.string().toString())
       return response
     }
 }

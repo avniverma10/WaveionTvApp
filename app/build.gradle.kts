@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.0.23"
+        versionCode = 22
+        versionName = "1.0.27"
 
     }
 
@@ -121,10 +121,7 @@ dependencies {
     implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
-    //isoparser
-   // implementation(libs.isoparser)
-   // If you don't use feature license encrypt, please comment line below
-    implementation ("com.sigma.packer:sigma-packer:1.0.1")
 
+    implementation("com.github.techitdevs:android-youtube-lib:1.1")
 
 }
