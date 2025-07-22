@@ -282,6 +282,16 @@ fun GenreMultiDRMPlayer(
                                 }
                             }
 
+                            override fun onStateChange(
+                                youTubePlayer: YouTubePlayer,
+                                state: PlayerConstants.PlayerState
+                            ) {
+                                if(state == PlayerConstants.PlayerState.PLAYING){
+                                    isBuffering.value = false
+                                }
+                                super.onStateChange(youTubePlayer, state)
+                            }
+
                             override fun onError(
                                 youTubePlayer: YouTubePlayer,
                                 error: PlayerConstants.PlayerError
