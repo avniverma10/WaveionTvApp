@@ -42,7 +42,7 @@
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <application
-        android:name="com.example.tvapp.WTVApp"
+        android:name="com.tccl.tvapp.WTVAppTccl"
         android:banner="@mipmap/ic_banner_launcher"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -52,7 +52,7 @@
         android:theme="@style/Theme.TVApp"
         android:hardwareAccelerated="true">
         <activity
-            android:name="com.example.tvapp.view.MainActivity"
+            android:name="com.tccl.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
@@ -76,12 +76,12 @@
         </provider>
 
         <provider
-            android:name="com.example.tvapp.model.wtvdatabase.EPGContentProvider"
+            android:name="com.tccl.tvapp.model.wtvdatabase.EPGContentProvider"
             android:authorities="com.android.tccl.provider"
             android:exported="false" />
 
         <service
-            android:name="com.example.tvapp.utils.servicehelper.FingerprintOverlayService"
+            android:name="com.tccl.tvapp.utils.servicehelper.FingerprintOverlayService"
             android:exported="false"
             android:stopWithTask="false"
             tools:ignore="ForegroundServicePermission"

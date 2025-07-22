@@ -28,8 +28,8 @@
 -keepattributes EnclosingMethod
 -keepattributes Exceptions
 
--keep class com.example.tvapp.model.** { *; }
--keep class com.example.tvapp.utils.network.** { *; }
+-keep class com.tccl.tvapp.model.** { *; }
+-keep class com.tccl.tvapp.utils.network.** { *; }
 -keepdirectories com.example.tvapp.model.**
 
 -keep class androidx.leanback.** { *; }
@@ -70,7 +70,7 @@
 -keepattributes *Annotation*
 
 # Keep Retrofit interfaces
--keep interface com.example.tvapp.utils.network.** { *; }
+-keep interface com.tccl.tvapp.utils.network.** { *; }
 -keepclasseswithmembers class * {
     @retrofit2.http.* <methods>;
 }
