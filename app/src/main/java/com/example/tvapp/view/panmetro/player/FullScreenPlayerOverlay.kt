@@ -306,15 +306,26 @@ private fun ChannelCard(
                         .clip(RoundedCornerShape(4.dp))
                         .background(brush)
                 ) {
-                    // Channel Logo
-                    AsyncImage(
-                        model           = epgDataItem.content?.thumbnailUrl,
-                        contentDescription = null,
-                        modifier        = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp),
-                        contentScale    = ContentScale.Fit
-                    )
+                    currentProgram?.imageUrl?.getOrNull(0)?.let {
+                        AsyncImage(
+                            model           = it .name,
+                            contentDescription = null,
+                            contentScale    = ContentScale.FillBounds,
+                            modifier         = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }?:run {
+                        // Channel Logo
+                        AsyncImage(
+                            model           = epgDataItem.content?.thumbnailUrl,
+                            contentDescription = null,
+                            modifier        = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp),
+                            contentScale    = ContentScale.Fit
+                        )
+                    }
                 }
             }
 

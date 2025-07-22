@@ -3,7 +3,8 @@ package com.example.tvapp.model.data.login
 import com.google.gson.annotations.SerializedName
 
 data class LoginResponseData(
-    val code: String?=null,
+    val code: Int?=null,
+    val success: Boolean?=false,
     val message: String?=null,
     @SerializedName("data")
     val loginData: Data?=null

@@ -19,24 +19,24 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.tvapp.view.appscreen.AppsScreen
-import com.example.tvapp.view.notificationbanner.NotificationBanner
-import com.example.tvapp.view.otp.OtpScreen1
-import com.example.tvapp.view.search.SearchScreen
 import com.example.tvapp.utils.network.error.GlobalErrorHandler
 import com.example.tvapp.utils.uistate.PreferenceManager
+import com.example.tvapp.view.appscreen.AppsScreen
 import com.example.tvapp.view.channels.ChannelScreen
 import com.example.tvapp.view.epg.EPGScreen
 import com.example.tvapp.view.home.DemoHomeScreen
 import com.example.tvapp.view.home.DemoPlayerScreen
 import com.example.tvapp.view.home.HomePlayerScreen
 import com.example.tvapp.view.home.HomeScreen
-import com.example.tvapp.view.panmetro.settings.NewPanMetroSettingsScreen
+import com.example.tvapp.view.notificationbanner.NotificationBanner
+import com.example.tvapp.view.otp.OtpScreen1
 import com.example.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.example.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.example.tvapp.view.panmetro.player.CaastvVideoPlayer
 import com.example.tvapp.view.panmetro.player.PanMetroVideoPlayer
+import com.example.tvapp.view.panmetro.settings.NewPanMetroSettingsScreen
 import com.example.tvapp.view.profile.ProfileScreen
+import com.example.tvapp.view.search.SearchScreen
 import com.example.tvapp.view.splash.SplashScreen
 import com.example.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
@@ -155,14 +155,10 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             NewPanMetroSettingsScreen(navController,sharedViewModel)
         }
         composable(Destination.panMetroScreen) {backStackEntry ->
-            //val channelId = backStackEntry.arguments?.getString("channelId")
             CaastvVideoPlayer(navController,sharedViewModel)
-//          //Remove this to use the PanMetroVidePlayer
         }
         composable(Destination.animationPlayer) {backStackEntry ->
-            //val channelId = backStackEntry.arguments?.getString("channelId")
             PanMetroVideoPlayer(navController,sharedViewModel)
-//          //Remove this to use the PanMetroVidePlayer
         }
         composable(Destination.demoHome) {
             DemoHomeScreen(

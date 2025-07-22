@@ -330,11 +330,12 @@ fun SplashScreen(
                                     }
                                     unknownSourcesLauncher.launch(settingsIntent)
                                     return
+                                }else{
+                                    //Otherwise, we’re good—install immediately
+                                    appCtx.startActivity(installIntent)
+                                    activity?.finish()
                                 }
 
-                                // 5) Otherwise, we’re good—install immediately
-                                appCtx.startActivity(installIntent)
-                                activity?.finish()
                             } else {
                                 // Download failed: clean up and notify
                                 if (apkFile.exists()) {

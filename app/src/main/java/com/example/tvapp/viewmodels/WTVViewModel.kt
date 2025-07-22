@@ -110,7 +110,7 @@ open class WTVViewModel @Inject constructor(
     val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
 
     // ─── Date and time state ───
-    private val _isTimeValid = MutableStateFlow<Boolean?>(null)
+    private val _isTimeValid = MutableStateFlow<Boolean?>(true)
     val isTimeValid: StateFlow<Boolean?> = _isTimeValid.asStateFlow()
 
     // ─── App‑Update state ───

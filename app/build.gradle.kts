@@ -18,8 +18,8 @@ android {
         applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.0.30"
+        versionCode = 12
+        versionName = "1.0.31"
     }
 
     buildTypes {
@@ -78,7 +78,6 @@ android {
 }
 
 dependencies {
-    //implementation(files("libs/YouTubeAndroidPlayerApi.jar"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(platform(libs.androidx.compose.bom))
@@ -138,7 +137,7 @@ dependencies {
     //dimens
     implementation(libs.bundles.dimens)
    // If you don't use feature license encrypt, please comment line below
-    implementation ("com.sigma.packer:sigma-packer:1.0.1")
+   // implementation ("com.sigma.packer:sigma-packer:1.0.1")
     // 1) Basic Lifecycle runtime (gives LifecycleRegistry)
     implementation ("androidx.lifecycle:lifecycle-runtime:2.6.1")
     // 2) Lifecycle KTX (coroutine support, etc.)
@@ -149,5 +148,6 @@ dependencies {
 
     // Add this to your app/build.gradle dependencies
     implementation("com.google.errorprone:error_prone_annotations:2.23.0")
-   // implementation("com.google.android.youtube:android-youtube-player:12.1.0")
+
+    implementation("com.github.techitdevs:android-youtube-lib:1.1")
 }

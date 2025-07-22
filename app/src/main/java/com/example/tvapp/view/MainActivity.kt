@@ -3,6 +3,7 @@ package com.example.tvapp.view
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.SoundEffectConstants
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.example.tvapp.extensions.hideKeyboard
+import com.example.tvapp.extensions.showToastS
 import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionDialog
 import com.example.tvapp.view.uicomponent.fingerprint.globalfingerprint.OverlayPermissionHelper
 import com.example.tvapp.utils.theme.TVAppTheme
@@ -69,6 +71,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {

@@ -2,6 +2,7 @@ package com.example.tvapp.view.panmetro.genre
 
 import android.util.Log
 import android.view.KeyEvent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -35,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -279,6 +281,8 @@ fun NewChannelRow(
     onVideoChange: (EPGDataItem, Int) -> Unit
 ) {
     val borderColor = if (isFocused) base_color else Color.Transparent
+    val scale by animateFloatAsState(targetValue = if (isFocused) 1.3f else if (isFocused && isPreview) 1.1f else 1f)
+
 
     val titleTextColor = if (isFocused || isPreview) base_color else Color.White
 
@@ -330,7 +334,8 @@ fun NewChannelRow(
                 modifier = Modifier
                     .size(44.dp)
                     .background(brush, shape = RoundedCornerShape(4.dp))
-                    .padding(4.dp),
+                    .padding(4.dp)
+                    .scale(scale),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.width(12.dp))

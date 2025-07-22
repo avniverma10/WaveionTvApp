@@ -133,7 +133,6 @@ fun TopOverlayInfo(sharedViewModel: SharedViewModel,playerViewModel: PlayerViewM
                 )
             )
             Spacer(modifier = Modifier.width(20.dp))
-            Log.d("AVNI","${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} ")
             Text(
                 text = "${currentProgram?.startFormatedTime} - ${currentProgram?.endFormatedTime} • ${timeLeft} MIN LEFT",
                 color = Color.LightGray,

@@ -6,15 +6,14 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.WindowManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -66,13 +65,13 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.gif.GifDecoder
 import coil3.request.ImageRequest
 import com.android.caastv.R
+import com.example.tvapp.extensions.extractYouTubeId
 import com.example.tvapp.extensions.hideKeyboard
 import com.example.tvapp.extensions.loge
 import com.example.tvapp.extensions.playerErrorHandling
 import com.example.tvapp.extensions.provideCryptoGuardMediaSource
 import com.example.tvapp.extensions.toJSONObject
 import com.example.tvapp.utils.uistate.PreferenceManager
-import com.example.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.example.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.example.tvapp.view.uicomponent.error.CommonDialog
 import com.example.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
@@ -80,10 +79,13 @@ import com.example.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.example.tvapp.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.example.tvapp.viewmodels.SharedViewModel
 import com.example.tvapp.viewmodels.player.PlayerViewModel
+import com.techit.youtubelib.interfaces.YouTubePlayer
+import com.techit.youtubelib.listeners.AbstractYouTubePlayerListener
+import com.techit.youtubelib.options.IFramePlayerOptions
+import com.techit.youtubelib.view.YouTubePlayerView
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.collections.orEmpty
 import kotlin.random.Random
 
 @OptIn(UnstableApi::class)
@@ -119,8 +121,11 @@ fun PanMetroVideoPlayer(
     var errorMessageState by remember { mutableStateOf("") }
     var errorTitleState by remember { mutableStateOf("") }
     var isAudio = remember { mutableStateOf(false) }
+    var isYoutube = remember { mutableStateOf(false) }
+    val youtubeId = remember { mutableStateOf<String?>(null) }
 
     var watchJob by remember { mutableStateOf<Job?>(null) }
+
 
 
     // whenever the channel changes…
@@ -219,55 +224,65 @@ fun PanMetroVideoPlayer(
     DisposableEffect(exoPlayer) {
         val analyticsListener = object : AnalyticsListener {
             override fun onEvents(player: Player, events: AnalyticsListener.Events) {
-                if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
-                    loge("DRM", "Keys loaded successfully")
-                }
-                if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
-                    loge("DRM", "Session manager error")
+                if(!isYoutube.value) {
+                    if (events.contains(AnalyticsListener.EVENT_DRM_KEYS_LOADED)) {
+                        loge("DRM", "Keys loaded successfully")
+                    }
+                    if (events.contains(AnalyticsListener.EVENT_DRM_SESSION_MANAGER_ERROR)) {
+                        loge("DRM", "Session manager error")
+                    }
                 }
             }
         }
         // Error listener
         val errorListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
-                    ?.responseCode
-                val rawCode = httpCode ?: error.errorCode
-                val (code, title, message) = playerErrorHandling(rawCode)
-                errorCodeState    = code
-                errorTitleState   = title
-                errorMessageState = message
-                showErrorDialog   = true
+                if(!isYoutube.value) {
+                    val httpCode = (error.cause as? HttpDataSource.InvalidResponseCodeException)
+                        ?.responseCode
+                    val rawCode = httpCode ?: error.errorCode
+                    val (code, title, message) = playerErrorHandling(rawCode)
+                    errorCodeState = code
+                    errorTitleState = title
+                    errorMessageState = message
+                    showErrorDialog = true
 
-                // 2) Schedule a retry between 0ms and 120 000ms (i.e. 0–2 minutes)
-                scope.launch {
-                    val retryDelay = Random.nextLong(0L, 120_000L)
-                    Log.d("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
-                    delay(retryDelay)
+                    // 2) Schedule a retry between 0ms and 120 000ms (i.e. 0–2 minutes)
+                    scope.launch {
+                        val retryDelay = Random.nextLong(0L, 120_000L)
+                        Log.d("Retry", "Retrying live stream in ${retryDelay / 1000}s…")
+                        delay(retryDelay)
 
-                    // re‐prepare the same live source
-                    exoPlayer.prepare()
-                    exoPlayer.playWhenReady = true
+                        // re‐prepare the same live source
+                        exoPlayer.prepare()
+                        exoPlayer.playWhenReady = true
+                    }
                 }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY) {
-                    // Video started playing successfully
-                    showErrorDialog = false
+                if(!isYoutube.value) {
+                    if (playbackState == Player.STATE_READY) {
+                        // Video started playing successfully
+                        showErrorDialog = false
+                    }
                 }
             }
         }
+        if(!isYoutube.value) {
 
-        // Attach them
-        exoPlayer.addAnalyticsListener(analyticsListener)
-        exoPlayer.addListener(errorListener)
+            // Attach them
+            exoPlayer.addAnalyticsListener(analyticsListener)
+            exoPlayer.addListener(errorListener)
 
-        // Kick off the first playback
-        exoPlayer.prepare()
+            // Kick off the first playback
+            exoPlayer.prepare()
+        }
 
         onDispose {
-            exoPlayer.removeAnalyticsListener(analyticsListener)
-            exoPlayer.removeListener(errorListener)
+            if(!isYoutube.value) {
+                exoPlayer.removeAnalyticsListener(analyticsListener)
+                exoPlayer.removeListener(errorListener)
+            }
             exoPlayer.release()
             watchJob?.cancel()
         }
@@ -281,25 +296,40 @@ fun PanMetroVideoPlayer(
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
             if(selectedChannel?.content?.contentType.equals("audio",true)){
                 isAudio.value = true
+            }else if(selectedChannel?.content?.contentType.equals("youtube",true)){
+                isYoutube.value = true
+                youtubeId.value = selectedChannel?.content?.videoUrl?.extractYouTubeId()
             }else{
                 isAudio.value = false
+                isYoutube.value = false
             }
             exoPlayer.stop()
             exoPlayer.clearMediaItems()
             showErrorDialog = false
-            val drmData = HashMap<String,String>()
-            drmData.put("DRMType",selectedChannel?.content?.drmType?:"")
-            drmData.put("contentId",selectedChannel?.content?.assetId?:"")
-            drmData.put("contentUrl",selectedChannel?.content?.videoUrl?:""?:"")
-            val mediaItem = if (selectedChannel?.content?.drmType.equals("cryptoguard", ignoreCase = true)) {
-                context.provideCryptoGuardMediaSource( contentUrl = selectedChannel?.content?.videoUrl, contentId = selectedChannel?.content?.assetId, logData = drmData)
-            } else {
-                MediaItem.fromUri(url)
+
+            if(!isYoutube.value) {
+                val drmData = HashMap<String, String>()
+                drmData.put("DRMType", selectedChannel?.content?.drmType ?: "")
+                drmData.put("contentId", selectedChannel?.content?.assetId ?: "")
+                drmData.put("contentUrl", selectedChannel?.content?.videoUrl ?: "" ?: "")
+                val mediaItem = if (selectedChannel?.content?.drmType.equals(
+                        "cryptoguard",
+                        ignoreCase = true
+                    )
+                ) {
+                    context.provideCryptoGuardMediaSource(
+                        contentUrl = selectedChannel?.content?.videoUrl,
+                        contentId = selectedChannel?.content?.assetId,
+                        logData = drmData
+                    )
+                } else {
+                    MediaItem.fromUri(url)
+                }
+                loge("Requested Data>", drmData.toJSONObject().toString())
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             }
-            loge("Requested Data>",drmData.toJSONObject().toString())
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
 
@@ -396,25 +426,65 @@ fun PanMetroVideoPlayer(
                 } else false
             }
     ) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-                playerView.value?.apply {
-                    player = exoPlayer
-                    useController = false
-                    keepScreenOn = true
-                    PreferenceManager.provideUserHash()?.let {
-                        addWatermarkToPlayer(this,it)
+        if(isYoutube.value){
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    YouTubePlayerView(ctx).apply {
+                        enableAutomaticInitialization = false           // 🔑
+                        keepScreenOn = true
+                        val opts = IFramePlayerOptions.Builder()
+                            .controls(0)
+                            .fullscreen(0)
+                            .autoplay(1)
+                            .rel(0)
+                            .build()
+
+                        initialize(object : AbstractYouTubePlayerListener() {
+                            override fun onReady(player: YouTubePlayer) {
+                                youtubeId.value?.let {
+                                    Log.e("loadYoutubeVideo","$youtubeId")
+                                    player.loadVideo(it, 0f)
+                                   // youtubeId.value = it
+                                }
+                            }
+                        }, opts)
                     }
+                },
+                update = { view ->
+                    // If the composable is still alive but the videoId changed, load the new video
+                    /*if (lastVideoId.value != videoId) {
+                        view.getYouTubePlayerWhenReady { youTubePlayer ->
+                            youTubePlayer.loadVideo(videoId, 0f)
+                            lastVideoId.value = videoId
+                        }
+                    }*/
+                },
+                onRelease = { view -> view.release() }    // called when the composable leaves the tree
+            )
+        }else{
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                    playerView.value = view.findViewById<PlayerView>(R.id.player_view)
+
+                    playerView.value?.apply {
+                        player = exoPlayer
+                        useController = false
+                        keepScreenOn = true
+                        /*PreferenceManager.provideUserHash()?.let {
+                            addWatermarkToPlayer(this,it)
+                        }*/
+                    }
+
+                    view
+
                 }
+            )
+        }
 
-                view
-
-            }
-        )
 
         if(isAudio.value){
             val gifPainter = rememberAsyncImagePainter(
