@@ -43,7 +43,7 @@
     <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"
         tools:ignore="ProtectedPermissions" />
     <application
-        android:name="com.example.tvapp.WTVApp"
+        android:name="com.caastv.tvapp.WTVAppCaastv"
         android:allowBackup="true"
         android:largeHeap="true"
         android:banner="@mipmap/ic_tv_banner"
@@ -54,7 +54,7 @@
         android:theme="@style/Theme.TVApp"
         android:hardwareAccelerated="true">
         <activity
-            android:name="com.example.tvapp.view.MainActivity"
+            android:name="com.caastv.tvapp.view.MainActivity"
             android:screenOrientation="landscape"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="stateAlwaysHidden|adjustNothing"
@@ -78,12 +78,12 @@
         </provider>
 
         <provider
-            android:name="com.example.tvapp.model.wtvdatabase.EPGContentProvider"
+            android:name="com.caastv.tvapp.model.wtvdatabase.EPGContentProvider"
             android:authorities="com.android.caastv.provider"
             android:exported="false" />
 
         <service
-            android:name="com.example.tvapp.utils.servicehelper.FingerprintOverlayService"
+            android:name="com.caastv.tvapp.utils.servicehelper.FingerprintOverlayService"
             android:exported="false"
             android:stopWithTask="false"
             tools:ignore="ForegroundServicePermission"
