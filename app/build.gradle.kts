@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.0.27"
+        versionCode = 25
+        versionName = "1.0.30"
 
     }
 
@@ -117,11 +117,12 @@ dependencies {
     implementation (libs.datastore.preferences)
     //constraintlayout
     implementation (libs.constraintlayout.compose)
+    //constraintlayout
+    implementation (libs.youtube.lib)
     //spalsh
     implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
 
-    implementation("com.github.techitdevs:android-youtube-lib:1.1")
 
 }

@@ -28,8 +28,8 @@
 -keepattributes EnclosingMethod
 -keepattributes Exceptions
 
--keep class com.example.tvapp.model.** { *; }
--keep class com.example.tvapp.utils.network.** { *; }
+-keep class com.android.panmetroiptv.model.** { *; }
+-keep class com.android.panmetroiptv.utils.network.** { *; }
 -keepdirectories com.example.tvapp.model.**
 
 -keep class androidx.leanback.** { *; }
@@ -70,7 +70,7 @@
 -keepattributes *Annotation*
 
 # Keep Retrofit interfaces
--keep interface com.example.tvapp.utils.network.** { *; }
+-keep interface com.android.panmetroiptv.utils.network.** { *; }
 -keepclasseswithmembers class * {
     @retrofit2.http.* <methods>;
 }
