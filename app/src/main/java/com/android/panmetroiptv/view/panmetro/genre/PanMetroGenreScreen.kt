@@ -171,11 +171,10 @@ fun PanmetroGenreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(top = 10.dp)
             ) {
                 Box(modifier = Modifier
                     .weight(1f)
-                    .padding(start = 10.dp, end = 10.dp, bottom = 10.dp)) {
+                    .padding(start = 10.dp, end = 10.dp)) {
                     Row(modifier = Modifier) {
                         // Left: Categories
                         GenreListMenu(
@@ -236,7 +235,8 @@ fun PanmetroGenreScreen(
                     ) {
                         Box(modifier = Modifier
                             .fillMaxWidth()
-                            .fillMaxHeight(.6f)) {
+                            .fillMaxHeight(.75f)
+                            .padding(bottom = 10.dp)) {
                             GenreMultiDRMPlayer (
                                 selectedChannelIndex= selectedChannelIndex,
                                 sharedViewModel = sharedViewModel,
@@ -246,10 +246,10 @@ fun PanmetroGenreScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight(1f)
-                                .padding(10.dp)
                         ) {
                             Box(
                                 modifier = Modifier
+                                    .padding(start = 10.dp, end = 10.dp)
                                     .fillMaxSize() // Force the inner Box to fill the outer Box.
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {

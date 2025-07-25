@@ -240,14 +240,14 @@ fun GenreMultiDRMPlayer(
             .background(Color.Transparent)
     ) {
         val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
-        if (!hasVideo && isBuffering.value ) {
+        /*if (!hasVideo && isBuffering.value ) {
             Image(
                 painter = painterResource(id = R.drawable.panlogin),
                 contentDescription = "Panmetro Poster",
                 modifier = Modifier.width(200.dp).height(200.dp),
                 contentScale = ContentScale.Fit
             )
-        }
+        }*/
         if(isYoutube.value){
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -311,24 +311,22 @@ fun GenreMultiDRMPlayer(
                 onRelease = { view -> view.release() }    // called when the composable leaves the tree
             )
         }else{
-            if (hasVideo) {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                        playerView.value = view.findViewById<PlayerView>(R.id.player_view)
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                    playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-                        playerView.value?.apply {
-                            player = exoPlayer
-                            useController = false
-                            keepScreenOn = true
-                        }
-
-                        view
-
+                    playerView.value?.apply {
+                        player = exoPlayer
+                        useController = false
+                        keepScreenOn = true
                     }
-                )
-            }
+
+                    view
+
+                }
+            )
         }
 
 
@@ -385,7 +383,7 @@ fun GenreMultiDRMPlayer(
         }
 
         // Show Loading Indicator if Buffering
-        Column(
+        /*Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -398,7 +396,7 @@ fun GenreMultiDRMPlayer(
                     contentScale = ContentScale.Crop
                 )
             }
-        }
+        }*/
 
         if (showErrorDialog) {
             PlaybackErrorPreview(

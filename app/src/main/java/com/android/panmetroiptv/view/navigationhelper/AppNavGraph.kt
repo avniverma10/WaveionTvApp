@@ -20,10 +20,10 @@ import androidx.navigation.compose.rememberNavController
 import com.android.panmetroiptv.NotificationBanner
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.epg.EPGScreen
-import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.panmetro.genre.PanmetroGenreScreen
 import com.android.panmetroiptv.view.panmetro.login.PanmetroLoginScreen
-import com.android.panmetroiptv.view.panmetro.player.PanMetroVideoPlayer
+import com.android.panmetroiptv.view.panmetro.player.CaastvVideoPlayer
+import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.profile.ProfileScreen
 import com.android.panmetroiptv.view.splash.SplashScreen
 import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
@@ -139,7 +139,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.panMetroScreen) { backStackEntry ->
             //val channelId = backStackEntry.arguments?.getString("channelId")
-            PanMetroVideoPlayer(navController, sharedViewModel)
+            CaastvVideoPlayer(navController,sharedViewModel)
         }
     }
 

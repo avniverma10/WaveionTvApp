@@ -32,13 +32,13 @@ import kotlinx.coroutines.delay
 @Composable
 fun ZoomInOutSwitcher(
 ) {
-    // 1) Define your “pages”
+    // Define your “pages”
     val pages: List<@Composable () -> Unit> = listOf(
         {
             Image(
                 painter = painterResource(id = R.drawable.alliance_logo),
                 contentDescription = "Panmetro Logo",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .fillMaxSize() // Stretch the image to fill the inner Box.
                     .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
@@ -49,7 +49,7 @@ fun ZoomInOutSwitcher(
             Image(
                 painter = painterResource(id = R.drawable.panmetro_brand),
                 contentDescription = "Panmetro Logo",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.FillBounds,
                 modifier = Modifier
                     .fillMaxSize() // Stretch the image to fill the inner Box.
                     .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
