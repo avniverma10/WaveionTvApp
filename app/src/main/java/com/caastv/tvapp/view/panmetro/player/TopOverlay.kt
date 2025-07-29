@@ -35,6 +35,7 @@ fun VideoPlayerWithTopOverlay(
     onAudioClick: () -> Unit = {},
     onSubtitlesClick: () -> Unit = {},
     onHdClick : () -> Unit = {},
+    qualityLabel: String,
     subtitleButtonFocusRequester: FocusRequester,
     audioButtonFocusRequester: FocusRequester,
     videoButtonFocusRequester: FocusRequester,
@@ -90,7 +91,7 @@ fun VideoPlayerWithTopOverlay(
 
             OverlayButton(
                 iconRes = R.drawable.video_quality,
-                label = "HD",
+                label =  qualityLabel,
                 onClick = onHdClick,
                 focusRequester = videoButtonFocusRequester
             )

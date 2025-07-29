@@ -167,6 +167,17 @@ fun CaastvVideoPlayer(
             id in favIds
         }
     }
+    val qualityLabel by remember(selectedVideo.value) {
+        mutableStateOf(
+            selectedVideo.value?.let { label ->
+                val heightPart = label
+                    .substringAfter('x')
+                    .substringBefore('p')
+                val h = heightPart.toIntOrNull() ?: return@let "HD"
+                if (h >= 720) "HD" else "SD"
+            } ?: "HD"
+        )
+    }
     val trackSelector = remember {
         DefaultTrackSelector(context).apply {
             setParameters(buildUponParameters().setPreferredTextLanguage(null))
@@ -776,6 +787,7 @@ fun CaastvVideoPlayer(
                         lastTopOverlayButtonFocus.value = videoButtonFocusRequester
                         showVideoOverlay.value = true
                     },
+                    qualityLabel     = qualityLabel,
                     subtitleButtonFocusRequester = subtitleButtonFocusRequester,
                     audioButtonFocusRequester = audioButtonFocusRequester,
                     videoButtonFocusRequester = videoButtonFocusRequester,
