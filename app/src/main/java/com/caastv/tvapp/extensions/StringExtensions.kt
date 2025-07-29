@@ -578,48 +578,26 @@ fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
 // from Pair<Int,String> to Triple<Int,String,String>
 fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
     when (errorCode) {
-        400  -> Triple(601,
-            "Bad request",
-            "Bad input to server")
-        403  -> Triple(602,
-            "Forbidden",
-            "User does not have permission, or invalid login data")
-        404  -> Triple(603,
-            "This channel is temporarily unavailable.",
-            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-        429  -> Triple(604,
-            "Too many requests",
-            "Max concurrent streams reached")
-        451  -> Triple(605,
-            "Unavailable for legal reasons",
-            "Geo-blocking")
-        500  -> Triple(606,
-            "Internal error",
-            "An internal server error occurred")
-        2001 -> Triple(607,
-            "Source error",
-            "The media source could not be loaded")
-        6004 -> Triple(608,
-            "DRM licence server request failed",
-            "Please try again later.")
-        4001 -> Triple(609,
-            "This channel is temporarily unavailable.",
-            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-        2000 -> Triple(610,
-            "This channel is temporarily unavailable.",
-            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-        6006 -> Triple(611,
-            "License Error",
-            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-        2002 -> Triple(612,
-            "Timeout Error",
-            "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
-        3003 -> Triple(613,
-            "Video Source Error",
-            "Please try again later.")
-        else -> Triple(errorCode,
-            "Unknown error",
-            "An unknown error occurred")
+        400  -> Triple(601, "Bad request", "Bad input to server")
+        403  -> Triple(602, "Forbidden", "User does not have permission, or invalid login data")
+        404  -> Triple(603, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        429  -> Triple(604, "Too many requests", "Max concurrent streams reached")
+        451  -> Triple(605, "Unavailable for legal reasons", "Geo-blocking")
+        500  -> Triple(606, "Internal error", "An internal server error occurred")
+        2001 -> Triple(607, "Source error", "The media source could not be loaded")
+        6004 -> Triple(608, "DRM licence server request failed", "Please try again later.")
+        4001 -> Triple(609, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2000 -> Triple(610, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        6006 -> Triple(611, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2002 -> Triple(612, "Timeout Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        3003 -> Triple(613, "Video Source Error", "Please try again later.")
+        1002 -> Triple(614, "Device Not Supported", "Streaming failed due to hardware/network limitations.")
+        4003 -> Triple(615, "Network error", "It appears that your device is not compatible with this stream. We apologize for the inconvenience. Please try again later or contact your service provider for further assistance.")
+        410 -> Triple( 616, "Video Unavailable", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        3002 -> Triple(617, "Video Unavailable", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        6001 -> Triple(618, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        1003 -> Triple(703, "Timeout", "We're experiencing high traffic at the moment, which may cause longer loading times. Please bear with us — we apologize for the inconvenience and appreciate your patience.")
+        else -> Triple(errorCode, "Unknown error", "An unknown error occurred")
     }
 
 

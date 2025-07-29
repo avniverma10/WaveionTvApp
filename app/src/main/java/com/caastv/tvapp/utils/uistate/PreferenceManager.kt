@@ -22,6 +22,9 @@ object PreferenceManager {
   private const val KEY_USER_HASH   = "userhash"
   private const val KEY_RECENTS     = "recently_watched"
   private const val KEY_APP_SETTINGS     = "appSettings"
+  private const val KEY_PREF_AUDIO    = "preferred_audio"
+  private const val KEY_PREF_SUBTITLE = "preferred_subtitle"
+  private const val KEY_PREF_VIDEO_QUALITY = "preferred_video_quality"
 
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
@@ -73,6 +76,39 @@ object PreferenceManager {
       prefs.edit {
         putStringSet(KEY_RECENTS, ids.toSet())
       }
+    }
+
+  /**
+   * The user’s preferred audio track language (e.g. “en”, “hi”).
+   * If null, no override is applied and the player’s default audio is used.
+   */
+  var preferredAudio: String?
+    get() = prefs.getString(KEY_PREF_AUDIO, null)
+    set(v) = prefs.edit {
+      if (v == null) remove(KEY_PREF_AUDIO)
+      else           putString(KEY_PREF_AUDIO, v)
+    }
+
+  /**
+   * The user’s preferred subtitle track language.
+   * If null, subtitles are turned off.
+   */
+  var preferredSubtitle: String?
+    get() = prefs.getString(KEY_PREF_SUBTITLE, null)
+    set(v) = prefs.edit {
+      if (v == null) remove(KEY_PREF_SUBTITLE)
+      else           putString(KEY_PREF_SUBTITLE, v)
+    }
+
+  /**
+   * The user’s preferred video quality label (e.g. “720p”, “1080p”).
+   * If null, Auto (adaptive) quality is used.
+   */
+  var preferredVideoQuality: String?
+    get() = prefs.getString(KEY_PREF_VIDEO_QUALITY, null)
+    set(v) = prefs.edit {
+      if (v == null) remove(KEY_PREF_VIDEO_QUALITY)
+      else           putString(KEY_PREF_VIDEO_QUALITY, v)
     }
 
   /** Save username & password atomically */
@@ -133,6 +169,7 @@ object PreferenceManager {
   fun clearRecentlyWatched() {
     prefs.edit { remove(KEY_RECENTS) }
   }
+
 
   /** Helpers to read them back */
   fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)

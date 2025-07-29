@@ -32,7 +32,6 @@ import com.caastv.tvapp.view.notificationbanner.NotificationBanner
 import com.caastv.tvapp.view.otp.OtpScreen1
 import com.caastv.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.caastv.tvapp.view.panmetro.login.PanmetroLoginScreen
-import com.caastv.tvapp.view.panmetro.player.CaastvVideoPlayer
 import com.caastv.tvapp.view.panmetro.player.PanMetroVideoPlayer
 import com.caastv.tvapp.view.panmetro.settings.NewPanMetroSettingsScreen
 import com.caastv.tvapp.view.profile.ProfileScreen
@@ -42,6 +41,7 @@ import com.caastv.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.caastv.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.caastv.tvapp.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.caastv.tvapp.viewmodels.SharedViewModel
+import com.example.tvapp.view.panmetro.player.CaastvVideoPlayer
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 

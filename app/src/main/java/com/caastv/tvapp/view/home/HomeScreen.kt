@@ -73,23 +73,13 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current
-    var showExitDialog by remember { mutableStateOf(false) }
-    // Observe the SSE event flow.
-    val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    var backPressCount by remember { mutableStateOf(0) }
-    val focusManager = LocalFocusManager.current
-    val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
-    val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
     val recentlyWatched by sharedViewModel.recentlyWatched.collectAsState()
     val menuFocusRequester = remember { FocusRequester() }
     val firstChannelFocusRequester = remember { FocusRequester() }
+    val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
 
-
-    HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
-        //columnState.scrollToItem(0)
         firstChannelFocusRequester?.let { requester ->
             try {
                 requester.requestFocus()
@@ -97,19 +87,27 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 loge("FocusError", "FocusRequester not initialized ${e.message}")
             }
         }
-
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
     }
 
-    val displayCategories = remember(homeCategories, recentlyWatched) {
+    val displayCategories = remember(homeCategories, recentlyWatched, favIds) {
         val list = mutableListOf<WTVHomeCategory>()
-
+            if (favIds.isNotEmpty()) {
+                list += WTVHomeCategory(
+                    id        = "favs",
+                    name      = "Favorites",
+                    channels  = favIds,
+                    order     = Int.MIN_VALUE + 1,
+                    createdAt = Instant.now().toString(),
+                    updatedAt = Instant.now().toString(),
+                    version   = 0
+                )
+            }
         if (recentlyWatched.isNotEmpty()) {
             list += WTVHomeCategory(
                 id        = "recent",
                 name      = "Recently Watched",
-                // ← use the real channelId field, not content._id
                 channels  = recentlyWatched.asReversed().mapNotNull { it.channelId },
                 order     = Int.MIN_VALUE,
                 createdAt = Instant.now().toString(),
