@@ -58,13 +58,11 @@ import com.android.caastv.R
 import com.caastv.tvapp.model.data.epgdata.EPGDataItem
 import com.caastv.tvapp.utils.theme.base_color
 import com.caastv.tvapp.viewmodels.SharedViewModel
-import com.caastv.tvapp.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChannelListMenuScreen(
     sharedViewModel: SharedViewModel,
-    genreViewModel: GenreViewModel,
     selectedChannelIndex : MutableState<Int>,
     channelListFocusRequester: FocusRequester,
     channelToGenreFocus: MutableState<Boolean>,
@@ -75,7 +73,7 @@ fun ChannelListMenuScreen(
 
     var focusedIndex by remember { mutableStateOf(0) }
     var previewChannelIndex by remember { mutableStateOf(0) }
-    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
     val selectedChannelIndex by remember { mutableStateOf( selectedChannelIndex) }
     LaunchedEffect(filteredChannels) {
         focusedIndex = if(selectedChannelIndex.value >0) selectedChannelIndex.value else 0

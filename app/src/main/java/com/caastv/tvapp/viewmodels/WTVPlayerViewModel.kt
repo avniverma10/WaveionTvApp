@@ -41,7 +41,7 @@ import javax.inject.Inject
 open class WTVPlayerViewModel @Inject constructor(
     private val wtvNetworkRepositoryImpl: WTVNetworkRepositoryImpl,
     private val application: Application,
-    private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl, okHttpClient = OkHttpClient()) {
+    private val dataStoreManager: DataStoreManager) : WTVViewModel(application= application,networkApiCallInterfaceImpl= wtvNetworkRepositoryImpl) {
     // Mutable StateFlow to store the mobile number
     private var _mobileNumber = MutableLiveData<String?>(null)
     companion object {
@@ -134,11 +134,9 @@ open class WTVPlayerViewModel @Inject constructor(
                 .get()
                 .build()
 
-            // Create the OkHttpClient instance
-            val client = OkHttpClient()
 
             // Asynchronously execute the request
-            client.newCall(request).enqueue(object : Callback {
+            okHttpClient.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     // Handle failure, e.g. log or update UI accordingly
                     println("DRM request failed: ${e.message}")

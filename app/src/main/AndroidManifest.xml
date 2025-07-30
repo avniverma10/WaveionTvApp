@@ -77,11 +77,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <provider
-            android:name="com.caastv.tvapp.model.wtvdatabase.EPGContentProvider"
-            android:authorities="com.android.caastv.provider"
-            android:exported="false" />
-
         <service
             android:name="com.caastv.tvapp.utils.servicehelper.FingerprintOverlayService"
             android:exported="false"

@@ -1,11 +1,11 @@
 package com.caastv.tvapp.utils.network
 
+import com.android.caastv.BuildConfig
 import okhttp3.HttpUrl
 
 object UrlManager {
-    private val primaryBaseUrl = "https://api-demo.caastv.com/api/"//https://api-demo.caastv.com/api/"
-    private val alternateBaseUrl = "https://api-demo.caastv.com/api/"
-
+    private val primaryBaseUrl = "https://api-demo.caastv.com/api/"//BuildConfig.PRIMERY_BASE_URL
+    private val alternateBaseUrl = "https://api-demo.caastv.com/api/"//BuildConfig.SECONDARY_BASE_URL
     @Volatile
     private var currentBaseUrl = primaryBaseUrl
 

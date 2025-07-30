@@ -16,7 +16,7 @@ work_version ="2.9.0"
 
 hilt = "2.48" # Hilt version (update to latest version as needed)
 hiltAndroidx = "1.1.0" # AndroidX Hilt version, for ViewModel etc.
-#room_version = "2.6.1"
+room_version = "2.6.1"
 retrofit = "2.9.0"
 okhttp = "4.11.0"
 accompanist_permissions ="0.30.0"
@@ -75,11 +75,12 @@ pager-indicators = { module = "com.google.accompanist:accompanist-pager-indicato
 constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout-compose" }
 work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work_version" }
 
-#room = { module = "androidx.room:room-runtime", version.ref = "room_version" }
-#room-ksp = { module = "androidx.room:room-compiler", version.ref = "room_version" }
 
-#room-ktx = { module = "androidx.room:room-ktx", version.ref = "room_version" }
+room = { module = "androidx.room:room-runtime", version.ref = "room_version" }
+room-ksp = { module = "androidx.room:room-compiler", version.ref = "room_version" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room_version" }
 #room-rxjava2 = { module = "androidx.room:room-rxjava2", version.ref = "room_version" }
+
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore_version" }
 
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
@@ -130,11 +131,12 @@ pager=[
     "pager-indicators"
 ]
 
-#room=[
-#    "room",
-#    "room-ktx",
-#    "room-rxjava2"
-#]
+room=[
+    "room",
+    "room-ktx",
+  #  "room-rxjava2"
+]
+
 retrofit=[
     "retrofit",
     "okhttp",

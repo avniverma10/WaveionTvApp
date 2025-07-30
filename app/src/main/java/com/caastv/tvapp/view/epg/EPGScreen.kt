@@ -38,7 +38,6 @@ import androidx.tv.material3.IconButton
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
-import com.caastv.tvapp.extensions.appManifestLiveData
 import com.caastv.tvapp.extensions.hideKeyboard
 import com.caastv.tvapp.extensions.loge
 import com.caastv.tvapp.model.data.banner.Banner
@@ -49,7 +48,6 @@ import com.caastv.tvapp.view.navigationhelper.CategoryMenu
 import com.caastv.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.caastv.tvapp.view.navigationhelper.LanguageMenu
 import com.caastv.tvapp.view.uicomponent.error.CommonDialog
-import com.caastv.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.caastv.tvapp.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
@@ -60,18 +58,18 @@ import kotlinx.coroutines.launch
 @Composable
 fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
-    HideKeyboardOnEnter()
+
     val context = LocalContext.current
 
 
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val appManifestData = sharedViewModel.manifestData.collectAsState()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
     val menuFocusRequester = remember { FocusRequester() }
     val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
     val bannerList by sharedViewModel.bannerList.collectAsState(initial = emptyList())
     val firstChannelFocusRequester = remember { FocusRequester() }
-    HideKeyboardOnEnter()
+
 
 
     LaunchedEffect(Unit) {

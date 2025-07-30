@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -42,15 +43,15 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.android.caastv.R
-import com.caastv.tvapp.extensions.appManifestLiveData
-import com.caastv.tvapp.utils.theme.filter_selected_color
-import com.caastv.tvapp.utils.theme.base_color
-import com.caastv.tvapp.utils.theme.focus_background
 import com.caastv.tvapp.utils.Constants
+import com.caastv.tvapp.utils.theme.base_color
+import com.caastv.tvapp.utils.theme.filter_selected_color
+import com.caastv.tvapp.utils.theme.focus_background
 import com.caastv.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+
 @Composable
 fun CategoryMenu(
     sharedViewModel: SharedViewModel,
@@ -62,7 +63,7 @@ fun CategoryMenu(
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre ?: emptyList()
+    val menuItems = sharedViewModel.manifestData.collectAsState().value?.genre ?: emptyList()
 
     if (menuItems.isEmpty()) return
 

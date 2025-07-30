@@ -18,8 +18,8 @@ android {
         applicationId = "com.android.caastv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.0.30"
+        versionCode = 14
+        versionName = "1.0.32"
     }
 
     buildTypes {
@@ -112,8 +112,8 @@ dependencies {
     //retrofit
     implementation (libs.bundles.retrofit)
     //room
-    //implementation (libs.bundles.room)
-    //ksp (libs.room.ksp)
+    implementation (libs.bundles.room)
+    ksp (libs.room.ksp)
     //paging
     implementation (libs.bundles.pager)
     //permissions

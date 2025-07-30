@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import com.android.caastv.R
-import com.caastv.tvapp.extensions.appManifestLiveData
 import com.caastv.tvapp.extensions.capitalizeFirstLetter
 import com.caastv.tvapp.extensions.hideKeyboard
 import com.caastv.tvapp.extensions.loge
@@ -36,18 +36,17 @@ import com.caastv.tvapp.utils.theme.screen_bg_color
 import com.caastv.tvapp.utils.uistate.PreferenceManager
 import com.caastv.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.caastv.tvapp.view.uicomponent.error.CommonDialog
-import com.caastv.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.caastv.tvapp.viewmodels.SharedViewModel
 
 
 @Composable
 fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel) {
 
-    HideKeyboardOnEnter()
+
     val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val appManifestData = sharedViewModel.manifestData.collectAsState()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     var backPressCount by remember { mutableStateOf(0) }
     val focusManager = LocalFocusManager.current

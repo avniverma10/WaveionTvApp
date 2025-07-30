@@ -168,7 +168,7 @@ fun EPGContent(
     val hasInitiallyFocused = remember { mutableStateOf(false) }
     val leftPanelWidth = 180.dp
     //hide keyboard forcefully
-    //HideKeyboardOnEnter()
+    //
     LaunchedEffect(Unit) {
         context.hideKeyboard()
         while (true) {

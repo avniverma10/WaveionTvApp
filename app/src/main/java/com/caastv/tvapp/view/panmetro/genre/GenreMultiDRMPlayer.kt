@@ -62,7 +62,6 @@ import com.caastv.tvapp.view.uicomponent.error.PlaybackErrorPreview
 import com.caastv.tvapp.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.caastv.tvapp.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.caastv.tvapp.viewmodels.SharedViewModel
-import com.caastv.tvapp.viewmodels.genre.GenreViewModel
 import com.techit.youtubelib.PlayerConstants
 import com.techit.youtubelib.interfaces.YouTubePlayer
 import com.techit.youtubelib.listeners.AbstractYouTubePlayerListener
@@ -76,14 +75,11 @@ import kotlin.random.Random
 @Composable
 fun GenreMultiDRMPlayer(
     selectedChannelIndex : MutableState<Int>,
-    sharedViewModel: SharedViewModel,
-    genreViewModel: GenreViewModel
+    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val coroutineScope = rememberCoroutineScope()
-    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
     val playerView = remember {

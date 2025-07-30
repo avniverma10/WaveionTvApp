@@ -1,10 +1,12 @@
 package com.caastv.tvapp.model.wtvdatabase
 
+import android.content.ContentUris
 import android.net.Uri
 import androidx.core.net.toUri
 
 object EPGContract {
-    const val AUTHORITY = "com.caastv.tvapp.provider"
+    // Instead of using FileProvider, use your own ContentProvider that supports updates
+    const val AUTHORITY = "com.android.caastv.provider"
     val BASE_URI: Uri = "content://$AUTHORITY".toUri()
     const val PATH_EPG = "epg"
 

@@ -147,7 +147,7 @@ fun PanMetroVideoPlayer(
     }
 
     //hide keyboard forcefully
-    //HideKeyboardOnEnter()
+    //
     LaunchedEffect(Unit) {
         context.hideKeyboard()
         //request for user hash

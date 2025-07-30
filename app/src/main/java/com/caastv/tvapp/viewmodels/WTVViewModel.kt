@@ -1,5 +1,7 @@
 package com.caastv.tvapp.viewmodels
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.app.DownloadManager
 import android.content.ContentValues
@@ -7,6 +9,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -14,55 +17,56 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.caastv.tvapp.extensions.applyAppHome
-import com.caastv.tvapp.extensions.applyAppManifest
-import com.caastv.tvapp.extensions.applyEPGData
+import com.android.caastv.R
+import com.caastv.tvapp.extensions.isNotNullOrEmpty
 import com.caastv.tvapp.extensions.logReport
+import com.caastv.tvapp.extensions.loge
+import com.caastv.tvapp.extensions.provideMacAddress
+import com.caastv.tvapp.extensions.showToastS
 import com.caastv.tvapp.model.data.appupdate.AppUpdateData
+import com.caastv.tvapp.model.data.banner.Banner
+import com.caastv.tvapp.model.data.customapp.InventoryApp
 import com.caastv.tvapp.model.data.epgdata.EPGDataItem
+import com.caastv.tvapp.model.data.epgdata.Programme
 import com.caastv.tvapp.model.data.genre.WTVGenre
 import com.caastv.tvapp.model.data.language.WTVLanguage
+import com.caastv.tvapp.model.data.login.LoginResponseData
+import com.caastv.tvapp.model.data.manifest.WTVManifest
 import com.caastv.tvapp.model.data.notification.NotificationItem
 import com.caastv.tvapp.model.data.sse.TabItem
+import com.caastv.tvapp.model.home.WTVHomeCategory
 import com.caastv.tvapp.model.repository.common.WTVNetworkRepositoryImpl
+import com.caastv.tvapp.model.repository.database.AppDataRepository
 import com.caastv.tvapp.model.repository.login.LoginPrefsRepository
 import com.caastv.tvapp.model.wtvdatabase.EPGContract
+import com.caastv.tvapp.utils.network.UrlManager
+import com.caastv.tvapp.utils.network.interceptors.ApiStatusInterceptor
 import com.caastv.tvapp.utils.sealed.WTVListResponse
 import com.caastv.tvapp.utils.sealed.WTVResponse
 import com.caastv.tvapp.utils.sealed.firstOrNullSuccess
+import com.caastv.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import javax.inject.Inject
-import android.Manifest
-import android.annotation.SuppressLint
-import android.os.Environment
-import com.android.caastv.R
-import com.caastv.tvapp.extensions.isNotNullOrEmpty
-import com.caastv.tvapp.extensions.loge
-import com.caastv.tvapp.extensions.provideMacAddress
-import com.caastv.tvapp.extensions.showToastS
-import com.caastv.tvapp.model.data.epgdata.Programme
-import com.caastv.tvapp.model.data.login.LoginResponseData
-import com.caastv.tvapp.utils.network.UrlManager
-import com.caastv.tvapp.utils.uistate.PreferenceManager
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.time.Instant
-import java.util.Locale
 import java.time.ZoneId
+import java.util.Locale
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.math.abs
 
 
@@ -71,9 +75,12 @@ open class WTVViewModel @Inject constructor(
     private val application: Application,
     private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl,
     private val loginPrefsRepository: LoginPrefsRepository?=null,
-    private val okHttpClient: OkHttpClient
+    private val dataRepository: AppDataRepository?=null
 ) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
+    val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(ApiStatusInterceptor.getInstance())
+        .build()
     private val _userIdeal = MutableStateFlow<Boolean>(false)
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
@@ -82,6 +89,18 @@ open class WTVViewModel @Inject constructor(
     val provideIsProgress: StateFlow<Boolean> get() = _isProgress
     private var _wtvEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val wtvEPGList: StateFlow<List<EPGDataItem>> = _wtvEPGList.asStateFlow()
+    private var _manifestData = MutableStateFlow<WTVManifest?>(null)
+    val manifestData: StateFlow<WTVManifest?> = _manifestData.asStateFlow()
+    private var _homeData = MutableStateFlow<List<WTVHomeCategory>>(emptyList())
+    val homeData: StateFlow<List<WTVHomeCategory>> = _homeData.asStateFlow()
+
+    private val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
+    val inventoryApps: StateFlow<List<InventoryApp>> = _inventoryApps.asStateFlow()
+
+    private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
+    val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
+
+
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
 
@@ -91,6 +110,15 @@ open class WTVViewModel @Inject constructor(
     // ─── Date and time state ───
     private val _isTimeValid = MutableStateFlow<Boolean?>(true)
     val isTimeValid: StateFlow<Boolean?> = _isTimeValid.asStateFlow()
+
+    private val _isServerAvailable = MutableStateFlow<Boolean>(false)
+    val isServerAvailable: StateFlow<Boolean> = _isServerAvailable.asStateFlow()
+
+    val _isOfflineEnable = MutableStateFlow<Boolean>(false)
+    val isOfflineEnable: StateFlow<Boolean> = _isOfflineEnable.asStateFlow()
+    private val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
+
 
     // ─── App‑Update state ───
     private val _appUpdateData = MutableStateFlow<AppUpdateData?>(null)
@@ -127,11 +155,11 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-    /*fun updateEPGData(epgList: List<EPGDataItem>) {
+    fun updateEPGData(epgList: List<EPGDataItem>) {
         viewModelScope.launch {
             saveEPGList(application, epgList)
         }
-    }*/
+    }
 
     var _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
@@ -242,22 +270,21 @@ open class WTVViewModel @Inject constructor(
             }.await()
             val epgDeferred = async {
                 networkApiCallInterfaceImpl
-                    .provideWTVEPGData(UrlManager.getCurrentBaseUrl() +"epg-files/join-epg-content")
+                    .provideWTVEPGData(UrlManager.getCurrentBaseUrl() +"epg-files/join-epg-content",dataRepository)
                     .firstOrNullSuccess()
                     ?.let { epgData ->
                         epgData
                     }
             }.await()
 
-            Log.d("AVNI", "manifestDeferred:${manifestDeferred} and epgDeferred:${epgDeferred}")
-
             // Wait for all to complete (success or failure)
             if (manifestDeferred != null && epgDeferred != null) {
                 // **This line runs only after all of the above finish.**
-                application.applyAppManifest(manifestDeferred)
+                dataRepository?.saveWtvManifest(manifestDeferred)
+                updateManifest(manifestDeferred)
                 val epgData = removeDuplicateEPG(epgDeferred)
-                _wtvEPGList.value = epgData
-                application.applyEPGData(epgData)
+                //updateEPGData(epgData)
+                updateEpgData(epgData)
                 epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
                     ?.let(::updateSelectedChannel) ?: kotlin.run {
                     epgData?.getOrNull(0)?.let {
@@ -284,17 +311,21 @@ open class WTVViewModel @Inject constructor(
                     .provideWTVHomeData(UrlManager.getCurrentBaseUrl() +"homescreenCategory")
                     .collect { response ->
                         if (response is WTVListResponse.Success) {
-                            application.applyAppHome(response.data)
+                            dataRepository?.saveAllHomeCategories(response.data)
+                            updateHome(response.data)
                             logReport("applyAppHome:${response.data}")
                         } else if (response is WTVListResponse.Failure) {
                             logReport("applyAppHome error:${response.error.message}")
                         }
                     }
             }
+            launch {
+                fetchInventoryApps()
+            }
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
-    private suspend fun fetchServerTimeMillis(): Long? {
+    suspend fun fetchServerTimeMillis(): Long? {
         return try {
             val req = Request.Builder()
                 .url(UrlManager.getCurrentBaseUrl() + "app/health")
@@ -340,10 +371,13 @@ open class WTVViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val valid = withContext(Dispatchers.IO) {
+                   // If we can't get server time, assume invalid (or adjust logic as needed)
                     val serverMs = fetchServerTimeMillis() ?: run {
+                        _isServerAvailable.value = false
                         // If we can't get server time, assume invalid (or adjust logic as needed)
                         return@withContext false
                     }
+                    _isServerAvailable.value = true
 
                     val deviceMs = System.currentTimeMillis()
                     val drift = abs(deviceMs - serverMs)
@@ -395,9 +429,27 @@ open class WTVViewModel @Inject constructor(
         selectedChannel.tv?.programme?.let { providePlayableProgramData(it) }
     }
 
-    //is user ideal since 10 sec
-    fun updateUserIdeal(isUserIdeal: Boolean) {
-        _userIdeal.value = isUserIdeal
+    //update epg data
+    fun updateEpgData(epgData: List<EPGDataItem>) {
+        _wtvEPGList.value = epgData
+    }
+
+    //update manifest data
+    fun updateManifest(manifest: WTVManifest) {
+        _manifestData.value = manifest
+    }
+    //update home data
+    fun updateHome(homeData: List<WTVHomeCategory>) {
+        _homeData.value = homeData
+    }
+
+    //update AppsInventory data
+    fun updateAppsInventory(appsInventory: List<InventoryApp>) {
+        _inventoryApps.value = appsInventory
+    }
+    //update banner data
+    fun updateBanners(banners: List<Banner>) {
+        _bannerList.value = banners
     }
 
 
@@ -605,6 +657,33 @@ open class WTVViewModel @Inject constructor(
     }
 
 
+    fun fetchInventoryApps() {
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl
+                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
+                .catch { }
+                .collect { resp ->
+                    if (resp is WTVListResponse.Success) {
+                        updateAppsInventory(resp.data)
+                        dataRepository?.saveAllAppsInventory(resp.data)
+                        // application.applyAppInventoryApp(resp.data)
+                    }
+                }
+        }
+    }
+    suspend fun provideBanners() {
+        networkApiCallInterfaceImpl.getBanners(UrlManager.getCurrentBaseUrl() +"banners").collect { response ->
+            when (response) {
+                is WTVListResponse.Success -> {
+                    updateBanners(response.data)
+                    dataRepository?.saveAllBanner(response.data)
+                }
+                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message} ")
+            }
+        }
+    }
+
+
     fun validateUserLogin(userName: String,userPassword: String,onLoginResponse:(LoginResponseData?,String?)->Unit){
         viewModelScope.launch {
             val requestBody = hashMapOf(
@@ -633,6 +712,50 @@ open class WTVViewModel @Inject constructor(
             }
         }
     }
+
+    fun filterPanMetroChannelsByGenre(genre:String?=null) {
+        genre?.let {
+            _filteredPanMetroChannels.value = _wtvEPGList.value?.filter { epgItem ->
+                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.map { it.name }.orEmpty()?.any { it.equals(genre, true) } == true)
+                genreMatch
+            }?: arrayListOf()
+        }?:kotlin.run {
+            _filteredPanMetroChannels.value = _wtvEPGList.value
+        }
+
+    }
+
+    fun syncOfflineData(): Job {
+      return viewModelScope.launch {
+            // Execute all data operations first
+            dataRepository?.getWtvManifest()?.let {
+                Log.e("data:", it.toString())
+                updateManifest(it)
+            }
+            dataRepository?.getAllHomeCategories()?.let {
+                Log.e("data:", it.toString())
+                updateHome(it)
+            }
+            dataRepository?.getAllEpgData()?.let {
+                Log.e("data:", it.toString())
+                updateEpgData(it)
+            }
+            dataRepository?.getAllAppsInventory()?.let {
+                Log.e("data:", it.toString())
+                updateAppsInventory(it)
+            }
+            dataRepository?.getAllBanner()?.let {
+                Log.e("data:", it.toString())
+                updateBanners(it)
+            }
+        }
+    }
+
+    fun enableOffline(isOfflineEnable: Boolean? = false) {
+        // Update the offline enable state after all operations complete
+        _isOfflineEnable.value = isOfflineEnable ?: false
+    }
+
 }
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
     return items

@@ -405,6 +405,15 @@ fun <T> String?.convertIntoModel(classRef: Class<T>, gson: Gson): T? {
     }
 }
 
+inline fun <reified T> String?.convertDatabaseModels(type: TypeToken<T>): T? {
+    return try {
+        this?.provideGsonWithCoreJsonString()?.fromJson(this, type.type)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
 
 fun <T> String?.convertIntoModels(type: TypeToken<T>, gson: Gson): T? {
     return try {

@@ -2,7 +2,13 @@ package com.caastv.tvapp.view.home
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,7 +16,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,8 +42,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +61,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -48,8 +70,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.caastv.R
-import com.caastv.tvapp.extensions.appHomeLiveData
-import com.caastv.tvapp.extensions.appManifestLiveData
 import com.caastv.tvapp.extensions.hideKeyboard
 import com.caastv.tvapp.extensions.loge
 import com.caastv.tvapp.model.data.banner.Banner
@@ -60,7 +80,6 @@ import com.caastv.tvapp.utils.theme.bg_card_color
 import com.caastv.tvapp.utils.uistate.PreferenceManager
 import com.caastv.tvapp.view.navigationhelper.Destination
 import com.caastv.tvapp.view.navigationhelper.ExpandableNavigationMenu
-import com.caastv.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.caastv.tvapp.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
 import java.net.URLEncoder
@@ -69,7 +88,7 @@ import java.time.Instant
 
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
-    val homeCategories by sharedViewModel.provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
+    val homeCategories = sharedViewModel.homeData.collectAsState()////provideApplicationContext().appHomeLiveData().observeAsState(initial = emptyList())
     val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current
@@ -77,6 +96,8 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val menuFocusRequester = remember { FocusRequester() }
     val firstChannelFocusRequester = remember { FocusRequester() }
     val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
+
+
 
     LaunchedEffect(Unit) {
         context.hideKeyboard()
@@ -115,7 +136,7 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 version   = 0
             )
         }
-        list += homeCategories
+        list += homeCategories.value
         list
     }
 

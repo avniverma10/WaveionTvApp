@@ -50,10 +50,10 @@ fun Context.provideMacAddrLiveData() =
 fun Context.applyEPGData(data: List<EPGDataItem>) =
     (applicationContext as? CoreComponentProvider)?.initializeEPGData(data)
 
-
+/*
 fun Context.appManifestLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideAppManifestLiveData()
-        ?: throw IllegalStateException("Manifest is null: $applicationContext")
+        ?: throw IllegalStateException("Manifest is null: $applicationContext")*/
 
 
 fun Context.applyAppManifest(data: WTVManifest) =

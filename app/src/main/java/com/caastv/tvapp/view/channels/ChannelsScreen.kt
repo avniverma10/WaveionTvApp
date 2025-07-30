@@ -31,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -56,7 +55,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
-import com.caastv.tvapp.extensions.appManifestLiveData
 import com.caastv.tvapp.extensions.hideKeyboard
 import com.caastv.tvapp.model.data.banner.Banner
 import com.caastv.tvapp.model.data.epgdata.Channel
@@ -68,7 +66,6 @@ import com.caastv.tvapp.view.navigationhelper.CategoryMenu
 import com.caastv.tvapp.view.navigationhelper.Destination
 import com.caastv.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.caastv.tvapp.view.navigationhelper.LanguageMenu
-import com.caastv.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.caastv.tvapp.viewmodels.SharedViewModel
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -80,7 +77,7 @@ fun ChannelScreen(
     bannerList: List<Banner> = emptyList()
 ) {
     val context = LocalContext.current
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData().observeAsState()
+    val appManifestData = sharedViewModel.manifestData.collectAsState()
     val categories = appManifestData.value?.genre ?: arrayListOf()
     val languages  = appManifestData.value?.language ?: arrayListOf()
     val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
@@ -112,7 +109,7 @@ fun ChannelScreen(
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
     val menuFocusRequester = remember { FocusRequester() }
 
-    HideKeyboardOnEnter()
+
     LaunchedEffect(Unit) {
         context.hideKeyboard()
     }

@@ -21,6 +21,7 @@ import com.caastv.tvapp.model.data.login.LoginResponseData
 import com.caastv.tvapp.model.data.manifest.WTVManifest
 import com.caastv.tvapp.model.data.notification.NotificationItem
 import com.caastv.tvapp.model.home.WTVHomeCategory
+import com.caastv.tvapp.model.repository.database.AppDataRepository
 import com.caastv.tvapp.utils.network.NetworkApiCallInterface
 import com.caastv.tvapp.utils.network.UrlManager
 import com.caastv.tvapp.utils.sealed.WTVListResponse
@@ -104,10 +105,11 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         awaitClose { source.cancel() }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun provideWTVEPGData(epgContentUrl: String): Flow<WTVListResponse<EPGDataItem>> = flow {
+    suspend fun provideWTVEPGData(epgContentUrl: String, dataRepository: AppDataRepository?): Flow<WTVListResponse<EPGDataItem>> = flow {
         try {
             val response = networkApiCallInterface.makeHttpGetRequest(epgContentUrl).execute()
             if (response.isSuccessful && response.body() != null) {
+                dataRepository?.saveAllEpgData(response.body()?.toJSONArray().toString())
                 val epgData: List<EPGDataItem>? = response.body()?.toJSONArray().toString()
                     .convertIntoModels(object : TypeToken<List<EPGDataItem>>() {})
 

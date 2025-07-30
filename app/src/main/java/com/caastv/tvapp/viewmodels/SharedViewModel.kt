@@ -28,6 +28,7 @@ import com.caastv.tvapp.model.data.message.ScrollMessageInfo
 import com.caastv.tvapp.model.data.sseresponse.GlobalSSEResponse
 import com.caastv.tvapp.model.data.sseresponse.PlayerSSEResponse
 import com.caastv.tvapp.model.repository.common.WTVNetworkRepositoryImpl
+import com.caastv.tvapp.model.repository.database.AppDataRepository
 import com.caastv.tvapp.model.repository.login.LoginPrefsRepository
 import com.caastv.tvapp.model.wtvdatabase.EPGContract
 import com.caastv.tvapp.utils.Constants
@@ -66,8 +67,9 @@ open class SharedViewModel @Inject constructor(
     private val application: Application,
     private val dataStoreManager: DataStoreManager,
     private val filterPreferences: FilterPreferences,
+    private val dataRepository: AppDataRepository,
     private val loginPrefsRepository: LoginPrefsRepository,
-) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,loginPrefsRepository=loginPrefsRepository, okHttpClient = OkHttpClient()) {
+) : WTVViewModel(application = application, networkApiCallInterfaceImpl = wtvNetworkRepositoryImpl,dataRepository = dataRepository,loginPrefsRepository=loginPrefsRepository) {
     fun provideApplicationInstance() = application.applicationContext as? WTVAppCaastv
 
     var isFromSplash = MutableStateFlow<Boolean>(false)
@@ -84,9 +86,6 @@ open class SharedViewModel @Inject constructor(
     private val _scrollMessageItemsFlow = MutableStateFlow<List<ScrollMessageInfo>>(emptyList())
     val scrollMessageItemsFlow: StateFlow<List<ScrollMessageInfo>> = _scrollMessageItemsFlow
 
-
-    private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
-    val bannerList: StateFlow<List<Banner>> = _bannerList.asStateFlow()
 
     private val _filteredEPGList = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredEPGList: StateFlow<List<EPGDataItem>> = _filteredEPGList.asStateFlow()
@@ -141,8 +140,6 @@ open class SharedViewModel @Inject constructor(
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
 
-    private val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
-    val inventoryApps: StateFlow<List<InventoryApp>> = _inventoryApps.asStateFlow()
 
     private val _recentlyWatched = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val recentlyWatched: StateFlow<List<EPGDataItem>> = _recentlyWatched
@@ -158,6 +155,7 @@ open class SharedViewModel @Inject constructor(
         //provideGlobalFingerprintInfo()
         //provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
+
         viewModelScope.launch {
             isInitializeData
                 .filter { it }        // only when it becomes true
@@ -174,15 +172,6 @@ open class SharedViewModel @Inject constructor(
                 }
             }
         }
-        // observe EPG changes continuously
-        /*viewModelScope.launch {
-           // observeEPGChanges(application).collect()
-            application.applicationContext.coreEPGLiveData().value?.let {epgList->
-                _epgChannels.value = wtvEPGList.value.mapNotNull { it.tv?.channel }
-                applyFilters()
-                filterPanMetroChannelsByGenre()
-            }
-        }*/
         val savedIds = PreferenceManager.recentChannelIds
         _recentlyWatched.value = savedIds.mapNotNull { id ->
             wtvEPGList.value.firstOrNull { it.channelId == id }
@@ -199,6 +188,28 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
+    fun requiredOfflineDataInitialization(){
+        viewModelScope.launch {
+            val saved = filterPreferences.filterFlow.first() // <-- one-time load only
+            _filterState.value = saved
+            applyFilters()
+        }
+        viewModelScope.launch {
+            wtvEPGList.collectLatest { epgList ->
+                val savedIds = PreferenceManager.recentChannelIds
+                _recentlyWatched.value = savedIds.mapNotNull { id ->
+                    epgList.firstOrNull { it.channelId == id }
+                }
+            }
+        }
+        val savedIds = PreferenceManager.recentChannelIds
+        _recentlyWatched.value = savedIds.mapNotNull { id ->
+            wtvEPGList.value.firstOrNull { it.channelId == id }
+        }
+
+        filterPanMetroChannelsByGenre()
+    }
+
     fun setCurrentPlaylist(list: List<EPGDataItem>) {
         _currentPlaylist.value = list
     }
@@ -211,19 +222,6 @@ open class SharedViewModel @Inject constructor(
         clearWishlistPopup()
     }
 
-    fun fetchInventoryApps() {
-        viewModelScope.launch {
-            wtvNetworkRepositoryImpl
-                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
-                .catch { }
-                .collect { resp ->
-                    if (resp is WTVListResponse.Success) {
-                        _inventoryApps.value = resp.data
-                        application.applyAppInventoryApp(resp.data)
-                    }
-                }
-        }
-    }
 
     fun fetchFavorites() {
         viewModelScope.launch {
@@ -285,14 +283,6 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    suspend fun provideBanners() {
-        wtvNetworkRepositoryImpl.getBanners(UrlManager.getCurrentBaseUrl() +"banners").collect { response ->
-            when (response) {
-                is WTVListResponse.Success -> _bannerList.value = response.data
-                is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message} ")
-            }
-        }
-    }
 
     fun updateLastFocusedChannel(index: Int) {
         lastFocusedChannelIndex.value = index
@@ -316,28 +306,34 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    fun observeEPGChanges(context: Context): Flow<List<EPGDataItem>> = callbackFlow {
+   /* fun observeEPGChanges(context: Context): Flow<List<EPGDataItem>> = callbackFlow {
         val observer = object : ContentObserver(null) {
             override fun onChange(selfChange: Boolean) {
                 launch {
-                    val epgList = fetchEPGList(context)
-                    _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
-                    applyFilters()
-                    trySend(epgList)
+                    if (isOfflineEnable.value.not()) { // Only fetch if not in offline mode
+                        val epgList = fetchEPGList(context)
+                        _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
+                        applyFilters()
+                        trySend(epgList)
+                    }
                 }
             }
         }
+
         context.contentResolver.registerContentObserver(
             EPGContract.EPGEntry.CONTENT_URI, true, observer
         )
-        val epgList = fetchEPGList(context)
-        _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
-        applyFilters()
-        trySend(epgList)
-        //filterPanMetroChannelsByGenre()
+
+        // Initial fetch only if not in offline mode
+        if (_isOfflineEnable.value.not()) {
+            val epgList = fetchEPGList(context)
+            _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
+            applyFilters()
+            trySend(epgList)
+        }
 
         awaitClose { context.contentResolver.unregisterContentObserver(observer) }
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(Dispatchers.IO)*/
 
     fun updateGenre(genre: String?) {
         val newGenre = if (genre.equals("All",true) ) null else genre

@@ -28,6 +28,7 @@ import com.android.caastv.R
 
 @Composable
 fun CommonDialog(
+    isErrorAdded: Boolean?=true,
     showDialog: Boolean,
     title: String? = null,
     message: String? = null,
@@ -81,13 +82,15 @@ fun CommonDialog(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Image(
-                            painter = painter ?: painterResource(id = R.drawable.error),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            colorFilter = ColorFilter.tint(Color.White)
-                        )
-                        Spacer(Modifier.width(8.dp))
+                        if(isErrorAdded== true) {
+                            Image(
+                                painter = painter ?: painterResource(id = R.drawable.error),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                colorFilter = ColorFilter.tint(Color.White)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(
                             text = text,
                             fontSize = 18.sp,
@@ -117,7 +120,7 @@ fun CommonDialog(
                 // ─── Error details ──────────────────────────────────────────
                 if (errorCode != null || errorMessage != null) {
                     Text(
-                        text = "Error ${errorCode.orEmpty()}: ${errorMessage.orEmpty()}",
+                        text = if(isErrorAdded == false) "${errorMessage.orEmpty()}" else "Error ${errorCode.orEmpty()}: ${errorMessage.orEmpty()}",
                         fontSize = 14.sp,
                         color = Color.White,
                         textAlign = TextAlign.Center,

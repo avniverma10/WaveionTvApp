@@ -64,6 +64,8 @@ fun SplashScreen(
     val showDialog by sharedViewModel.showUpdateDialog.collectAsStateWithLifecycle()
     val updateData by sharedViewModel.appUpdateData.collectAsStateWithLifecycle()
     val timeValid by sharedViewModel.isTimeValid.collectAsStateWithLifecycle()
+    val isServerAvailable by sharedViewModel.isServerAvailable.collectAsState()
+    val isOfflineEnable by sharedViewModel.isOfflineEnable.collectAsState()
 
     val downloadId by sharedViewModel.downloadId.collectAsStateWithLifecycle()
     val isUpdating = downloadId != null
@@ -137,21 +139,26 @@ fun SplashScreen(
         }*/
     }
 
-    if (timeValid == false) {
+    if (timeValid == false && !isServerAvailable && !isOfflineEnable) {
         CommonDialog(
+            isErrorAdded= if(!isServerAvailable) false else true,
             showDialog = true,
-            title = "Date & Time Error",
+            title = if(!isServerAvailable) "\uD83D\uDEA7  Service Temporarily Unavailable" else "Date & Time Error",
             message = null,
+            borderColor = if(!isServerAvailable) Color.Transparent else Color.Gray,
             painter = painterResource(id = R.drawable.media_error),
-            errorCode = null,
-            errorMessage = "The date or time on your device appears incorrect. Please correct your system clock before continuing.",
+            errorCode = null,//You can continue offline.
+            errorMessage = if(!isServerAvailable) "We're working to restore the connection." else "The date or time on your device appears incorrect. Please correct your system clock before continuing.",
             confirmButtonText = "Exit",
             onConfirm = {
                 (context as? Activity)?.finishAffinity()
                 android.os.Process.killProcess(android.os.Process.myPid())
             },
-            dismissButtonText = null,
-            onDismiss = {}
+            dismissButtonText = if(!isServerAvailable) "Continue" else null,
+            onDismiss = {
+                sharedViewModel.enableOffline(true)
+                sharedViewModel.requiredOfflineDataInitialization()
+            }
         )
     }
 
@@ -162,13 +169,13 @@ fun SplashScreen(
         }
     }
 
-    LaunchedEffect(timeValid, isInitializeData, showDialog, errorLoadingData, isUpdating) {
-        if (timeValid == false) return@LaunchedEffect
-        if (!isInitializeData) return@LaunchedEffect
+    LaunchedEffect(timeValid, isInitializeData, showDialog, errorLoadingData, isUpdating, isOfflineEnable) {
+        if (timeValid == false && !isOfflineEnable) return@LaunchedEffect
+        if (!isInitializeData  && !isOfflineEnable) return@LaunchedEffect
         if (showDialog) return@LaunchedEffect
         if (isUpdating) return@LaunchedEffect
 
-        if (errorLoadingData != null) {
+        if (errorLoadingData != null  && !isOfflineEnable) {
             showExitDialog = true
             return@LaunchedEffect
         }

@@ -2,8 +2,24 @@ package com.caastv.tvapp.view.navigationhelper
 
 import ForceMessageDialog
 import android.annotation.SuppressLint
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -13,12 +29,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.android.caastv.R
 import com.caastv.tvapp.utils.network.error.GlobalErrorHandler
 import com.caastv.tvapp.utils.uistate.PreferenceManager
 import com.caastv.tvapp.view.appscreen.AppsScreen
@@ -48,11 +70,23 @@ import java.nio.charset.StandardCharsets
 @SuppressLint("UnrememberedMutableState")
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
+    val context = LocalContext.current
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     //In your composable function or ViewModel
     var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+    val isOfflineEnable by sharedViewModel.isOfflineEnable.collectAsState()
+    var pulse = rememberInfiniteTransition(label = "pulse")
+        .animateFloat(
+            initialValue = 1f,
+            targetValue   = 0.4f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ), label = "alpha"
+        )
+
 
     LaunchedEffect(globalSSERules) {
         if((globalSSERules?.forceMessages?.size ?: 0) > 0){
@@ -62,6 +96,15 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
             }
         }else{
             dialogStates = mutableStateListOf<ForceMessageDialogState>()
+        }
+    }
+
+    LaunchedEffect(isOfflineEnable) {
+        if(isOfflineEnable) {
+            sharedViewModel.syncOfflineData().join() // Wait for completion
+            sharedViewModel.requiredOfflineDataInitialization()
+        }else{
+            sharedViewModel.initializeAppRequiredData()
         }
     }
 
@@ -129,6 +172,23 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
 
         // Global error handler (will show on top when needed)
         GlobalErrorHandler()
+        if (isOfflineEnable) {
+            Row(
+                modifier = Modifier
+                    .padding(top = 2.dp, end = 2.dp)
+                    .background(Color.Transparent, RoundedCornerShape(10.dp))
+                    .align(Alignment.TopEnd)
+                    .padding(20.dp)
+            ) {
+                // Red dot
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .graphicsLayer { alpha = pulse.value }
+                        .background(Color.Red, CircleShape)
+                )
+            }
+        }
     }
 }
 

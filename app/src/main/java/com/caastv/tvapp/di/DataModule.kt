@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.core.DataStore
+import androidx.room.Room
 import com.caastv.tvapp.model.data.DataStoreManager
 import com.caastv.tvapp.model.data.FilterPreferences
+import com.caastv.tvapp.model.wtvdatabase.database.AppDatabase
+import com.caastv.tvapp.model.wtvdatabase.database.dao.AppDataDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,5 +39,22 @@ object DataModule {
     @Singleton
     fun provideFilterPreferences(dataStore: DataStore<Preferences>): FilterPreferences {
         return FilterPreferences(dataStore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "wtv_database"
+        ).fallbackToDestructiveMigration()
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAppDataDao(database: AppDatabase): AppDataDao {
+        return database.appDataDao()
     }
 }

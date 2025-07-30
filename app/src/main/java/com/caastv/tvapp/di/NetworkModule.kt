@@ -7,6 +7,7 @@ import com.caastv.tvapp.utils.crash.logs.LogUploader
 import com.caastv.tvapp.utils.network.BaseUrlSwitcherInterceptor
 import com.caastv.tvapp.utils.network.LoggingInterceptor
 import com.caastv.tvapp.utils.network.NetworkApiCallInterface
+import com.caastv.tvapp.utils.network.interceptors.ApiStatusInterceptor
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
@@ -48,8 +49,8 @@ object NetworkModule {
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(false)
             .addInterceptor(headerInterceptor)               // header
-            .addInterceptor(BaseUrlSwitcherInterceptor())
-            .addInterceptor(LoggingInterceptor())
+           // .addInterceptor(BaseUrlSwitcherInterceptor())
+           // .addInterceptor(ApiStatusInterceptor.getInstance())
             .cache(null)
             .build()
     }

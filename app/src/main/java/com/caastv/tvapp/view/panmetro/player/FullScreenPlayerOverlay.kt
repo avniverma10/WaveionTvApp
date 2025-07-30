@@ -50,7 +50,6 @@ import com.android.caastv.R
 import com.caastv.tvapp.extensions.formatTime
 import com.caastv.tvapp.model.data.epgdata.EPGDataItem
 import com.caastv.tvapp.view.panmetro.common.TopOverlayInfo
-import com.caastv.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.caastv.tvapp.viewmodels.SharedViewModel
 import com.caastv.tvapp.viewmodels.player.PlayerViewModel
 import java.text.SimpleDateFormat
@@ -69,7 +68,7 @@ fun FullScreenPlayerOverlay(
     channelFocusRequesters: List<FocusRequester>,
     onChannelFocused: (EPGDataItem) -> Unit
 ) {
-    HideKeyboardOnEnter()
+
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
 
