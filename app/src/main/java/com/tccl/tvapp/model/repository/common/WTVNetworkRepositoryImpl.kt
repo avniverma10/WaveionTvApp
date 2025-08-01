@@ -1,5 +1,7 @@
 package com.tccl.tvapp.model.repository.common
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.tccl.tvapp.extensions.convertIntoModel
 import com.tccl.tvapp.extensions.convertIntoModels
 import com.tccl.tvapp.extensions.logReport
@@ -8,7 +10,9 @@ import com.tccl.tvapp.extensions.toJSONArray
 import com.tccl.tvapp.extensions.toJSONObject
 import com.tccl.tvapp.model.data.appupdate.AppUpdateResponse
 import com.tccl.tvapp.model.data.banner.Banner
+import com.tccl.tvapp.model.data.customapp.InventoryApp
 import com.tccl.tvapp.model.data.epgdata.EPGDataItem
+import com.tccl.tvapp.model.data.favourites.FavouritesResponse
 import com.tccl.tvapp.model.data.genre.WTVGenre
 import com.tccl.tvapp.model.data.hash.HashInfo
 import com.tccl.tvapp.model.data.home.HomeData
@@ -21,10 +25,6 @@ import com.tccl.tvapp.utils.network.NetworkApiCallInterface
 import com.tccl.tvapp.utils.network.UrlManager
 import com.tccl.tvapp.utils.sealed.WTVListResponse
 import com.tccl.tvapp.utils.sealed.WTVResponse
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import com.tccl.tvapp.model.data.customapp.InventoryApp
-import com.tccl.tvapp.model.data.favourites.FavouritesResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -332,4 +332,58 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             emit(WTVResponse.Failure(e))
         }
     }.flowOn(Dispatchers.IO)
+
+
+    fun getFavorites(userId: String): Flow<WTVListResponse<String>> = flow {
+        try {
+            val url = "${UrlManager.getCurrentBaseUrl()}app/favchannel/$userId"
+            val resp = networkApiCallInterface
+                .makeHttpGetRequest(url)
+                .execute()
+            if (resp.isSuccessful && resp.body() != null) {
+                val wrapper = resp.body()!!.toJSONObject()
+                    .toString()
+                    .let { Gson().fromJson(it, FavouritesResponse::class.java) }
+                emit(WTVListResponse.Success(wrapper.data.channelId))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("HTTP ${resp.code()}")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun addFavorite(userId: String, channelId: String): Flow<WTVResponse<Boolean>> = flow {
+        val url = "${UrlManager.getCurrentBaseUrl()}app/favchannel/add"
+        val body = hashMapOf(
+            "userID" to userId,
+            "channelId" to channelId
+        )
+        val resp = networkApiCallInterface
+            .makeHttpPostRequest(url, body)
+            .execute()
+        if (resp.isSuccessful) {
+            emit(WTVResponse.Success(true))
+        } else {
+            emit(WTVResponse.Failure(Throwable("HTTP ${resp.code()}")))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun removeFavorite(userId: String, channelId: String): Flow<WTVResponse<Boolean>> = flow {
+        val url = "${UrlManager.getCurrentBaseUrl()}app/favchannel/remove"
+        val body = mapOf(
+            "userID"    to userId,
+            "channelId" to channelId
+        )
+        val resp = networkApiCallInterface
+            .makeHttpDeleteRequest(url, body)  // ← include the JSON body
+            .execute()
+        if (resp.isSuccessful) {
+            emit(WTVResponse.Success(true))
+        } else {
+            val err = resp.errorBody()?.string()
+            emit(WTVResponse.Failure(Throwable("HTTP ${resp.code()}")))
+        }
+    }.flowOn(Dispatchers.IO)
+
 }

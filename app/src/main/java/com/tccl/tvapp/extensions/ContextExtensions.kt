@@ -22,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.datastore.preferences.preferencesDataStore
 import com.tccl.tvapp.di.CoreComponentProvider
+import com.tccl.tvapp.model.data.customapp.InventoryApp
 import com.tccl.tvapp.model.data.epgdata.EPGDataItem
 import com.tccl.tvapp.model.data.genre.WTVGenre
 import com.tccl.tvapp.model.data.language.WTVLanguage
@@ -83,6 +84,8 @@ fun Context.appHomeLiveData() =
 fun Context.applyAppHome(data: List<WTVHomeCategory>) =
     (applicationContext as? CoreComponentProvider)?.initializeHome(data)
 
+fun Context.applyAppInventoryApp(data: List<InventoryApp>) =
+    (applicationContext as? CoreComponentProvider)?.provideInventoryApps()
 
 fun Context.appLanguageLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideLanguageLiveData()

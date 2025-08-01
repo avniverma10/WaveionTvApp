@@ -50,10 +50,10 @@ import com.tccl.tvapp.utils.theme.base_color
 import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.tccl.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.tccl.tvapp.view.panmetro.settings.AppInfoScreen
+import com.tccl.tvapp.view.panmetro.settings.AppSettingsDialog
 import com.tccl.tvapp.view.uicomponent.error.CommonDialog
 import com.tccl.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.tccl.tvapp.viewmodels.SharedViewModel
-
 
 @Composable
 fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: SharedViewModel) {
@@ -64,6 +64,7 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     var showInfo by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     val menuFocusRequester = remember { FocusRequester() }
+    var appSettingsDialog by remember { mutableStateOf(false) }
 
     //hide keyboard forcefully
     HideKeyboardOnEnter()
@@ -80,12 +81,13 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
     ) {
         NewMainSettingsContent(
             onInfoClick = { showInfo = true },
+            onPreferencesClick = { appSettingsDialog = true },
             onLogoutClick = { showExitDialog = true },
             firstMenuItemFocusRequester = firstMenuItemFocusRequester,
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF2A2D32))
-                .padding(start = 70.dp)
+                .padding(start = 70.dp)         // <<< inset so it never shifts
         )
 
         ExpandableNavigationMenu(
@@ -126,16 +128,30 @@ fun NewPanMetroSettingsScreen(navController: NavController,sharedViewModel: Shar
             onOkClick = { showInfo = false }
         )
     }
+
+
+    if (appSettingsDialog) {
+        AppSettingsDialog(
+            onToggle = { appSettings->
+                PreferenceManager.saveAppSettings(appSettings)
+            },
+            onBack = { appSettingsDialog = false }
+        )
+    }
 }
+
+
+
 @Composable
 fun NewMainSettingsContent(
     onInfoClick: () -> Unit,
+    onPreferencesClick: () -> Unit,
     onLogoutClick: () -> Unit,
     firstMenuItemFocusRequester: FocusRequester,
     modifier: Modifier = Modifier  // our injected requester
 ) {
-    val menuItems = listOf("Info", "Logout")
-    val menuIcons = listOf(R.drawable.info, R.drawable.logout)
+    val menuItems = listOf("Info","Preferences", "Logout")
+    val menuIcons = listOf(R.drawable.info,R.drawable.settings, R.drawable.logout)
     val menuData  = menuItems.zip(menuIcons)
 
     Row(
@@ -161,7 +177,7 @@ fun NewMainSettingsContent(
                 .padding(padding)
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 verticalArrangement   = Arrangement.spacedBy(itemSpacing),
                 modifier = Modifier
@@ -180,6 +196,7 @@ fun NewMainSettingsContent(
                         onClick   = {
                             when (title) {
                                 "Info"   -> onInfoClick()
+                                "Preferences"   -> onPreferencesClick()
                                 "Logout" -> onLogoutClick()
                             }
                         }
@@ -203,7 +220,7 @@ fun NewMenuItemCard(
 
     Card(
         modifier = modifier                         // ← apply it here
-            .size(width = 100.dp, height = 160.dp)
+            .size(width = 100.dp, height = 150.dp)
             .onFocusChanged { isFocused = it.isFocused }
             .focusable(interactionSource = remember { MutableInteractionSource() })
             .clickable { onClick() }

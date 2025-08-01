@@ -11,6 +11,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -57,6 +58,7 @@ import com.tccl.tvapp.model.data.epgdata.Channel
 import com.tccl.tvapp.model.home.WTVHomeCategory
 import com.tccl.tvapp.utils.theme.base_color
 import com.tccl.tvapp.utils.theme.bg_card_color
+import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.tccl.tvapp.view.navigationhelper.Destination
 import com.tccl.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.tccl.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
@@ -65,6 +67,10 @@ import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
+import kotlin.collections.get
+import kotlin.compareTo
+import kotlin.text.get
+import kotlin.text.orEmpty
 
 @Composable
 fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
@@ -72,24 +78,15 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val epgChannels by sharedViewModel.wtvEPGList.collectAsState()
     val banners by sharedViewModel.bannerList.collectAsState()
     val context = LocalContext.current
-    var showExitDialog by remember { mutableStateOf(false) }
-    // Observe the SSE event flow.
-    val tabItemsData by sharedViewModel.tabItemsFlow.collectAsState()
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
-    val focusManager = LocalFocusManager.current
-    val lastCat by sharedViewModel.lastHomeCategory.collectAsState()
-    val lastChan by sharedViewModel.lastHomeChannel.collectAsState()
     val recentlyWatched by sharedViewModel.recentlyWatched.collectAsState()
     val menuFocusRequester = remember { FocusRequester() }
-
-
     val firstChannelFocusRequester = remember { FocusRequester() }
+    val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
 
-    //hide keyboard forcefully
-    HideKeyboardOnEnter()
+
+
     LaunchedEffect(Unit) {
         context.hideKeyboard()
-        //columnState.scrollToItem(0)
         firstChannelFocusRequester?.let { requester ->
             try {
                 requester.requestFocus()
@@ -97,19 +94,27 @@ fun HomeScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 loge("FocusError", "FocusRequester not initialized ${e.message}")
             }
         }
-
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
     }
 
-    val displayCategories = remember(homeCategories, recentlyWatched) {
+    val displayCategories = remember(homeCategories, recentlyWatched, favIds) {
         val list = mutableListOf<WTVHomeCategory>()
-
+        if (favIds.isNotEmpty()) {
+            list += WTVHomeCategory(
+                id        = "favs",
+                name      = "Favorites",
+                channels  = favIds,
+                order     = Int.MIN_VALUE + 1,
+                createdAt = Instant.now().toString(),
+                updatedAt = Instant.now().toString(),
+                version   = 0
+            )
+        }
         if (recentlyWatched.isNotEmpty()) {
             list += WTVHomeCategory(
                 id        = "recent",
                 name      = "Recently Watched",
-                // ← use the real channelId field, not content._id
                 channels  = recentlyWatched.asReversed().mapNotNull { it.channelId },
                 order     = Int.MIN_VALUE,
                 createdAt = Instant.now().toString(),
@@ -242,7 +247,11 @@ fun CategorySection(
                     sharedViewModel.setCurrentPlaylist(categoryEpg, title)
                     sharedViewModel.updateLanguage(null)
                     sharedViewModel.updateSelectedChannel(selectedItem)
-                    navController.navigate(Destination.panMetroScreen)
+                    if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                        navController.navigate(Destination.animationPlayer)
+                    }else{
+                        navController.navigate(Destination.panMetroScreen)
+                    }
                 }
             }
         }
@@ -339,8 +348,6 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
     val playInteraction = remember { MutableInteractionSource() }
     val playFocused by playInteraction.collectIsFocusedAsState()
     val watchNowRequester = remember { FocusRequester() }
-
-
     val selectedBanner = bannerList[selectedIndex]
     // Use a default video URL (adjust as needed)
     val videoUrl = selectedBanner.bannerContentLink ?: ""
@@ -436,8 +443,6 @@ fun HeroCarousel(bannerList: List<Banner>, navController: NavController) {
                 Spacer(Modifier.width(4.dp))
                 Text("Watch Now", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
-
-
         }
         Row(
             modifier = Modifier

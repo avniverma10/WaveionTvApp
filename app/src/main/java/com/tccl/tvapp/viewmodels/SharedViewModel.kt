@@ -33,6 +33,8 @@ import com.tccl.tvapp.utils.network.UrlManager
 import com.tccl.tvapp.utils.sealed.WTVListResponse
 import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.google.gson.Gson
+import com.tccl.tvapp.extensions.applyAppInventoryApp
+import com.tccl.tvapp.utils.sealed.WTVResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -41,6 +43,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -55,6 +58,9 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.text.filter
+import kotlin.text.mapNotNull
+import kotlin.text.orEmpty
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -128,6 +134,11 @@ open class SharedViewModel @Inject constructor(
 
     private val _lastHomeChannel = MutableStateFlow(0)
     val lastHomeChannel: StateFlow<Int> = _lastHomeChannel
+    // StateFlow for raw IDs
+    private val _favoriteChannelIds = MutableStateFlow<List<String>>(emptyList())
+    val favoriteChannelIds: StateFlow<List<String>> = _favoriteChannelIds.asStateFlow()
+    private val _favoriteChannels = MutableStateFlow<List<Channel>>(emptyList())
+    val favoriteChannels: StateFlow<List<Channel>> = _favoriteChannels.asStateFlow()
 
     var ChannelScreenlastSelectedChannelIndex = mutableStateOf(0)
         private set
@@ -181,6 +192,9 @@ open class SharedViewModel @Inject constructor(
         viewModelScope.launch {
             fetchInventoryApps()
         }
+        viewModelScope.launch {
+            fetchFavorites()
+        }
     }
 
     fun setCurrentPlaylist(list: List<EPGDataItem>) {
@@ -215,6 +229,20 @@ open class SharedViewModel @Inject constructor(
                 is WTVListResponse.Success -> _bannerList.value = response.data
                 is WTVListResponse.Failure -> logReport("_bannerList:${response.error.message} ")
             }
+        }
+    }
+
+    fun fetchInventoryApps() {
+        viewModelScope.launch {
+            wtvNetworkRepositoryImpl
+                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
+                .catch { }
+                .collect { resp ->
+                    if (resp is WTVListResponse.Success) {
+                        _inventoryApps.value = resp.data
+                        application.applyAppInventoryApp(resp.data)
+                    }
+                }
         }
     }
 
@@ -626,6 +654,53 @@ open class SharedViewModel @Inject constructor(
         Log.d("SharedViewModel", "↳ saving recents to prefs: $ids")
         PreferenceManager.recentChannelIds = ids
     }
+
+
+    fun fetchFavorites() {
+        viewModelScope.launch {
+            val userId = PreferenceManager.getLoginResponse()?.loginData?.userId
+                ?: return@launch
+            wtvNetworkRepositoryImpl
+                .getFavorites(userId)
+                .collect { result ->
+                    when (result) {
+                        is WTVListResponse.Success -> {
+                            _favoriteChannelIds.value = result.data
+                            _favoriteChannels.value = wtvEPGList.value
+                                .orEmpty()
+                                .filter  { it.channelId in result.data }
+                                .mapNotNull { it.tv?.channel }
+                        }
+                        is WTVListResponse.Failure -> {
+                            logReport("fetchFavorites failed: ${result.error.message}")
+                        }
+                    }
+                }
+        }
+    }
+
+    fun addFavorite(channelId: String) {
+        viewModelScope.launch {
+            val userId = PreferenceManager.getLoginResponse()?.loginData?.userId ?: return@launch
+            wtvNetworkRepositoryImpl.addFavorite(userId, channelId)
+                .collect { result ->
+                    if (result is WTVResponse.Success) fetchFavorites()
+                    else logReport("addFavorite failed: $result")
+                }
+        }
+    }
+
+    fun removeFavorite(channelId: String) {
+        viewModelScope.launch {
+            val userId = PreferenceManager.getLoginResponse()?.loginData?.userId ?: return@launch
+            wtvNetworkRepositoryImpl.removeFavorite(userId, channelId)
+                .collect { result ->
+                    if (result is WTVResponse.Success) fetchFavorites()
+                    else logReport("removeFavorite failed: $result")
+                }
+        }
+    }
+
 
     fun clearRecentlyWatched() {
         _recentlyWatched.value = emptyList()

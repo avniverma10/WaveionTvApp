@@ -35,6 +35,7 @@ import com.tccl.tvapp.view.panmetro.NewPanMetroSettingsScreen
 import com.tccl.tvapp.view.panmetro.genre.PanmetroGenreScreen
 import com.tccl.tvapp.view.panmetro.login.PanmetroLoginScreen
 import com.tccl.tvapp.view.panmetro.player.CaastvVideoPlayer
+import com.tccl.tvapp.view.panmetro.player.PanMetroVideoPlayer
 import com.tccl.tvapp.view.profile.ProfileScreen
 import com.tccl.tvapp.view.splash.SplashScreen
 import com.tccl.tvapp.view.uicomponent.fingerprint.GlobalFingerprintOverlay
@@ -154,9 +155,10 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
             NewPanMetroSettingsScreen(navController,sharedViewModel)
         }
         composable(Destination.panMetroScreen) {backStackEntry ->
-            //val channelId = backStackEntry.arguments?.getString("channelId")
-//            PanMetroVideoPlayer(navController,sharedViewModel)
-            CaastvVideoPlayer(navController,sharedViewModel) //Remove this to use the PanMetroVidePlayer
+            CaastvVideoPlayer(navController,sharedViewModel)
+        }
+        composable(Destination.animationPlayer) {backStackEntry ->
+            PanMetroVideoPlayer(navController,sharedViewModel)
         }
         composable(Destination.demoHome) {
             DemoHomeScreen(

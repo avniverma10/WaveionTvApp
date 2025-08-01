@@ -218,8 +218,14 @@ fun PanmetroGenreScreen(
                                         sharedViewModel.setCurrentPlaylist(channelsInThisGenre, genreName)
                                         sharedViewModel.updateLanguage(null)
                                         sharedViewModel.updateSelectedChannel(channelItem)
-                                        navController.navigate(Destination.panMetroScreen) {
-                                            popUpTo(Destination.panMetroScreen) { inclusive = true }
+                                        if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                            navController.navigate(Destination.animationPlayer){
+                                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                                            }
+                                        }else{
+                                            navController.navigate(Destination.panMetroScreen){
+                                                popUpTo(Destination.panMetroScreen) { inclusive = true }
+                                            }
                                         }
                                     }
 

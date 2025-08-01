@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         hideKeyboard()
         PreferenceManager.init(applicationContext)
+        PreferenceManager.clearOptionsTrack()
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         /*overlayHelper = OverlayPermissionHelper(this).apply {

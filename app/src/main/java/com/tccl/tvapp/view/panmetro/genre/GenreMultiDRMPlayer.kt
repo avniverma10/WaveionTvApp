@@ -217,132 +217,105 @@ fun GenreMultiDRMPlayer(
             .fillMaxSize()
             .background(Color.Transparent)
     ) {
-        val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
-        if (!hasVideo && isBuffering.value ) {
-            Image(
-                painter = painterResource(id = R.drawable.tccl_transparent),
-                contentDescription = "TCCL Poster",
-                modifier = Modifier.width(200.dp).height(200.dp),
-                contentScale = ContentScale.Fit
-            )
+
+        val stops = selectedVideoUrl.content?.bgGradient
+            ?.colors
+            ?.sortedBy { it.percentage }
+            ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+            .orEmpty()
+
+        val brush = if (stops.size >= 2) {
+            Brush.horizontalGradient(stops)
+        } else {
+            Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
         }
-        if (hasVideo) {
-            val stops = selectedVideoUrl.content?.bgGradient
-                ?.colors
-                ?.sortedBy { it.percentage }
-                ?.map { Color(android.graphics.Color.parseColor(it.color)) }
-                .orEmpty()
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
+                playerView.value = view.findViewById<PlayerView>(R.id.player_view)
 
-            val brush = if (stops.size >= 2) {
-                Brush.horizontalGradient(stops)
-            } else {
-                Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
-            }
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    val view = LayoutInflater.from(ctx).inflate(R.layout.exoplayer_view, null)
-                    playerView.value = view.findViewById<PlayerView>(R.id.player_view)
-
-                    playerView.value?.apply {
-                        player = exoPlayer
-                        useController = false
-                        keepScreenOn = true
-                    }
-
-                    view
-
+                playerView.value?.apply {
+                    player = exoPlayer
+                    useController = false
+                    keepScreenOn = true
                 }
+
+                view
+
+            }
+        )
+
+        if(isAudio.value){
+
+            val gifPainter = rememberAsyncImagePainter(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data("file:///android_asset/tiled_bar_anim.gif")
+                    .decoderFactory(GifDecoder.Factory())
+                    .build(),
+                contentScale = ContentScale.FillWidth,
             )
 
-            if(isAudio.value){
-
-                val gifPainter = rememberAsyncImagePainter(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data("file:///android_asset/tiled_bar_anim.gif")
-                        .decoderFactory(GifDecoder.Factory())
-                        .build(),
-                    contentScale = ContentScale.FillWidth,
-                )
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .background(brush, shape = RoundedCornerShape(0.dp)),
+                contentAlignment = Alignment.Center
+            ) {
 
                 Box(
-                    modifier = Modifier.fillMaxSize()
-                        .background(brush, shape = RoundedCornerShape(0.dp)),
+                    modifier = Modifier
+                        .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.6f)
+                        .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.5f)
+                        .clip(MaterialTheme.shapes.medium),
                     contentAlignment = Alignment.Center
                 ) {
-
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = LocalConfiguration.current.screenWidthDp.dp * 0.6f)
-                            .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.5f)
-                            .clip(MaterialTheme.shapes.medium),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedAudio(
-                            isSongPlaying = true,
-                            channel = selectedVideoUrl
-                        )
-                    }
-
-                    //CenteredAudioVisualizer(isAudio= isAudio.value, brush = brush, modifier = Modifier)
-                    /*Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 5.dp)
-                            .clip(MaterialTheme.shapes.medium)
-                            .aspectRatio(13f / 9f)
-                            .background(Color.Transparent),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AnimatedAudio(
-                            isSongPlaying = true,
-                            channel = selectedVideoUrl
-                        )
-                    }*/
-                }
-            }
-            if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
-                playerSSERules?.fingerprints?.forEach {
-                    ChannelFingerprintOverlay(
-                        player = playerView.value,
-                        fingerprintRule = mutableStateOf(it)
+                    AnimatedAudio(
+                        isSongPlaying = true,
+                        channel = selectedVideoUrl
                     )
                 }
-            }
 
-            if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
-                playerSSERules?.scrollMessages?.forEach {
-                    ScrollingMessageOverlay(
-                        player = playerView.value,
-                        scrollMessageInfo = mutableStateOf(it)
+                //CenteredAudioVisualizer(isAudio= isAudio.value, brush = brush, modifier = Modifier)
+                /*Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 5.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .aspectRatio(13f / 9f)
+                        .background(Color.Transparent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedAudio(
+                        isSongPlaying = true,
+                        channel = selectedVideoUrl
                     )
-                }
+                }*/
             }
-
-            // Show Loading Indicator if Buffering
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (isBuffering.value) {
-                    Image(
-                        painter = painterResource(id = R.drawable.tccl_transparent),
-                        contentDescription = "Loading poster",
-                        modifier = Modifier.width(200.dp).height(200.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-            }
-
-            if (showErrorDialog) {
-                PlaybackErrorPreview(
-                    errorCode = errorCodeState,
-                    errorMessage = errorMessageState,
-                    modifier = Modifier.align(Alignment.Center)
+        }
+        if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(
+                    player = playerView.value,
+                    fingerprintRule = mutableStateOf(it)
                 )
             }
+        }
 
+        if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(
+                    player = playerView.value,
+                    scrollMessageInfo = mutableStateOf(it)
+                )
+            }
+        }
+
+        if (showErrorDialog) {
+            PlaybackErrorPreview(
+                errorCode = errorCodeState,
+                errorMessage = errorMessageState,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
 
         DisposableEffect(lifecycleOwner) {

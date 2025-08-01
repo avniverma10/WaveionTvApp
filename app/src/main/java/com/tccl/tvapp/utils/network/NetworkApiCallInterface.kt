@@ -38,6 +38,10 @@ interface NetworkApiCallInterface {
     fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>
 
 
+
+    @HTTP(method = "DELETE", path = "", hasBody = true)
+    fun makeHttpDeleteRequest(@Url url: String, @Body body: Map<String, String>): Call<Any>
+
     @Multipart
     @POST("upload-logs")
     suspend fun uploadLogs(

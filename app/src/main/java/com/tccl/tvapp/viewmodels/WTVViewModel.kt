@@ -90,7 +90,7 @@ open class WTVViewModel @Inject constructor(
     private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
     val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
 
-    private val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
+    val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
     val inventoryApps: StateFlow<List<InventoryApp>> = _inventoryApps.asStateFlow()
 
     // ─── Date and time state ───
@@ -296,9 +296,7 @@ open class WTVViewModel @Inject constructor(
                         }
                     }
             }
-            launch {
-                fetchInventoryApps()
-            }
+
         }
     }
 
@@ -595,20 +593,7 @@ open class WTVViewModel @Inject constructor(
     }
 
 
-    fun fetchInventoryApps() {
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl
-                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
-                .catch { }
-                .collect { resp ->
-                    if (resp is WTVListResponse.Success) {
-//                        updateAppsInventory(resp.data)
-//                        dataRepository?.saveAllAppsInventory(resp.data)
-                        // application.applyAppInventoryApp(resp.data)
-                    }
-                }
-        }
-    }
+
     fun validateUserLogin(userName: String,userPassword: String,onLoginResponse:(LoginResponseData?,String?)->Unit){
         viewModelScope.launch {
             val requestBody = hashMapOf(

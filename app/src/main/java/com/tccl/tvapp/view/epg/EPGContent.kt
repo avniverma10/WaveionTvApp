@@ -248,7 +248,12 @@ fun EPGContent(
                                             sharedViewModel.setCurrentPlaylist(epgList, genre)
                                             sharedViewModel.updateLanguage(lang)
                                         }
-                                        navController.navigate(Destination.panMetroScreen)
+
+                                        if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                            navController.navigate(Destination.animationPlayer)
+                                        }else{
+                                            navController.navigate(Destination.panMetroScreen)
+                                        }
                                     },
                                     //                                hasInitiallyFocused = hasInitiallyFocused,
                                     focusRequester = channelFocusRequesters[channelIndex],
@@ -496,11 +501,19 @@ fun EPGContent(
                     Button(onClick = {
                         epgList.find { it.channelId == wishlistAlertProgram?.channelId }?.let {channelItem->
                             sharedViewModel.updateSelectedChannel(channelItem)
-                            navController.navigate(Destination.panMetroScreen) {
-                                PreferenceManager.selectedGenreIndex = 0
-                                PreferenceManager.selectedChannelIndex = 0
-                                PreferenceManager.lastEpgDataItem = null
-                                // popUpTo(Destination.epgScreen) { inclusive = true }
+
+                            if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                navController.navigate(Destination.animationPlayer){
+                                    PreferenceManager.selectedGenreIndex = 0
+                                    PreferenceManager.selectedChannelIndex = 0
+                                    PreferenceManager.lastEpgDataItem = null
+                                }
+                            }else{
+                                navController.navigate(Destination.panMetroScreen){
+                                    PreferenceManager.selectedGenreIndex = 0
+                                    PreferenceManager.selectedChannelIndex = 0
+                                    PreferenceManager.lastEpgDataItem = null
+                                }
                             }
                         }
                         sharedViewModel.clearWishlistAlert()

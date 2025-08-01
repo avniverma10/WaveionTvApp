@@ -21,17 +21,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
@@ -47,13 +52,16 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.android.tccl.R
@@ -61,7 +69,9 @@ import com.tccl.tvapp.extensions.hideKeyboard
 import com.tccl.tvapp.extensions.loge
 import com.tccl.tvapp.extensions.playerErrorHandling
 import com.tccl.tvapp.extensions.provideCryptoGuardMediaSource
+import com.tccl.tvapp.extensions.showToastS
 import com.tccl.tvapp.utils.uistate.PreferenceManager
+import com.tccl.tvapp.view.uicomponent.InputOverlay
 import com.tccl.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.tccl.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.tccl.tvapp.view.uicomponent.error.CommonDialog
@@ -72,8 +82,10 @@ import com.tccl.tvapp.viewmodels.SharedViewModel
 import com.tccl.tvapp.viewmodels.player.PlayerViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import kotlin.text.contains
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -113,6 +125,48 @@ fun CaastvVideoPlayer(
     var switchJob by remember { mutableStateOf<Job?>(null) }
 
     var watchJob by remember { mutableStateOf<Job?>(null) }
+    // --- Channel‑number search state -------------------------------
+    var typedDigits     by remember { mutableStateOf("") }   // the running “123”
+    var inputJob        by remember { mutableStateOf<Job?>(null) }
+    val DEBOUNCE_MS = 1_000L                                 // change if you want longer
+
+    //overlay options
+    var topOverlayHideJob by remember { mutableStateOf<Job?>(null) }
+    val topOverlayFocusRequester = remember { FocusRequester() }
+    var isTopOverlayVisible by remember { mutableStateOf(false) }
+    val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
+    val subtitleTracks = remember { mutableStateListOf<String>() }  // just the languages
+    val selectedSubtitle = remember { mutableStateOf<String?>(null) }
+    val showSubtitleOverlay = remember { mutableStateOf(false) }
+    val audioTracks = remember { mutableStateListOf<String>() }
+    val selectedAudio = remember { mutableStateOf<String?>(null) }
+    val showAudioOverlay = remember { mutableStateOf(false) }
+    val videoTracks = remember { mutableStateListOf<String>() }
+    val selectedVideo = remember { mutableStateOf<String?>(null) }
+    val showVideoOverlay = remember { mutableStateOf(false) }
+    val overlayFocusRequester = remember { FocusRequester() }
+    val subtitleButtonFocusRequester = remember { FocusRequester() }
+    val audioButtonFocusRequester = remember { FocusRequester() }
+    val videoButtonFocusRequester = remember { FocusRequester() }
+    val lastTopOverlayButtonFocus = remember { mutableStateOf<FocusRequester?>(null) }
+
+    val qualityLabel by remember(selectedVideo.value) {
+        mutableStateOf(
+            selectedVideo.value?.let { label ->
+                val heightPart = label
+                    .substringAfter('x')
+                    .substringBefore('p')
+                val h = heightPart.toIntOrNull() ?: return@let "HD"
+                if (h >= 720) "HD" else "SD"
+            } ?: "HD"
+        )
+    }
+    val trackSelector = remember {
+        DefaultTrackSelector(context).apply {
+            setParameters(buildUponParameters().setPreferredTextLanguage(null))
+        }
+    }
+
 
     val currentProgrammeIndex = remember { mutableIntStateOf(0) }
     LaunchedEffect(selectedChannel) {
@@ -156,6 +210,7 @@ fun CaastvVideoPlayer(
     var isOverlayVisible by remember { mutableStateOf(true) }
     var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var overlayHideJob by remember { mutableStateOf<Job?>(null) }
+    val channelId = selectedChannel?.channelId ?: ""
 
 
 
@@ -171,6 +226,12 @@ fun CaastvVideoPlayer(
         Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
     }
 
+    val isFav by remember(selectedChannel, favIds) {
+        derivedStateOf {
+            val id = selectedChannel?.channelId ?: ""
+            id in favIds
+        }
+    }
 
     // Function to handle overlay visibility
     fun showOverlay() {
@@ -214,6 +275,138 @@ fun CaastvVideoPlayer(
             }
     }
 
+
+    LaunchedEffect(
+        showVideoOverlay.value,
+        showAudioOverlay.value,
+        showSubtitleOverlay.value)
+    {
+        if (showVideoOverlay.value || showAudioOverlay.value || showSubtitleOverlay.value) {
+            overlayFocusRequester.requestFocus()
+        }
+        if (!showAudioOverlay.value && !showVideoOverlay.value && !showSubtitleOverlay.value) {
+            snapshotFlow { lastTopOverlayButtonFocus.value }
+                .first()
+            lastTopOverlayButtonFocus.value?.requestFocus()
+        }
+    }
+
+    BackHandler(enabled = !isTopOverlayVisible) {
+        sharedViewModel.setCurrentPlaylist(emptyList(), "All Channels")
+        navController.popBackStack()
+    }
+
+
+
+    fun applySubtitle(lang: String?) {
+        val mappedTrackInfo = trackSelector.currentMappedTrackInfo ?: return
+        val subtitleRendererIndex = (0 until mappedTrackInfo.rendererCount)
+            .firstOrNull { mappedTrackInfo.getRendererType(it) == C.TRACK_TYPE_TEXT }
+            ?: return
+
+        val builder = trackSelector.buildUponParameters()
+
+        if (lang == null) {
+            // Disable subtitle renderer and clear override
+            trackSelector.parameters = builder
+                .setRendererDisabled(subtitleRendererIndex, true)
+                .clearSelectionOverrides(subtitleRendererIndex)
+                .build()
+        } else {
+            trackSelector.parameters = builder
+                .setRendererDisabled(subtitleRendererIndex, false)
+                .setPreferredTextLanguage(lang)
+                .build()
+        }
+    }
+
+    fun applyAudio(lang: String?) {
+        if (lang == null) return  // optionally do nothing if null
+        trackSelector.parameters = trackSelector.buildUponParameters()
+            .setPreferredAudioLanguage(lang)
+            .build()
+    }
+
+    fun applyVideo(label: String?) {
+        val mappedTrackInfo = trackSelector.currentMappedTrackInfo ?: return
+        val videoRendererIndex = (0 until mappedTrackInfo.rendererCount).firstOrNull { i ->
+            mappedTrackInfo.getRendererType(i) == C.TRACK_TYPE_VIDEO
+        } ?: return  // no video renderer found
+        val trackGroups = mappedTrackInfo.getTrackGroups(videoRendererIndex)
+        var foundGroupIndex: Int? = null
+        var trackIndex: Int? = null
+
+        for (groupIndex in 0 until trackGroups.length) {
+            val group = trackGroups.get(groupIndex)
+            for (i in 0 until group.length) {
+                val f = group.getFormat(i)
+                val l = f.label ?: "${f.width}x${f.height}"
+                if (l == label) {
+                    foundGroupIndex = groupIndex
+                    trackIndex = i
+                    break
+                }
+            }
+            if (foundGroupIndex != null) break
+        }
+        if (foundGroupIndex != null && trackIndex != null) {
+            val override = DefaultTrackSelector.SelectionOverride(foundGroupIndex, trackIndex)
+            trackSelector.parameters = trackSelector.buildUponParameters()
+                .setSelectionOverride(
+                    /* rendererIndex = */ videoRendererIndex,
+                    /* trackGroups = */ trackGroups,
+                    /* override = */ override
+                )
+                .build()
+        }
+    }
+
+    fun clearVideoOverride() {
+        val mappedTrackInfo = trackSelector.currentMappedTrackInfo ?: return
+        val videoRendererIndex = (0 until mappedTrackInfo.rendererCount)
+            .firstOrNull { mappedTrackInfo.getRendererType(it) == C.TRACK_TYPE_VIDEO }
+            ?: return
+        trackSelector.parameters = trackSelector
+            .buildUponParameters()
+            .clearSelectionOverrides(videoRendererIndex)
+            .build()
+    }
+
+    val applySettings = remember {
+        {
+            PreferenceManager.preferredAudio?.let { saved ->
+                applyAudio(saved)
+                selectedAudio.value = saved
+            }
+            PreferenceManager.preferredSubtitle?.let { saved ->
+                applySubtitle(saved)
+                selectedSubtitle.value = saved
+            }
+            PreferenceManager.preferredVideoQuality?.let { saved ->
+                applyVideo(saved)
+                selectedVideo.value = saved
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        context.hideKeyboard()
+        showOverlay()
+        applySettings()
+        PreferenceManager.preferredAudio?.let { saved ->
+            applyAudio(saved)
+            selectedAudio.value = saved
+        }
+        PreferenceManager.preferredSubtitle?.let { saved ->
+            applySubtitle(saved)
+            selectedSubtitle.value = saved
+        }
+        PreferenceManager.preferredVideoQuality?.let { saved ->
+            applyVideo(saved)
+            selectedVideo.value = saved
+        }
+    }
+
+
     DisposableEffect(exoPlayer) {
         val analyticsListener = object : AnalyticsListener {
             override fun onEvents(player: Player, events: AnalyticsListener.Events) {
@@ -252,6 +445,36 @@ fun CaastvVideoPlayer(
                 if (playbackState == Player.STATE_READY) {
                     // Video started playing successfully
                     showErrorDialog = false
+                }
+            }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                subtitleTracks.clear()
+                audioTracks.clear()
+                videoTracks.clear()
+                for (group in tracks.groups) {
+                    if (group.type == C.TRACK_TYPE_TEXT) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val lang = format.language ?: format.label ?: "Unknown"
+                            subtitleTracks.add(lang)
+                        }
+                    }
+                    if (group.type == C.TRACK_TYPE_AUDIO) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val lang = format.language ?: format.label ?: "Unknown"
+                            audioTracks.add(lang)
+                        }
+                    }
+                    if (group.type == C.TRACK_TYPE_VIDEO) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val resolution = "${format.width}x${format.height}" // fallback if no label
+                            val label = format.label ?: resolution
+                            videoTracks.add(label)
+                        }
+                    }
                 }
             }
         }
@@ -298,25 +521,55 @@ fun CaastvVideoPlayer(
         }
     }
 
-
-    BackHandler {
-        //sharedViewModel.updateLanguage(null)                         // clear language filter
-       // sharedViewModel.updateGenre(null)                            // clear genre filter
-        sharedViewModel.setCurrentPlaylist(emptyList(), "All Channels")
-        navController.popBackStack()
+    fun commitChannelSearch(numberStr: String) {
+        val number = numberStr.toIntOrNull() ?: return
+        val idx = epgList.indexOfFirst { (it.content?.channelNo ?: 0) == number }
+        if (idx != -1) {
+            sharedViewModel.updateSelectedChannel(epgList[idx])
+            //selectedChannelIndex.intValue = idx
+            // scroll so it’s centred (optional)
+            //scope.launch { listState.animateScrollToItem(idx) }
+        } else {
+            context.showToastS("This Channel $number not available.")
+            // optional: toast / blink to show “no such channel”
+            // Log.d("ChannelSearch", "Channel $number not found")
+        }
     }
-
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .focusTarget()
             .background(Color.Black)
-            .focusable()
             .onPreviewKeyEvent { keyEvent ->
-                showOverlay()
+                val code = keyEvent.nativeKeyEvent.keyCode
+                if (showVideoOverlay.value || showAudioOverlay.value || showSubtitleOverlay.value) {
+                    return@onPreviewKeyEvent false
+                }
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
+                        in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
+                            val digit = (code - KeyEvent.KEYCODE_0).toString()
+                            if(typedDigits.length<=3) {
+                                typedDigits += digit
+                            }
+
+                            showOverlay()                       // optional – keep your overlay visible
+
+                            // restart debounce timer
+                            inputJob?.cancel()
+                            inputJob = scope.launch {
+                                delay(DEBOUNCE_MS)
+                                commitChannelSearch(typedDigits)
+                                typedDigits = ""                 // clear the onscreen prompt
+                            }
+                            return@onPreviewKeyEvent true        // we consumed the event
+                        }
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             if (previewChannelIndex.intValue > 0) {
                                 previewChannelIndex.intValue--
                                 currentProgrammeIndex.intValue = 0 // reset
@@ -325,8 +578,15 @@ fun CaastvVideoPlayer(
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP-> {
-                            if (!isOverlayVisible) {
-                                isOverlayVisible = true
+                            if (!isTopOverlayVisible && !isOverlayVisible) {
+                                isTopOverlayVisible = true
+                                scope.launch {
+                                    delay(50) // Give Compose time to recompose the overlay
+                                    topOverlayFocusRequester.requestFocus()
+                                }
+                                true // Consume the event
+                            } else if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
                             } else {
                                 val currentChannel = epgList.getOrNull(previewChannelIndex.intValue)
                                 val programmes = currentChannel?.tv?.programme?.let {
@@ -336,11 +596,19 @@ fun CaastvVideoPlayer(
                                 val baseIndex = programmes.indexOfLast { it.startTime!! <= System.currentTimeMillis() }.coerceAtLeast(0)
                                 val maxOffset = (programmes.lastIndex - baseIndex).coerceAtLeast(0)
 
-                                currentProgrammeIndex.intValue = (currentProgrammeIndex.intValue - 1).coerceAtLeast(0)
+                                currentProgrammeIndex.intValue =
+                                    (currentProgrammeIndex.intValue - 1).coerceAtLeast(0)
+                                true
                             }
-                            true
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (isTopOverlayVisible) {
+                                isTopOverlayVisible = false
+                                topOverlayHideJob?.cancel()
+                                showOverlay()
+                                return@onPreviewKeyEvent true
+                            }
+                            showOverlay()
                             if (!isOverlayVisible) {
                                 isOverlayVisible = true
                             } else {
@@ -356,7 +624,18 @@ fun CaastvVideoPlayer(
                             }
                             true
                         }
+                        KeyEvent.KEYCODE_BACK -> {
+                            if (isTopOverlayVisible) {
+                                isTopOverlayVisible = false
+                                return@onPreviewKeyEvent true
+                            }
+                            false
+                        }
                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             if (previewChannelIndex.intValue < epgList.lastIndex) {
                                 previewChannelIndex.intValue++
                                 currentProgrammeIndex.intValue = 0 // reset
@@ -365,6 +644,10 @@ fun CaastvVideoPlayer(
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             switchNow()
                             true
                         }
@@ -478,6 +761,12 @@ fun CaastvVideoPlayer(
                 }
             }
         }
+
+        //Numeric channel search
+        if(typedDigits.isNotEmpty()){
+            InputOverlay(typedDigits = typedDigits)
+        }
+
         if (isOverlayVisible && selectedChannelIndex.intValue >=0) {
             epgList.getOrNull(previewChannelIndex.intValue)?.let {
                 BottomFullScreenPlayerOverlay(
@@ -488,6 +777,123 @@ fun CaastvVideoPlayer(
                     programmeIndex = currentProgrammeIndex.intValue,
                 )
             }
+        }
+
+
+
+        if (isTopOverlayVisible) {
+            LaunchedEffect(Unit) {
+                delay(50)
+                topOverlayFocusRequester.requestFocus()
+            }
+        }
+
+        if (isTopOverlayVisible) {
+            VideoPlayerWithTopOverlay(
+                focusRequester   = topOverlayFocusRequester,
+                isFavorite       = isFav,               // ← pass it here
+                onFavoriteClick  = {
+                    Log.d("PlayerScreen", "Toggling fav (was=$isFav) for $channelId")
+                    if (isFav) sharedViewModel.removeFavorite(channelId)
+                    else       sharedViewModel.addFavorite(channelId)
+                },
+                onAudioClick = {
+                    lastTopOverlayButtonFocus.value = audioButtonFocusRequester
+                    showAudioOverlay.value = true
+                },
+                onSubtitlesClick = {
+                    lastTopOverlayButtonFocus.value = subtitleButtonFocusRequester
+                    showSubtitleOverlay.value = true
+                },
+                onHdClick = {
+                    lastTopOverlayButtonFocus.value = videoButtonFocusRequester
+                    showVideoOverlay.value = true
+                },
+                qualityLabel     = qualityLabel,
+                subtitleButtonFocusRequester = subtitleButtonFocusRequester,
+                audioButtonFocusRequester = audioButtonFocusRequester,
+                videoButtonFocusRequester = videoButtonFocusRequester,
+                onDismiss = {
+                    isTopOverlayVisible = false
+                }
+
+            )
+        }
+        // AUDIO
+        if (showAudioOverlay.value) {
+            SelectionOverlay(
+                modifier       = Modifier.focusRequester(overlayFocusRequester).focusable(),
+                focusRequester = overlayFocusRequester,
+                title          = "Audio",
+                options        = if (audioTracks.isNotEmpty())
+                    audioTracks
+                else listOf("Audio unavailable"),
+                selected       = selectedAudio.value,
+                onSelect       = { lang ->
+                    // only apply if real
+                    if (audioTracks.isNotEmpty()) {
+                        PreferenceManager.preferredAudio = lang
+                        selectedAudio.value = lang
+                        applyAudio(lang)
+                    }
+                    showAudioOverlay.value = false
+                },
+                onDismiss      = { showAudioOverlay.value = false }
+            )
+        }
+
+        // SUBTITLES
+        if (showSubtitleOverlay.value) {
+            SelectionOverlay(
+                modifier       = Modifier.focusRequester(overlayFocusRequester).focusable(),
+                focusRequester = overlayFocusRequester,
+                title          = "Subtitles",
+                options        = if (subtitleTracks.isNotEmpty())
+                    subtitleTracks + "Off"
+                else listOf("Subtitles unavailable"),
+                selected       = selectedSubtitle.value ?: if (subtitleTracks.isNotEmpty()) subtitleTracks.first() else null,
+                onSelect       = { choice ->
+                    if (subtitleTracks.isNotEmpty() && choice != "Off") {
+                        PreferenceManager.preferredSubtitle = choice
+                        selectedSubtitle.value = choice
+                        applySubtitle(choice)
+                    } else {
+                        PreferenceManager.preferredSubtitle = null
+                        selectedSubtitle.value = null
+                    }
+                    showSubtitleOverlay.value = false
+                },
+                onDismiss      = { showSubtitleOverlay.value = false }
+            )
+        }
+
+        // VIDEO QUALITY
+        if (showVideoOverlay.value) {
+            SelectionOverlay(
+                focusRequester   = overlayFocusRequester,
+                title            = "Video Quality",
+                options          = if (videoTracks.isNotEmpty())
+                    videoTracks
+                else listOf("Quality unavailable"),
+                selected         = selectedVideo.value,
+                extraTopOption   = if (videoTracks.isNotEmpty()) "Auto" else null,
+                onExtraTopSelect = {
+                    if (videoTracks.isNotEmpty()) {
+                        clearVideoOverride()
+                        selectedVideo.value = null
+                    }
+                    showVideoOverlay.value = false
+                },
+                onSelect         = { quality ->
+                    if (videoTracks.isNotEmpty()) {
+                        PreferenceManager.preferredVideoQuality = quality
+                        selectedVideo.value = quality
+                        applyVideo(quality)
+                    }
+                    showVideoOverlay.value = false
+                },
+                onDismiss        = { showVideoOverlay.value = false }
+            )
         }
     }
     DisposableEffect(Unit) {

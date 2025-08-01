@@ -8,6 +8,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.tccl.tvapp.di.CoreComponentProvider
+import com.tccl.tvapp.model.data.customapp.InventoryApp
 import com.tccl.tvapp.model.data.epgdata.EPGDataItem
 import com.tccl.tvapp.model.data.genre.WTVGenre
 import com.tccl.tvapp.model.data.language.WTVLanguage
@@ -24,6 +25,7 @@ class WTVAppTccl : Application(), CoreComponentProvider, LifecycleObserver {
     private val wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
     private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
+    private val inventoryApps: MutableLiveData<List<InventoryApp>> = MutableLiveData()
     private val macAddr: MutableLiveData<String> = MutableLiveData()
     private var userInfo: LoginResponseData? = null
     companion object {
@@ -82,6 +84,11 @@ class WTVAppTccl : Application(), CoreComponentProvider, LifecycleObserver {
     override fun initializeHome(data: List<WTVHomeCategory>) {
         this.wtvHome.postValue(data)
     }
+
+    override fun initInventoryApps(data: List<InventoryApp>) {
+        this.inventoryApps.postValue(data)
+    }
+    override fun provideInventoryApps(): LiveData<List<InventoryApp>>  = inventoryApps
 
     override fun provideMacAddr(): LiveData<String> = macAddr
     override fun initializeMacAddr(data: String) {

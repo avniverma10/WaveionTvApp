@@ -141,16 +141,29 @@ fun BottomFullScreenPlayerOverlay(
                         .clip(RoundedCornerShape(6.dp))
                         .background(logoBrush)
                 ) {
-                    // 1) Channel thumbnail
-                    AsyncImage(
-                        model           = channel.content?.thumbnailUrl,
-                        contentDescription = null,
-                        modifier        = Modifier
-                            .width(80.dp)
-                            .height(90.dp)
-                            .padding(8.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                    )
+                    nowProg?.imageUrl?.getOrNull(0)?.let {
+                        AsyncImage(
+                            model           = it .name,
+                            contentDescription = null,
+                            contentScale    = ContentScale.FillBounds,
+                            modifier        = Modifier
+                                .width(80.dp)
+                                .height(90.dp)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                    }?:run {
+                        // Channel Logo
+                        AsyncImage(
+                            model           = channel.content?.thumbnailUrl,
+                            contentDescription = null,
+                            modifier        = Modifier
+                                .width(80.dp)
+                                .height(90.dp)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                    }
                 }
 
 
@@ -280,7 +293,7 @@ fun BottomFullScreenPlayerOverlay(
 
                 // 4) Breaking-News banner
                 Image(
-                    painter         = painterResource(id = R.drawable.banner1),
+                    painter         = painterResource(id = R.drawable.tccl_boot_logo),
                     contentDescription = null,
                     contentScale    = ContentScale.Crop,
                     modifier         = Modifier

@@ -67,8 +67,10 @@ import com.tccl.tvapp.extensions.hideKeyboard
 import com.tccl.tvapp.extensions.loge
 import com.tccl.tvapp.extensions.playerErrorHandling
 import com.tccl.tvapp.extensions.provideCryptoGuardMediaSource
+import com.tccl.tvapp.extensions.showToastS
 import com.tccl.tvapp.extensions.toJSONObject
 import com.tccl.tvapp.utils.uistate.PreferenceManager
+import com.tccl.tvapp.view.uicomponent.InputOverlay
 import com.tccl.tvapp.view.uicomponent.addWatermarkToPlayer
 import com.tccl.tvapp.view.uicomponent.audio.AnimatedAudio
 import com.tccl.tvapp.view.uicomponent.error.CommonDialog
@@ -117,6 +119,10 @@ fun PanMetroVideoPlayer(
     var errorMessageState by remember { mutableStateOf("") }
     var errorTitleState by remember { mutableStateOf("") }
     var isAudio = remember { mutableStateOf(false) }
+    // --- Channel‑number search state -------------------------------
+    var typedDigits     by remember { mutableStateOf("") }   // the running “123”
+    var inputJob        by remember { mutableStateOf<Job?>(null) }
+    val DEBOUNCE_MS = 1_000L                                 // change if you want longer
 
 
     LaunchedEffect(playerSSERules) {
@@ -306,6 +312,20 @@ fun PanMetroVideoPlayer(
     }
 
 
+    fun commitChannelSearch(numberStr: String) {
+        val number = numberStr.toIntOrNull() ?: return
+        val idx = epgList.indexOfFirst { (it.content?.channelNo ?: 0) == number }
+        if (idx != -1) {
+            sharedViewModel.updateSelectedChannel(epgList[idx])
+            //selectedChannelIndex.intValue = idx
+            // scroll so it’s centred (optional)
+            //scope.launch { listState.animateScrollToItem(idx) }
+        } else {
+            context.showToastS("This Channel $number not available.")
+            // optional: toast / blink to show “no such channel”
+            // Log.d("ChannelSearch", "Channel $number not found")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -313,9 +333,27 @@ fun PanMetroVideoPlayer(
             .background(Color.Black)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
+                val code = keyEvent.nativeKeyEvent.keyCode
                 showOverlay()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
+                        in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
+                            val digit = (code - KeyEvent.KEYCODE_0).toString()
+                            if(typedDigits.length<=3) {
+                                typedDigits += digit
+                            }
+
+                            showOverlay()                       // optional – keep your overlay visible
+
+                            // restart debounce timer
+                            inputJob?.cancel()
+                            inputJob = scope.launch {
+                                delay(DEBOUNCE_MS)
+                                commitChannelSearch(typedDigits)
+                                typedDigits = ""                 // clear the onscreen prompt
+                            }
+                            return@onPreviewKeyEvent true        // we consumed the event
+                        }
                         KeyEvent.KEYCODE_BACK -> {
                             PreferenceManager.selectedGenreIndex  = 0
                             PreferenceManager.selectedChannelIndex = 0
@@ -487,6 +525,12 @@ fun PanMetroVideoPlayer(
                 ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
             }
         }
+
+        //Numeric channel search
+        if(typedDigits.isNotEmpty()){
+            InputOverlay(typedDigits = typedDigits)
+        }
+
 
         if (showErrorDialog) {
             val borderColor = remember(errorCodeState) {

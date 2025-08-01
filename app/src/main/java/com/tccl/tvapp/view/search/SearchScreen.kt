@@ -35,6 +35,7 @@ import coil3.compose.AsyncImage
 import com.android.tccl.R
 import com.tccl.tvapp.model.data.epgdata.Channel
 import com.tccl.tvapp.utils.theme.*
+import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.tccl.tvapp.view.navigationhelper.Destination
 import com.tccl.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.tccl.tvapp.view.uicomponent.error.CommonDialog
@@ -202,7 +203,11 @@ fun SearchScreen(
                                 sharedViewModel.updateLanguage(null)
                                 epgData.find { it.content?.videoUrl == url }?.let {
                                     sharedViewModel.updateSelectedChannel(it)
-                                    navController.navigate(Destination.panMetroScreen)
+                                    if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                        navController.navigate(Destination.animationPlayer)
+                                    }else{
+                                        navController.navigate(Destination.panMetroScreen)
+                                    }
                                 }
                             }
                         )

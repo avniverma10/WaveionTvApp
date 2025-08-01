@@ -63,6 +63,7 @@ import com.tccl.tvapp.model.data.epgdata.Channel
 import com.tccl.tvapp.utils.theme.base_color
 import com.tccl.tvapp.utils.theme.bg_card_color
 import com.tccl.tvapp.utils.theme.screen_bg_color
+import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.tccl.tvapp.view.navigationhelper.CategoryMenu
 import com.tccl.tvapp.view.navigationhelper.Destination
 import com.tccl.tvapp.view.navigationhelper.ExpandableNavigationMenu
@@ -227,7 +228,11 @@ fun ChannelScreen(
                                                     sharedViewModel.setCurrentPlaylist(filteredContent, genre)
                                                     sharedViewModel.updateLanguage(lang)
                                                 }
-                                                navController.navigate(Destination.panMetroScreen)
+                                                if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                                    navController.navigate(Destination.animationPlayer)
+                                                }else{
+                                                    navController.navigate(Destination.panMetroScreen)
+                                                }
                                             }
                                     },
                                     languageFocusRequesters = languageFocusRequesters,
@@ -249,7 +254,11 @@ fun ChannelScreen(
                                                     sharedViewModel.setCurrentPlaylist(filteredContent, genre)
                                                     sharedViewModel.updateLanguage(lang)
                                                 }
-                                                navController.navigate(Destination.panMetroScreen)
+                                                if(PreferenceManager.getAppSettings()?.isPlayerAnimationOverlay == true){
+                                                    navController.navigate(Destination.animationPlayer)
+                                                }else{
+                                                    navController.navigate(Destination.panMetroScreen)
+                                                }
                                             }
                                     },
                                     isFirstChannel = isFirstChannel,
