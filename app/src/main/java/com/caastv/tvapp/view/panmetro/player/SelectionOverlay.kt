@@ -85,6 +85,12 @@ fun SelectionOverlay(
                         }
                         true
                     }
+                    KeyEvent.KEYCODE_DPAD_LEFT -> {
+                    true
+                    }
+                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        true
+                    }
                     KeyEvent.KEYCODE_BACK -> {
                         onDismiss()
                         true
