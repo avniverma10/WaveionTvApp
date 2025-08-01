@@ -144,6 +144,7 @@ open class SharedViewModel @Inject constructor(
         //provideGlobalFingerprintInfo()
         //provideScrollMessageInfo()
         // only load once, no continuous observation to avoid overriding
+
         viewModelScope.launch {
             isInitializeData
                 .filter { it }        // only when it becomes true
@@ -177,6 +178,9 @@ open class SharedViewModel @Inject constructor(
         viewModelScope.launch {
             provideBanners()
         }
+        viewModelScope.launch {
+            fetchInventoryApps()
+        }
     }
 
     fun setCurrentPlaylist(list: List<EPGDataItem>) {
@@ -190,7 +194,6 @@ open class SharedViewModel @Inject constructor(
         _wishlist.value += program
         clearWishlistPopup()
     }
-
     fun onShowWishlistPopup(program: Programme) { _wishlistPopupProgram.value = program }
 
     fun clearWishlistAlert() { _wishlistAlertProgram.value = null }

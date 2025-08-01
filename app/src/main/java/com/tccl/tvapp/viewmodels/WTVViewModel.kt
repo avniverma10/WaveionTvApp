@@ -50,6 +50,7 @@ import com.tccl.tvapp.extensions.isNotNullOrEmpty
 import com.tccl.tvapp.extensions.loge
 import com.tccl.tvapp.extensions.provideMacAddress
 import com.tccl.tvapp.extensions.showToastS
+import com.tccl.tvapp.model.data.customapp.InventoryApp
 import com.tccl.tvapp.model.data.epgdata.Programme
 import com.tccl.tvapp.model.data.login.LoginResponseData
 import com.tccl.tvapp.utils.network.UrlManager
@@ -88,6 +89,9 @@ open class WTVViewModel @Inject constructor(
 
     private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
     val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
+
+    private val _inventoryApps = MutableStateFlow<List<InventoryApp>>(emptyList())
+    val inventoryApps: StateFlow<List<InventoryApp>> = _inventoryApps.asStateFlow()
 
     // ─── Date and time state ───
     private val _isTimeValid = MutableStateFlow<Boolean?>(null)
@@ -291,6 +295,9 @@ open class WTVViewModel @Inject constructor(
                             logReport("applyAppHome error:${response.error.message}")
                         }
                     }
+            }
+            launch {
+                fetchInventoryApps()
             }
         }
     }
@@ -588,6 +595,20 @@ open class WTVViewModel @Inject constructor(
     }
 
 
+    fun fetchInventoryApps() {
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl
+                .provideWTVInventoryApps(UrlManager.getCurrentBaseUrl() + "app/inventory-apps")
+                .catch { }
+                .collect { resp ->
+                    if (resp is WTVListResponse.Success) {
+//                        updateAppsInventory(resp.data)
+//                        dataRepository?.saveAllAppsInventory(resp.data)
+                        // application.applyAppInventoryApp(resp.data)
+                    }
+                }
+        }
+    }
     fun validateUserLogin(userName: String,userPassword: String,onLoginResponse:(LoginResponseData?,String?)->Unit){
         viewModelScope.launch {
             val requestBody = hashMapOf(

@@ -23,6 +23,8 @@ import com.tccl.tvapp.utils.sealed.WTVListResponse
 import com.tccl.tvapp.utils.sealed.WTVResponse
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.tccl.tvapp.model.data.customapp.InventoryApp
+import com.tccl.tvapp.model.data.favourites.FavouritesResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -179,6 +181,34 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                     .convertIntoModels(object : TypeToken<List<WTVHomeCategory>>() {})
                 // Optionally save EPG data into ContentProvider or DB here
                 emit(WTVListResponse.Success(epgData!!))
+            } else {
+                emit(WTVListResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVListResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun provideWTVInventoryApps(url: String): Flow<WTVListResponse<InventoryApp>> = flow {
+        try {
+            val response = networkApiCallInterface.makeHttpGetRequest(url).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()
+                if (body is Map<*, *>) {
+                    val dataList = body["data"]
+                    if (dataList is List<*>) {
+                        val json = Gson().toJson(dataList)
+                        val apps: List<InventoryApp> = Gson().fromJson(
+                            json,
+                            object : TypeToken<List<InventoryApp>>() {}.type
+                        )
+                        emit(WTVListResponse.Success(apps))
+                    } else {
+                        emit(WTVListResponse.Failure(Throwable("Missing 'data' list in body")))
+                    }
+                } else {
+                    emit(WTVListResponse.Failure(Throwable("Body is not a map")))
+                }
             } else {
                 emit(WTVListResponse.Failure(Throwable("Invalid response received")))
             }
