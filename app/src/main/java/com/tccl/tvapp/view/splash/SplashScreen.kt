@@ -20,10 +20,16 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +58,7 @@ import coil3.request.ImageRequest
 import com.android.tccl.R
 import com.tccl.tvapp.extensions.applyUserInfo
 import com.tccl.tvapp.extensions.showToastS
+import com.tccl.tvapp.utils.theme.base_color
 import com.tccl.tvapp.utils.uistate.PreferenceManager
 import com.tccl.tvapp.view.navigationhelper.Destination
 import com.tccl.tvapp.view.uicomponent.ErrorDialog
@@ -401,12 +408,32 @@ fun SplashScreen(
             error = painterResource(R.drawable.tccl_boot_logo),        // Error state
             placeholder = painterResource(R.drawable.tccl_boot_logo)   // Loading state
         )
-        if (isUpdating) {
-            CircularProgressIndicator(
+        if (downloadId != null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
-            )
+                    .padding(bottom = 30.dp)
+            ) {
+                LinearProgressIndicator(
+                    progress = downloadProgress.value,
+                    modifier = Modifier
+                        .width(300.dp)
+                        .height(8.dp),
+                    color = base_color,
+                    trackColor = Color.LightGray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = if (downloadProgress.value < 1f)
+                        "Downloading update… ${(downloadProgress.value * 100).toInt()}%"
+                    else
+                        "Download complete!",
+                    color = Color.White
+                )
+            }
         }
     }
 }
