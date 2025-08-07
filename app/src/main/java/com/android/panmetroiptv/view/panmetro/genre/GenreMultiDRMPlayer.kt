@@ -333,7 +333,13 @@ fun GenreMultiDRMPlayer(
         val stops = selectedVideoUrl.content?.bgGradient
             ?.colors
             ?.sortedBy { it.percentage }
-            ?.map { Color(android.graphics.Color.parseColor(it.color)) }
+            ?.mapNotNull {
+                try {
+                    Color(android.graphics.Color.parseColor(it.color))
+                } catch (e: IllegalArgumentException) {
+                    null
+                }
+            }
             .orEmpty()
 
         val brush = if (stops.size >= 2) {
