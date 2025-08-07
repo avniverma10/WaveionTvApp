@@ -16,9 +16,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,12 +54,15 @@ import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.showToastS
+import com.android.panmetroiptv.utils.theme.base_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.uicomponent.ErrorDialog
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import java.io.File
+import kotlinx.coroutines.time.delay
+import java.time.Duration
 
 @Composable
 fun SplashScreen(
@@ -91,6 +100,7 @@ fun SplashScreen(
         }
     }
 
+    val downloadProgress = remember { mutableStateOf(0f) }
 
     val unknownSourcesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -252,7 +262,32 @@ fun SplashScreen(
             )
         }
     }
-
+    LaunchedEffect(downloadId) {
+        downloadProgress.value = 0f
+        downloadId?.let { id ->
+            var finished = false
+            while (!finished) {
+                val q = DownloadManager.Query().setFilterById(id)
+                dm.query(q)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val soFar = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                        val total  = cursor.getLong(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        if (total > 0) {
+                            downloadProgress.value = (soFar / total.toFloat()).coerceIn(0f, 1f)
+                        }
+                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(
+                            DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            finished = true
+                            downloadProgress.value = 1f
+                        }
+                    }
+                }
+                if (!finished)   delay(Duration.ofMillis(300))        }
+        }
+    }
     DisposableEffect(downloadId) {
         if (downloadId != null && updateData != null) {
             val apkVersionName = updateData?.appVersion ?: "latest"
@@ -379,12 +414,32 @@ fun SplashScreen(
             error = painterResource(R.drawable.panmetro_logo_t),        // Error state
             placeholder = painterResource(R.drawable.panmetro_logo_t)   // Loading state
         )
-        if (isUpdating) {
-            CircularProgressIndicator(
+        if (downloadId != null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
-            )
+                    .padding(bottom = 80.dp)
+            ) {
+                LinearProgressIndicator(
+                    progress = downloadProgress.value,
+                    modifier = Modifier
+                        .width(300.dp)
+                        .height(8.dp),
+                    color = Color(0xFF00BFFF),
+                    trackColor = Color.LightGray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = if (downloadProgress.value < 1f)
+                        "Downloading update… ${(downloadProgress.value * 100).toInt()}%"
+                    else
+                        "Download complete!",
+                    color = Color.Black
+                )
+            }
         }
     }
 }
