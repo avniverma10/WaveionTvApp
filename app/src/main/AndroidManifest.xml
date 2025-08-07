@@ -69,12 +69,12 @@
             android:authorities="com.android.panmetroiptv.provider"
             android:exported="false" />
 
-        <service
+       <!-- <service
             android:name="com.android.panmetroiptv.globalFingerprintService.FingerprintOverlayService"
             android:exported="false"
             android:stopWithTask="false"
             tools:ignore="ForegroundServicePermission"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice" />-->
     </application>
 
 </manifest>

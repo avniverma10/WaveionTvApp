@@ -243,8 +243,6 @@ fun EPGContent(
                                     )
                             ) {
                                 val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
-                                loge("aProgram::>>>", availableProgram.joinToString(" | ") { it.startTime?.formatTime()
-                                    .toString() })
                                 itemsIndexed(availableProgram) { programIndex, program ->
                                     val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
                                     val focusRequester = programFocusRequesters[channelIndex][programIndex]

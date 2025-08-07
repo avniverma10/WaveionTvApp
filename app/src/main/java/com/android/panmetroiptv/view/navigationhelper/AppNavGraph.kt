@@ -23,6 +23,7 @@ import com.android.panmetroiptv.view.epg.EPGScreen
 import com.android.panmetroiptv.view.panmetro.genre.PanmetroGenreScreen
 import com.android.panmetroiptv.view.panmetro.login.PanmetroLoginScreen
 import com.android.panmetroiptv.view.panmetro.player.CaastvVideoPlayer
+import com.android.panmetroiptv.view.panmetro.player.PanMetroVideoPlayer
 import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.profile.ProfileScreen
 import com.android.panmetroiptv.view.splash.SplashScreen
@@ -139,7 +140,8 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.panMetroScreen) { backStackEntry ->
             //val channelId = backStackEntry.arguments?.getString("channelId")
-            CaastvVideoPlayer(navController,sharedViewModel)
+           // PanMetroVideoPlayer(navController,sharedViewModel)
+           CaastvVideoPlayer(navController,sharedViewModel)
         }
     }
 

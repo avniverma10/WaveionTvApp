@@ -44,6 +44,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.showToastS
@@ -169,15 +170,22 @@ fun SplashScreen(
         }
 
         showExitDialog = false
-        if (PreferenceManager.getLoginResponse() != null) {
+        if (BuildConfig.BUILD_TYPE.equals("debug")){
             navController.navigate(Destination.genreScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
-        } else {
-            navController.navigate(Destination.loginScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
+        }else{
+            if (PreferenceManager.getLoginResponse() != null) {
+                navController.navigate(Destination.genreScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
+            } else {
+                    navController.navigate(Destination.loginScreen) {
+                        popUpTo(Destination.splashScreen) { inclusive = true }
+                    }
             }
         }
+
 
         sharedViewModel.isFromSplash.value = true
     }

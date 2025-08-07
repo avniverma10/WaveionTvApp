@@ -36,12 +36,13 @@ class MainActivity : ComponentActivity() {
         sharedViewModel.deviceMacAddr.value = provideMacAddress().toString()
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
-        overlayHelper = OverlayPermissionHelper(this).apply {
+        /*overlayHelper = OverlayPermissionHelper(this).apply {
             registerLauncher()
-        }
+        }*/
 
         setContent {
-            val hasOverlayPermission by overlayHelper.hasOverlayPermissionState
+            WTVApp()
+            /*val hasOverlayPermission by overlayHelper.hasOverlayPermissionState
                 Box(modifier = Modifier.fillMaxSize()) {
                     when {
                         isFireTv -> {
@@ -63,8 +64,9 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
+            }*/
         }
+    }
 
 
     /*override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

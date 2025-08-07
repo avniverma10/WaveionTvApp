@@ -100,7 +100,7 @@ fun Context.networkType():String?{
 
 @SuppressLint("HardwareIds")
 fun Context.provideMacAddress():String?{
-    return try { getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    return try {  getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     } catch (e: Exception) {
         e.printStackTrace()
         null

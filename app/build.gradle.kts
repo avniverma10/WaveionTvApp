@@ -16,9 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 27
-        versionName = "1.0.32"
-
+        versionCode = 44
+        versionName = "1.0.44"
     }
 
     buildTypes {
@@ -28,6 +27,13 @@ android {
             buildConfigField("String", "PRIMERY_BASE_URL", "\"$primaryBaseUrl\"")
             buildConfigField("String", "SECONDARY_BASE_URL", "\"$secondaryBaseUrl\"")
             buildConfigField("String", "BUILD_TYPE", "\"debug\"")
+            isMinifyEnabled = true
+            // Enables resource shrinking, which is performed by the
+            isShrinkResources =  true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
             val primaryBaseUrl = System.getenv("PRIMERYY_BASE_URL")
@@ -124,5 +130,8 @@ dependencies {
     //dimens
     implementation(libs.bundles.dimens)
 
+
+    // Add this to your app/build.gradle dependencies
+    implementation("com.google.errorprone:error_prone_annotations:2.23.0")
 
 }

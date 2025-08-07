@@ -105,15 +105,8 @@ object NetworkModule {
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .cache(cache)
-            .addInterceptor(headerInterceptor) // header
-            //.addInterceptor(LoggingInterceptor())
-            .addInterceptor(offlineInterceptor)              // handles errors → cache
-            .addNetworkInterceptor(networkCacheInterceptor)  // caches fresh responses
-            //Trust all SSL certificates (for debug/development only)
-            .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
-            .hostnameVerifier { _, _ -> true }// Bypass hostname verification
-           // .cache(null)
+            .addInterceptor(headerInterceptor)               // header
+            .cache(null)
             .build()
     }
 

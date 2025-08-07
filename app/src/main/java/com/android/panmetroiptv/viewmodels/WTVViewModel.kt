@@ -303,6 +303,7 @@ open class WTVViewModel @Inject constructor(
                 return null
             }
 
+            loge("API:","Url:${healthAPI}>${resp.body}")
             val bodyStr = resp.body?.string() ?: run {
                 loge(TAG, "Empty response body")
                 return null
@@ -355,33 +356,6 @@ open class WTVViewModel @Inject constructor(
             } catch (e: Exception) {
                 loge(TAG, "Error in time validation: ${e.message}")
                 _isTimeValid.value = false
-            }
-        }
-    }
-
-    suspend fun saveEPGList(context: Context, epgList: List<EPGDataItem>) {
-        withContext(Dispatchers.IO) {
-            epgList.forEach { item ->
-                val values = ContentValues().apply {
-                    put(EPGContract.EPGEntry.COLUMN_ID, item._id)
-                    put(EPGContract.EPGEntry.COLUMN_CHANNEL_ID, item.channelId)
-                    put(EPGContract.EPGEntry.COLUMN_CHANNEL_HASH, item.channelHash)
-                    put(EPGContract.EPGEntry.COLUMN_LAST_UPDATED, item.lastUpdated)
-                    put(EPGContract.EPGEntry.COLUMN_DATA, Gson().toJson(item))
-                }
-
-                // Try to update the row with the given channelId.
-                val rowsUpdated = context.contentResolver.update(
-                    EPGContract.EPGEntry.CONTENT_URI,
-                    values,
-                    "${EPGContract.EPGEntry.COLUMN_CHANNEL_ID} = ?",
-                    arrayOf(item.channelId)
-                )
-
-                // If no row was updated, then insert a new record.
-                if (rowsUpdated == 0) {
-                    context.contentResolver.insert(EPGContract.EPGEntry.CONTENT_URI, values)
-                }
             }
         }
     }

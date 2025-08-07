@@ -102,6 +102,7 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         try {
             val response = networkApiCallInterface.makeHttpGetRequest(epgContentUrl).execute()
             if (response.isSuccessful && response.body() != null) {
+                loge("API:","Url:${epgContentUrl}>${response.body()}")
                 val epgData: List<EPGDataItem>? = response.body()?.toJSONArray().toString()
                     .convertIntoModels(object : TypeToken<List<EPGDataItem>>() {})
                 // Optionally save EPG data into ContentProvider or DB here
@@ -111,6 +112,7 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             }
         } catch (e: Exception) {
             emit(WTVListResponse.Failure(e))
+            loge("API:","Url:${epgContentUrl}>${e.message}")
         }
     }.flowOn(Dispatchers.IO)
 

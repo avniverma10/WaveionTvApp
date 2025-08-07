@@ -229,7 +229,7 @@ open class SharedViewModel @Inject constructor(
         }
     }
 
-    fun observeEPGChanges(context: Context): Flow<List<EPGDataItem>> = callbackFlow {
+   /* fun observeEPGChanges(context: Context): Flow<List<EPGDataItem>> = callbackFlow {
         val observer = object : ContentObserver(null) {
             override fun onChange(selfChange: Boolean) {
                 launch {
@@ -251,7 +251,7 @@ open class SharedViewModel @Inject constructor(
 
         awaitClose { context.contentResolver.unregisterContentObserver(observer) }
     }.flowOn(Dispatchers.IO)
-
+*/
     fun updateGenre(genre: String?) {
         val newGenre = if (genre.equals("All",true) ) null else genre
         _filterState.value = _filterState.value.copy(genre = newGenre)
