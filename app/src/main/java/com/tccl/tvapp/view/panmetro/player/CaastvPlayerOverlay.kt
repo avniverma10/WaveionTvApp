@@ -141,29 +141,16 @@ fun BottomFullScreenPlayerOverlay(
                         .clip(RoundedCornerShape(6.dp))
                         .background(logoBrush)
                 ) {
-                    nowProg?.imageUrl?.getOrNull(0)?.let {
-                        AsyncImage(
-                            model           = it .name,
-                            contentDescription = null,
-                            contentScale    = ContentScale.FillBounds,
-                            modifier        = Modifier
-                                .width(80.dp)
-                                .height(90.dp)
-                                .padding(8.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                        )
-                    }?:run {
-                        // Channel Logo
-                        AsyncImage(
-                            model           = channel.content?.thumbnailUrl,
-                            contentDescription = null,
-                            modifier        = Modifier
-                                .width(80.dp)
-                                .height(90.dp)
-                                .padding(8.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                        )
-                    }
+                    // Channel Logo
+                    AsyncImage(
+                        model           = channel.content?.thumbnailUrl,
+                        contentDescription = null,
+                        modifier        = Modifier
+                            .width(80.dp)
+                            .height(90.dp)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
                 }
 
 
@@ -291,8 +278,33 @@ fun BottomFullScreenPlayerOverlay(
 
                 Spacer(Modifier.width(16.dp))
 
+                nowProg?.imageUrl?.getOrNull(0)?.let {
+                    AsyncImage(
+                        model           = it .name,
+                        contentDescription = null,
+                        contentScale    = ContentScale.FillBounds,
+                        modifier         = Modifier
+                            .width(200.dp)
+                            .height(130.dp)
+                            .padding(top = 25.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                }?:run {
+                    //brand Logo
+                    Image(
+                        painter         = painterResource(id = R.drawable.tccl_boot_logo),
+                        contentDescription = null,
+                        contentScale    = ContentScale.Crop,
+                        modifier         = Modifier
+                            .width(200.dp)
+                            .height(130.dp)
+                            .padding(top = 25.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                    )
+                }
+
                 // 4) Breaking-News banner
-                Image(
+                /*Image(
                     painter         = painterResource(id = R.drawable.tccl_boot_logo),
                     contentDescription = null,
                     contentScale    = ContentScale.Crop,
@@ -301,7 +313,7 @@ fun BottomFullScreenPlayerOverlay(
                         .height(130.dp)
                         .padding(top = 25.dp)
                         .clip(RoundedCornerShape(6.dp))
-                )
+                )*/
             }
 
             // —— Next: … ——

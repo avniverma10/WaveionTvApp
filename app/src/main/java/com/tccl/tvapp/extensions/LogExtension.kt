@@ -4,11 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.android.tccl.BuildConfig
+import com.tccl.tvapp.utils.Constants
 import com.tccl.tvapp.utils.crash.logs.CrashLogger
 
 @SuppressLint("LogNotTimber")
 fun Any.loge(tag: String = "", value: String?) {
-    if (BuildConfig.BUILD_TYPE.equals("release")) return
+    if (BuildConfig.BUILD_TYPE.equals("release") || Constants.BUILD_TYPE.equals("release")) return
     val customTag = if (tag.isNotEmpty()) tag else this.javaClass.simpleName
     val messageToDisplay = value ?: "empty message"
     //loge(customTag, if (tag.isNotEmpty()) "${this.javaClass.simpleName} >> $messageToDisplay" else messageToDisplay)

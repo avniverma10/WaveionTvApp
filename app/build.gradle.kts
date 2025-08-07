@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.tccl"
         minSdk = 21
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.0.17"
+        versionCode = 15
+        versionName = "1.0.23"
     }
 
     buildTypes {

@@ -56,8 +56,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import com.google.gson.annotations.SerializedName
 import com.tccl.tvapp.extensions.appManifestLiveData
 import com.tccl.tvapp.extensions.hideKeyboard
+import com.tccl.tvapp.extensions.showToastS
 import com.tccl.tvapp.model.data.banner.Banner
 import com.tccl.tvapp.model.data.epgdata.Channel
 import com.tccl.tvapp.utils.theme.base_color
@@ -70,6 +72,7 @@ import com.tccl.tvapp.view.navigationhelper.ExpandableNavigationMenu
 import com.tccl.tvapp.view.navigationhelper.LanguageMenu
 import com.tccl.tvapp.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.tccl.tvapp.viewmodels.SharedViewModel
+import kotlin.String
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
 @Composable
@@ -83,7 +86,7 @@ fun ChannelScreen(
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData().observeAsState()
     val categories = appManifestData.value?.genre ?: arrayListOf()
     val languages  = appManifestData.value?.language ?: arrayListOf()
-    val filteredContent by sharedViewModel.filteredEPGList.collectAsState(emptyList())
+    val filteredContent by sharedViewModel.filteredEPGList.collectAsState()
     val filterState by sharedViewModel.filterState.collectAsState()
     val categorySelectedIndex = remember { mutableStateOf(0) }
     val languageSelectedIndex = remember { mutableStateOf(0) }
@@ -94,7 +97,17 @@ fun ChannelScreen(
             genreId    = epgItem.content?.genreId ?: "",
             channelNo  = epgItem.content?.channelNo,
             bgGradient  = epgItem.content?.bgGradient
-        )
+        )?: run {
+            Channel(
+                _id = epgItem.content?.ChannelID,
+                displayName = epgItem.content?.title,
+                videoUrl   = epgItem.content?.videoUrl,
+                logoUrl    = epgItem.content?.thumbnailUrl,
+                genreId    = epgItem.content?.genreId ?: "",
+                channelNo  = epgItem.content?.channelNo,
+                bgGradient  = epgItem.content?.bgGradient
+            )
+        }
     }
     val channelFocusRequesters = remember(channelList.size) {
         List(channelList.size) { FocusRequester() }
@@ -110,6 +123,7 @@ fun ChannelScreen(
     val focusManager = LocalFocusManager.current
     val genre = sharedViewModel.filterState.value.genre ?: "All Channels"
     val lang  = sharedViewModel.filterState.value.language ?: "All Languages"
+
     val menuFocusRequester = remember { FocusRequester() }
 
     //hide keyboard forcefully
