@@ -62,12 +62,15 @@ import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
+import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
+import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
+import com.android.panmetroiptv.view.uicomponent.search.InputOverlay
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.player.PlayerViewModel
 import com.techit.youtubelib.PlayerConstants
@@ -81,6 +84,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
+import kotlin.text.get
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -120,6 +124,10 @@ fun CaastvVideoPlayer(
     var isAudio = remember { mutableStateOf(false) }
     var isYoutube = remember { mutableStateOf(false) }
     val youtubeId = remember { mutableStateOf<String?>(null) }
+    // --- Channel‑number search state -------------------------------
+    var typedDigits     by remember { mutableStateOf("") }   // the running “123”
+    var inputJob        by remember { mutableStateOf<Job?>(null) }
+    val DEBOUNCE_MS = 1_000L                                 // change if you want longer
 
     val currentProgrammeIndex = remember { mutableIntStateOf(0) }
     LaunchedEffect(selectedChannel) {
@@ -307,6 +315,12 @@ fun CaastvVideoPlayer(
                 } else {
                     MediaItem.fromUri(url)
                 }
+                if(Constants.userChannelResult?.any{it.name.equals(selectedChannel.content?.title,true)} == false){
+                    val (code, title, message) = playerErrorHandling(6200)
+                    errorCodeState = code
+                    errorMessageState = message
+                    showErrorDialog = true
+                }
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
@@ -317,6 +331,15 @@ fun CaastvVideoPlayer(
         }
     }
 
+    fun commitChannelSearch(numberStr: String) {
+        val number = numberStr.toIntOrNull() ?: return
+        val idx = epgList.indexOfFirst { (it.content?.channelNo ?: 0) == number }
+        if (idx != -1) {
+            sharedViewModel.updateSelectedChannel(epgList[idx])
+        } else {
+            context.showToastS("This Channel $number not available.")
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -324,9 +347,27 @@ fun CaastvVideoPlayer(
             .background(Color.Black)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
+                val code = keyEvent.nativeKeyEvent.keyCode
                 showOverlay()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
+                        in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
+                            val digit = (code - KeyEvent.KEYCODE_0).toString()
+                            if(typedDigits.length<=3) {
+                                typedDigits += digit
+                            }
+
+                            showOverlay()                       // optional – keep your overlay visible
+
+                            // restart debounce timer
+                            inputJob?.cancel()
+                            inputJob = scope.launch {
+                                delay(DEBOUNCE_MS)
+                                commitChannelSearch(typedDigits)
+                                typedDigits = ""                 // clear the onscreen prompt
+                            }
+                            return@onPreviewKeyEvent true        // we consumed the event
+                        }
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
                             if (previewChannelIndex.intValue > 0) {
                                 previewChannelIndex.intValue--
@@ -545,7 +586,10 @@ fun CaastvVideoPlayer(
                 }
             }
         }
-
+        //Numeric channel search
+        if(typedDigits.isNotEmpty()){
+            InputOverlay(typedDigits = typedDigits)
+        }
         if (isOverlayVisible && selectedChannelIndex.intValue >=0) {
             epgList.getOrNull(previewChannelIndex.intValue)?.let {
                 CaastvPlayerOverlay(

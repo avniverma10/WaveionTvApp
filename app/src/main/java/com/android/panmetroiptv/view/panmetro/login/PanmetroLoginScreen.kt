@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.loge
@@ -83,8 +84,8 @@ fun PanmetroLoginScreen(
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf(if (BuildConfig.BUILD_TYPE.equals("debug"))"PAN00005" else "") }
+    var password by remember { mutableStateOf(if (BuildConfig.BUILD_TYPE.equals("debug"))"123456" else "") }
     var macId by remember { mutableStateOf(sharedViewModel.deviceMacAddr.value) }
     val figtreeMedium = FontFamily(Font(R.font.figtree_medium, FontWeight.Bold))
     val figtreeLight = FontFamily(Font(R.font.figtree_light, FontWeight.Bold))
@@ -354,8 +355,8 @@ fun PanmetroLoginScreen(
                                                     macId = macId?:"",
                                                     onLoginResponse = { response, errorMsg ->
                                                         // Optionally handle click for navigation
-                                                        if (response?.returncode?.equals(
-                                                                "0",
+                                                        if (response?.code?.equals(
+                                                                "02",
                                                                 true
                                                             ) == true
                                                         ) {
@@ -376,8 +377,7 @@ fun PanmetroLoginScreen(
                                                                 }
                                                             }
                                                         } else {
-                                                            context.showToastS(response?.returncode?.toResponseMessage())
-
+                                                            context.showToastS(response?.code?.toResponseMessage())
                                                         }
                                                     })
                                             } else {

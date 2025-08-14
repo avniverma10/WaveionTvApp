@@ -2,6 +2,7 @@ package com.android.panmetroiptv.utils.uistate
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.google.gson.Gson
 
@@ -14,7 +15,9 @@ object PreferenceManager {
   private const val KEY_CHANNEL        = "channel"
   private const val KEY_USERNAME   = "username"
   private const val KEY_PASSWORD   = "password"
+  private const val KEY_CUS_NUMBER   = "customer_number"
   private const val KEY_USER_INFO   = "userinfo"
+  private const val KEY_USER_PKG_INFO   = "userPKGInfo"
   private const val KEY_USER_HASH   = "userhash"
 
   /** Must be called once in your Application or Activity */
@@ -43,6 +46,19 @@ object PreferenceManager {
   }
 
   /** Save username & password atomically */
+  fun saveUserPackageInfo(userPkgInfo: CustomerPackageInfo) {
+    val json = Gson().toJson(userPkgInfo)
+    val editor = prefs.edit()
+    editor.putString(KEY_USER_PKG_INFO, json)
+    editor.apply()
+  }
+  fun getUserPackageInfo(): CustomerPackageInfo? {
+    val json = prefs.getString(KEY_USER_PKG_INFO, null)
+      ?: return null
+    return Gson().fromJson(json, CustomerPackageInfo::class.java)
+  }
+
+  /** Save username & password atomically */
   fun saveUserInfo(userInfo: LoginInfo) {
     val json = Gson().toJson(userInfo)
     val editor = prefs.edit()
@@ -61,6 +77,12 @@ object PreferenceManager {
     editor.apply()
   }
 
+  fun saveCusNumber(cNum:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_CUS_NUMBER, cNum)
+    editor.apply()
+  }
+
 
   /** Clear only the login keys */
   fun clearLogin(): Boolean {
@@ -69,6 +91,7 @@ object PreferenceManager {
     editor.remove(KEY_USERNAME)
     editor.remove(KEY_PASSWORD)
     editor.remove(KEY_USER_HASH)
+    editor.remove(KEY_CUS_NUMBER)
     return editor.commit()
   }
 
@@ -89,6 +112,7 @@ object PreferenceManager {
 
   /** Helpers to read them back */
   fun getUsername(): String? = prefs.getString(KEY_USERNAME, null)
+  fun getCustomerNumber(): String? = prefs.getString(KEY_CUS_NUMBER, null)
   fun getPassword(): String? = prefs.getString(KEY_PASSWORD, null)
   fun provideUserHash(): String? = prefs.getString(KEY_USER_HASH, null)
 

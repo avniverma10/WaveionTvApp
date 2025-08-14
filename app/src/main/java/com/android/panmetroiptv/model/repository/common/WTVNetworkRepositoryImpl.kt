@@ -16,7 +16,12 @@ import com.android.panmetroiptv.model.data.hash.HashInfo
 import com.android.panmetroiptv.model.data.health.HealthAPIResponse
 import com.android.panmetroiptv.model.data.home.HomeData
 import com.android.panmetroiptv.model.data.language.WTVLanguage
+import com.android.panmetroiptv.model.data.login.ChannelResult
+import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
+import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
+import com.android.panmetroiptv.model.data.login.DRMUserInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
+import com.android.panmetroiptv.model.data.login.toLoginInfo
 import com.android.panmetroiptv.model.data.manifest.WTVManifest
 import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.home.WTVHomeCategory
@@ -24,10 +29,14 @@ import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.network.NetworkApiCallInterface
 import com.android.panmetroiptv.utils.sealed.WTVListResponse
 import com.android.panmetroiptv.utils.sealed.WTVResponse
+import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
@@ -36,6 +45,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
+import java.io.IOException
 import javax.inject.Inject
 
 @Keep
@@ -197,6 +207,78 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
+
+    suspend fun getUserInfo(requestUrl: String,headers: Map<String, String>): Flow<WTVResponse<DRMUserInfo>> = flow {
+        try {
+            val response = networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
+            if (response.isSuccessful && response.body() != null) {
+                val banners = response.body()?.toString()?.convertIntoModel(DRMUserInfo::class.java)
+                banners?.let { data ->
+                    emit(WTVResponse.Success(data))
+                } ?: emit(WTVResponse.Failure(Throwable("Parsing error: data is null")))
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun getCustomerPackageInfo(requestUrl: String): Flow<WTVResponse<Boolean>> = flow {
+        try {
+            val response = networkApiCallInterface.makeDRMPKGHttpGetRequest(requestUrl)
+            if (response.isSuccessful && response.body() != null) {
+                response.body()?.let {
+                    loge("","${it.results.map { it.serviceId }}")
+                    PreferenceManager.saveUserPackageInfo(it)
+                    getCustomerChannelInfo(it.results.map { it.serviceId })
+                }
+                emit(WTVResponse.Success(true))
+            } else {
+                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            }
+        } catch (e: Exception) {
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun getCustomerChannelInfo(pkgName: List<Int>) = coroutineScope {
+        // Create a mutable list to store all channels
+        val allChannels = mutableListOf<ChannelResult>()
+        try {
+            // Launch all requests in parallel
+            pkgName.map { pkg ->
+                async {
+                    runCatching {
+                        val requestUrl = "${Constants.DRM_LICENSE_BASE}/src/api/v1/services-assets/livechannels/$pkg?page=1&limit=1000"
+                        val response = networkApiCallInterface.makeDRMChannelsHttpGetRequest(
+                            requestUrl
+                        )
+
+                        if (response.isSuccessful) {
+                            response.body()?.results?.let { channels ->
+                                // Process and add channels to the shared list
+                                if(channels.isNotEmpty()){
+                                    synchronized(allChannels) {
+                                        allChannels.addAll(channels)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }.awaitAll() // Wait for all requests to complete
+            // Return the combined list of all channels
+            //return@coroutineScope allChannels
+            Constants.userChannelResult = allChannels
+        } catch (e: Exception) {
+           loge("",e.message)
+        }
+
+        // Return the combined list of all channels
+       // return@coroutineScope allChannels
+    }
+
     suspend fun provideServerTimeStamp(healthUrl: String): Flow<WTVResponse<HealthAPIResponse>> =
         flow {
             try {
@@ -280,22 +362,16 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
 
     suspend fun provideUserLogin(
         loginUrl: String,
-        headers: Map<String, String>,
         requestBody: HashMap<String, String>
     ): Flow<WTVResponse<LoginInfo>> = flow {
         try {
-            loge("url:","$loginUrl ${requestBody}")
-            val response = networkApiCallInterface.makeHttpPostRequest(url=loginUrl,headers= headers, body = requestBody).execute()
-            if (response.isSuccessful && response.body() != null) {
-                loge("response:","${response.body()}")
-
-                val loginInfo = response.body()?.toJSONObject()?.toString()?.convertIntoLoginResponse(LoginInfo::class.java)
-                loginInfo?.let {
-                    // Optionally save manifest data into ContentProvider or DB here
-                    emit(WTVResponse.Success(it))
-                } ?: throw Exception("Failed to parse provideUserLogin")
-            } else {
-                emit(WTVResponse.Failure(Throwable("Invalid response received")))
+            loge("response:","$loginUrl ${requestBody}")
+            val response = networkApiCallInterface.makeHttpPostLoginRequest(
+                url = loginUrl,
+                body = requestBody
+            )
+            response.body()?.toLoginInfo()?.let { loginInfo ->
+                emit(WTVResponse.Success(loginInfo))
             }
         } catch (e: Exception) {
             emit(WTVResponse.Failure(e))

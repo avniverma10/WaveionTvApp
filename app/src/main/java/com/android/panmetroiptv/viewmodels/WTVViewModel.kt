@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
 import android.app.DownloadManager
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -30,17 +29,18 @@ import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.model.data.genre.WTVGenre
 import com.android.panmetroiptv.model.data.language.WTVLanguage
+import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
+import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
+import com.android.panmetroiptv.model.data.login.DRMUserInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
-import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.data.sse.TabItem
+import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
 import com.android.panmetroiptv.model.repository.login.LoginPrefsRepository
-import com.android.panmetroiptv.model.wtvdatabase.EPGContract
 import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.sealed.WTVResponse
 import com.android.panmetroiptv.utils.sealed.firstOrNullSuccess
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
-import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -62,6 +62,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlin.text.equals
 
 
 @HiltViewModel
@@ -385,14 +386,14 @@ open class WTVViewModel @Inject constructor(
         _isProgress.value = false
 
         resp?.data?.let { update ->
-            // 1. grab the currently installed version
+            // grab the currently installed version
             val current = application.packageManager
                 .getPackageInfo(application.packageName, 0)
                 .versionName
                 .orEmpty()
 
-            // 2. only if the server’s version is higher do we prompt or download
-            if (shouldUpdateRequired(update.appVersion, current)) {
+            // only if the server’s version is higher do we prompt or download
+                if (shouldUpdateRequired(update.appVersion, current) && (update?.regions?.getOrNull(0)?.code?.equals("all",true) == true|| update?.regions?.any{it.code == PreferenceManager.getLoginResponse()?.regionCode} == true)) {
                 _appUpdateData.value = update
                 handleAppUpdate(update)
             } else {
@@ -639,16 +640,78 @@ open class WTVViewModel @Inject constructor(
                 "macaddr" to (macId)
             )
             networkApiCallInterfaceImpl.provideUserLogin(
-                loginUrl = Constants.LOGIN_SMS_BASE+"osmsapi/cryptodrm/logincheck",
-                headers = headers,
+                loginUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/logincheck",//"osmsapi/cryptodrm/logincheck",
                 requestBody = requestBody).collect { response ->
                 when (response) {
-                    is WTVResponse.Success -> onLoginResponse(response.data,null)//_bannerList.value = response.data
+                    is WTVResponse.Success -> {
+                        //update userId
+                        //userProfileAPI(uName=uName)
+                        onLoginResponse(response.data,null)
+                        if(response.data.customerNumber?.isNotEmpty() == true){
+                            userPackageUpdate(customerNumber = response.data.customerNumber)
+                        }
+                    }//_bannerList.value = response.data
                     is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
                 }
             }
         }
     }
+
+
+    /*fun userProfileAPI(uName:String){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.getUserInfo(
+                requestUrl = Constants.DRM_LICENSE_BASE+"/src/api/v1/user-logins/$uName",
+                headers = Constants.staticHeaders).collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> {
+                        if(response.data.customerNumber.isNotNullOrEmpty()){
+                            provideApplicationContext().showToastS("Customer${response.data.customerNumber}")
+                            val userUpdates = PreferenceManager.getLoginResponse()
+                            userUpdates?.drmInfo = response.data
+                            userUpdates?.let { PreferenceManager.saveUserInfo(it) }
+                            userPackageUpdate(customerNumber = response.data.customerNumber,onPKGResponse={response ->
+                               if((response?.results?.size ?: 0) > 0){
+                                    response?.results?.forEach {
+                                        packageChannelUpdate(pkgName = it.id.toString(), onPKGChannelResponse = {
+
+                                        })
+                                    }
+                                }
+                            })
+                        }
+                    }
+                    is WTVResponse.Failure -> {
+                        provideApplicationContext().showToastS("User customer number not found.")
+                    }
+                }
+            }
+        }
+    }*/
+    // https://cryptoguard.waveiontechnologies.com/src/api/v1/customer-services/23?page=1&limit=10
+    fun userPackageUpdate(customerNumber:String){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.getCustomerPackageInfo(
+                requestUrl = Constants.DRM_LICENSE_BASE+"/src/api/v1/customer-services/${customerNumber}?page=1&limit=10").collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> {
+                        packageUpdate()
+                        provideApplicationContext().showToastS("Customer PKG>${response.data}")
+                    }
+                    is WTVResponse.Failure -> {
+                        provideApplicationContext().showToastS("User customer number not found.")
+                    }
+                }
+            }
+        }
+    }
+
+    fun customerChannelUpdates(pkgName: List<Int>){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.getCustomerChannelInfo(pkgName)
+        }
+    }
+
 
     fun packageUpdate(){
         viewModelScope.launch {

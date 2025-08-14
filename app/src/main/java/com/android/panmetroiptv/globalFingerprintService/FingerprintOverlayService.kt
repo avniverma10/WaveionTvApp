@@ -120,8 +120,7 @@ class FingerprintOverlayService : Service() {
     private fun startFingerprintSSE() {
         val login = PreferenceManager.getLoginResponse()
         val userName = PreferenceManager?.getUsername() ?: ""
-        val pkgList = login?.pkgdata?.activepack
-            ?.joinToString(",") { it.servicename } ?: ""
+        val pkgList = PreferenceManager.getUserPackageInfo()?.results?.joinToString(",") { it.serviceName } ?: ""
 
         val baseUri = Constants.BASE_URL + "app/combined-sse?"
         val sseUrl = buildString {

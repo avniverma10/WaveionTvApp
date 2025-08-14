@@ -210,9 +210,8 @@ fun Context.checkPatternMatchInfo(message: String): String {
         .replace("$$@Mac", " ${this.provideMacAddress()} ")
         .replace(
             "$$@Package",
-            " ${PreferenceManager.getLoginResponse()?.pkgdata?.activepack
-                ?.map { it.servicename }
-                ?.joinToString(",")
-                ?.capitalizeFirstLetter() ?: ""} "
+            " ${
+                PreferenceManager.getUserPackageInfo()?.results?.joinToString(",") { it.serviceName }
+                    ?.capitalizeFirstLetter() ?: ""} "
         )
 }

@@ -99,17 +99,10 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
         if((globalSSERules?.packageUpdates?.size ?: 0) > 0){
             globalSSERules?.packageUpdates?.forEach {
                 if(it.packageUpdate == 1){
-                    sharedViewModel.validateUserLogin(
-                        uName = PreferenceManager.getUsername()?:"",
-                        paswrd = PreferenceManager.getUsername()?:"",
-                        macId = sharedViewModel.deviceMacAddr.value,
-                        onLoginResponse = { response, errorMsg ->
-                            if (response != null) {
-                                PreferenceManager.saveUserInfo(response)
-                                sharedViewModel.provideGlobalSSERequest()
-                                sharedViewModel.packageUpdate()
-                            }
-                        })
+                    PreferenceManager.getLoginResponse()?.customerNumber?.let {
+                        sharedViewModel.userPackageUpdate(customerNumber = it)
+                        sharedViewModel.provideGlobalSSERequest()
+                    }
                 }
             }
         }

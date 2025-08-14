@@ -1,17 +1,39 @@
 package com.android.panmetroiptv.model.data.login
 
 import androidx.annotation.Keep
+import com.google.gson.annotations.SerializedName
+
+// Matches your actual API response:
+data class LoginApiResponse(
+    @SerializedName("returnmessage") val message: String,
+    @SerializedName("returncode") val code: String,
+    @SerializedName("user-id") val userId: Int,
+    @SerializedName("customer-id") val customerId: String,
+    @SerializedName("customer-number") val customerNumber: String,
+    @SerializedName("regioncode") val regionCode: String,
+    @SerializedName("pkgdata") val packages: List<String>
+)
+
 
 @Keep
 data class LoginInfo(
-    val pkgdata: Pkgdata?= Pkgdata(),    // default to an “empty” PkgData
-    val returncode: String,
-    val returnmessage: String,
-    val regionCode: String="01"//"${RegionCode()}"
+    val userId: Int,
+    val customerNumber: String,
+    val code: String,
+    val regionCode: String,
+    val packages: List<String>
 ){
     fun provideUserRegionCode()= regionCode?:"01"
 }
 
+// Conversion extension
+fun LoginApiResponse.toLoginInfo() = LoginInfo(
+    userId = this.userId,
+    customerNumber = this.customerNumber,
+    code = this.code,
+    regionCode = this.regionCode,
+    packages = this.packages
+)
 
 
 @Keep

@@ -1,9 +1,15 @@
 package com.android.panmetroiptv.utils.network
 
 //import com.android.tvapp.model.crash.LogEntry
+import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
+import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
+import com.android.panmetroiptv.model.data.login.DRMUserInfo
+import com.android.panmetroiptv.model.data.login.LoginApiResponse
+import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.validation.SendOTPRequest
 import com.android.panmetroiptv.model.data.validation.ValidateOtpRequest
 import com.android.panmetroiptv.model.timestamp.ServerTimeStamp
+import com.android.panmetroiptv.utils.Constants
 import com.google.gson.JsonObject
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -22,20 +28,45 @@ interface NetworkApiCallInterface {
     @GET
     suspend fun makeHttpSingleDataRequest( @Url url: String): String
 
+    /*@GET
+    @Headers
+    fun makeHttpGetRequest(@Url url: String): Call<Any>*/
+
     @GET
-    fun makeHttpGetRequest(@Url url: String): Call<Any>
+    fun makeHttpGetRequest(
+        @Url url: String,
+        @Header("x-api-key") apiKey: String = Constants.HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json"
+    ): Call<Any>
 
 
     @POST
     fun makeHttpAnyPostRequest(@Url url: String, @Body body: HashMap<String, Any>): Call<Any>
 
     @GET
+    fun makeDRMHttpGetRequest(
+        @Url url: String,
+        @Header("x-api-key") apiKey: String = Constants.DRM_HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json"
+    ): Call<Any>
+
+    @GET
+    fun makeDRMPKGHttpGetRequest(
+        @Url url: String,
+        @Header("x-api-key") apiKey: String = Constants.DRM_HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json"
+    ): Response<CustomerPackageInfo>
+
+    @GET
+    fun makeDRMChannelsHttpGetRequest(
+        @Url url: String,
+        @Header("x-api-key") apiKey: String = Constants.DRM_HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json"
+    ): Response<CustomerChannelsInfo>
+
+    @GET
     fun makeTimestampRequest(@Url url: String): ServerTimeStamp
 
-    @POST
-    fun makeHttpPostRequest(@Url url: String, @Body body: HashMap<String, String>): Call<Any>
-//    @POST
-//    fun makeHttpPostCrashRequest(@Url url: String, @Body body: LogEntry): Response<Void>
 
     /**
      * Make a POST request to a dynamic URL, with a JSON body and custom headers.
@@ -46,9 +77,18 @@ interface NetworkApiCallInterface {
     @POST
     fun makeHttpPostRequest(
         @Url url: String,
-        @HeaderMap headers: Map<String, String>,
-        @Body body: HashMap<String, String>
+        @Body body: HashMap<String, String>,
+        @Header("x-api-key") apiKey: String = Constants.HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json",
     ): Call<Any>
+
+    @POST
+    suspend fun makeHttpPostLoginRequest(
+        @Url url: String,
+        @Body body: HashMap<String, String>,
+        @Header("x-api-key") apiKey: String = Constants.DRM_HEADER_TOKEN,
+        @Header("Content-Type") contentType: String = "application/json"
+    ): Response<LoginApiResponse> // Changed from Call<Any> to Response<LoginResponse>
 
     @POST
     fun makeMultipartJsonResRequest(@Url url: String, @Body requestBody: RequestBody): Call<JsonObject>

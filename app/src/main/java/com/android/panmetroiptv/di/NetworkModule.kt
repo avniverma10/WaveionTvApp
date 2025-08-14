@@ -27,7 +27,7 @@ import javax.net.ssl.X509TrustManager
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val CONNECT_TIMEOUT = 3 * 60L
+    private const val CONNECT_TIMEOUT = 10 * 60L
     private const val READ_TIMEOUT    = 3 * 60L
     private const val WRITE_TIMEOUT   = 3 * 60L
     private const val API_KEY_HEADER = "x-api-key"
@@ -91,21 +91,24 @@ object NetworkModule {
         }
         val sslSocketFactory = sslContext.socketFactory
         // Interceptor that adds the API key header:
-        val headerInterceptor = Interceptor { chain ->
+        /*val headerInterceptor = Interceptor { chain ->
             val original = chain.request()
             val builder = original.newBuilder()
                 .header("Accept", "application/json")
                 .header(API_KEY_HEADER, API_KEY_VALUE)
             val requestWithHeaders = builder.build()
             chain.proceed(requestWithHeaders)
-        }
+        }*/
         // Build and return the OkHttpClient
         return OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .addInterceptor(headerInterceptor)               // header
+            //.addInterceptor(headerInterceptor)               // header
+            //Trust all SSL certificates (for debug/development only)
+            .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            .hostnameVerifier { _, _ -> true }// Bypass hostname verification
             .cache(null)
             .build()
     }

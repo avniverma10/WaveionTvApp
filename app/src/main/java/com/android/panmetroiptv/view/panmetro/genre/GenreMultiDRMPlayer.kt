@@ -55,7 +55,9 @@ import com.android.panmetroiptv.extensions.extractYouTubeId
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
+import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.extensions.toJSONObject
+import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.PlaybackErrorPreview
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
@@ -222,6 +224,13 @@ fun GenreMultiDRMPlayer(
                     MediaItem.fromUri(url)
                 }
                 loge("Requested Data>", drmData.toJSONObject().toString())
+                if(Constants.userChannelResult?.any{it.name.equals(selectedVideoUrl.content?.title,true)} == false){
+                    val (code, title, message) = playerErrorHandling(6200)
+                    errorCodeState = code
+                    errorMessageState = message
+                    showErrorDialog = true
+                    //context.showToastS("Channel ${selectedVideoUrl.content?.title} not subscribed yet.")
+                }
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically

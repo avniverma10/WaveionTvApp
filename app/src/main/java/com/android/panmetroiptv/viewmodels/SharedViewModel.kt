@@ -315,21 +315,17 @@ open class SharedViewModel @Inject constructor(
 
 
     fun provideGlobalSSERequest() {
-        var packageInfo:String?=null
         var userInfo:String?="${PreferenceManager.getUsername()}"//${it.loginData.userId}:
         val loginInfo = PreferenceManager.getLoginResponse()
-        loginInfo?.let {
-            packageInfo = it.pkgdata?.activepack?.joinToString(
-                separator = ","
-            ) { it.servicename }
-        }
+
 
         val queryBuilder = (Constants.BASE_URL + "app/combined-sse?")
             .toUri()
             .buildUpon()
 
         // Only append if values are not null or blank
-        packageInfo?.takeIf { it.isNotBlank() }?.let {
+
+        PreferenceManager.getUserPackageInfo()?.results?.joinToString(",") { it.serviceName }?.let {
             queryBuilder.appendQueryParameter("package", it)
         }
 

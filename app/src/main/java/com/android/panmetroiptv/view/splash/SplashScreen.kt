@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastFirst
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
@@ -180,7 +181,24 @@ fun SplashScreen(
         }
 
         showExitDialog = false
+        /*if (PreferenceManager.getLoginResponse() != null) {
+            //refresh Channel list
+            PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
+                sharedViewModel.customerChannelUpdates(it)
+            }
+            navController.navigate(Destination.genreScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+        } else {
+            navController.navigate(Destination.loginScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+        }*/
         if (BuildConfig.BUILD_TYPE.equals("debug")){
+            //refresh Channel list
+            PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
+                sharedViewModel.customerChannelUpdates(it)
+            }
             navController.navigate(Destination.genreScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
@@ -203,7 +221,7 @@ fun SplashScreen(
         val apkVersionName = updateData?.appVersion ?: "latest"
         val fileName = "tvapp_$apkVersionName.apk"
 
-        if (updateData?.forceUpdate == 1) {
+        if ((updateData?.regions?.getOrNull(0)?.code?.equals("all",true) == true|| updateData?.regions?.any{it.code == PreferenceManager.getLoginResponse()?.code} == true) && updateData?.regions?.getOrNull(0)?.forceUpdate == true) {
             // Forced update
             CommonDialog(
                 showDialog = true,
@@ -233,7 +251,8 @@ fun SplashScreen(
                 },
                 initialFocusOnConfirm = true
             )
-        } else {
+        }
+        else {
             CommonDialog(
                 showDialog = true,
                 title = "Update Available",

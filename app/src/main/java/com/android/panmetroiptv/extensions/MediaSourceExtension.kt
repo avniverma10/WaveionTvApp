@@ -11,6 +11,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.mediahelper.CryptoguardDrmCallback
@@ -115,8 +116,8 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 @OptIn(UnstableApi::class)
 suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String= Constants.DRM_LICENSE_BASE+"/", contentUrl:String?=null, contentId:String?=null, logData:HashMap<String,String>?=null): MediaItem {
     val dataS = dataStore?.data?.first()
-    val uNamme = "PAN00005"//PreferenceManager.getUsername()?:""//dataS?.get(DataStoreKeys.USERNAME) ?: ""
-    val pwd = "123456"//PreferenceManager.getPassword()//dataS?.get(DataStoreKeys.PASSWORD) ?: ""
+    val uNamme = if (BuildConfig.BUILD_TYPE == "debug") "PAN00005" else PreferenceManager.getUsername()?:"" //dataS?.get(DataStoreKeys.USERNAME) ?: ""
+    val pwd = if(BuildConfig.BUILD_TYPE == "debug") "123456" else PreferenceManager.getPassword() //dataS?.get(DataStoreKeys.PASSWORD) ?: ""
 
     val macAddress = provideMacAddress()
     loge("loginInfo>>","${uNamme},${pwd},>${macAddress}")

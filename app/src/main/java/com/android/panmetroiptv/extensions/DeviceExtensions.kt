@@ -12,6 +12,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.media3.common.C
+import com.android.panmetroiptv.BuildConfig
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
@@ -100,7 +101,7 @@ fun Context.networkType():String?{
 
 @SuppressLint("HardwareIds")
 fun Context.provideMacAddress():String?{
-    return try {  getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    return try {  if (BuildConfig.BUILD_TYPE.equals("debug"))"00:15:C0:98:5F:0E" else getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     } catch (e: Exception) {
         e.printStackTrace()
         null

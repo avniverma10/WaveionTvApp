@@ -89,7 +89,7 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
                 selectedProfile = 0,
                 onProfileClick = {},
                 onEditProfile = {},
-                subscription = SubscriptionInfo(PreferenceManager.getLoginResponse()?.pkgdata?.activepack?.map { it.servicename }?.joinToString(",")?.capitalizeFirstLetter()?:"Super Annual Plan", PreferenceManager.getLoginResponse()?.pkgdata?.activepack?.getOrNull(0)?.expirydate?:"", {}),
+                subscription = SubscriptionInfo(PreferenceManager.getUserPackageInfo()?.results?.joinToString(",") { it.serviceName }?.capitalizeFirstLetter()?:"Super Annual Plan", PreferenceManager.getUserPackageInfo()?.results?.getOrNull(0)?.expireDate?:"", {}),
                 registeredMobile = "+91 ********",
                 onUpdateMobile = {},
                 thisDevice = DeviceInfo(Build.MODEL, "Today", R.drawable.tv),
