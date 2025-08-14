@@ -181,27 +181,16 @@ fun SplashScreen(
         }
 
         showExitDialog = false
-        if (PreferenceManager.getLoginResponse() != null) {
+
+        if (BuildConfig.BUILD_TYPE.equals("debug")){
             //refresh Channel list
-            PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
+            /*PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
                 sharedViewModel.customerChannelUpdates(it)
-            }
-            navController.navigate(Destination.genreScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
-            }
-        } else {
-            navController.navigate(Destination.loginScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
-            }
-        }
-        /*if (BuildConfig.BUILD_TYPE.equals("debug")){
-            //refresh Channel list
-            PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
-                sharedViewModel.customerChannelUpdates(it)
-            }
-            navController.navigate(Destination.genreScreen) {
-                popUpTo(Destination.splashScreen) { inclusive = true }
-            }
+            }*/
+
+                navController.navigate(Destination.genreScreen) {
+                    popUpTo(Destination.splashScreen) { inclusive = true }
+                }
         }else{
             if (PreferenceManager.getLoginResponse() != null) {
                 navController.navigate(Destination.genreScreen) {
@@ -212,7 +201,7 @@ fun SplashScreen(
                         popUpTo(Destination.splashScreen) { inclusive = true }
                     }
             }
-        }*/
+        }
 
 
         sharedViewModel.isFromSplash.value = true
@@ -221,7 +210,7 @@ fun SplashScreen(
         val apkVersionName = updateData?.appVersion ?: "latest"
         val fileName = "tvapp_$apkVersionName.apk"
 
-        if ((updateData?.regions?.getOrNull(0)?.code?.equals("all",true) == true|| updateData?.regions?.any{it.code == PreferenceManager.getLoginResponse()?.code} == true) && updateData?.regions?.getOrNull(0)?.forceUpdate == true) {
+        if (updateData?.checkRegionForceUpdate(PreferenceManager.getLoginResponse()?.code) == true) {
             // Forced update
             CommonDialog(
                 showDialog = true,

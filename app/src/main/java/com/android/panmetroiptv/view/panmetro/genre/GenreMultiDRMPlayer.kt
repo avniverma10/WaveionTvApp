@@ -224,13 +224,13 @@ fun GenreMultiDRMPlayer(
                     MediaItem.fromUri(url)
                 }
                 loge("Requested Data>", drmData.toJSONObject().toString())
-                if(Constants.userChannelResult?.any{it.name.equals(selectedVideoUrl.content?.title,true)} == false){
+                /*if(Constants.userChannelResult?.any{it.name.equals(selectedVideoUrl.content?.title,true)} == false){
                     val (code, title, message) = playerErrorHandling(6200)
                     errorCodeState = code
                     errorMessageState = message
                     showErrorDialog = true
                     //context.showToastS("Channel ${selectedVideoUrl.content?.title} not subscribed yet.")
-                }
+                }*/
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically

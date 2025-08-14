@@ -390,7 +390,7 @@ open class WTVViewModel @Inject constructor(
                 .orEmpty()
 
             // only if the server’s version is higher do we prompt or download
-                if (shouldUpdateRequired(update.appVersion, current) && (update?.regions?.getOrNull(0)?.code?.equals("all",true) == true|| update?.regions?.any{it.code == PreferenceManager.getLoginResponse()?.regionCode} == true)) {
+                if (shouldUpdateRequired(update.appVersion, current) && update.checkRegionUpdate(PreferenceManager.getLoginResponse()?.regionCode) == true) {
                 _appUpdateData.value = update
                 handleAppUpdate(update)
             } else {
@@ -648,7 +648,7 @@ open class WTVViewModel @Inject constructor(
                             userPackageUpdate(customerNumber = response.data.customerNumber)
                         }
                     }//_bannerList.value = response.data
-                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.toString()) //logReport("_bannerList:${response.error.message}")
                 }
             }
         }
@@ -685,7 +685,6 @@ open class WTVViewModel @Inject constructor(
             }
         }
     }*/
-    // https://cryptoguard.waveiontechnologies.com/src/api/v1/customer-services/23?page=1&limit=10
     fun userPackageUpdate(customerNumber:String){
         viewModelScope.launch {
             networkApiCallInterfaceImpl.getCustomerPackageInfo(
@@ -693,12 +692,12 @@ open class WTVViewModel @Inject constructor(
                 when (response) {
                     is WTVResponse.Success -> {
                         PreferenceManager.saveUserPackageInfo(response.data)
-                        response.data?.results?.map { it.serviceId }?.let {
+                        /*response.data?.results?.map { it.serviceId }?.let {
                             customerChannelUpdates(it)
-                        }
+                        }*/
                     }
                     is WTVResponse.Failure -> {
-                        provideApplicationContext().showToastS("User customer number not found.")
+                        loge("customer-services>","User customer number not found.")
                     }
                 }
             }

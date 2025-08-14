@@ -1,6 +1,8 @@
 package com.android.panmetroiptv.model.data.appupdate
 
 import androidx.annotation.Keep
+import com.android.panmetroiptv.utils.uistate.PreferenceManager
+import kotlin.text.equals
 
 @Keep
 data class AppUpdateData(
@@ -10,6 +12,34 @@ data class AppUpdateData(
     val updateDate: String,
     val forceUpdate: Int,
     val regions: ArrayList<RegionInfo>?=null
-)
+){
+    fun checkRegionForceUpdate(regionCode:String?): Boolean{
+        val allRegion = regions?.getOrNull(0)
+        val matchingRegion = regions?.firstOrNull {
+            it.code.equals(regionCode, ignoreCase = true)
+        }
+        if(allRegion?.code?.equals("all",true) == true && allRegion.forceUpdate == true){
+            return true
+        } else if(matchingRegion?.forceUpdate == true){
+            return true
+        }else {
+            return false
+        }
+    }
+
+    fun checkRegionUpdate(regionCode:String?): Boolean{
+        val allRegion = regions?.getOrNull(0)
+        val matchingRegion = regions?.firstOrNull {
+            it.code.equals(regionCode, ignoreCase = true)
+        }
+        if(allRegion?.code?.equals("all",true) == true){
+            return true
+        } else if(matchingRegion != null){
+            return true
+        }else {
+            return false
+        }
+    }
+}
 
 data class RegionInfo(val code: String?=null,val name: String?=null,val forceUpdate: Boolean?=false,val _id: String?=null)

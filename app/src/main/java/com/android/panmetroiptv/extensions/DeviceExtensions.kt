@@ -101,7 +101,7 @@ fun Context.networkType():String?{
 
 @SuppressLint("HardwareIds")
 fun Context.provideMacAddress():String?{
-    return try {  if (BuildConfig.BUILD_TYPE.equals("debug"))"00:15:C0:98:5F:0E" else getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    return try {  getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     } catch (e: Exception) {
         e.printStackTrace()
         null

@@ -320,12 +320,12 @@ fun CaastvVideoPlayer(
                 } else {
                     MediaItem.fromUri(url)
                 }
-                if(Constants.userChannelResult?.any{it.name.equals(selectedChannel.content?.title,true)} == false){
+                /*if(Constants.userChannelResult?.any{it.name.equals(selectedChannel.content?.title,true)} == false){
                     val (code, title, message) = playerErrorHandling(6200)
                     errorCodeState = code
                     errorMessageState = message
                     showErrorDialog = true
-                }
+                }*/
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
@@ -497,18 +497,6 @@ fun CaastvVideoPlayer(
             )
         }
 
-        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
-            playerSSERules?.fingerprints?.forEach {
-                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
-            }
-        }
-
-        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
-            playerSSERules?.scrollMessages?.forEach {
-                ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
-            }
-        }
-
 
         if (showErrorDialog) {
             val borderColor = remember(errorCodeState) {
@@ -606,6 +594,19 @@ fun CaastvVideoPlayer(
                 )
             }
         }
+
+        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
+            playerSSERules?.fingerprints?.forEach {
+                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+            }
+        }
+
+        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
+            playerSSERules?.scrollMessages?.forEach {
+                ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+            }
+        }
+
     }
 }
 

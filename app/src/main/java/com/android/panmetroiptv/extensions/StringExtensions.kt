@@ -580,6 +580,7 @@ fun String.toResponseMessage(): String = when (this) {
     "102" -> "Operation failed: Account is locked by Admin"
     "101" -> "Invalid Password"
     "100" -> "User Not Present on System"
+    "404" -> "User Not Present on System"
     else -> "Unknown response code: $this"
 }
 

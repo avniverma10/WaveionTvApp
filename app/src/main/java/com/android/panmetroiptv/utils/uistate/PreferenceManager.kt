@@ -88,6 +88,7 @@ object PreferenceManager {
   fun clearLogin(): Boolean {
     val editor = prefs.edit()
     editor.remove(KEY_USER_INFO)
+    editor.remove(KEY_USER_PKG_INFO)
     editor.remove(KEY_USERNAME)
     editor.remove(KEY_PASSWORD)
     editor.remove(KEY_USER_HASH)

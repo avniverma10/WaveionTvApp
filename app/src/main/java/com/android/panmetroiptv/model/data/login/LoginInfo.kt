@@ -11,7 +11,7 @@ data class LoginInfo(
     @SerializedName("customer-id") val customerId: String,
     @SerializedName("customer-number") val customerNumber: String,
     @SerializedName("regioncode") val regionCode: String,
-    @SerializedName("pkgdata") val packages: List<String>
+    @SerializedName("pkgdata") val packages : Any? // Raw type to handle both cases
 ){
     fun provideUserRegionCode()= regionCode?:"01"
 
