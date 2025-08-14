@@ -45,6 +45,7 @@ import okhttp3.Request
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.io.IOException
+import java.util.Collections
 import javax.inject.Inject
 
 @Keep
@@ -238,32 +239,33 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
 
     suspend fun getCustomerChannelInfo(pkgName: List<Int>) = coroutineScope {
         // Create a mutable list to store all channels
-        val allChannels = mutableListOf<ChannelResult>()
-        try {
-            // Launch all requests in parallel
+        val allChannels = Collections.synchronizedList(mutableListOf<ChannelResult>())
+
+        try{
             pkgName.map { pkg ->
-                async {
-                    runCatching {
-
+                async(Dispatchers.IO) {  // Explicitly use IO dispatcher for network calls
+                    try {
                         val requestUrl = "${Constants.LOGIN_SMS_BASE}src/api/v1/services-assets/livechannels/$pkg?page=1&limit=1000"
-
                         val response = networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
-                        if (response.isSuccessful && response.body() != null) {
-                            response.body()?.toJSONObject()?.toString().convertIntoModel(
-                                CustomerChannelsInfo::class.java)?.let {channelsData->
-                                // Process and add channels to the shared list
-                                if(channelsData.results.isNotEmpty()){
+
+                        if (response.isSuccessful) {
+                            response.body()?.let { body ->
+                                // Use proper JSON parsing instead of manual conversion
+                                body.toJSONObject()?.toString().convertIntoModel(
+                                    CustomerChannelsInfo::class.java)?.let {
                                     synchronized(allChannels) {
-                                        allChannels.addAll(channelsData.results)
+                                        allChannels.addAll(it.results.map { it})
                                     }
                                 }
                             }
+                        } else {
+                            loge("ChannelFetch", "Failed for $pkg: ${response.code()}")
                         }
+                    } catch (e: Exception) {
+                        loge("ChannelFetch", "Error fetching $pkg >>${e.message}")
                     }
                 }
             }.awaitAll() // Wait for all requests to complete
-            // Return the combined list of all channels
-            //return@coroutineScope allChannels
             Constants.userChannelResult = allChannels
         } catch (e: Exception) {
            loge("",e.message)
