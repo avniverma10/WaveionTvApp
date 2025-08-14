@@ -66,6 +66,7 @@ import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
+import com.android.panmetroiptv.view.uicomponent.addWatermarkToPlayer
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
@@ -140,6 +141,10 @@ fun CaastvVideoPlayer(
 
     LaunchedEffect(Unit) {
         context.hideKeyboard()
+        //request for user hash
+        sharedViewModel.provideUserHash()
+        //register scroll message request
+        sharedViewModel.provideGlobalSSERequest()
     }
     //Finally return the MutableState
     val selectedChannelIndex = remember {mutableIntStateOf(0) }
@@ -481,9 +486,9 @@ fun CaastvVideoPlayer(
                         player = exoPlayer
                         useController = false
                         keepScreenOn = true
-                        /*PreferenceManager.provideUserHash()?.let {
+                        PreferenceManager.provideUserHash()?.let {
                             addWatermarkToPlayer(this,it)
-                        }*/
+                        }
                     }
 
                     view
