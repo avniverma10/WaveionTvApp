@@ -29,9 +29,6 @@ import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.model.data.genre.WTVGenre
 import com.android.panmetroiptv.model.data.language.WTVLanguage
-import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
-import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
-import com.android.panmetroiptv.model.data.login.DRMUserInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.sse.TabItem
 import com.android.panmetroiptv.model.notification.NotificationItem
@@ -692,11 +689,13 @@ open class WTVViewModel @Inject constructor(
     fun userPackageUpdate(customerNumber:String){
         viewModelScope.launch {
             networkApiCallInterfaceImpl.getCustomerPackageInfo(
-                requestUrl = Constants.DRM_LICENSE_BASE+"/src/api/v1/customer-services/${customerNumber}?page=1&limit=10").collect { response ->
+                requestUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/customer-services/${customerNumber}?page=1&limit=10").collect { response ->
                 when (response) {
                     is WTVResponse.Success -> {
-                        packageUpdate()
-                        provideApplicationContext().showToastS("Customer PKG>${response.data}")
+                        PreferenceManager.saveUserPackageInfo(response.data)
+                        response.data?.results?.map { it.serviceId }?.let {
+                            customerChannelUpdates(it)
+                        }
                     }
                     is WTVResponse.Failure -> {
                         provideApplicationContext().showToastS("User customer number not found.")

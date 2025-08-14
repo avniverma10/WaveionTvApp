@@ -3,9 +3,6 @@ package com.android.panmetroiptv.utils.network
 //import com.android.tvapp.model.crash.LogEntry
 import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
-import com.android.panmetroiptv.model.data.login.DRMUserInfo
-import com.android.panmetroiptv.model.data.login.LoginApiResponse
-import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.validation.SendOTPRequest
 import com.android.panmetroiptv.model.data.validation.ValidateOtpRequest
 import com.android.panmetroiptv.model.timestamp.ServerTimeStamp
@@ -83,12 +80,12 @@ interface NetworkApiCallInterface {
     ): Call<Any>
 
     @POST
-    suspend fun makeHttpPostLoginRequest(
+    fun makeHttpPostLoginRequest(
         @Url url: String,
         @Body body: HashMap<String, String>,
-        @Header("x-api-key") apiKey: String = Constants.DRM_HEADER_TOKEN,
-        @Header("Content-Type") contentType: String = "application/json"
-    ): Response<LoginApiResponse> // Changed from Call<Any> to Response<LoginResponse>
+        @Header("x-api-key") apiKey: String? = Constants.DRM_HEADER_TOKEN,
+        @Header("Content-Type") contentType: String? = "application/json"
+    ): Call<Any>//: Response<LoginApiResponse> // Changed from Call<Any> to Response<LoginResponse>
 
     @POST
     fun makeMultipartJsonResRequest(@Url url: String, @Body requestBody: RequestBody): Call<JsonObject>

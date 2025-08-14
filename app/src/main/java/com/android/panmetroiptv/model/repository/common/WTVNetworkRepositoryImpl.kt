@@ -21,7 +21,6 @@ import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.DRMUserInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
-import com.android.panmetroiptv.model.data.login.toLoginInfo
 import com.android.panmetroiptv.model.data.manifest.WTVManifest
 import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.home.WTVHomeCategory
@@ -224,18 +223,13 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun getCustomerPackageInfo(requestUrl: String): Flow<WTVResponse<Boolean>> = flow {
+    suspend fun getCustomerPackageInfo(requestUrl: String): Flow<WTVResponse<CustomerPackageInfo>> = flow {
         try {
-            val response = networkApiCallInterface.makeDRMPKGHttpGetRequest(requestUrl)
+            val response = networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
             if (response.isSuccessful && response.body() != null) {
-                response.body()?.let {
-                    loge("","${it.results.map { it.serviceId }}")
-                    PreferenceManager.saveUserPackageInfo(it)
-                    getCustomerChannelInfo(it.results.map { it.serviceId })
+                response.body()?.toJSONObject()?.toString().convertIntoModel(CustomerPackageInfo::class.java)?.let {
+                    emit(WTVResponse.Success(it))
                 }
-                emit(WTVResponse.Success(true))
-            } else {
-                emit(WTVResponse.Failure(Throwable("Invalid response received")))
             }
         } catch (e: Exception) {
             emit(WTVResponse.Failure(e))
@@ -250,17 +244,17 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             pkgName.map { pkg ->
                 async {
                     runCatching {
-                        val requestUrl = "${Constants.DRM_LICENSE_BASE}/src/api/v1/services-assets/livechannels/$pkg?page=1&limit=1000"
-                        val response = networkApiCallInterface.makeDRMChannelsHttpGetRequest(
-                            requestUrl
-                        )
 
-                        if (response.isSuccessful) {
-                            response.body()?.results?.let { channels ->
+                        val requestUrl = "${Constants.LOGIN_SMS_BASE}src/api/v1/services-assets/livechannels/$pkg?page=1&limit=1000"
+
+                        val response = networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
+                        if (response.isSuccessful && response.body() != null) {
+                            response.body()?.toJSONObject()?.toString().convertIntoModel(
+                                CustomerChannelsInfo::class.java)?.let {channelsData->
                                 // Process and add channels to the shared list
-                                if(channels.isNotEmpty()){
+                                if(channelsData.results.isNotEmpty()){
                                     synchronized(allChannels) {
-                                        allChannels.addAll(channels)
+                                        allChannels.addAll(channelsData.results)
                                     }
                                 }
                             }
@@ -369,9 +363,11 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
             val response = networkApiCallInterface.makeHttpPostLoginRequest(
                 url = loginUrl,
                 body = requestBody
-            )
-            response.body()?.toLoginInfo()?.let { loginInfo ->
-                emit(WTVResponse.Success(loginInfo))
+            ).execute()
+            if(response.isSuccessful && response.body() !=null){
+                response.body()?.toJSONObject()?.toString().convertIntoModel(LoginInfo::class.java)?.let {
+                    emit(WTVResponse.Success(it))
+                }
             }
         } catch (e: Exception) {
             emit(WTVResponse.Failure(e))

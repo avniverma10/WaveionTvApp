@@ -102,6 +102,7 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                     PreferenceManager.getLoginResponse()?.customerNumber?.let {
                         sharedViewModel.userPackageUpdate(customerNumber = it)
                         sharedViewModel.provideGlobalSSERequest()
+                        sharedViewModel.packageUpdate()
                     }
                 }
             }

@@ -181,7 +181,7 @@ fun SplashScreen(
         }
 
         showExitDialog = false
-        /*if (PreferenceManager.getLoginResponse() != null) {
+        if (PreferenceManager.getLoginResponse() != null) {
             //refresh Channel list
             PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
                 sharedViewModel.customerChannelUpdates(it)
@@ -193,8 +193,8 @@ fun SplashScreen(
             navController.navigate(Destination.loginScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
             }
-        }*/
-        if (BuildConfig.BUILD_TYPE.equals("debug")){
+        }
+        /*if (BuildConfig.BUILD_TYPE.equals("debug")){
             //refresh Channel list
             PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
                 sharedViewModel.customerChannelUpdates(it)
@@ -212,7 +212,7 @@ fun SplashScreen(
                         popUpTo(Destination.splashScreen) { inclusive = true }
                     }
             }
-        }
+        }*/
 
 
         sharedViewModel.isFromSplash.value = true
