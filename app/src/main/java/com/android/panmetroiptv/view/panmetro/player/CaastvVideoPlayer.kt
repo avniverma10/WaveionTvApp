@@ -1,6 +1,7 @@
 package com.android.panmetroiptv.view.panmetro.player
 
 
+import ForceMessageDialog
 import android.app.Activity
 import android.util.Log
 import android.view.KeyEvent
@@ -23,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,6 +73,7 @@ import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
+import com.android.panmetroiptv.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.android.panmetroiptv.view.uicomponent.search.InputOverlay
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.player.PlayerViewModel
@@ -101,6 +104,7 @@ fun CaastvVideoPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
+    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -137,6 +141,18 @@ fun CaastvVideoPlayer(
         }.coerceAtLeast(0)
         currentChannelIndex.intValue = idx
         previewChannelIndex.intValue = idx
+    }
+
+
+    LaunchedEffect(playerSSERules) {
+        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.clear()
+            playerSSERules?.forceMessages?.forEach { message ->
+                dialogStates.add(ForceMessageDialogState(message,true))
+            }
+        }else{
+            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -332,7 +348,6 @@ fun CaastvVideoPlayer(
             }
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
-
         }
     }
 
@@ -559,6 +574,7 @@ fun CaastvVideoPlayer(
             }
         }
 
+
         if (isAudio.value) {
             Box(
                 modifier = Modifier.fillMaxSize()
@@ -598,6 +614,22 @@ fun CaastvVideoPlayer(
         if((playerSSERules?.fingerprints?.size ?: 0) > 0){
             playerSSERules?.fingerprints?.forEach {
                 ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+            }
+        }
+
+        //Show dialogs
+        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
+            dialogStates.forEachIndexed { index, dialogState ->
+                if(dialogStates[index].show) {
+                    ForceMessageDialog(
+                        showDialog = true,
+                        forceMessage = dialogState.message,
+                        onConfirm = {
+                            // Mark this dialog as dismissed
+                            dialogStates[index] = dialogState.copy(show = false)
+                        }
+                    )
+                }
             }
         }
 

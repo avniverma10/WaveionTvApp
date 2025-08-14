@@ -288,7 +288,6 @@ fun PanmetroGenreScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            sharedViewModel.stopPlayerSSE()
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }

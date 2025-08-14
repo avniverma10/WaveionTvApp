@@ -370,8 +370,6 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                 response.body()?.toJSONObject()?.toString().convertIntoModel(LoginInfo::class.java)?.let {
                     emit(WTVResponse.Success(it))
                 }
-            }else{
-                emit(WTVResponse.Failure(Exception(response.code().toString())))
             }
         } catch (e: Exception) {
             emit(WTVResponse.Failure(e))

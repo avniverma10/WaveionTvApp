@@ -315,7 +315,6 @@ open class SharedViewModel @Inject constructor(
 
 
     fun provideGlobalSSERequest() {
-        var userInfo:String?="${PreferenceManager.getUsername()}"//${it.loginData.userId}:
         val loginInfo = PreferenceManager.getLoginResponse()
 
 
@@ -329,8 +328,8 @@ open class SharedViewModel @Inject constructor(
             queryBuilder.appendQueryParameter("package", it)
         }
 
-        userInfo?.takeIf { it.isNotBlank() }?.let {
-            queryBuilder.appendQueryParameter("user", it)
+        PreferenceManager.getUsername()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("user", "${PreferenceManager.getLoginResponse()?.userId}:${it}")
         }
 
         loginInfo?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {

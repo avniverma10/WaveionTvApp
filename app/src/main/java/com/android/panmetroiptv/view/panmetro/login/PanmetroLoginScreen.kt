@@ -377,7 +377,7 @@ fun PanmetroLoginScreen(
                                                                 }
                                                             }
                                                         } else {
-                                                            context.showToastS(response?.code?.toResponseMessage())
+                                                            context.showToastS(response?.message?.toResponseMessage())
                                                         }
                                                     })
                                             } else {
@@ -425,7 +425,7 @@ fun PanmetroLoginScreen(
                                 .width(250.dp)
                                 .height(400.dp)
                                 .background(
-                                    Color(0xFF00BFFF),
+                                    Color(0xFF00C4FF),
                                     shape = RoundedCornerShape(
                                         topEnd = 16.dp,
                                         bottomEnd = 16.dp

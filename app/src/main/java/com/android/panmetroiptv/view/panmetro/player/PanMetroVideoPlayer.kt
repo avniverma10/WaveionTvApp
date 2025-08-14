@@ -521,14 +521,16 @@ fun PanMetroVideoPlayer(
     //Show dialogs
     if((playerSSERules?.forceMessages?.size ?: 0) > 0){
         dialogStates.forEachIndexed { index, dialogState ->
-            ForceMessageDialog(
-                showDialog = true,
-                forceMessage = dialogState.message,
-                onConfirm = {
-                    // Mark this dialog as dismissed
-                    dialogStates[index] = dialogState.copy(show = false)
-                }
-            )
+            if(dialogStates[index].show) {
+                ForceMessageDialog(
+                    showDialog = true,
+                    forceMessage = dialogState.message,
+                    onConfirm = {
+                        // Mark this dialog as dismissed
+                        dialogStates[index] = dialogState.copy(show = false)
+                    }
+                )
+            }
         }
     }
 

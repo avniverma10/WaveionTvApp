@@ -182,24 +182,18 @@ fun SplashScreen(
 
         showExitDialog = false
 
-        if (BuildConfig.BUILD_TYPE.equals("debug")){
-            //refresh Channel list
-            /*PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
-                sharedViewModel.customerChannelUpdates(it)
-            }*/
 
-                navController.navigate(Destination.genreScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-        }else{
-            if (PreferenceManager.getLoginResponse() != null) {
-                navController.navigate(Destination.genreScreen) {
-                    popUpTo(Destination.splashScreen) { inclusive = true }
-                }
-            } else {
-                    navController.navigate(Destination.loginScreen) {
-                        popUpTo(Destination.splashScreen) { inclusive = true }
-                    }
+        //refresh Channel list
+        /*PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
+            sharedViewModel.customerChannelUpdates(it)
+        }*/
+        if (PreferenceManager.getLoginResponse() != null) {
+            navController.navigate(Destination.genreScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+        } else {
+            navController.navigate(Destination.loginScreen) {
+                popUpTo(Destination.splashScreen) { inclusive = true }
             }
         }
 

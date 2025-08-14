@@ -92,7 +92,8 @@ data class ForceMessage(
     val updatedAt: String?=null,
     val messageScope: String?="GLOBAL",
     val enabled: Boolean?=null,
-    val forcePush: Boolean?=null
+    val forcePush: Boolean?=null,
+    val regionCode: String?="01"
 )
 
 
