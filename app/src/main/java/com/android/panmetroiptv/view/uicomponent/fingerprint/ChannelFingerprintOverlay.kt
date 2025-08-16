@@ -62,19 +62,19 @@ fun ChannelFingerprintOverlay(
 
 
     LaunchedEffect(fingerprintRule) {
+        if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
+            val randX = (24..(screenWidth - 24)).random()
+            val randY = (48..(screenHeight - 48)).random()
+            currentOffset = Offset(randX.toFloat(), randY.toFloat())
+        } else {
+            currentOffset = Offset(
+                x = screenWidth * posX,
+                y = screenHeight * posY
+            )
+        }
+
         repeat(fingerprintRule.value.repeatCount?.toString().getIntValue()) {
             delay((fingerprintRule.value.intervalSec?.toString().getFloatValue()* 1000L).toLong())
-            if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
-                val randX = (24..(screenWidth - 24)).random()
-                val randY = (48..(screenHeight - 48)).random()
-                currentOffset = Offset(randX.toFloat(), randY.toFloat())
-            } else {
-                 currentOffset = Offset(
-                    x = screenWidth * posX,
-                    y = screenHeight * posY
-                )
-            }
-
             visible = true
             delay((fingerprintRule.value.durationMs?.toString().getFloatValue()* 1000L).toLong())
             visible = false
