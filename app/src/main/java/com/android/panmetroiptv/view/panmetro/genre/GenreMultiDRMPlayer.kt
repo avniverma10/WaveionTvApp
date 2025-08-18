@@ -235,6 +235,8 @@ fun GenreMultiDRMPlayer(
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             }
+            //make fingerprint request
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
         }
 
     }
@@ -433,6 +435,8 @@ fun GenreMultiDRMPlayer(
                 exoPlayer.run {
                     stop()
                 }
+
+                sharedViewModel.stopPlayerSSE()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }

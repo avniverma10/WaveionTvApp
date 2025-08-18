@@ -613,7 +613,7 @@ fun CaastvVideoPlayer(
 
         if((playerSSERules?.fingerprints?.size ?: 0) > 0){
             playerSSERules?.fingerprints?.forEach {
-                ChannelFingerprintOverlay(player= playerView.value, fingerprintRule = mutableStateOf(it))
+                ChannelFingerprintOverlay(fingerprintRule = mutableStateOf(it))
             }
         }
 

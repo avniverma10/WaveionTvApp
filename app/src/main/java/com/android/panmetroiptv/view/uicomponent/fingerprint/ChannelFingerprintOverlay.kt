@@ -50,18 +50,28 @@ fun ChannelFingerprintOverlay(
                 ?.let { 1f - it.coerceIn(0f, 1f) } ?: 0.25f)
     }.getOrDefault(Color.White.copy(alpha = 0.25f))
 
-    var visible by remember { mutableStateOf(true) }
+    var visible by remember { mutableStateOf(false) }
     var currentOffset by remember { mutableStateOf(Offset.Zero) }
+    var isFirstTime by remember { mutableStateOf(true) }
 
+
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    // Convert screen dimensions to pixels once
     val screenWidth = player?.width?:LocalConfiguration.current.screenWidthDp
     val screenHeight = player?.height?:LocalConfiguration.current.screenHeightDp
-    val density = LocalDensity.current
+
+
     val posX = fingerprintRule.value.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
     val posY = fingerprintRule.value.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
-    //val qrBitmap = remember { displayMessage.generateQRCodeBitmap() }
 
+    // Validate duration and interval
+    val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 10f) * 1000L
+    val intervalMs = (fingerprintRule.value.intervalSec?.toString()?.getFloatValue() ?: 5f) * 1000L
+    val repeatCount = fingerprintRule.value.repeatCount?.toString()?.getIntValue() ?: 1
 
-    LaunchedEffect(fingerprintRule) {
+    // Function to update position
+    fun updatePosition() {
         if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
             val randX = (24..(screenWidth - 24)).random()
             val randY = (48..(screenHeight - 48)).random()
@@ -72,12 +82,36 @@ fun ChannelFingerprintOverlay(
                 y = screenHeight * posY
             )
         }
+    }
 
-        repeat(fingerprintRule.value.repeatCount?.toString().getIntValue()) {
-            delay((fingerprintRule.value.intervalSec?.toString().getFloatValue()* 1000L).toLong())
-            visible = true
-            delay((fingerprintRule.value.durationMs?.toString().getFloatValue()* 1000L).toLong())
-            visible = false
+
+    LaunchedEffect(fingerprintRule) {
+        // Initial position update
+        updatePosition()
+        visible = true
+
+        // First display
+        delay(durationMs.toLong())
+        visible = false
+
+        if (repeatCount == -1) {
+            // Infinite loop
+            while (true) {
+                delay(intervalMs.toLong())
+                updatePosition()
+                visible = true
+                delay(durationMs.toLong())
+                visible = false
+            }
+        } else {
+            // Finite loop (already showed once)
+            repeat(repeatCount - 1) {
+                delay(intervalMs.toLong())
+                updatePosition()
+                visible = true
+                delay(durationMs.toLong())
+                visible = false
+            }
         }
     }
 
