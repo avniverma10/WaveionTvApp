@@ -218,6 +218,7 @@ fun PanmetroGenreScreen(
                             onPlayerScreenIntent = { channelInfo ->
                                 epgList?.find { it.content?.videoUrl == channelInfo.content?.videoUrl }
                                     ?.let { channelItem ->
+                                        sharedViewModel.goingToFullPlayer.value = true
                                         navController.navigate(Destination.panMetroScreen) {
                                             PreferenceManager.clearSaveGenre()
                                             PreferenceManager.clearSaveChannel()

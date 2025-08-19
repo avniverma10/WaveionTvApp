@@ -88,8 +88,11 @@ fun CaastvPlayerOverlay(
         ?.colors
         ?.sortedBy { it.percentage }
         ?.mapNotNull {
-            runCatching { Color(android.graphics.Color.parseColor(it.color)) }
-                .getOrNull()
+            try {
+                Color(android.graphics.Color.parseColor(it.color))
+            } catch (e: IllegalArgumentException) {
+                null
+            }
         }
         .orEmpty()
 

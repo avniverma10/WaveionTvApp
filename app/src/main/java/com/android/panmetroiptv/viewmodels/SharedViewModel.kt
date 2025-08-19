@@ -74,6 +74,7 @@ open class SharedViewModel @Inject constructor(
     private var globalEventSource: EventSource? = null
     private val _globalSSERules = MutableStateFlow<GlobalSSEResponse?>(null)
     val globalSSERules: StateFlow<GlobalSSEResponse?> = _globalSSERules
+    val goingToFullPlayer = mutableStateOf(false)
 
     private var playerEventSource: EventSource? = null
     private val _playerSSERules = MutableStateFlow<PlayerSSEResponse?>(null)

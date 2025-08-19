@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -73,6 +76,7 @@ import com.android.panmetroiptv.extensions.formatTime
 import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
+import com.android.panmetroiptv.utils.theme.bg_card_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.navigationhelper.TimeHeader
@@ -498,6 +502,25 @@ fun ChannelInfo(
     categorySelectedIndex: MutableState<Int>
 ) {
     val actualFocusRequester = focusRequester ?: remember { FocusRequester() }
+    val gradientColors = channel.content
+        ?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.mapNotNull {
+            try {
+                Color(android.graphics.Color.parseColor(it.color))
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+        .orEmpty()
+
+    val brush = if (gradientColors.size >= 2) {
+        Brush.horizontalGradient(colors = gradientColors)
+    } else {
+        SolidColor(bg_card_color)
+    }
+
     val isFocused = remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
@@ -547,10 +570,11 @@ fun ChannelInfo(
             modifier = Modifier
                 .width(120.dp)
                 .height(125.dp)
-                .then(
-                    if (isFocused.value)
-                        Modifier.border(2.dp, Color(0xFF49FEDD), RoundedCornerShape(4.dp))
-                    else Modifier
+                .background(brush = brush, shape = RoundedCornerShape(4.dp))
+                .border(
+                    width = if (isFocused.value) 2.dp else 0.dp,
+                    color = if (isFocused.value) Color(0xFF49FEDD) else Color.Transparent,
+                    shape = RoundedCornerShape(4.dp)
                 )
                 .onFocusChanged { isFocused.value = it.isFocused }
                 .focusRequester(focusRequester)
@@ -570,8 +594,7 @@ fun ChannelInfo(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(4.dp))
-                    .padding(8.dp)
-                    .background(Color(0xFF161D25), RoundedCornerShape(4.dp)),
+                    .padding(8.dp),
                 contentScale = ContentScale.Fit
             )
         }

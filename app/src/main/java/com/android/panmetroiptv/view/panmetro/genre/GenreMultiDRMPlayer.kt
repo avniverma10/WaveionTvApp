@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -231,6 +232,7 @@ fun GenreMultiDRMPlayer(
                     showErrorDialog = true
                     //context.showToastS("Channel ${selectedVideoUrl.content?.title} not subscribed yet.")
                 }*/
+                delay(300)
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
@@ -360,7 +362,8 @@ fun GenreMultiDRMPlayer(
 
         if(isAudio.value){
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
                     .background(brush, shape = RoundedCornerShape(0.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -422,20 +425,31 @@ fun GenreMultiDRMPlayer(
         }
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_PAUSE) {
-                    exoPlayer.pause()
-                }else if (event == Lifecycle.Event.ON_STOP) {
-                    exoPlayer.pause()
-                }else if (event == Lifecycle.Event.ON_START) {
-                    exoPlayer.play()
+                when (event) {
+                    Lifecycle.Event.ON_PAUSE -> {6
+                        exoPlayer.pause()
+                    }
+                    Lifecycle.Event.ON_STOP -> {
+                        if (sharedViewModel.goingToFullPlayer.value) {
+                            // Case A: going full screen → free secure decoder
+                            exoPlayer.stop()
+                            exoPlayer.clearMediaItems()
+                            exoPlayer.release()
+                            sharedViewModel.goingToFullPlayer.value = false // reset flag
+                        } else {
+                            // Case B: app minimized → keep preview alive
+                            exoPlayer.pause()
+                        }
+                    }
+                    Lifecycle.Event.ON_START -> {
+                        exoPlayer.play()
+                    }
+                    else -> Unit
                 }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
-                exoPlayer.run {
-                    stop()
-                }
-
+                exoPlayer.stop()
                 sharedViewModel.stopPlayerSSE()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }

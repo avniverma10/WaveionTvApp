@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -261,6 +262,23 @@ fun ChannelListItem(
     val titleColor = if (isFocused || isPreview) base_color else Color.White
     val scale by animateFloatAsState(targetValue = if (isFocused) 1.05f else if (isFocused && isPreview) 1f else .9f)
 
+    val stops = channel.content?.bgGradient
+        ?.colors
+        ?.sortedBy { it.percentage }
+        ?.mapNotNull {
+            try {
+                Color(android.graphics.Color.parseColor(it.color))
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+        .orEmpty()
+
+    val brush = if (stops.size >= 2) {
+        Brush.horizontalGradient(stops)
+    } else {
+        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+    }
 
     Box(
         modifier = Modifier
@@ -289,7 +307,7 @@ fun ChannelListItem(
                 contentDescription = null,
                 modifier = Modifier
                     .size(35.dp)
-                    .background(Color.Black, RoundedCornerShape(4.dp))
+                    .background(brush, shape = RoundedCornerShape(4.dp))
                     .padding(4.dp),
                 contentScale = ContentScale.Fit
             )
