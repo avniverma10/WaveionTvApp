@@ -1,5 +1,6 @@
 package com.android.panmetroiptv.model.repository.common
 
+import android.util.Log
 import androidx.annotation.Keep
 import com.android.panmetroiptv.extensions.convertIntoLoginResponse
 import com.android.panmetroiptv.extensions.convertIntoModel
@@ -44,6 +45,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 import java.util.Collections
 import javax.inject.Inject
@@ -370,9 +373,23 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                 response.body()?.toJSONObject()?.toString().convertIntoModel(LoginInfo::class.java)?.let {
                     emit(WTVResponse.Success(it))
                 }
+            }else{
+                val errorBody = response.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    try {
+                        val jsonObject = JSONObject(errorBody)
+                        val message = jsonObject.getString("message")
+                        // Use the message: "Password incorrect"
+
+                        emit(WTVResponse.Failure(Throwable(message)))
+                    } catch (e: JSONException) {
+                        // Handle JSON parsing error
+                        loge("Error", "Failed to parse error JSON: $errorBody")
+                    }
+                }
             }
         } catch (e: Exception) {
-            emit(WTVResponse.Failure(e))
+            emit(WTVResponse.Failure(Throwable(e.message)))
         }
     }.flowOn(Dispatchers.IO)
 

@@ -1,5 +1,7 @@
 package com.android.panmetroiptv.view.uicomponent.fingerprint
 
+import android.icu.number.NumberFormatter.with
+import android.icu.number.NumberRangeFormatter.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +18,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.ui.PlayerView
@@ -27,6 +31,8 @@ import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
 import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
 import kotlinx.coroutines.delay
+import kotlin.math.max
+import kotlin.with
 
 @Composable
 fun ChannelFingerprintOverlay(
@@ -58,12 +64,19 @@ fun ChannelFingerprintOverlay(
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     // Convert screen dimensions to pixels once
-    val screenWidth = player?.width?:LocalConfiguration.current.screenWidthDp
-    val screenHeight = player?.height?:LocalConfiguration.current.screenHeightDp
+    val screenWidth = with(density) { (player?.width?:LocalConfiguration.current.screenWidthDp).dp.toPx() }
+    val screenHeight = with(density) { (player?.height?:LocalConfiguration.current.screenHeightDp).dp.toPx() }
 
 
     val posX = fingerprintRule.value.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
     val posY = fingerprintRule.value.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
+
+    var textWidth by remember { mutableStateOf(0) }
+    var textHeight by remember { mutableStateOf(0) }
+
+    // Calculate maximum available width for text (80% of screen width)
+    val maxTextWidthPx = screenWidth * 0.8f
+    val paddingPx = with(density) { 16.dp.toPx() }
 
     // Validate duration and interval
     val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 10f) * 1000L
@@ -71,7 +84,7 @@ fun ChannelFingerprintOverlay(
     val repeatCount = fingerprintRule.value.repeatCount?.toString()?.getIntValue() ?: 1
 
     // Function to update position
-    fun updatePosition() {
+    /*fun updatePosition() {
         if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
             val randX = (24..(screenWidth - 24)).random()
             val randY = (48..(screenHeight - 48)).random()
@@ -82,6 +95,32 @@ fun ChannelFingerprintOverlay(
                 y = screenHeight * posY
             )
         }
+    }*/
+
+    // Function to update position ensuring text stays within bounds
+    fun updatePosition() {
+        if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
+            // For random position, ensure text stays within screen bounds
+            val minX = paddingPx
+            val maxX = screenWidth - textWidth - paddingPx
+            val minY = paddingPx
+            val maxY = screenWidth - textHeight - paddingPx
+
+            val randX = (minX.toInt()..(max(maxX, minX + 1f)).toInt()).random()
+            val randY = (minY.toInt()..(max(maxY, minY + 1f)).toInt()).random()
+            currentOffset = Offset(randX.toFloat(), randY.toFloat())
+        } else {
+            // For fixed position, adjust to ensure text fits
+            val adjustedX = (screenWidth * posX).coerceIn(
+                paddingPx,
+                screenWidth - textWidth - paddingPx
+            )
+            val adjustedY = (screenHeight * posY).coerceIn(
+                paddingPx,
+                screenHeight - textHeight - paddingPx
+            )
+            currentOffset = Offset(adjustedX, adjustedY)
+        }
     }
 
 
@@ -89,7 +128,6 @@ fun ChannelFingerprintOverlay(
         // Initial position update
         updatePosition()
         visible = true
-
         // First display
         delay(durationMs.toLong())
         visible = false
@@ -118,25 +156,25 @@ fun ChannelFingerprintOverlay(
     if (visible) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(start = with(density) { currentOffset.x.dp }, top = with(density) { currentOffset.y.dp })
+                .fillMaxSize().padding(
+                    start = with(density) { currentOffset.x.toDp() },
+                    top = with(density) { currentOffset.y.toDp() }
+                )
         ) {
-
-            /*Image(
-                bitmap = qrBitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(100.dp)
-                    .graphicsLayer(alpha = 0.5f)
-            )*/
 
             Text(
                 text = displayMessage,
                 fontSize = fingerprintRule.value.fontSizeDp?.toString().getIntValue().sp,
                 color = fontColor,
+                maxLines = 1,
+                overflow = TextOverflow.Visible,
                 modifier = Modifier
                     .background(bgColor, RoundedCornerShape(4.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .onSizeChanged { size ->
+                        textWidth = size.width
+                        textHeight = size.height
+                    }
             )
         }
     }

@@ -582,7 +582,6 @@ open class WTVViewModel @Inject constructor(
                                 requestBody = requestBody).collect { response ->
                                 when (response) {
                                     is WTVResponse.Success -> {
-                                        provideApplicationContext().showToastS(response.data.toString())
                                         if(response.data.hash.isNotNullOrEmpty()) {
                                             PreferenceManager.saveHash(response.data.hash)
                                         }
@@ -648,7 +647,7 @@ open class WTVViewModel @Inject constructor(
                             userPackageUpdate(customerNumber = response.data.customerNumber)
                         }
                     }//_bannerList.value = response.data
-                    is WTVResponse.Failure -> onLoginResponse(null,response.error.toString()) //logReport("_bannerList:${response.error.message}")
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
                 }
             }
         }

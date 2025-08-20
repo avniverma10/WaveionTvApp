@@ -61,6 +61,7 @@ data class ScrollMessage(
     val posYPercent: Float?=null,
     val positionMode: String?="RANDOM", // "FIXED" or "RANDOM",
     val repeatCount: Int?=5,
+    val durationSec: Int?=30,
     val randomIntervalSec: Int?=10,//for random case handling required it default is 10
     val scrollSpeed: Float?=null,
     val updatedAt: String?=null,

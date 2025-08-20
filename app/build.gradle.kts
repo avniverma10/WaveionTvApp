@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 53
-        versionName = "1.0.53"
+        versionCode = 55
+        versionName = "1.0.55"
     }
 
     buildTypes {

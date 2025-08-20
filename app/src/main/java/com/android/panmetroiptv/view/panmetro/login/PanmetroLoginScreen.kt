@@ -377,7 +377,11 @@ fun PanmetroLoginScreen(
                                                                 }
                                                             }
                                                         } else {
-                                                            context.showToastS(response?.message?.toResponseMessage())
+                                                            errorMsg?.let {
+                                                                context.showToastS(errorMsg)
+                                                            }?:run {
+                                                                context.showToastS(response?.code?.toResponseMessage())
+                                                            }
                                                         }
                                                     })
                                             } else {

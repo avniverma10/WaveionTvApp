@@ -1,20 +1,15 @@
 package com.android.panmetroiptv.view.uicomponent.fingerprint
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.Rect
-import android.text.method.ScrollingMovementMethod
+import android.text.TextUtils
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
-import android.widget.TextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,17 +19,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
 import com.android.panmetroiptv.extensions.getFloatValue
+import com.android.panmetroiptv.extensions.getIntValue
+import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.provideMacAddress
 import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
-import kotlin.math.abs
+import com.android.panmetroiptv.view.uicomponent.fingerprint.state.MarqueeTextViewWithCallback
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.max
+
 
 @Composable
 fun ScrollingMessageOverlay(
@@ -43,316 +47,185 @@ fun ScrollingMessageOverlay(
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
-    val config = LocalConfiguration.current
-
-    // Calculate screen dimensions
-    val screenWidthPx = with(density) {
-        player?.width?.toDp()?.toPx() ?: config.screenWidthDp.dp.toPx()
-    }
-
-    // Message processing with proper context
-    val processedMessage = remember(scrollMessageInfo.value.message) {
-        context.checkPatternMatchInfo(scrollMessageInfo.value.message.orEmpty())
-    }
+    val configuration = LocalConfiguration.current
 
     // Colors with fallbacks
-    val (fontColor, bgColor) = remember(scrollMessageInfo.value) {
-        val fc = runCatching {
-            Color(android.graphics.Color.parseColor(scrollMessageInfo.value.fontColorHex ?: "#000000"))
-                .copy(alpha = 1f - (scrollMessageInfo.value.fontTransparency?.getFloatValue()?.coerceIn(0f, 1f) ?: 0.25f))
-        }.getOrDefault(Color.Black.copy(alpha = 0.25f))
 
-        val bg = runCatching {
-            Color(android.graphics.Color.parseColor(scrollMessageInfo.value.backgroundColorHex ?: "#ffffff"))
-                .copy(alpha = 1f - (scrollMessageInfo.value.backgroundTransparency?.getFloatValue()?.coerceIn(0f, 1f) ?: 0.25f))
-        }.getOrDefault(Color.White.copy(alpha = 0.25f))
+    val fontColor = remember(scrollMessageInfo.value.fontColorHex, scrollMessageInfo.value.fontTransparency) {
+        try {
+            val colorHex = scrollMessageInfo.value.fontColorHex ?: "#FFFFFF"
+            val baseColor = Color(android.graphics.Color.parseColor(colorHex))
 
-        Pair(fc, bg)
+            val transparency = scrollMessageInfo.value.fontTransparency?.getFloatValue() ?: 0.25f
+            val alpha = 1f - transparency.coerceIn(0f, 1f)
+
+            baseColor.copy(alpha = alpha)
+        } catch (e: Exception) {
+            Color.Black.copy(alpha = 0.25f) // Fallback color
+        }
     }
 
-    var isVisible by remember { mutableStateOf(true) }
+    val bgColor = remember(scrollMessageInfo.value.backgroundColorHex, scrollMessageInfo.value.backgroundTransparency) {
+        try {
+            val colorHex = scrollMessageInfo.value.backgroundColorHex ?: "#FFFFFF"
+            val baseColor = Color(android.graphics.Color.parseColor(colorHex))
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (isVisible) {
-            Box(
+            val transparency = scrollMessageInfo.value.backgroundTransparency?.getFloatValue() ?: 0.25f
+            val alpha = 1f - transparency.coerceIn(0f, 1f)
+
+            baseColor.copy(alpha = alpha)
+        } catch (e: Exception) {
+            Color.White.copy(alpha = 0.25f) // Fallback color
+        }
+    }
+
+    // Calculate screen width in pixels
+    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val screenHeightPx = with(density) {player?.height?.dp?.toPx()}?:with(density) { configuration.screenHeightDp.dp.toPx() }
+
+    // Measure text width in pixels
+    val yOffsetDp = with(density) {   (screenHeightPx * .85f).toDp() }
+
+    // Processed message with pattern replacements
+    var processedMessage = remember(scrollMessageInfo.value.message) {
+         context.checkPatternMatchInfo(scrollMessageInfo.value.message.orEmpty()).trimIndent()
+    }
+
+    var visible by remember { mutableStateOf(true) }
+    val repeatCount = remember { scrollMessageInfo.value.repeatCount?.toString()?.getIntValue() ?: -1 }
+    var currentRepeats by remember { mutableStateOf(0) }
+    // Calculate font size safely
+    var fontSize = remember(scrollMessageInfo.value.fontSizeDp) {
+        scrollMessageInfo.value.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
+    }
+    var textWidth by remember { mutableStateOf(0) }
+    var containerWidth by remember { mutableStateOf(0) }
+    var durationMs by remember { mutableStateOf(0L) }
+
+    // Get duration from scrollMessageInfo (in seconds, convert to milliseconds)
+    /*val durationSeconds = remember {
+        scrollMessageInfo.value.durationSec ?: 1
+    }
+    val durationMs = durationSeconds * 1000L
+
+    // Auto-hide after duration if specified
+    LaunchedEffect(visible, durationMs) {
+        if (visible && durationMs > 0) {
+            delay(durationMs)
+            visible = false
+        }
+    }*/
+
+    LaunchedEffect(visible, scrollMessageInfo.value.durationSec) {
+        val isInfinite = (scrollMessageInfo.value.durationSec ?: 0) == -1
+        if (visible) {
+            durationMs = (if(isInfinite){ Int.MAX_VALUE } else (scrollMessageInfo.value.durationSec ?: 1)) * 1000L
+
+            if (durationMs > 0 && !isInfinite) {
+                // Start a new coroutine that can be cancelled if duration changes
+                val job = launch {
+                    delay(durationMs)
+                    visible = false
+                }
+
+                // Cancel the previous job if duration changes
+                awaitCancellation()
+                job.cancel()
+            }
+        }
+    }
+
+    if(visible) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(start = with(density) { 0.dp }, top = with(density) { yOffsetDp })
+                .background(bgColor).onSizeChanged { containerWidth = it.width }
+        ) {
+            AndroidView(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(bgColor)
-            ) {
-                AndroidView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp, horizontal = 8.dp),
-                    factory = { ctx ->
-                        TextView(ctx).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            setSingleLine(true)
-                            ellipsize = null
-                            movementMethod = ScrollingMovementMethod()
-                            isHorizontalScrollBarEnabled = false
-                        }
-                    },
-                    update = { tv ->
-                        tv.text = processedMessage
-                        tv.setTextColor(fontColor.toArgb())
-                        tv.textSize = scrollMessageInfo.value.fontSizeDp?.toString()?.getFloatValue() ?: 14f
+                    .padding(top = 10.dp, bottom = 10.dp)
+                    .align(Alignment.Center),
+                factory = { ctx ->
 
-                        // Calculate animation duration based on speed
-                        val speed = (scrollMessageInfo.value.scrollSpeed ?: 1f).coerceIn(0.1f, 10f)
-                        val baseDuration = 20000L // 20 seconds for normal speed (1.0)
-                        val durationMs = (baseDuration / speed).toLong().coerceIn(2000L, 120000L)
-
-                        val repeatCount = scrollMessageInfo.value.repeatCount ?: -1
-
-                        startSmoothTickerAnimation(
-                            tv = tv,
-                            durationMs = durationMs,
-                            repeatCount = if (repeatCount > 0) repeatCount else ValueAnimator.INFINITE,
-                            onFinished = { isVisible = false }
+                    MarqueeTextViewWithCallback(ctx, onMarqueeComplete = {
+                        visible = false
+                    }).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
                         )
+                        setSingleLine(true)
+                        ellipsize = TextUtils.TruncateAt.MARQUEE
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                        isSelected = true
                     }
-                )
-            }
-        }
-    }
-}
+                    /*TextView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                        setSingleLine(true)
+                        ellipsize = TextUtils.TruncateAt.MARQUEE
+                        marqueeRepeatLimit = if (repeatCount <= 0) -1 else repeatCount - 1
+                        isFocusable = true
+                        isFocusableInTouchMode = true
+                        isSelected = true
+                        textView = this // Store reference to TextView
+                    }*/
+                },
+                update = { tv ->
+                    // Measure current text width
+                    // Measure current text width
+                    val textPaint = tv.paint
+                    val currentTextWidth = textPaint.measureText(processedMessage)
 
-private fun startSmoothTickerAnimation(
-    tv: TextView,
-    durationMs: Long,
-    repeatCount: Int,
-    onFinished: (() -> Unit)? = null
-) {
-    (tv.tag as? ValueAnimator)?.cancel()
+                    // Calculate if we need whitespace
+                    val needsWhiteSpace = currentTextWidth < containerWidth
 
-    val parent = tv.parent as? ViewGroup ?: run {
-        tv.post { startSmoothTickerAnimation(tv, durationMs, repeatCount, onFinished) }
-        return
-    }
+                    // Add whitespace if needed
+                    val displayText = if (needsWhiteSpace) {
+                        val spaceCount = max(10, (containerWidth / textPaint.measureText(" ")).toInt() / 2)
+                        val spaces = " ".repeat(spaceCount)
+                        "$spaces$processedMessage$spaces"
+                    } else {
+                        processedMessage
+                    }
 
-    if (tv.width == 0 || parent.width == 0) {
-        tv.post { startSmoothTickerAnimation(tv, durationMs, repeatCount, onFinished) }
-        return
-    }
+                    // Update text and styling
+                    tv.text = displayText
+                    tv.setTextColor(fontColor.toArgb())
+                    tv.textSize = fontSize.value
 
-    val textWidth = tv.paint.measureText(tv.text.toString()).toInt()
-    val parentWidth = parent.width
+                    // Set duration or repeat count
+                    (tv as MarqueeTextViewWithCallback).setDuration(durationMs)
 
-    val animator = ValueAnimator.ofInt(parentWidth, -textWidth).apply {
-        this.duration = durationMs
-        interpolator = LinearInterpolator()
-        this.repeatCount = if (repeatCount == ValueAnimator.INFINITE) ValueAnimator.INFINITE else repeatCount - 1
-        repeatMode = ValueAnimator.RESTART
-
-        addUpdateListener { animation ->
-            tv.translationX = (animation.animatedValue as Int).toFloat()
-            tv.requestLayout()
-        }
-
-        addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: Animator) {
-                if (repeatCount == 0) {
-                    onFinished?.invoke()
+                    /*if (durationMs > 0) {
+                        (tv as MarqueeTextViewWithCallback).setDuration(durationMs)
+                    } else {
+                        (tv as MarqueeTextViewWithCallback).setRepeatCount(repeatCount)
+                    }*/
                 }
-            }
-        })
-    }
-
-    tv.tag = animator
-    animator.start()
-}
-/**
- * Animates a single TextView across its parent bounds.
- * - We translate from just outside one edge to just outside the other.
- * - speedScreenPerSec: screens per second (0.2f => 1 screen in 5s).
- * - pauseMs: delay before each new pass (0 for seamless restart).
- * - repeatLimit: -1 = infinite, else number of passes.
- * - directionRtl: true = right→left, false = left→right.
- * - onFinished: called once when all repeats are done.
- */
-private fun startTickerAnimation(
-    tv: TextView,
-    speedScreenPerSec: Float,
-    pauseMs: Long,
-    repeatLimit: Int,
-    directionRtl: Boolean,
-    onFinished: (() -> Unit)? = null
-) {
-    // Cancel previous animator if any
-    (tv.tag as? ValueAnimator)?.cancel()
-    tv.tag = null
-
-    val parent = tv.parent as? ViewGroup
-    if (parent == null) {
-        tv.post { startTickerAnimation(tv, speedScreenPerSec, pauseMs, repeatLimit, directionRtl, onFinished) }
-        return
-    }
-
-    // Defer until we have real sizes
-    if (tv.width == 0 || parent.width == 0) {
-        tv.post { startTickerAnimation(tv, speedScreenPerSec, pauseMs, repeatLimit, directionRtl, onFinished) }
-        return
-    }
-
-    val textStr = tv.text?.toString().orEmpty()
-    if (textStr.isEmpty()) {
-        // Nothing to show; just finish
-        onFinished?.let { tv.post { it() } }
-        return
-    }
-
-    val textW = tv.paint.measureText(textStr).coerceAtLeast(1f)
-    val parentW = parent.width.toFloat()
-
-    val startX = if (directionRtl) parentW else -textW
-    val endX   = if (directionRtl) -textW else parentW
-    val distancePx = abs(endX - startX)
-
-    // Convert "screens per second" to pixels per second; clamp to sane range
-    val pxPerSec = (parentW * speedScreenPerSec).coerceIn(20f, 5000f)
-    val durationMs = ((distancePx / pxPerSec) * 1000f).toLong().coerceAtLeast(50L)
-
-    tv.translationX = startX
-
-    var passesDone = 0
-    val infinite = (repeatLimit == -1)
-
-    val animator = ValueAnimator.ofFloat(startX, endX).apply {
-        duration = durationMs
-        interpolator = LinearInterpolator()
-        repeatCount = 0
-        addUpdateListener { anim ->
-            tv.translationX = (anim.animatedValue as Float)
+            )
         }
-        addListener(object : android.animation.Animator.AnimatorListener {
-            override fun onAnimationStart(animation: android.animation.Animator) {}
-            override fun onAnimationCancel(animation: android.animation.Animator) {}
-            override fun onAnimationRepeat(animation: android.animation.Animator) {}
-
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                passesDone++
-                val more = infinite || (passesDone < repeatLimit)
-                if (more) {
-                    tv.postDelayed({
-                        tv.translationX = startX
-                        (tv.tag as? ValueAnimator)?.start()
-                    }, pauseMs)
-                } else {
-                    // Finished: clear and notify Compose to hide the bar
-                    tv.text = ""
-                    tv.tag = null
-                    onFinished?.let { tv.post { it() } }
-                }
-            }
-        })
     }
 
-    tv.tag = animator
-    animator.start()
 }
 
 
-private fun startTickerAnimationLatest(
-    tv: TextView,
-    speedScreenPerSec: Float,
-    pauseMs: Long,
-    repeatLimit: Int,
-    directionRtl: Boolean,
-    onFinished: (() -> Unit)? = null
-) {
-    // Cancel previous animator if any
-    (tv.tag as? ValueAnimator)?.cancel()
-    tv.tag = null
-
-    val parent = tv.parent as? ViewGroup
-    if (parent == null) {
-        tv.post { startTickerAnimation(tv, speedScreenPerSec, pauseMs, repeatLimit, directionRtl, onFinished) }
-        return
-    }
-
-    // Defer until we have real sizes
-    if (tv.width == 0 || parent.width == 0) {
-        tv.post { startTickerAnimation(tv, speedScreenPerSec, pauseMs, repeatLimit, directionRtl, onFinished) }
-        return
-    }
-
-    val textStr = tv.text?.toString().orEmpty()
-    if (textStr.isEmpty()) {
-        // Nothing to show; just finish
-        onFinished?.let { tv.post { it() } }
-        return
-    }
-
-    // Ensure text is set to single line and ellipsize is none
-    tv.setSingleLine(true)
-    tv.ellipsize = null
-    tv.movementMethod = ScrollingMovementMethod()
-    // tv.horizontalScrollBarEnabled = false
-    tv.setHorizontallyScrolling(false)
-
-    // Calculate text width with proper text measurement
-    val textPaint = tv.paint
-    val textBounds = Rect()
-    textPaint.getTextBounds(textStr, 0, textStr.length, textBounds)
-    val textW = textBounds.width().toFloat().coerceAtLeast(1f)
-    val parentW = parent.width.toFloat()
-
-    // Adjust positions to ensure full text visibility
-    val startX = if (directionRtl) parentW else -textW
-    val endX = if (directionRtl) -textW else parentW
-    val distancePx = abs(endX - startX)
-
-    // Convert "screens per second" to pixels per second with reasonable limits
-    val pxPerSec = (parentW * speedScreenPerSec).coerceIn(20f, 5000f)
-    val durationMs = ((distancePx / pxPerSec) * 1000f).toLong().coerceAtLeast(50L)
-
-    // Reset translation before starting
-    tv.translationX = startX
-    tv.invalidate()
-
-    var passesDone = 0
-    val infinite = (repeatLimit == -1)
-
-    val animator = ValueAnimator.ofFloat(startX, endX).apply {
-        duration = durationMs
-        interpolator = LinearInterpolator()
-        repeatCount = 0
-
-        addUpdateListener { anim ->
-            tv.translationX = (anim.animatedValue as Float)
-            // Force redraw to prevent clipping
-            tv.invalidate()
-        }
-
-        addListener(object : AnimatorListenerAdapter() {
-            override fun onAnimationEnd(animation: android.animation.Animator) {
-                passesDone++
-                val more = infinite || (passesDone < repeatLimit)
-
-                if (more) {
-                    tv.postDelayed({
-                        // Reset position before next run
-                        tv.translationX = startX
-                        tv.invalidate()
-                        (tv.tag as? ValueAnimator)?.start()
-                    }, pauseMs)
-                } else {
-                    // Clean up
-                    tv.text = ""
-                    tv.tag = null
-                    onFinished?.let { tv.post { it() } }
-                }
-            }
-        })
-    }
-
-    tv.tag = animator
-    animator.start()
+fun formatMarqueeText(rawText: String): String {
+    return rawText
+        .lines()                   // Split into lines
+        .map { it.trim() }         // Trim each line
+        .filter { it.isNotBlank() }// Remove blank lines
+        .joinToString(" ")         // Join with single spaces
+        .replace(Regex("\\s+"), " ") // Collapse any remaining multiple spaces
 }
+
+
 fun Context.checkPatternMatchInfo(message: String): String {
     var result = message
         .replace("$$@User", " ${PreferenceManager.getUsername()} ")
