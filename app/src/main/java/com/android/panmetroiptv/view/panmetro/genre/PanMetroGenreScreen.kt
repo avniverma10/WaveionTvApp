@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,6 +22,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -45,6 +49,8 @@ import com.android.panmetroiptv.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 fun PanmetroGenreScreen(
@@ -71,7 +77,8 @@ fun PanmetroGenreScreen(
 
     val selectedGenreIndex: MutableState<Int> = remember { mutableStateOf( 0) }
     val selectedChannelIndex: MutableState<Int> = remember { mutableStateOf( 0) }
-
+    val genreListState: LazyListState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var genreListFocusRequester = remember { FocusRequester() }
     var channelListFocusRequester = remember { FocusRequester() }
 
@@ -182,6 +189,7 @@ fun PanmetroGenreScreen(
                             sharedViewModel = sharedViewModel,
                             genreSelectedIndex = selectedGenreIndex,
                             channelToGenreFocus = channelToGenreFocus,
+                            listState = genreListState,
                             focusRequesters = genreFocusRequesters,
                             // On selection, update the index, filter channels, and move focus to the channel list.
                             onCategoryForward = { index, selectedGenre ->
@@ -190,6 +198,7 @@ fun PanmetroGenreScreen(
                                 val genreName = selectedGenre.name ?: "All"
                                 genreViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
+                                channelToGenreFocus.value = false
                                 try {
                                     channelListFocusRequester.requestFocus()
                                 }catch (ex: Exception){}
@@ -204,14 +213,13 @@ fun PanmetroGenreScreen(
                             channelListFocusRequester = channelListFocusRequester,
                             channelToGenreFocus = channelToGenreFocus,
                             onNavigateToGenre = {
-                                // Request focus on the genre item that was last selected.
-                                genreFocusRequesters.getOrNull(selectedGenreIndex.value)?.let { requester ->
-                                    try {
-                                        channelToGenreFocus.value = true
-                                        requester.requestFocus()
-                                    } catch (e: IllegalStateException) {
-                                        loge("FocusError", "FocusRequester not initialized ${e.message}")
-                                    }
+                                channelToGenreFocus.value = true
+                                scope.launch {
+                                    val idx = selectedGenreIndex.value.coerceIn(0, (availableGenre.size - 1).coerceAtLeast(0))
+                                    genreListState.animateScrollToItem(idx)
+                                    snapshotFlow { genreListState.layoutInfo.visibleItemsInfo.any { it.index == idx } }
+                                        .first { it }
+                                    genreFocusRequesters.getOrNull(idx)?.requestFocus()
                                 }
                             },
                             onVideoChange =  onVideoChange,
@@ -284,6 +292,10 @@ fun PanmetroGenreScreen(
                     } finally {
                         PreferenceManager.clearSaveGenre()
                     }
+                }
+                scope.launch {
+                    val idx = selectedGenreIndex.value.coerceIn(0, (availableGenre.size - 1).coerceAtLeast(0))
+                    genreListState.scrollToItem(idx)
                 }
             }
         }

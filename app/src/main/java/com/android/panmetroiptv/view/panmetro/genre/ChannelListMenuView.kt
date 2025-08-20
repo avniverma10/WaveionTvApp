@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -337,8 +338,14 @@ fun ChannelListItem(
                 fontFamily = FontFamily(Font(R.font.figtree_medium)),
                 fontWeight = FontWeight.Normal,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                overflow = if (isFocused) TextOverflow.Clip else TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (isFocused) Modifier.basicMarquee(
+                            iterations = Int.MAX_VALUE
+                        ) else Modifier
+                    )
             )
         }
     }

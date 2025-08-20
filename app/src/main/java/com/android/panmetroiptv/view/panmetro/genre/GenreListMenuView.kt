@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,12 +63,12 @@ fun GenreListMenu(
     genreSelectedIndex: MutableState<Int>,
     channelToGenreFocus: MutableState<Boolean>,
     focusRequesters: List<FocusRequester>,
+    listState: LazyListState,
     onCategoryForward: (Int, WTVGenre) -> Unit
 ) {
     // Track which item is focused or selected.
     var focusedIndex by remember { mutableStateOf(0) }
     // LazyListState to manage scrolling.
-    val listState = rememberLazyListState()
     // Coroutine scope for launching suspend functions.
     val coroutineScope = rememberCoroutineScope()
 
