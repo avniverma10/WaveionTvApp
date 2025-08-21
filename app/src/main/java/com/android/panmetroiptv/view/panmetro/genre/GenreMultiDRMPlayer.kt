@@ -5,15 +5,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.WindowManager
 import androidx.annotation.OptIn
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
@@ -33,16 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -56,12 +49,10 @@ import com.android.panmetroiptv.extensions.extractYouTubeId
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
-import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.extensions.toJSONObject
-import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.PlaybackErrorPreview
-import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
+import com.android.panmetroiptv.view.uicomponent.fingerprint.PrePlayerFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.genre.GenreViewModel
@@ -78,16 +69,13 @@ import kotlin.random.Random
 @Composable
 fun GenreMultiDRMPlayer(
     selectedChannelIndex : MutableState<Int>,
-                        sharedViewModel: SharedViewModel,
-                        genreViewModel: GenreViewModel
+                        sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val coroutineScope = rememberCoroutineScope()
-    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
-    val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
+    val playerSSERules by sharedViewModel.prePlayerSSERules.collectAsState()
 
     // Mutable state for UI updates
     var isAudio = remember { mutableStateOf(false) }
@@ -236,9 +224,10 @@ fun GenreMultiDRMPlayer(
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+                //make fingerprint request
+                sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+
             }
-            //make fingerprint request
-            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
         }
 
     }
@@ -384,9 +373,8 @@ fun GenreMultiDRMPlayer(
         }
         if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
             playerSSERules?.fingerprints?.forEach {
-                ChannelFingerprintOverlay(
-                    player = playerView.value,
-                    fingerprintRule = mutableStateOf(it)
+                PrePlayerFingerprintOverlay(
+                    fingerprintRule = it
                 )
             }
         }
@@ -450,7 +438,7 @@ fun GenreMultiDRMPlayer(
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
                 exoPlayer.stop()
-                sharedViewModel.stopPlayerSSE()
+                sharedViewModel.stopPrePlayerSSE()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }

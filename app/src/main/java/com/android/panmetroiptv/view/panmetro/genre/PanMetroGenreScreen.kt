@@ -35,6 +35,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.android.panmetroiptv.extensions.appManifestLiveData
+import com.android.panmetroiptv.extensions.coreEPGLiveData
 import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.isNotNullOrEmpty
 import com.android.panmetroiptv.extensions.loge
@@ -55,25 +56,22 @@ import kotlinx.coroutines.launch
 @Composable
 fun PanmetroGenreScreen(
     navController: NavController,
-    sharedViewModel: SharedViewModel,
-    genreViewModel: GenreViewModel= hiltViewModel()
+    sharedViewModel: SharedViewModel
 ) {
     HideKeyboardOnEnter()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val epgList = remember {
+        sharedViewModel.provideApplicationContext().coreEPGLiveData().value
+    }
 
-    val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
+    val availableGenre = appManifestData?.value?.genre?: arrayListOf()
 
-    val epgList = genreViewModel.provideAvailableEPG()
-
-    val availableGenre = genreViewModel.provideAvailableGenre()
-
-    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
 
     var channelToGenreFocus = remember { mutableStateOf(false) }
-
 
     val selectedGenreIndex: MutableState<Int> = remember { mutableStateOf( 0) }
     val selectedChannelIndex: MutableState<Int> = remember { mutableStateOf( 0) }
@@ -101,7 +99,7 @@ fun PanmetroGenreScreen(
     LaunchedEffect(Unit) {
         context.hideKeyboard()
         val genreName = availableGenre.getOrNull(lastGenreIndex)?.name ?: "All"
-        genreViewModel.filterPanMetroChannelsByGenre(genreName)
+        sharedViewModel.filterPanMetroChannelsByGenre(genreName)
         //register scroll message request
         sharedViewModel.provideGlobalSSERequest()
         //request for user hash
@@ -196,7 +194,7 @@ fun PanmetroGenreScreen(
                                 selectedGenreIndex.value = index
                                 selectedChannelIndex.value = 0
                                 val genreName = selectedGenre.name ?: "All"
-                                genreViewModel.filterPanMetroChannelsByGenre(genreName)
+                                sharedViewModel.filterPanMetroChannelsByGenre(genreName)
                                 // Request focus back to the channel list so its first item is focused.
                                 channelToGenreFocus.value = false
                                 try {
@@ -208,7 +206,6 @@ fun PanmetroGenreScreen(
                         // Middle: Channel List
                         ChannelListMenuScreen(
                             sharedViewModel= sharedViewModel,
-                            genreViewModel = genreViewModel,
                             selectedChannelIndex= selectedChannelIndex,
                             channelListFocusRequester = channelListFocusRequester,
                             channelToGenreFocus = channelToGenreFocus,
@@ -248,8 +245,7 @@ fun PanmetroGenreScreen(
                             .padding(bottom = 10.dp)) {
                             GenreMultiDRMPlayer (
                                 selectedChannelIndex= selectedChannelIndex,
-                                sharedViewModel = sharedViewModel,
-                                genreViewModel = genreViewModel
+                                sharedViewModel = sharedViewModel
                             )
                         }
                         Box(
@@ -277,14 +273,14 @@ fun PanmetroGenreScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) {
-                genreViewModel.provideAvailableGenre()?.getOrNull(selectedGenreIndex.value)?.name?.let { PreferenceManager.saveGenre(it) }
+                availableGenre?.getOrNull(selectedGenreIndex.value)?.name?.let { PreferenceManager.saveGenre(it) }
                 filteredChannels?.getOrNull<EPGDataItem>(selectedChannelIndex.value)?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
             }else if (event == Lifecycle.Event.ON_START) {
                 val savedGenre = PreferenceManager.getSavedGenre()
                 if (savedGenre.isNotNullOrEmpty()) {
                     try {
                         //Find and set genre index
-                        selectedGenreIndex.value = genreViewModel.provideAvailableGenre()
+                        selectedGenreIndex.value = availableGenre
                             ?.indexOfFirst { it.name == savedGenre } ?: 0
                         sharedViewModel.updateGenreScreenLastGenreIndex(selectedGenreIndex.value)
                     } catch (e: Exception) {

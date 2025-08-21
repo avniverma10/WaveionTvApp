@@ -20,6 +20,16 @@ object PreferenceManager {
   private const val KEY_USER_PKG_INFO   = "userPKGInfo"
   private const val KEY_USER_HASH   = "userhash"
 
+
+  private const val KEY_PLAYER_FINGERPRINT   = "playerFingerprint"
+  private const val KEY_GLOBAL_FINGERPRINT   = "globalFingerprint"
+  private const val KEY_PLAYER_SCROLL   = "playerScroll"
+  private const val KEY_GLOBAL_SCROLL   = "globalScroll"
+  private const val KEY_PLAYER_FORCE   = "playerForce"
+  private const val KEY_GLOBAL_FORCE   = "globalForce"
+
+
+
   /** Must be called once in your Application or Activity */
   fun init(context: Context) {
     prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -93,6 +103,12 @@ object PreferenceManager {
     editor.remove(KEY_PASSWORD)
     editor.remove(KEY_USER_HASH)
     editor.remove(KEY_CUS_NUMBER)
+    editor.remove(KEY_GLOBAL_FINGERPRINT)
+    editor.remove(KEY_PLAYER_FINGERPRINT)
+    editor.remove(KEY_GLOBAL_SCROLL)
+    editor.remove(KEY_PLAYER_SCROLL)
+    editor.remove(KEY_GLOBAL_FORCE)
+    editor.remove(KEY_PLAYER_FORCE)
     return editor.commit()
   }
 
@@ -119,4 +135,49 @@ object PreferenceManager {
 
   fun getSavedGenre(): String? = prefs.getString(KEY_GENRE, null)
   fun getSavedChannel(): String? = prefs.getString(KEY_CHANNEL, null)
+
+
+  //SSE
+  fun saveGlobalFingerTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_GLOBAL_FINGERPRINT, updateAt)
+    editor.apply()
+  }
+  fun savePlayerFingerTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_PLAYER_FINGERPRINT, updateAt)
+    editor.apply()
+  }
+  fun saveGlobalScrollTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_GLOBAL_SCROLL, updateAt)
+    editor.apply()
+  }
+  fun savePlayerScrollTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_PLAYER_SCROLL, updateAt)
+    editor.apply()
+  }
+  fun saveGlobalForceTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_GLOBAL_FORCE, updateAt)
+    editor.apply()
+  }
+  fun savePlayerForceTime(updateAt:String) {
+    val editor = prefs.edit()
+    editor.putString(KEY_PLAYER_FORCE, updateAt)
+    editor.apply()
+  }
+
+
+
+  fun getPlayerFingerTime(): String? = prefs.getString(KEY_PLAYER_FINGERPRINT, null)
+  fun getGlobalFingerTime(): String? = prefs.getString(KEY_GLOBAL_FINGERPRINT, null)
+
+  fun getPlayerScrollTime(): String? = prefs.getString(KEY_PLAYER_SCROLL, null)
+  fun getGlobalScrollTime(): String? = prefs.getString(KEY_GLOBAL_SCROLL, null)
+
+  fun getPlayerForceTime(): String? = prefs.getString(KEY_PLAYER_FORCE, null)
+  fun getGlobalForceTime(): String? = prefs.getString(KEY_GLOBAL_FORCE, null)
+
 }

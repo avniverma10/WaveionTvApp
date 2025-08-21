@@ -23,8 +23,11 @@ import com.android.panmetroiptv.model.data.epgdata.Channel
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.model.data.filter.PanMetroGenreFilter
+import com.android.panmetroiptv.model.data.sseresponse.ForceMessage
 import com.android.panmetroiptv.model.data.sseresponse.GlobalSSEResponse
+import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
 import com.android.panmetroiptv.model.data.sseresponse.PlayerSSEResponse
+import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
 import com.android.panmetroiptv.model.repository.login.LoginPrefsRepository
 import com.android.panmetroiptv.model.wtvdatabase.EPGContract
@@ -57,6 +60,9 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.collections.any
+import kotlin.collections.filter
+import kotlin.collections.orEmpty
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -79,6 +85,11 @@ open class SharedViewModel @Inject constructor(
     private var playerEventSource: EventSource? = null
     private val _playerSSERules = MutableStateFlow<PlayerSSEResponse?>(null)
     val playerSSERules: StateFlow<PlayerSSEResponse?> = _playerSSERules
+
+
+    private var prePlayerEventSource: EventSource? = null
+    private val _prePlayerSSERules = MutableStateFlow<PlayerSSEResponse?>(null)
+    val prePlayerSSERules: StateFlow<PlayerSSEResponse?> = _prePlayerSSERules
 
 
     private val _bannerList = MutableStateFlow<List<Banner>>(emptyList())
@@ -498,6 +509,110 @@ open class SharedViewModel @Inject constructor(
         playerEventSource = EventSources.createFactory(client).newEventSource(request, listener)
     }
 
+    fun providePrePlayerSSERequest(
+        channel: String?=null,//"1003:RAAPCHIK"
+    ) {
+       // _prePlayerSSERules.value = PlayerSSEResponse(fingerprints = mutableListOf(PlayerFingerprint()), scrollMessages =emptyList<ScrollMessage>(), forceMessages = emptyList<ForceMessage>() )
+        prePlayerEventSource?.let {
+            prePlayerEventSource?.cancel()
+            prePlayerEventSource = null
+        }
+        val queryBuilder = (Constants.BASE_URL +"app/combined-sse?")
+            .toUri()
+            .buildUpon()
+        channel?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("liveChannel", it)
+        }
+
+        PreferenceManager.getLoginResponse()?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+            queryBuilder.appendQueryParameter("region", it)
+        }?: run {
+            queryBuilder.appendQueryParameter("region", "01")
+        }
+
+        queryBuilder.appendQueryParameter("appVersion","panmetro_${application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName}")
+
+        application.provideMacAddress()?.let {
+            queryBuilder.appendQueryParameter("macId", it)
+        }
+        val sseUrl = queryBuilder.build().toString()
+        loge("PlayerFingerprint url>",sseUrl)
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val withHeaders = original.newBuilder()
+                    .header("x-api-key", Constants.HEADER_TOKEN)
+                    .build()
+                chain.proceed(withHeaders)
+            }
+            .retryOnConnectionFailure(true)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
+            .build()
+
+        val request = Request.Builder()
+            .url(sseUrl) // replace with your endpoint URL
+            .build()
+
+        val listener = object : EventSourceListener() {
+            override fun onOpen(eventSource: EventSource, response: Response) {
+                // Log or perform actions on open
+            }
+
+            override fun onEvent(
+                eventSource: EventSource,
+                id: String?,
+                type: String?,
+                data: String
+            ) {
+                // Update the global state with new event data.
+                loge("SSE >",sseUrl+data.toString())
+
+                try {
+                    data.toString()
+                        .convertIntoModel(PlayerSSEResponse::class.java)?.let {
+                            _prePlayerSSERules.value = it
+                        }
+                    loge("SSE >", data.toString())
+
+                } catch (e: Exception) {
+                    loge("SSE ", "Error parsing JSON: ${e.message}")
+                }
+            }
+
+            override fun onClosed(eventSource: EventSource) {
+                // Optionally handle close events.
+                logReport("SSE", "Connection closed")
+            }
+
+            override fun onFailure(
+                eventSource: EventSource,
+                t: Throwable?,
+                response: Response?
+            ) {
+                // Handle failures (and consider restarting the connection).
+                logReport("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
+            }
+        }
+
+        // Start the SSE connection.
+        prePlayerEventSource = EventSources.createFactory(client).newEventSource(request, listener)
+    }
+
+    fun filterPanMetroChannelsByGenre(genre:String?=null) {
+        val fullEPGList = provideApplicationContext().coreEPGLiveData().value?:wtvEPGList.value
+        genre?.let {
+            _filteredPanMetroChannels.value = fullEPGList?.filter { epgItem ->
+                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.map { it.name }.orEmpty()?.any { it.equals(genre, true) } == true)
+                genreMatch
+            }?: arrayListOf()
+        }?:kotlin.run {
+            _filteredPanMetroChannels.value = fullEPGList?: arrayListOf()
+        }
+
+    }
+
     fun stopGlobalSSE() {
         globalEventSource?.cancel()
         globalEventSource = null
@@ -505,6 +620,11 @@ open class SharedViewModel @Inject constructor(
     fun stopPlayerSSE() {
         playerEventSource?.cancel()
         playerEventSource = null
+    }
+
+    fun stopPrePlayerSSE() {
+        prePlayerEventSource?.cancel()
+        prePlayerEventSource = null
     }
 
     override fun onCleared() {

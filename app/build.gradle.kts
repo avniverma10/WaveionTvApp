@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 55
-        versionName = "1.0.55"
+        versionCode = 57
+        versionName = "1.0.57"
     }
 
     buildTypes {
@@ -126,7 +126,7 @@ dependencies {
     //constraintlayout
     implementation (libs.youtube.lib)
     //spalsh
-    implementation(libs.core.splashscreen)
+    //implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
 

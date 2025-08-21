@@ -8,7 +8,8 @@ data class GlobalSSEResponse(
     val fingerprints: List<Fingerprint>,
     val scrollMessages: List<ScrollMessage>,
     val forceMessages: List<ForceMessage>,
-    val packageUpdates: List<PackageUpdate>
+    val packageUpdates: List<PackageUpdate>,
+    val userUpdates: List<UserUpdate>
 )
 
 @Keep
@@ -99,3 +100,4 @@ data class ForceMessage(
 
 
 data class PackageUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)
+data class UserUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)

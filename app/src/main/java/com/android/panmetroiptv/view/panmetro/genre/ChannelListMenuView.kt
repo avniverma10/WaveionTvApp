@@ -65,7 +65,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChannelListMenuScreen(
     sharedViewModel: SharedViewModel,
-    genreViewModel: GenreViewModel,
     selectedChannelIndex: MutableState<Int>,
     channelListFocusRequester: FocusRequester,
     channelToGenreFocus: MutableState<Boolean>,
@@ -75,7 +74,7 @@ fun ChannelListMenuScreen(
 ) {
     var focusedIndex by remember { mutableStateOf(0) }
     var previewChannelIndex by remember { mutableStateOf(0) }
-    val filteredChannels by genreViewModel.filteredPanMetroChannels.collectAsState()
+    val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()

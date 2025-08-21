@@ -2,7 +2,6 @@ package com.android.panmetroiptv.view.panmetro.player
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,10 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,7 +41,6 @@ import com.android.panmetroiptv.R
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.utils.theme.base_color
-import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.player.PlayerViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,9 +49,7 @@ import java.util.Locale
 @Composable
 fun CaastvPlayerOverlay(
     channel: EPGDataItem,
-    sharedViewModel: SharedViewModel,
     playerViewModel: PlayerViewModel,
-    onOptionClick: () -> Unit,
     programmeIndex: Int
 ) {
 
@@ -131,7 +124,7 @@ fun CaastvPlayerOverlay(
                         .clip(RoundedCornerShape(6.dp))
                         .background(logoBrush)
                 ) {
-                    // 1) Channel thumbnail
+                    //Channel thumbnail
                     AsyncImage(
                         model           = channel.content?.thumbnailUrl,
                         contentDescription = null,
@@ -146,7 +139,7 @@ fun CaastvPlayerOverlay(
 
                 Spacer(Modifier.width(12.dp))
 
-                // 2) Info column (number, title, time + bar), same height as the icon
+                //Info column (number, title, time + bar), same height as the icon
                 Column(
                     Modifier
                         .weight(1f)
@@ -203,67 +196,6 @@ fun CaastvPlayerOverlay(
                         )
                     }
                 }
-
-                /*Spacer(Modifier.width(12.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowUp,
-                        contentDescription = "Press Up",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    Box(
-                        Modifier
-                            .width(1.dp)
-                            .height(20.dp)
-                            .background(Color.White.copy(alpha = 0.7f))
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        text = "Options :",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White
-                    )
-                    Spacer(Modifier.width(3.dp))
-                    // Favourite
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clickable { *//* onFavoriteClick() *//* },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector     = Icons.Default.Favorite,
-                            contentDescription = "Favourite",
-                            tint            = Color.White,
-                            modifier        = Modifier.size(16.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(3.dp))
-
-                    // Audio
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .clickable { *//* onAudioClick() *//* },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector     = Icons.Default.Menu,
-                            contentDescription = "Audio",
-                            tint            = Color.White,
-                            modifier        = Modifier.size(16.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(3.dp))
-                }*/
 
                 Spacer(Modifier.width(16.dp))
 

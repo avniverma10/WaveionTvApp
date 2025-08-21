@@ -39,6 +39,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.model.data.sseresponse.ForceMessage
+import com.android.panmetroiptv.view.uicomponent.fingerprint.checkPatternMatchInfo
 import kotlinx.coroutines.delay
 import java.util.Date
 import kotlin.getOrDefault
@@ -74,6 +75,11 @@ fun ForceMessageDialog(
             value = formatSecondsToHMS(forceMessage?.duration?:0L)
             delay(1_000L)
         }
+    }
+
+    // Processed message with pattern replacements
+    var processedMessage = remember(forceMessage?.message) {
+        context.checkPatternMatchInfo(forceMessage?.message.orEmpty()).trimIndent()
     }
 
     val borderColor = Color(0xFF49FEDD)
@@ -161,7 +167,7 @@ fun ForceMessageDialog(
                 )
 
                 Text(
-                    text = forceMessage?.message.orEmpty(),
+                    text = processedMessage,
                     color = messageColor,
                     fontSize = (forceMessage?.messageFontSizeDp?:16).sp,
                     fontWeight = FontWeight.Normal,

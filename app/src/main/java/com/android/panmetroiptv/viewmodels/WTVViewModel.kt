@@ -83,6 +83,10 @@ open class WTVViewModel @Inject constructor(
 
     private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
     val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
+    //for genre screen
+    protected val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
+
 
     // ─── Date and time state ───
     private val _isTimeValid = MutableStateFlow<Boolean?>(null)
@@ -390,7 +394,7 @@ open class WTVViewModel @Inject constructor(
                 .orEmpty()
 
             // only if the server’s version is higher do we prompt or download
-                if (shouldUpdateRequired(update.appVersion, current) && update.checkRegionUpdate(PreferenceManager.getLoginResponse()?.regionCode) == true) {
+                if (shouldUpdateRequired(update.appVersion, current) && update.checkRegionUpdate(PreferenceManager.getLoginResponse()?.provideUserRegionCode()) == true) {
                 _appUpdateData.value = update
                 handleAppUpdate(update)
             } else {

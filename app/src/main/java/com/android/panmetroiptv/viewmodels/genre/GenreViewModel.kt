@@ -17,25 +17,16 @@ open class GenreViewModel @Inject constructor(
     private val application: Application,
 ) : ViewModel(){
 
+
+
+
     fun provideAvailableEPG() = application.coreEPGLiveData().value
 
     fun provideAvailableGenre() = application.appManifestLiveData().value?.genre?: arrayListOf()
 
-    private val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
-    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
 
 
-    fun filterPanMetroChannelsByGenre(genre:String?=null) {
-        genre?.let {
-            _filteredPanMetroChannels.value = provideAvailableEPG()?.filter { epgItem ->
-                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.map { it.name }.orEmpty()?.any { it.equals(genre, true) } == true)
-                genreMatch
-            }?: arrayListOf()
-        }?:kotlin.run {
-            _filteredPanMetroChannels.value = provideAvailableEPG()?: arrayListOf()
-        }
 
-    }
 
 
 

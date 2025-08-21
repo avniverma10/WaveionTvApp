@@ -20,6 +20,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,15 +31,14 @@ import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
 import com.android.panmetroiptv.model.data.sseresponse.Fingerprint
 import kotlinx.coroutines.delay
-import kotlin.math.max
 
 @Composable
 fun GlobalFingerprintOverlay(
     fingerprintRule: MutableState<Fingerprint>
 ) {
     val context = LocalContext.current
-    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.value.method?:"SHA2", obfuscationKey = fingerprintRule.value.obfuscationKey?:"12")
 
+    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.value.method?:"SHA2", obfuscationKey = fingerprintRule.value.obfuscationKey?:"12")
     val fontColor = runCatching {
         Color(android.graphics.Color.parseColor(fingerprintRule.value.fontColorHex ?: "#000000"))
             .copy(alpha = fingerprintRule.value.fontTransparency
@@ -53,10 +55,12 @@ fun GlobalFingerprintOverlay(
 
     var visible by remember { mutableStateOf(false) }
     var currentOffset by remember { mutableStateOf(Offset.Zero) }
+    var isRandom by remember { mutableStateOf(false) }
 
 
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
+
     // Convert screen dimensions to pixels once
     val screenWidth = with(density) { (LocalConfiguration.current.screenWidthDp).dp.toPx() }
     val screenHeight = with(density) { (LocalConfiguration.current.screenHeightDp).dp.toPx() }
@@ -72,37 +76,34 @@ fun GlobalFingerprintOverlay(
     val maxTextWidthPx = screenWidth * 0.8f
     val paddingPx = with(density) { 16.dp.toPx() }
 
-    // Validate duration and interval
-    val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 10f) * 1000L
-    val intervalMs = (fingerprintRule.value.intervalSec?.toString()?.getFloatValue() ?: 5f) * 1000L
-    val repeatCount = fingerprintRule.value.repeatCount?.toString()?.getIntValue() ?: 1
-
-    // Function to update position
-    /*fun updatePosition() {
-        if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
-            val randX = (24..(screenWidth - 24)).random()
-            val randY = (48..(screenHeight - 48)).random()
-            currentOffset = Offset(randX.toFloat(), randY.toFloat())
-        } else {
-            currentOffset = Offset(
-                x = screenWidth * posX,
-                y = screenHeight * posY
-            )
-        }
-    }*/
+    val measurer = rememberTextMeasurer()
+    var fontSize = remember(fingerprintRule.value.fontSizeDp) {
+        fingerprintRule.value.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
+    }
 
     // Function to update position ensuring text stays within bounds
     fun updatePosition() {
-        if (fingerprintRule.value.positionMode?.uppercase() == "RANDOM") {
+        if (isRandom) {
+            val randomXValue = ((0..9).random() / 10f)?.coerceIn(0f, .9f) ?: 0.5f
+            val randomYValue = ((0..9).random() / 10f)?.coerceIn(0f, .9f) ?: 0.5f
+            val adjustedX = (screenWidth * randomXValue.toFloat()).coerceIn(
+                paddingPx,
+                screenWidth - textWidth - paddingPx
+            )
+            val adjustedY = (screenHeight * randomYValue).coerceIn(
+                paddingPx,
+                screenHeight - textHeight - paddingPx
+            )
+            currentOffset = Offset(adjustedX, adjustedY)
             // For random position, ensure text stays within screen bounds
-            val minX = paddingPx
+            /*val minX = paddingPx
             val maxX = screenWidth - textWidth - paddingPx
             val minY = paddingPx
             val maxY = screenWidth - textHeight - paddingPx
 
             val randX = (minX.toInt()..(max(maxX, minX + 1f)).toInt()).random()
             val randY = (minY.toInt()..(max(maxY, minY + 1f)).toInt()).random()
-            currentOffset = Offset(randX.toFloat(), randY.toFloat())
+            currentOffset = Offset(randX.toFloat(), randY.toFloat())*/
         } else {
             // For fixed position, adjust to ensure text fits
             val adjustedX = (screenWidth * posX).coerceIn(
@@ -117,28 +118,35 @@ fun GlobalFingerprintOverlay(
         }
     }
 
-
     LaunchedEffect(fingerprintRule) {
-        // Initial position update
+        // Calculate font size safely
+       val textResult = measurer.measure(
+            text = buildAnnotatedString { append(displayMessage) },
+            style = TextStyle(fontSize = fontSize),
+            softWrap = false,
+            maxLines = 1
+        )
+        // Validate duration and interval
+        val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val intervalMs = (fingerprintRule.value.intervalSec?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val repeatCount = fingerprintRule.value.repeatCount?.toString()?.getIntValue() ?: 1
+        isRandom = fingerprintRule.value.positionMode?.uppercase().equals("RANDOM",true)
+        textResult?.let {
+            textWidth = textResult.size.width
+            textHeight = textResult.size.height
+        }
         updatePosition()
-        visible = true
-
-        // First display
-        delay(durationMs.toLong())
-        visible = false
-
-        if (repeatCount == -1) {
-            // Infinite loop
-            while (true) {
+        if (repeatCount > 0) {
+            repeat(repeatCount) {
                 delay(intervalMs.toLong())
                 updatePosition()
                 visible = true
                 delay(durationMs.toLong())
                 visible = false
             }
-        } else {
-            // Finite loop (already showed once)
-            repeat(repeatCount - 1) {
+        }else {
+            // Infinite loop
+            while (true) {
                 delay(intervalMs.toLong())
                 updatePosition()
                 visible = true

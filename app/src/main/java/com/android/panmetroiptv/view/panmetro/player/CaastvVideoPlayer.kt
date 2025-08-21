@@ -72,6 +72,7 @@ import com.android.panmetroiptv.view.uicomponent.addWatermarkToPlayer
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
+import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.android.panmetroiptv.view.uicomponent.search.InputOverlay
@@ -342,6 +343,7 @@ fun CaastvVideoPlayer(
                 } else {
                     MediaItem.fromUri(url)
                 }
+
                 /*if(Constants.userChannelResult?.any{it.name.equals(selectedChannel.content?.title,true)} == false){
                     val (code, title, message) = playerErrorHandling(6200)
                     errorCodeState = code
@@ -351,9 +353,11 @@ fun CaastvVideoPlayer(
                 exoPlayer.setMediaItem(mediaItem)
                 exoPlayer.prepare()
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+
+                //make fingerprint request
+                sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
+
             }
-            //make fingerprint request
-            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
         }
     }
 
@@ -609,9 +613,7 @@ fun CaastvVideoPlayer(
             epgList.getOrNull(previewChannelIndex.intValue)?.let {
                 CaastvPlayerOverlay(
                     channel = it,
-                    sharedViewModel = sharedViewModel,
                     playerViewModel = playerViewModel,
-                    onOptionClick = {},
                     programmeIndex = currentProgrammeIndex.intValue,
                 )
             }
@@ -619,7 +621,9 @@ fun CaastvVideoPlayer(
 
         if((playerSSERules?.fingerprints?.size ?: 0) > 0){
             playerSSERules?.fingerprints?.forEach {
-                ChannelFingerprintOverlay(fingerprintRule = mutableStateOf(it))
+                if (it.updatedAt?.equals(PreferenceManager.getPlayerFingerTime(), true) != true){
+                    ChannelFingerprintOverlay(fingerprintRule = mutableStateOf(it))
+                }
             }
         }
 
@@ -627,21 +631,36 @@ fun CaastvVideoPlayer(
         if((playerSSERules?.forceMessages?.size ?: 0) > 0){
             dialogStates.forEachIndexed { index, dialogState ->
                 if(dialogStates[index].show) {
-                    ForceMessageDialog(
-                        showDialog = true,
-                        forceMessage = dialogState.message,
-                        onConfirm = {
-                            // Mark this dialog as dismissed
-                            dialogStates[index] = dialogState.copy(show = false)
+                    if (dialogStates[index].message.forcePush == true){
+                        ForceMessageDialog(
+                            showDialog = true,
+                            forceMessage = dialogState.message,
+                            onConfirm = {
+                            }
+                        )
+                    }else{
+                        if (dialogStates[index].message.updatedAt?.equals(PreferenceManager.getPlayerForceTime(), true) != true){
+                            ForceMessageDialog(
+                                showDialog = true,
+                                forceMessage = dialogState.message,
+                                onConfirm = {
+                                    // Mark this dialog as dismissed
+                                    dialogStates[index] = dialogState.copy(show = false)
+                                    dialogStates[index].message?.updatedAt?.let { PreferenceManager.savePlayerForceTime(it) }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
 
+
         if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
             playerSSERules?.scrollMessages?.forEach {
-                ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+                if (it.updatedAt?.equals(PreferenceManager.getPlayerScrollTime(), true) != true){
+                    ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+                }
             }
         }
 

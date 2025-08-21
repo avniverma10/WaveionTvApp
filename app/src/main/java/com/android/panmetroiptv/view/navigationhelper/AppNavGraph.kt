@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -71,27 +72,43 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
         if((globalSSERules?.forceMessages?.size ?: 0) > 0){
             dialogStates.forEachIndexed { index, dialogState ->
                 if(dialogStates[index].show) {
-                    ForceMessageDialog(
-                        showDialog = true,
-                        forceMessage = dialogState.message,
-                        onConfirm = {
-                            // Mark this dialog as dismissed
-                            dialogStates[index] = dialogState.copy(show = false)
+                    if (dialogStates[index].message.forcePush == true){
+                        ForceMessageDialog(
+                            showDialog = true,
+                            forceMessage = dialogState.message,
+                            onConfirm = {
+                            }
+                        )
+                    }else{
+                        if (dialogStates[index].message.updatedAt?.equals(PreferenceManager.getGlobalForceTime(), true) != true){
+                            ForceMessageDialog(
+                                showDialog = true,
+                                forceMessage = dialogState.message,
+                                onConfirm = {
+                                    // Mark this dialog as dismissed
+                                    dialogStates[index] = dialogState.copy(show = false)
+                                    dialogStates[index].message?.updatedAt?.let { PreferenceManager.saveGlobalForceTime(it) }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
 
         if((globalSSERules?.fingerprints?.size ?: 0) > 0){
             globalSSERules?.fingerprints?.forEach {
-                GlobalFingerprintOverlay(mutableStateOf(it))
+                if (it.updatedAt?.equals(PreferenceManager.getGlobalFingerTime(), true) != true){
+                    GlobalFingerprintOverlay(mutableStateOf(it))
+                }
             }
         }
 
         if((globalSSERules?.scrollMessages?.size ?: 0) > 0){
             globalSSERules?.scrollMessages?.forEach {
-                ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
+                if (it.updatedAt?.equals(PreferenceManager.getGlobalScrollTime(), true) != true){
+                    ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
+                }
             }
         }
 

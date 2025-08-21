@@ -30,7 +30,7 @@
 
 -keep class com.android.panmetroiptv.model.** { *; }
 -keep class com.android.panmetroiptv.utils.network.** { *; }
--keepdirectories com.example.tvapp.model.**
+-keepdirectories com.android.panmetroiptv.model.**
 
 -keep class androidx.leanback.** { *; }
 -keep interface androidx.leanback.** { *; }

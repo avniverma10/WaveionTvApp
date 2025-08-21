@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -29,7 +30,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.ui.PlayerView
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
-import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.provideMacAddress
 import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
@@ -162,20 +162,8 @@ fun ScrollingMessageOverlay(
                         isFocusable = true
                         isFocusableInTouchMode = true
                         isSelected = true
+                        setCustomMarqueeSpeed(200f)
                     }
-                    /*TextView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        )
-                        setSingleLine(true)
-                        ellipsize = TextUtils.TruncateAt.MARQUEE
-                        marqueeRepeatLimit = if (repeatCount <= 0) -1 else repeatCount - 1
-                        isFocusable = true
-                        isFocusableInTouchMode = true
-                        isSelected = true
-                        textView = this // Store reference to TextView
-                    }*/
                 },
                 update = { tv ->
                     // Measure current text width
@@ -210,6 +198,17 @@ fun ScrollingMessageOverlay(
                     }*/
                 }
             )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        // onDispose runs when the composable leaves composition
+        onDispose {
+            if(scrollMessageInfo?.value?.messageScope?.equals("GLOBAL",true) == true){
+                scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.saveGlobalScrollTime(it) }
+            }else if(scrollMessageInfo?.value?.messageScope?.equals("PLAYER",true) == true){
+                scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.savePlayerScrollTime(it) }
+            }
         }
     }
 

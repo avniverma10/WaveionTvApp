@@ -204,7 +204,7 @@ fun SplashScreen(
         val apkVersionName = updateData?.appVersion ?: "latest"
         val fileName = "tvapp_$apkVersionName.apk"
 
-        if (updateData?.checkRegionForceUpdate(PreferenceManager.getLoginResponse()?.code) == true) {
+        if (updateData?.checkRegionForceUpdate(PreferenceManager.getLoginResponse()?.provideUserRegionCode()) == true) {
             // Forced update
             CommonDialog(
                 showDialog = true,
