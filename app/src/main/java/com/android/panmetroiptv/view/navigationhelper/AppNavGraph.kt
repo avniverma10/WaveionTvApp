@@ -2,32 +2,39 @@ package com.android.panmetroiptv.view.navigationhelper
 
 import ForceMessageDialog
 import android.annotation.SuppressLint
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.panmetroiptv.NotificationBanner
+import com.android.panmetroiptv.R
+import com.android.panmetroiptv.model.data.login.LoginInfo
+import com.android.panmetroiptv.model.data.sseresponse.Fingerprint
+import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.epg.EPGScreen
 import com.android.panmetroiptv.view.panmetro.genre.PanmetroGenreScreen
 import com.android.panmetroiptv.view.panmetro.login.PanmetroLoginScreen
 import com.android.panmetroiptv.view.panmetro.player.CaastvVideoPlayer
-import com.android.panmetroiptv.view.panmetro.player.PanMetroVideoPlayer
 import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.profile.ProfileScreen
 import com.android.panmetroiptv.view.splash.SplashScreen
+import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.state.ForceMessageDialogState
@@ -40,16 +47,66 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     //In your composable function or ViewModel
-    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+    var userInfo = remember { mutableStateOf<LoginInfo?>(null)}
+    var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
+    val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
+    val visibleFingerprint = remember { mutableStateListOf<Fingerprint>() }
+    val context = LocalContext.current
+
 
     LaunchedEffect(globalSSERules) {
-        if((globalSSERules?.forceMessages?.size ?: 0) > 0){
-            dialogStates.clear()
-            globalSSERules?.forceMessages?.forEach { message ->
-                dialogStates.add(ForceMessageDialogState(message,true))
+        userInfo.value = PreferenceManager.getLoginResponse()
+        visibleFingerprint.clear()
+        visibleMessages.clear()
+        visibleForce.clear()
+        globalSSERules?.forceMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getForceUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
             }
-        }else{
-            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+
+            if (shouldShow) {
+                visibleForce.add(ForceMessageDialogState(item,true))
+            }
+        }
+
+        //handle it for scroll message
+        globalSSERules?.scrollMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getScrollUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                 visibleMessages.add(item)
+            }
+        }
+
+        //handle it for fingerprint
+        globalSSERules?.fingerprints?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getFingerUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                visibleFingerprint.add(item)
+            }
         }
     }
 
@@ -69,61 +126,107 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
         }
 
         //Show dialogs
-        if((globalSSERules?.forceMessages?.size ?: 0) > 0){
-            dialogStates.forEachIndexed { index, dialogState ->
-                if(dialogStates[index].show) {
-                    if (dialogStates[index].message.forcePush == true){
+        visibleForce.forEachIndexed { index, dialogState ->
+            if(visibleForce[index].show) {
+                if (visibleForce[index].message.forcePush == true){
+                    ForceMessageDialog(
+                        showDialog = true,
+                        forceMessage = dialogState.message,
+                        onConfirm = {
+                        }
+                    )
+                }else{
+                    if (visibleForce[index].message.updatedAt?.equals(PreferenceManager.getForceUpdatedAt(visibleForce[index].message._id?:""), true) != true){
                         ForceMessageDialog(
                             showDialog = true,
                             forceMessage = dialogState.message,
                             onConfirm = {
+
+                                // Remove this message from the visible list
+                                visibleMessages.removeIf { it.updatedAt == visibleForce[index].message.updatedAt }
+                                // Mark this dialog as dismissed
+                                visibleForce[index] = dialogState.copy(show = false)
+                                visibleForce[index].message?.let {
+                                    PreferenceManager.saveForceUpdatedAt((it._id?:""),(it.updatedAt?:""))
+                                }
                             }
                         )
-                    }else{
-                        if (dialogStates[index].message.updatedAt?.equals(PreferenceManager.getGlobalForceTime(), true) != true){
-                            ForceMessageDialog(
-                                showDialog = true,
-                                forceMessage = dialogState.message,
-                                onConfirm = {
-                                    // Mark this dialog as dismissed
-                                    dialogStates[index] = dialogState.copy(show = false)
-                                    dialogStates[index].message?.updatedAt?.let { PreferenceManager.saveGlobalForceTime(it) }
-                                }
-                            )
+                    }
+                }
+            }
+        }
+
+        // Display only visible fingerprint
+        visibleFingerprint.forEach { fingerprint ->
+            key(fingerprint._id) { // Important for proper recomposition
+                GlobalFingerprintOverlay(fingerprint,
+                    onFinish = { updatedAt ->
+                        // Remove this message from the visible list
+                        visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                        // Also save to preferences
+                        fingerprint._id?.let { id ->
+                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                        }
+                    })
+            }
+        }
+        // Display only visible messages
+        visibleMessages.forEach { message ->
+            key(message._id) { // Important for proper recomposition
+                ScrollingMessageOverlay(
+                    scrollMessageInfo = message,
+                    onFinish = { updatedAt ->
+                        // Remove this message from the visible list
+                        visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                        // Also save to preferences
+                        message._id?.let { id ->
+                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
                         }
                     }
-                }
-            }
-        }
-
-        if((globalSSERules?.fingerprints?.size ?: 0) > 0){
-            globalSSERules?.fingerprints?.forEach {
-                if (it.updatedAt?.equals(PreferenceManager.getGlobalFingerTime(), true) != true){
-                    GlobalFingerprintOverlay(mutableStateOf(it))
-                }
-            }
-        }
-
-        if((globalSSERules?.scrollMessages?.size ?: 0) > 0){
-            globalSSERules?.scrollMessages?.forEach {
-                if (it.updatedAt?.equals(PreferenceManager.getGlobalScrollTime(), true) != true){
-                    ScrollingMessageOverlay( scrollMessageInfo = mutableStateOf(it))
-                }
+                )
             }
         }
 
 
-        if((globalSSERules?.packageUpdates?.size ?: 0) > 0){
-            globalSSERules?.packageUpdates?.forEach {
-                if(it.packageUpdate == 1){
-                    PreferenceManager.getLoginResponse()?.customerNumber?.let {
-                        sharedViewModel.userPackageUpdate(customerNumber = it)
-                        sharedViewModel.provideGlobalSSERequest()
-                        sharedViewModel.packageUpdate()
-                    }
+        globalSSERules?.packageUpdates?.distinct()?.forEach {
+            if(it.packageUpdate == 1){
+                it.packageID?.let {pkgId->
+                    sharedViewModel.customerChannelUpdates(arrayListOf(pkgId))
                 }
             }
         }
+
+        globalSSERules?.userUpdates?.forEach {
+            if(userInfo?.value?.userId?.equals(it.userId) == true){
+                userInfo?.value?.customerNumber?.let {
+                    sharedViewModel.userPackageUpdate(customerNumber = it, isPkgUpdateOnly = true)
+                    sharedViewModel.provideGlobalSSERequest()
+                    // sharedViewModel.packageUpdate()
+                }
+            }
+        }
+
+        globalSSERules?.blockUser?.forEach {
+            if(PreferenceManager.getUsername()?.equals(it.username) == true && it.isBlocked == 1){
+                CommonDialog(
+                    showDialog = true,
+                    message = null,
+                    painter = painterResource(id = R.drawable.media_error),
+                    errorCode = null,
+                    errorMessage = "Temporarily blocked. Please contact your provider to continue.",
+                    confirmButtonText = "Exit",
+                    onConfirm = {
+                        (context as? Activity)?.finishAffinity()
+                        android.os.Process.killProcess(android.os.Process.myPid())
+                    },
+                    dismissButtonText = null,
+                    onDismiss = {}
+                )
+            }
+        }
+
     }
 }
 

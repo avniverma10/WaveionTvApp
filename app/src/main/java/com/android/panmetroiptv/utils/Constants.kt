@@ -1,9 +1,6 @@
 package com.android.panmetroiptv.utils
 
-import com.android.panmetroiptv.model.data.login.ChannelResult
-
 object Constants {
-    var userChannelResult:List<ChannelResult>?= null
     const val BUILD_TYPE = "release"//"debug"//
     const val HEADER_TOKEN = "BUAA8JJkzfMI56y4BhEhU"
     const val DRM_HEADER_TOKEN = "wmo3iTxhwMxm37F7Sex3v"//"BUAA8JJkzfMI56y4BhEhU"//

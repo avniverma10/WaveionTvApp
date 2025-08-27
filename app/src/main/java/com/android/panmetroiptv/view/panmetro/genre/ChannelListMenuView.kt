@@ -227,6 +227,30 @@ private fun handleKeyEvents(
     if (keyEvent.type != KeyEventType.KeyDown) return false
 
     return when (keyEvent.nativeKeyEvent.keyCode) {
+        KeyEvent.KEYCODE_CHANNEL_UP -> {
+            if (focusedIndex > 0) {
+                onIndexChange(focusedIndex - 1)
+            }
+            true
+        }
+        KeyEvent.KEYCODE_PAGE_UP -> {
+            if (focusedIndex > 0) {
+                onIndexChange(focusedIndex - 1)
+            }
+            true
+        }
+        KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+            if (focusedIndex < filteredChannels.lastIndex) {
+                onIndexChange(focusedIndex + 1)
+            }
+            true
+        }
+        KeyEvent.KEYCODE_PAGE_DOWN -> {
+            if (focusedIndex < filteredChannels.lastIndex) {
+                onIndexChange(focusedIndex + 1)
+            }
+            true
+        }
         KeyEvent.KEYCODE_DPAD_LEFT -> {
             onNavigateToGenre()
             true

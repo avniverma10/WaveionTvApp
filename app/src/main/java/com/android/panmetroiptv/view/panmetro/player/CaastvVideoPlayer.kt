@@ -22,6 +22,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -48,6 +49,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -66,13 +68,13 @@ import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
 import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
-import com.android.panmetroiptv.utils.Constants
+import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
+import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.uicomponent.addWatermarkToPlayer
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ChannelFingerprintOverlay
-import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.state.ForceMessageDialogState
 import com.android.panmetroiptv.view.uicomponent.search.InputOverlay
@@ -89,7 +91,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
-import kotlin.text.get
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -104,8 +105,11 @@ fun CaastvVideoPlayer(
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val appPkgChannels by sharedViewModel.appPkgChannels.collectAsStateWithLifecycle()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
-    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+    var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
+    val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
+    val visibleFingerprint = remember { mutableStateListOf<PlayerFingerprint>() }
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -128,6 +132,7 @@ fun CaastvVideoPlayer(
     var switchJob by remember { mutableStateOf<Job?>(null) }
 
     var isAudio = remember { mutableStateOf(false) }
+    var isDRMUrl = remember { mutableStateOf(false) }
     var isYoutube = remember { mutableStateOf(false) }
     val youtubeId = remember { mutableStateOf<String?>(null) }
     // --- Channel‑number search state -------------------------------
@@ -145,14 +150,59 @@ fun CaastvVideoPlayer(
     }
 
 
+
     LaunchedEffect(playerSSERules) {
-        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
-            dialogStates.clear()
-            playerSSERules?.forceMessages?.forEach { message ->
-                dialogStates.add(ForceMessageDialogState(message,true))
+        visibleFingerprint.clear()
+        visibleMessages.clear()
+        visibleForce.clear()
+        playerSSERules?.forceMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getForceUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
             }
-        }else{
-            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+
+            if (shouldShow) {
+                visibleForce.add(ForceMessageDialogState(item,true))
+            }
+        }
+
+        //handle it for scroll message
+        playerSSERules?.scrollMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getScrollUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                visibleMessages.add(item)
+            }
+        }
+
+        //handle it for fingerprint
+        playerSSERules?.fingerprints?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getFingerUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                visibleFingerprint.add(item)
+            }
         }
     }
 
@@ -312,12 +362,45 @@ fun CaastvVideoPlayer(
         }
     }
 
+
+    suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){
+        val mediaItem = if (isDRMUrl.value) {
+            context.provideCryptoGuardMediaSource(
+                contentUrl = videoUrl,
+                contentId = assetId
+            )
+        } else {
+            MediaItem.fromUri(videoUrl)
+        }
+
+        if(isDRMUrl.value && sharedViewModel.getUserEnableToPlayChannel(assetId.toString()) != true){
+            val (code, title, message) = playerErrorHandling(6200)
+            errorCodeState = code
+            errorMessageState = message
+            showErrorDialog = true
+            exoPlayer.clearMediaItems()
+        }else{
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+            //make fingerprint request
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
+        }
+    }
+
+
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
         selectedChannelIndex.intValue = epgList.indexOfFirst {
             it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
         }
         selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedChannel.content?.drmType.equals("cryptoguard", ignoreCase = true)){
+                isDRMUrl.value = true
+            }else{
+                isDRMUrl.value = false
+            }
+
             if(selectedChannel?.content?.contentType.equals("audio",true)){
                 isAudio.value = true
             }else if(selectedChannel?.content?.contentType.equals("youtube",true)){
@@ -331,35 +414,21 @@ fun CaastvVideoPlayer(
             exoPlayer.clearMediaItems()
             showErrorDialog = false
             if(!isYoutube.value) {
-                val mediaItem = if (selectedChannel?.content?.drmType.equals(
-                        "cryptoguard",
-                        ignoreCase = true
-                    )
-                ) {
-                    context.provideCryptoGuardMediaSource(
-                        contentUrl = selectedChannel?.content?.videoUrl,
-                        contentId = selectedChannel?.content?.assetId
-                    )
-                } else {
-                    MediaItem.fromUri(url)
-                }
-
-                /*if(Constants.userChannelResult?.any{it.name.equals(selectedChannel.content?.title,true)} == false){
-                    val (code, title, message) = playerErrorHandling(6200)
-                    errorCodeState = code
-                    errorMessageState = message
-                    showErrorDialog = true
-                }*/
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
-
-                //make fingerprint request
-                sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
-
+                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedChannel.content?.assetId )
             }
         }
     }
+
+
+
+    LaunchedEffect(appPkgChannels) {
+        if(!isYoutube.value) {
+            selectedChannel.content?.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.content?.assetId )
+            }
+        }
+    }
+
 
     fun commitChannelSearch(numberStr: String) {
         val number = numberStr.toIntOrNull() ?: return
@@ -381,6 +450,86 @@ fun CaastvVideoPlayer(
                 showOverlay()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
+                        KeyEvent.KEYCODE_CHANNEL_UP -> {
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_PAGE_UP -> {
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_F1 -> {
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_PLUS -> {
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_PAGE_DOWN -> {
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_F2 -> {
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        KeyEvent.KEYCODE_MINUS -> {
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
                         in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
                             val digit = (code - KeyEvent.KEYCODE_0).toString()
                             if(typedDigits.length<=3) {
@@ -619,48 +768,70 @@ fun CaastvVideoPlayer(
             }
         }
 
-        if((playerSSERules?.fingerprints?.size ?: 0) > 0){
-            playerSSERules?.fingerprints?.forEach {
-                if (it.updatedAt?.equals(PreferenceManager.getPlayerFingerTime(), true) != true){
-                    ChannelFingerprintOverlay(fingerprintRule = mutableStateOf(it))
-                }
-            }
-        }
+
 
         //Show dialogs
-        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
-            dialogStates.forEachIndexed { index, dialogState ->
-                if(dialogStates[index].show) {
-                    if (dialogStates[index].message.forcePush == true){
+        visibleForce.forEachIndexed { index, dialogState ->
+            if(visibleForce[index].show) {
+                if (visibleForce[index].message.forcePush == true){
+                    ForceMessageDialog(
+                        showDialog = true,
+                        forceMessage = dialogState.message,
+                        onConfirm = {
+                        }
+                    )
+                }else{
+                    if (visibleForce[index].message.updatedAt?.equals(PreferenceManager.getForceUpdatedAt(visibleForce[index].message._id?:""), true) != true){
                         ForceMessageDialog(
                             showDialog = true,
                             forceMessage = dialogState.message,
                             onConfirm = {
+                                // Remove this message from the visible list
+                                visibleMessages.removeIf { it.updatedAt == visibleForce[index].message.updatedAt }
+                                // Mark this dialog as dismissed
+                                visibleForce[index] = dialogState.copy(show = false)
+                                visibleForce[index].message?.let {
+                                    PreferenceManager.saveForceUpdatedAt((it._id?:""),(it.updatedAt?:""))
+                                }
                             }
                         )
-                    }else{
-                        if (dialogStates[index].message.updatedAt?.equals(PreferenceManager.getPlayerForceTime(), true) != true){
-                            ForceMessageDialog(
-                                showDialog = true,
-                                forceMessage = dialogState.message,
-                                onConfirm = {
-                                    // Mark this dialog as dismissed
-                                    dialogStates[index] = dialogState.copy(show = false)
-                                    dialogStates[index].message?.updatedAt?.let { PreferenceManager.savePlayerForceTime(it) }
-                                }
-                            )
-                        }
                     }
                 }
             }
         }
 
 
-        if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
-            playerSSERules?.scrollMessages?.forEach {
-                if (it.updatedAt?.equals(PreferenceManager.getPlayerScrollTime(), true) != true){
-                    ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
-                }
+        // Display only visible messages
+        visibleFingerprint.forEach { fingerprint ->
+            key(fingerprint._id) { // Important for proper recomposition
+                ChannelFingerprintOverlay(fingerprintRule = fingerprint,
+                    onFinish = { updatedAt ->
+                        // Remove this message from the visible list
+                        visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                        // Also save to preferences
+                        fingerprint._id?.let { id ->
+                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                        }
+                    })
+            }
+        }
+
+        // Display only visible messages
+        visibleMessages.forEach { message ->
+            key(message._id) { // Important for proper recomposition
+                ScrollingMessageOverlay(
+                    scrollMessageInfo = message,
+                    onFinish = { updatedAt ->
+                        // Remove this message from the visible list
+                        visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                        // Also save to preferences
+                        message._id?.let { id ->
+                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                        }
+                    }
+                )
             }
         }
 

@@ -25,6 +25,8 @@ class PanmetroApplication : Application(), CoreComponentProvider, LifecycleObser
     }
     private val wtvEGPLiveData: MutableLiveData<List<EPGDataItem>> = MutableLiveData()
     private val wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
+    private val isUserBlocked: MutableLiveData<Boolean> = MutableLiveData()
+    private val wtvPkgChannel: MutableLiveData<HashMap<String, MutableSet<String>>> = MutableLiveData()
     private val wtvGenre: MutableLiveData<List<WTVGenre>> = MutableLiveData()
     private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
@@ -66,6 +68,19 @@ class PanmetroApplication : Application(), CoreComponentProvider, LifecycleObser
     override fun initializeAppManifest(data: WTVManifest) {
        this.wtvAppManifest.postValue(data)
     }
+
+
+    override fun updatePkgChannel(pkg:String,channelData: MutableSet<String>) {
+        this.wtvPkgChannel.value?.put(pkg,channelData)
+    }
+
+    override fun providePkgChannel(): LiveData<HashMap<String, MutableSet<String>>> = wtvPkgChannel
+
+    override fun updateUserBlocked(username: String, isBlocked: Boolean) {
+        this.isUserBlocked.postValue(isBlocked)
+    }
+
+    override fun provideIsUserBlocked(): LiveData<Boolean> = isUserBlocked
 
     override fun provideGenreLiveData(): LiveData<List<WTVGenre>> = wtvGenre
 

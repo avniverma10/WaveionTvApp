@@ -1,6 +1,8 @@
 package com.android.panmetroiptv.extensions
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
 import android.media.MediaDrm
 import android.media.UnsupportedSchemeException
@@ -8,14 +10,22 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Environment
 import android.provider.Settings
+import android.util.Base64
+import android.util.DisplayMetrics
 import android.util.Log
+import android.view.Display
 import androidx.annotation.RequiresApi
 import androidx.media3.common.C
 import com.android.panmetroiptv.BuildConfig
+import java.io.RandomAccessFile
+import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
+import java.util.UUID
+import kotlin.text.uppercase
 
 
 @SuppressLint("HardwareIds", "MissingPermission")
@@ -39,11 +49,11 @@ fun Context.getIptvDeviceInfo(): Map<String, String?> {
         info["Build Time"] = Build.TIME.toString()
         info["SDK Version"] = Build.VERSION.SDK_INT.toString()
         info["Release"] = Build.VERSION.RELEASE
-        /*info["Serial"] = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        info["Serial"] = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Build.getSerial()
         } else {
             Build.SERIAL
-        }*/
+        }
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -74,6 +84,37 @@ fun Context.getIptvDeviceInfo(): Map<String, String?> {
     return info
 }
 
+
+fun getSystemAllInfo(): String{
+    val sb = StringBuilder()
+    try {
+        sb.appendLine("Brand: ${Build.BRAND}")
+        sb.appendLine("Manufacturer: ${Build.MANUFACTURER}")
+        sb.appendLine("Model: ${Build.MODEL}")
+        sb.appendLine("PRODUCT: ${Build.PRODUCT}")
+        sb.appendLine("DEVICE: ${Build.DEVICE}")
+        sb.appendLine("BOARD: ${Build.BOARD}")
+        sb.appendLine("HARDWARE: ${Build.HARDWARE}")
+        sb.appendLine("BOOTLOADER: ${Build.BOOTLOADER}")
+        sb.appendLine("HOST: ${Build.HOST}")
+        sb.appendLine("FINGERPRINT: ${Build.FINGERPRINT}")
+        sb.appendLine("DISPLAY: ${Build.DISPLAY}")
+        sb.appendLine("Build ID: ${Build.ID}")
+        sb.appendLine("Build TIME: ${Build.TIME.toString()}")
+        sb.appendLine("Build VERSION: ${ Build.VERSION.SDK_INT.toString()}")
+        sb.appendLine("Build RELEASE: ${ Build.VERSION.RELEASE}")
+        sb.appendLine("Serial: ${ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Build.getSerial()
+        } else {
+            Build.SERIAL
+        }}")
+    } catch (e: Exception) {
+        sb.appendLine("HDMI Info: Not available")
+    }
+
+    return sb.toString()
+}
+
 fun Context.networkType():String?{
     // Network Info
     try {
@@ -101,7 +142,7 @@ fun Context.networkType():String?{
 
 @SuppressLint("HardwareIds")
 fun Context.provideMacAddress():String?{
-    return try {  getVendorMacSuffixDecimal()?.buildFullMac()?: getMacAddress()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    return try {  getVendorMacSuffixDecimal()?.buildFullMac()?: Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID).uppercase()
     } catch (e: Exception) {
         e.printStackTrace()
         null
@@ -221,4 +262,126 @@ fun logAllDrmInfo() {
             // not supported—ignore
         }
     }
+}
+
+
+fun Context.getTestingDeviceInfo(): String {
+    val sb = StringBuilder()
+
+    // --- Basic Device Info ---
+    /*sb.appendLine("📱 DEVICE INFO")
+    sb.appendLine("Manufacturer: ${Build.MANUFACTURER}")
+    sb.appendLine("Brand       : ${Build.BRAND}")
+    sb.appendLine("Model       : ${Build.MODEL}")
+    sb.appendLine("Device      : ${Build.DEVICE}")
+    sb.appendLine("Product     : ${Build.PRODUCT}")
+    sb.appendLine("Board       : ${Build.BOARD}")
+    sb.appendLine("Hardware    : ${Build.HARDWARE}")
+    sb.appendLine("Bootloader  : ${Build.BOOTLOADER}")
+    sb.appendLine("Fingerprint : ${Build.FINGERPRINT}")
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        sb.appendLine("Serial      : ${Build.SERIAL}")
+    }
+
+    // --- CPU Info ---
+    sb.appendLine("\n⚙ CPU INFO")
+    sb.appendLine("Supported ABIs: ${Build.SUPPORTED_ABIS.joinToString()}")
+    try {
+        val reader = RandomAccessFile("/proc/cpuinfo", "r")
+        var line: String?
+        while (reader.readLine().also { line = it } != null) {
+            sb.appendLine(line)
+        }
+        reader.close()
+    } catch (e: Exception) {
+        sb.appendLine("CPU Info: Not accessible")
+    }
+
+    // --- OS Info ---
+    sb.appendLine("\n🖥 OS INFO")
+    sb.appendLine("Android Version : ${Build.VERSION.RELEASE}")
+    sb.appendLine("SDK Int         : ${Build.VERSION.SDK_INT}")
+    sb.appendLine("Security Patch  : ${Build.VERSION.SECURITY_PATCH}")
+    sb.appendLine("Build ID        : ${Build.ID}")
+
+     */
+// --- Identifiers ---
+    sb.appendLine("\n🔑 IDENTIFIERS")
+
+    val androidId = Settings.Secure.getString(
+        contentResolver,
+        Settings.Secure.ANDROID_ID
+    )
+    sb.appendLine("Android ID : $androidId")
+
+    // --- RAM Info ---
+    sb.appendLine("\n💾 MEMORY")
+    val actManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val memInfo = ActivityManager.MemoryInfo()
+    actManager.getMemoryInfo(memInfo)
+    sb.appendLine("Total RAM       : ${memInfo.totalMem / (1024 * 1024)} MB")
+    sb.appendLine("Available RAM   : ${memInfo.availMem / (1024 * 1024)} MB")
+
+    // --- Storage Info ---
+    val stat = Environment.getDataDirectory().usableSpace
+    val total = Environment.getDataDirectory().totalSpace
+    sb.appendLine("Internal Storage: ${total / (1024 * 1024)} MB")
+    sb.appendLine("Available Storage: ${stat / (1024 * 1024)} MB")
+
+
+    // --- Network Info ---
+    sb.appendLine("\n🌐 NETWORK")
+    try {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = cm.activeNetworkInfo
+        sb.appendLine("Connection Type: ${activeNetwork?.typeName ?: "Unknown"}")
+
+        // Local IP
+        val interfaces = NetworkInterface.getNetworkInterfaces()
+        interfaces.iterator().forEach { intf ->
+            intf.inetAddresses.iterator().forEach { addr ->
+                if (!addr.isLoopbackAddress && addr is InetAddress) {
+                    sb.appendLine("IP Address: ${addr.hostAddress}")
+                }
+            }
+        }
+
+        // MAC (some devices restrict this)
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val mac = wifiManager.connectionInfo.macAddress
+        sb.appendLine("MAC Address: $mac")
+
+        // SSID (if Wi-Fi)
+        sb.appendLine("SSID: ${wifiManager.connectionInfo.ssid}")
+    } catch (e: Exception) {
+        sb.appendLine("Network Info: Not accessible")
+    }
+
+    // --- DRM (Widevine) ---
+    sb.appendLine("\n🔒 DRM (Widevine)")
+    try {
+        val widevineUUID = UUID.fromString("edef8ba9-79d6-4ace-a3c8-27dcd51d21ed")
+        val drm = MediaDrm(widevineUUID)
+        val widevineId = drm.getPropertyByteArray(MediaDrm.PROPERTY_DEVICE_UNIQUE_ID)
+        sb.appendLine("Widevine ID (Base64): ${Base64.encodeToString(widevineId, Base64.NO_WRAP)}")
+        sb.appendLine("Vendor : ${drm.getPropertyString(MediaDrm.PROPERTY_VENDOR)}")
+        sb.appendLine("Version: ${drm.getPropertyString(MediaDrm.PROPERTY_VERSION)}")
+        sb.appendLine("Description: ${drm.getPropertyString(MediaDrm.PROPERTY_DESCRIPTION)}")
+        drm.close()
+    } catch (e: Exception) {
+        sb.appendLine("Widevine: Not available")
+    }
+
+    // --- HDMI Status (Android TV/FireTV only) ---
+    sb.appendLine("\n🔌 HDMI STATUS")
+    try {
+        val hdmiState = applicationContext.registerReceiver(null,
+            android.content.IntentFilter("android.intent.action.HDMI_PLUGGED"))
+        val plugged = hdmiState?.getBooleanExtra("state", false) ?: false
+        sb.appendLine("HDMI Plugged: $plugged")
+    } catch (e: Exception) {
+        sb.appendLine("HDMI Info: Not available")
+    }
+
+    return sb.toString()
 }

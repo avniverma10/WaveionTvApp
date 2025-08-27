@@ -2,6 +2,7 @@ package com.android.panmetroiptv.view.uicomponent.fingerprint
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -27,7 +28,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.ui.PlayerView
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
 import com.android.panmetroiptv.extensions.provideMacAddress
@@ -36,14 +36,14 @@ import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.uicomponent.fingerprint.state.MarqueeTextViewWithCallback
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 
 
 @Composable
 fun ScrollingMessageOverlay(
-    player: PlayerView? = null,
-    scrollMessageInfo: MutableState<ScrollMessage>
+    scrollMessageInfo: ScrollMessage,
+    onFinish:(String)-> Unit
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -51,12 +51,12 @@ fun ScrollingMessageOverlay(
 
     // Colors with fallbacks
 
-    val fontColor = remember(scrollMessageInfo.value.fontColorHex, scrollMessageInfo.value.fontTransparency) {
+    val fontColor = remember(scrollMessageInfo.fontColorHex, scrollMessageInfo.fontTransparency) {
         try {
-            val colorHex = scrollMessageInfo.value.fontColorHex ?: "#FFFFFF"
+            val colorHex = scrollMessageInfo.fontColorHex ?: "#FFFFFF"
             val baseColor = Color(android.graphics.Color.parseColor(colorHex))
 
-            val transparency = scrollMessageInfo.value.fontTransparency?.getFloatValue() ?: 0.25f
+            val transparency = scrollMessageInfo.fontTransparency?.getFloatValue() ?: 0.25f
             val alpha = 1f - transparency.coerceIn(0f, 1f)
 
             baseColor.copy(alpha = alpha)
@@ -65,12 +65,12 @@ fun ScrollingMessageOverlay(
         }
     }
 
-    val bgColor = remember(scrollMessageInfo.value.backgroundColorHex, scrollMessageInfo.value.backgroundTransparency) {
+    val bgColor = remember(scrollMessageInfo.backgroundColorHex, scrollMessageInfo.backgroundTransparency) {
         try {
-            val colorHex = scrollMessageInfo.value.backgroundColorHex ?: "#FFFFFF"
+            val colorHex = scrollMessageInfo.backgroundColorHex ?: "#FFFFFF"
             val baseColor = Color(android.graphics.Color.parseColor(colorHex))
 
-            val transparency = scrollMessageInfo.value.backgroundTransparency?.getFloatValue() ?: 0.25f
+            val transparency = scrollMessageInfo.backgroundTransparency?.getFloatValue() ?: 0.25f
             val alpha = 1f - transparency.coerceIn(0f, 1f)
 
             baseColor.copy(alpha = alpha)
@@ -81,30 +81,29 @@ fun ScrollingMessageOverlay(
 
     // Calculate screen width in pixels
     val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-    val screenHeightPx = with(density) {player?.height?.dp?.toPx()}?:with(density) { configuration.screenHeightDp.dp.toPx() }
+    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
     // Measure text width in pixels
     val yOffsetDp = with(density) {   (screenHeightPx * .85f).toDp() }
 
     // Processed message with pattern replacements
-    var processedMessage = remember(scrollMessageInfo.value.message) {
-         context.checkPatternMatchInfo(scrollMessageInfo.value.message.orEmpty()).trimIndent()
+    var processedMessage = remember(scrollMessageInfo.message) {
+         context.checkPatternMatchInfo(scrollMessageInfo.message.orEmpty()).trimIndent()
     }
 
     var visible by remember { mutableStateOf(true) }
-    val repeatCount = remember { scrollMessageInfo.value.repeatCount?.toString()?.getIntValue() ?: -1 }
+    val repeatCount = remember { scrollMessageInfo.repeatCount?.toString()?.getIntValue() ?: -1 }
     var currentRepeats by remember { mutableStateOf(0) }
     // Calculate font size safely
-    var fontSize = remember(scrollMessageInfo.value.fontSizeDp) {
-        scrollMessageInfo.value.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
+    var fontSize = remember(scrollMessageInfo.fontSizeDp) {
+        scrollMessageInfo.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
     }
     var textWidth by remember { mutableStateOf(0) }
     var containerWidth by remember { mutableStateOf(0) }
-    var durationMs by remember { mutableStateOf(0L) }
 
     // Get duration from scrollMessageInfo (in seconds, convert to milliseconds)
     /*val durationSeconds = remember {
-        scrollMessageInfo.value.durationSec ?: 1
+        scrollMessageInfo.durationSec ?: 1
     }
     val durationMs = durationSeconds * 1000L
 
@@ -116,10 +115,10 @@ fun ScrollingMessageOverlay(
         }
     }*/
 
-    LaunchedEffect(visible, scrollMessageInfo.value.durationSec) {
-        val isInfinite = (scrollMessageInfo.value.durationSec ?: 0) == -1
+    /*LaunchedEffect(visible, scrollMessageInfo.durationSec) {
+        val isInfinite = (scrollMessageInfo.durationSec ?: 0) == -1
         if (visible) {
-            durationMs = (if(isInfinite){ Int.MAX_VALUE } else (scrollMessageInfo.value.durationSec ?: 1)) * 1000L
+            durationMs = (if(isInfinite){ Int.MAX_VALUE } else (scrollMessageInfo.durationSec ?: 1)) * 1000L
 
             if (durationMs > 0 && !isInfinite) {
                 // Start a new coroutine that can be cancelled if duration changes
@@ -131,7 +130,55 @@ fun ScrollingMessageOverlay(
                 // Cancel the previous job if duration changes
                 awaitCancellation()
                 job.cancel()
+
+                if(scrollMessageInfo?.value?.messageScope?.equals("GLOBAL",true) == true){
+                    scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.saveGlobalScrollTime(it) }
+                }else if(scrollMessageInfo?.value?.messageScope?.equals("PLAYER",true) == true){
+                    scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.savePlayerScrollTime(it) }
+                }
             }
+        }
+    }*/
+
+    LaunchedEffect(visible, scrollMessageInfo.durationSec) {
+        if (!visible) return@LaunchedEffect
+
+        val durationSec = scrollMessageInfo.durationSec ?: 1
+        val isInfinite = durationSec == -1
+
+        if (isInfinite) {
+            // Wait indefinitely for infinite duration
+            try {
+                Log.e("sTimestamp >isInfinite:","$isInfinite $durationSec")
+
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                // Clean exit
+            }
+            return@LaunchedEffect
+        }
+
+        val durationMs = durationSec * 1000L
+        if (durationMs <= 0) {
+            visible = false // Hide immediately for zero/negative duration
+            return@LaunchedEffect
+        }
+
+        try {
+            delay(durationMs)
+            visible = false
+            scrollMessageInfo.updatedAt?.let { onFinish(it) }
+
+            // Save timestamp AFTER successful completion
+           /* scrollMessageInfo?.let { info ->
+                info._id?.let { id ->
+                    info.updatedAt?.let { updatedAt ->
+                        PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                    }
+                }
+            }*/
+        } catch (e: CancellationException) {
+            // Don't save timestamp if cancelled
         }
     }
 
@@ -151,7 +198,7 @@ fun ScrollingMessageOverlay(
                 factory = { ctx ->
 
                     MarqueeTextViewWithCallback(ctx, onMarqueeComplete = {
-                        visible = false
+
                     }).apply {
                         layoutParams = ViewGroup.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -162,7 +209,6 @@ fun ScrollingMessageOverlay(
                         isFocusable = true
                         isFocusableInTouchMode = true
                         isSelected = true
-                        setCustomMarqueeSpeed(200f)
                     }
                 },
                 update = { tv ->
@@ -189,7 +235,7 @@ fun ScrollingMessageOverlay(
                     tv.textSize = fontSize.value
 
                     // Set duration or repeat count
-                    (tv as MarqueeTextViewWithCallback).setDuration(durationMs)
+                   // (tv as MarqueeTextViewWithCallback).setDuration(durationMs)
 
                     /*if (durationMs > 0) {
                         (tv as MarqueeTextViewWithCallback).setDuration(durationMs)
@@ -204,10 +250,16 @@ fun ScrollingMessageOverlay(
     DisposableEffect(Unit) {
         // onDispose runs when the composable leaves composition
         onDispose {
-            if(scrollMessageInfo?.value?.messageScope?.equals("GLOBAL",true) == true){
-                scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.saveGlobalScrollTime(it) }
-            }else if(scrollMessageInfo?.value?.messageScope?.equals("PLAYER",true) == true){
-                scrollMessageInfo?.value?.updatedAt?.let { PreferenceManager.savePlayerScrollTime(it) }
+            // Only save if we're being disposed but the timer hasn't completed yet
+            if (visible) {
+                scrollMessageInfo?.let { info ->
+                    info._id?.let { id ->
+                        info.updatedAt?.let { updatedAt ->
+                            Log.w("ScrollingMessage", "Message disposed before completion: $id")
+                            // Optional: decide if you want to save partial progress
+                        }
+                    }
+                }
             }
         }
     }

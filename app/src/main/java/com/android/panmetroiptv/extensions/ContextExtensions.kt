@@ -49,6 +49,24 @@ fun Context.appManifestLiveData() =
 fun Context.applyAppManifest(data: WTVManifest) =
     (applicationContext as? CoreComponentProvider)?.initializeAppManifest(data)
 
+
+fun Context.appPkgChannelsLiveData() =
+    (applicationContext as? CoreComponentProvider)?.providePkgChannel()
+        ?: throw IllegalStateException("appPkgChannelsLiveData is null: $applicationContext")
+
+
+fun Context.updatePkgChannels(pkg:String,channels: MutableSet<String>) =
+    (applicationContext as? CoreComponentProvider)?.updatePkgChannel(pkg,channels)
+
+fun Context.isUserBlockedLiveData() =
+    (applicationContext as? CoreComponentProvider)?.provideIsUserBlocked()
+        ?: throw IllegalStateException("appIsUserBlockedLiveData is null: $applicationContext")
+
+
+fun Context.updatesUserBlocked(username:String,isUserBlocked: Boolean) =
+    (applicationContext as? CoreComponentProvider)?.updateUserBlocked(username,isUserBlocked)
+
+
 fun Context.appGenreLiveData() =
     (applicationContext as? CoreComponentProvider)?.provideGenreLiveData()
         ?: throw IllegalStateException("Manifest is null: $applicationContext")

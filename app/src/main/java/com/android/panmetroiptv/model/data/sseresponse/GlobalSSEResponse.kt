@@ -8,15 +8,19 @@ data class GlobalSSEResponse(
     val fingerprints: List<Fingerprint>,
     val scrollMessages: List<ScrollMessage>,
     val forceMessages: List<ForceMessage>,
+    @SerializedName("packageUpdates")
     val packageUpdates: List<PackageUpdate>,
-    val userUpdates: List<UserUpdate>
+    @SerializedName("userUpdates")
+    val userUpdates: List<UserUpdate>,
+    @SerializedName("userBlocks")
+    val blockUser: List<BlockUser>
 )
 
 @Keep
 data class Fingerprint(
     @SerializedName("__v")
-    val version: Int??=null,
-    val _id: String??=null,
+    val version: Int?=null,
+    val _id: String?=null,
     val backgroundColorHex: String?="#000000",
     val backgroundTransparency:  String?=".5",
     val createdAt: String?=null,
@@ -26,10 +30,10 @@ data class Fingerprint(
     val fingerprintScope: String??=null,
     val fingerprintType: String?="COVERT", // "COVERT" or "OVERT",
     val fontColorHex: String?="#ffffff",
-    val fontFamily: String??=null,
+    val fontFamily: String?=null,
     val fontSizeDp: Int?=12,
     val fontTransparency: String?=".5",
-    val id: String??=null,
+    val id: String?=null,
     val intervalSec: Float?=5f,
     val method: String?="BASE16",
     val obfuscationKey: String?="12",
@@ -99,5 +103,6 @@ data class ForceMessage(
 )
 
 
-data class PackageUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)
-data class UserUpdate(val username:String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)
+data class PackageUpdate(val packageID:String?=null, val packageName: String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)
+data class UserUpdate(val username:String?=null,val userUpdate:Int=0, val userId: String?=null, val updatedAt: String?=null)
+data class BlockUser(val username:String?=null,val isBlocked:Int=0, val blockReason: String?=null, val updatedAt: String?=null)

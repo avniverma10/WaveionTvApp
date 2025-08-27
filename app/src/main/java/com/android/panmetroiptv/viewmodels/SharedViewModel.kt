@@ -3,13 +3,15 @@ package com.android.panmetroiptv.viewmodels
 
 import android.app.Application
 import android.content.Context
-import android.database.ContentObserver
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.android.panmetroiptv.PanmetroApplication
+import com.android.panmetroiptv.extensions.appPkgChannelsLiveData
 import com.android.panmetroiptv.extensions.convertIntoModel
 import com.android.panmetroiptv.extensions.coreEPGLiveData
 import com.android.panmetroiptv.extensions.logReport
@@ -23,11 +25,8 @@ import com.android.panmetroiptv.model.data.epgdata.Channel
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.model.data.filter.PanMetroGenreFilter
-import com.android.panmetroiptv.model.data.sseresponse.ForceMessage
 import com.android.panmetroiptv.model.data.sseresponse.GlobalSSEResponse
-import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
 import com.android.panmetroiptv.model.data.sseresponse.PlayerSSEResponse
-import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
 import com.android.panmetroiptv.model.repository.login.LoginPrefsRepository
 import com.android.panmetroiptv.model.wtvdatabase.EPGContract
@@ -38,17 +37,13 @@ import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,9 +55,7 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.collections.any
-import kotlin.collections.filter
-import kotlin.collections.orEmpty
+import kotlin.math.log
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -135,6 +128,10 @@ open class SharedViewModel @Inject constructor(
     private val _genreScreenLastChannelIndex = MutableStateFlow(0)
     val genreScreenLastChannelIndex: StateFlow<Int> = _genreScreenLastChannelIndex
 
+    // LiveData for package-channel blocking (from your existing code)
+    private val _packageChannelBlockData = MutableLiveData<HashMap<String, MutableSet<String>>>()
+    val packageChannelBlockData: LiveData<HashMap<String, MutableSet<String>>> = _packageChannelBlockData
+
 
 
     private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
@@ -166,22 +163,29 @@ open class SharedViewModel @Inject constructor(
             _filterState.value = saved
             applyFilters()
         }
-
-        // observe EPG changes continuously
-        /*viewModelScope.launch {
-           // observeEPGChanges(application).collect()
-            application.applicationContext.coreEPGLiveData().value?.let {epgList->
-                _epgChannels.value = wtvEPGList.value.mapNotNull { it.tv?.channel }
-                applyFilters()
-                filterPanMetroChannelsByGenre()
-            }
-        }*/
-
-        // load banners
-        /*viewModelScope.launch {
-            provideBanners()
-        }*/
     }
+
+   /* fun initializeUserPkgChannelsData(customerNumber:String){
+        PreferenceManager.getLoginResponse()?.customerNumber?.let {
+            userPackageUpdate(customerNumber = it)
+        }
+
+    }
+
+    private fun observePackageChannelBlockData() {
+        packageChannelBlockData.observeForever { blockMap ->
+            updateBlockedChannels(blockMap)
+        }
+    }
+
+    private suspend fun isChannelEnableToPlay(assetId:String) {
+        // Implement actual player blocking logic here
+        // This could be through a MediaSession, ExoPlayer, or your player component
+        logd("PlayerBlock", "Blocking $channelIds in package $packageName")
+
+        // Example: Notify player service or manager
+        // playerManager.blockChannels(packageName, channelIds)
+    }*/
 
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -611,6 +615,28 @@ open class SharedViewModel @Inject constructor(
             _filteredPanMetroChannels.value = fullEPGList?: arrayListOf()
         }
 
+    }
+
+    fun getUserEnableToPlayChannel(assetId:String): Boolean{
+        val userPackages = availablePkg?.value ?: return false
+        val appPkgChannels = appPkgChannels?.value ?: return false
+        // Check if any user package contains the assetId
+        val canPlay = userPackages.any { pkg ->
+            appPkgChannels[pkg]?.contains(assetId) == true
+        }
+        // Create a set of all allowed channels for faster lookup
+        /*val allowedChannels = mutableSetOf<String>()
+
+        userPackages.forEach { pkg ->
+            appPkgChannels[pkg]?.let { channels ->
+                allowedChannels.addAll(channels)
+            }
+        }
+
+        val canPlay = assetId in allowedChannels
+       */
+        loge("getUserEnableToPlayChannel", "Asset: $assetId, Can play: $canPlay")
+        return canPlay
     }
 
     fun stopGlobalSSE() {

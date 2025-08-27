@@ -1,5 +1,6 @@
 package com.android.panmetroiptv.view.panmetro.genre
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.panmetro.common.PermettoTopBar
 import com.android.panmetroiptv.view.panmetro.common.PoweredBy
 import com.android.panmetroiptv.view.uicomponent.ZoomInOutSwitcher
+import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.android.panmetroiptv.viewmodels.genre.GenreViewModel
@@ -300,7 +302,5 @@ fun PanmetroGenreScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-
-
 }
 

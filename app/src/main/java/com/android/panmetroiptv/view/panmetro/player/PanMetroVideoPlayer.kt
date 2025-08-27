@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -69,6 +70,8 @@ import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
 import com.android.panmetroiptv.extensions.toJSONObject
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
+import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
+import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.uicomponent.addWatermarkToPlayer
@@ -104,7 +107,9 @@ fun PanMetroVideoPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
-    var dialogStates = remember { mutableStateListOf<ForceMessageDialogState>()}
+    var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
+    val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
+    val visibleFingerprint = remember { mutableStateListOf<PlayerFingerprint>() }
 
     var isAudio = remember { mutableStateOf(false) }
     var isYoutube = remember { mutableStateOf(false) }
@@ -136,13 +141,58 @@ fun PanMetroVideoPlayer(
 
 
     LaunchedEffect(playerSSERules) {
-        if((playerSSERules?.forceMessages?.size ?: 0) > 0){
-            dialogStates.clear()
-            playerSSERules?.forceMessages?.forEach { message ->
-                dialogStates.add(ForceMessageDialogState(message,true))
+
+        visibleFingerprint.clear()
+        visibleMessages.clear()
+        visibleForce.clear()
+        playerSSERules?.forceMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getForceUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
             }
-        }else{
-            dialogStates = mutableStateListOf<ForceMessageDialogState>()
+
+            if (shouldShow) {
+                visibleForce.add(ForceMessageDialogState(item,true))
+            }
+        }
+
+        //handle it for scroll message
+        playerSSERules?.scrollMessages?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getScrollUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                visibleMessages.add(item)
+            }
+        }
+
+        //handle it for fingerprint
+        playerSSERules?.fingerprints?.forEach { item ->
+            val messageId = item._id ?: return@forEach
+            val storedTimestamp = PreferenceManager.getFingerUpdatedAt(messageId)
+            val currentTimestamp = item.updatedAt
+            val shouldShow = when {
+                currentTimestamp == null -> true
+                storedTimestamp == null -> true
+                currentTimestamp != storedTimestamp -> true
+                else -> false
+            }
+
+            if (shouldShow) {
+                visibleFingerprint.add(item)
+            }
         }
     }
 
@@ -518,33 +568,73 @@ fun PanMetroVideoPlayer(
         }
     }
 
-    //Show dialogs
-    if((playerSSERules?.forceMessages?.size ?: 0) > 0){
-        dialogStates.forEachIndexed { index, dialogState ->
-            if(dialogStates[index].show) {
+
+    visibleForce.forEachIndexed { index, dialogState ->
+        if(visibleForce[index].show) {
+            if (visibleForce[index].message.forcePush == true){
                 ForceMessageDialog(
                     showDialog = true,
                     forceMessage = dialogState.message,
                     onConfirm = {
-                        // Mark this dialog as dismissed
-                        dialogStates[index] = dialogState.copy(show = false)
                     }
                 )
+            }else{
+                if (visibleForce[index].message.updatedAt?.equals(PreferenceManager.getForceUpdatedAt(visibleForce[index].message._id?:""), true) != true){
+                    ForceMessageDialog(
+                        showDialog = true,
+                        forceMessage = dialogState.message,
+                        onConfirm = {
+
+                            // Remove this message from the visible list
+                            visibleMessages.removeIf { it.updatedAt == visibleForce[index].message.updatedAt }
+                            // Mark this dialog as dismissed
+                           // visibleForce[index] = dialogState.copy(show = false)
+                            visibleForce[index].message?.let {
+                                PreferenceManager.saveForceUpdatedAt((it._id?:""),(it.updatedAt?:""))
+                            }
+                        }
+                    )
+                }
             }
         }
     }
 
-    if((playerSSERules?.fingerprints?.size ?: 0) > 0){
-        playerSSERules?.fingerprints?.forEach {
-            ChannelFingerprintOverlay( fingerprintRule = mutableStateOf(it))
+
+    // Display only visible messages
+    visibleFingerprint.forEach { fingerprint ->
+        key(fingerprint._id) { // Important for proper recomposition
+            ChannelFingerprintOverlay(fingerprintRule = fingerprint,
+                onFinish = { updatedAt ->
+                    // Remove this message from the visible list
+                    visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                    // Also save to preferences
+                    fingerprint._id?.let { id ->
+                        PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                    }
+                })
         }
     }
 
-    if((playerSSERules?.scrollMessages?.size ?: 0) > 0){
-        playerSSERules?.scrollMessages?.forEach {
-            ScrollingMessageOverlay(scrollMessageInfo = mutableStateOf(it))
+    // Display only visible messages
+    visibleMessages.forEach { message ->
+        key(message._id) { // Important for proper recomposition
+            ScrollingMessageOverlay(
+                scrollMessageInfo = message,
+                onFinish = { updatedAt ->
+                    // Remove this message from the visible list
+                    visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                    // Also save to preferences
+                    message._id?.let { id ->
+                        PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                    }
+                }
+            )
         }
     }
+
+
 
     if (isAudio.value) {
         Box(

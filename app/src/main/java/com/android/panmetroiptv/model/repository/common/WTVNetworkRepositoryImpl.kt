@@ -1,8 +1,6 @@
 package com.android.panmetroiptv.model.repository.common
 
-import android.util.Log
 import androidx.annotation.Keep
-import com.android.panmetroiptv.extensions.convertIntoLoginResponse
 import com.android.panmetroiptv.extensions.convertIntoModel
 import com.android.panmetroiptv.extensions.convertIntoModels
 import com.android.panmetroiptv.extensions.logReport
@@ -17,38 +15,33 @@ import com.android.panmetroiptv.model.data.hash.HashInfo
 import com.android.panmetroiptv.model.data.health.HealthAPIResponse
 import com.android.panmetroiptv.model.data.home.HomeData
 import com.android.panmetroiptv.model.data.language.WTVLanguage
-import com.android.panmetroiptv.model.data.login.ChannelResult
 import com.android.panmetroiptv.model.data.login.CustomerChannelsInfo
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.DRMUserInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.manifest.WTVManifest
-import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.home.WTVHomeCategory
+import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.network.NetworkApiCallInterface
 import com.android.panmetroiptv.utils.sealed.WTVListResponse
 import com.android.panmetroiptv.utils.sealed.WTVResponse
-import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
-import java.util.Collections
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @Keep
@@ -240,43 +233,37 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun getCustomerChannelInfo(pkgName: List<Int>) = coroutineScope {
-        // Create a mutable list to store all channels
-        val allChannels = Collections.synchronizedList(mutableListOf<ChannelResult>())
+    suspend fun getCustomerChannelInfo(pkgName: String) : Flow<WTVResponse<Set<String>>> = flow {
+        try {
+            val requestUrl = "${Constants.LOGIN_SMS_BASE}src/api/v1/services-assets/livechannels/$pkgName?page=1&limit=1000"
+            val response = withContext(Dispatchers.IO) {
+                networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
+            }
 
-        try{
-            pkgName.map { pkg ->
-                async(Dispatchers.IO) {  // Explicitly use IO dispatcher for network calls
+            if (response.isSuccessful) {
+                val channels = response.body()?.let { body ->
                     try {
-                        val requestUrl = "${Constants.LOGIN_SMS_BASE}src/api/v1/services-assets/livechannels/$pkg?page=1&limit=1000"
-                        val response = networkApiCallInterface.makeDRMHttpGetRequest(requestUrl).execute()
-
-                        if (response.isSuccessful) {
-                            response.body()?.let { body ->
-                                // Use proper JSON parsing instead of manual conversion
-                                body.toJSONObject()?.toString().convertIntoModel(
-                                    CustomerChannelsInfo::class.java)?.let {
-                                    synchronized(allChannels) {
-                                        allChannels.addAll(it.results.map { it})
-                                    }
-                                }
-                            }
-                        } else {
-                            loge("ChannelFetch", "Failed for $pkg: ${response.code()}")
-                        }
+                        val jsonObject = body.toJSONObject()
+                        val channelInfo = jsonObject?.toString()?.convertIntoModel(CustomerChannelsInfo::class.java)
+                        channelInfo?.results?.mapNotNull { it.contentId }?.toSet() ?: emptySet()
                     } catch (e: Exception) {
-                        loge("ChannelFetch", "Error fetching $pkg >>${e.message}")
+                        loge("ChannelFetch", "JSON parsing error for $pkgName: ${e.message}")
+                        emptySet()
                     }
-                }
-            }.awaitAll() // Wait for all requests to complete
-            Constants.userChannelResult = allChannels
-        } catch (e: Exception) {
-           loge("",e.message)
-        }
+                } ?: emptySet()
 
-        // Return the combined list of all channels
-       // return@coroutineScope allChannels
-    }
+                emit(WTVResponse.Success(channels))
+            } else {
+                val errorMessage = "Failed to fetch channels for package $pkgName: HTTP ${response.code()} - ${response.message()}"
+                loge("ChannelFetch", errorMessage)
+                emit(WTVResponse.Failure(HttpException(response)))
+            }
+        } catch (e: Exception) {
+            val errorMessage = "Network error fetching channels for package $pkgName: ${e.message}"
+            loge("ChannelFetch", errorMessage)
+            emit(WTVResponse.Failure(e))
+        }
+    }.flowOn(Dispatchers.IO)
 
     suspend fun provideServerTimeStamp(healthUrl: String): Flow<WTVResponse<HealthAPIResponse>> =
         flow {

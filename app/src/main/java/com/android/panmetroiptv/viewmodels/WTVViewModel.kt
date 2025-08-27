@@ -17,20 +17,25 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.panmetroiptv.R
+import com.android.panmetroiptv.extensions.appPkgChannelsLiveData
 import com.android.panmetroiptv.extensions.applyAppManifest
 import com.android.panmetroiptv.extensions.applyEPGData
 import com.android.panmetroiptv.extensions.isNotNullOrEmpty
+import com.android.panmetroiptv.extensions.logd
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.provideMacAddress
 import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.extensions.toJSONObject
+import com.android.panmetroiptv.extensions.updatePkgChannels
 import com.android.panmetroiptv.model.data.appupdate.AppUpdateData
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.model.data.genre.WTVGenre
 import com.android.panmetroiptv.model.data.language.WTVLanguage
+import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.sse.TabItem
+import com.android.panmetroiptv.model.data.sseresponse.GlobalSSEResponse
 import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
 import com.android.panmetroiptv.model.repository.login.LoginPrefsRepository
@@ -38,6 +43,7 @@ import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.sealed.WTVResponse
 import com.android.panmetroiptv.utils.sealed.firstOrNullSuccess
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
+import com.android.panmetroiptv.utils.uistate.PreferenceManager.getUserPackageInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -86,6 +92,15 @@ open class WTVViewModel @Inject constructor(
     //for genre screen
     protected val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
+
+    //
+
+    protected val _availablePkg = MutableStateFlow<List<String>?>(null)
+    val availablePkg: StateFlow<List<String>?> = _availablePkg
+
+    private val _appPkgChannels = MutableStateFlow<HashMap<String, MutableSet<String>>>(hashMapOf())
+    val appPkgChannels: StateFlow<HashMap<String, MutableSet<String>>> = _appPkgChannels.asStateFlow()
+
 
 
     // ─── Date and time state ───
@@ -164,7 +179,7 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-    /** 3) Build and issue a local notification */
+    /**Build and issue a local notification */
     @SuppressLint("MissingPermission")
     private fun showPushNotification(item: NotificationItem) {
         _bannerMessage.value = item.message
@@ -271,20 +286,9 @@ open class WTVViewModel @Inject constructor(
                 _isInitializeData.value = false
                 loge("_errorLoadingData", "${_errorLoadingData}")
             }
-            /*launch {
-                networkApiCallInterfaceImpl
-                    .provideWTVHomeData(Constants.BASE_URL+"homescreenCategory")
-                    .collect { response ->
-                        if (response is WTVListResponse.Success) {
-                            application.applyAppHome(response.data)
-                            logReport("applyAppHome:${response.data}")
-                        } else if (response is WTVListResponse.Failure) {
-                            logReport("applyAppHome error:${response.error.message}")
-                        }
-                    }
-            }*/
         }
     }
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun fetchServerTimeMillis(): Long? {
@@ -609,7 +613,7 @@ open class WTVViewModel @Inject constructor(
                             requestBody = requestBody).collect { response ->
                             when (response) {
                                 is WTVResponse.Success -> {
-                                    provideApplicationContext().showToastS(response.data.toString())
+                                   // provideApplicationContext().showToastS(response.data.toString())
                                     if(response.data.hash.isNotNullOrEmpty()) {
                                         PreferenceManager.saveHash(response.data.hash)
                                     }
@@ -648,7 +652,7 @@ open class WTVViewModel @Inject constructor(
                         //userProfileAPI(uName=uName)
                         onLoginResponse(response.data,null)
                         if(response.data.customerNumber?.isNotEmpty() == true){
-                            userPackageUpdate(customerNumber = response.data.customerNumber)
+                            userPackageUpdate(customerNumber = response.data.customerNumber, isChannelUpdateRequired = true)
                         }
                     }//_bannerList.value = response.data
                     is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
@@ -657,47 +661,18 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-
-    /*fun userProfileAPI(uName:String){
-        viewModelScope.launch {
-            networkApiCallInterfaceImpl.getUserInfo(
-                requestUrl = Constants.DRM_LICENSE_BASE+"/src/api/v1/user-logins/$uName",
-                headers = Constants.staticHeaders).collect { response ->
-                when (response) {
-                    is WTVResponse.Success -> {
-                        if(response.data.customerNumber.isNotNullOrEmpty()){
-                            provideApplicationContext().showToastS("Customer${response.data.customerNumber}")
-                            val userUpdates = PreferenceManager.getLoginResponse()
-                            userUpdates?.drmInfo = response.data
-                            userUpdates?.let { PreferenceManager.saveUserInfo(it) }
-                            userPackageUpdate(customerNumber = response.data.customerNumber,onPKGResponse={response ->
-                               if((response?.results?.size ?: 0) > 0){
-                                    response?.results?.forEach {
-                                        packageChannelUpdate(pkgName = it.id.toString(), onPKGChannelResponse = {
-
-                                        })
-                                    }
-                                }
-                            })
-                        }
-                    }
-                    is WTVResponse.Failure -> {
-                        provideApplicationContext().showToastS("User customer number not found.")
-                    }
-                }
-            }
-        }
-    }*/
-    fun userPackageUpdate(customerNumber:String){
+    fun userPackageUpdate(customerNumber:String,isPkgUpdateOnly: Boolean?=false,isChannelUpdateRequired: Boolean?=false){
         viewModelScope.launch {
             networkApiCallInterfaceImpl.getCustomerPackageInfo(
-                requestUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/customer-services/${customerNumber}?page=1&limit=10").collect { response ->
+                requestUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/customer-services/${customerNumber}?page=1&limit=20").collect { response ->
                 when (response) {
                     is WTVResponse.Success -> {
                         PreferenceManager.saveUserPackageInfo(response.data)
-                        /*response.data?.results?.map { it.serviceId }?.let {
-                            customerChannelUpdates(it)
-                        }*/
+                        response.data?.provideAvailablePkgData()?.let {
+                            _availablePkg.value = it
+                            //call when isPkgUpdateOnly true
+                            _availablePkg.value?.let { customerChannelUpdates(it) }
+                        }
                     }
                     is WTVResponse.Failure -> {
                         loge("customer-services>","User customer number not found.")
@@ -707,11 +682,42 @@ open class WTVViewModel @Inject constructor(
         }
     }
 
-    fun customerChannelUpdates(pkgName: List<Int>){
+    fun CustomerPackageInfo.provideAvailablePkgData(): List<String>? {
+        return this?.results
+            ?.mapNotNull { it.serviceId.toString() }
+            ?.filter { it.isNotBlank() }
+            ?.distinct()
+            ?.toList()
+    }
+
+
+    fun customerChannelUpdates(pkgName: List<String>){
         viewModelScope.launch {
-            networkApiCallInterfaceImpl.getCustomerChannelInfo(pkgName)
+            pkgName.forEach { pkg ->
+                try {
+                    val channels = networkApiCallInterfaceImpl.getCustomerChannelInfo(pkg)
+                        .firstOrNullSuccess()
+                    // Only update if we got successful channels data
+                    channels?.let { successfulChannels ->
+                       // _appPkgChannels.value.put(pkg, successfulChannels.toMutableSet())
+                        val currentMap = _appPkgChannels.value.toMutableMap()
+                        currentMap[pkg] = successfulChannels.toMutableSet()
+                        _appPkgChannels.value = HashMap(currentMap) // Create new instance
+                        //provideApplicationContext().updatePkgChannels(pkg.toString(), successfulChannels.toMutableSet())
+
+                        //observeAppPkgChannels()
+                        logd("ChannelUpdate", "Successfully updated $pkg with ${successfulChannels.size} channels")
+                    } ?: run {
+                        loge("ChannelUpdate", "Skipping update for $pkg - no successful response")
+                    }
+                } catch (e: Exception) {
+                    loge("ChannelUpdate", "Error processing package $pkg: ${e.message}")
+                    // Continue with next package even if this one fails
+                }
+            }
         }
     }
+
 
 
     fun packageUpdate(){

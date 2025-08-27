@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.MediaDrm
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -22,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,29 +40,29 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastFirst
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.C.WIDEVINE_UUID
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
-import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.R
+import com.android.panmetroiptv.extensions.getSystemAllInfo
 import com.android.panmetroiptv.extensions.loge
+import com.android.panmetroiptv.extensions.showToastL
 import com.android.panmetroiptv.extensions.showToastS
-import com.android.panmetroiptv.utils.theme.base_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.uicomponent.ErrorDialog
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.viewmodels.SharedViewModel
-import java.io.File
 import kotlinx.coroutines.time.delay
+import java.io.File
 import java.time.Duration
 
 @Composable
@@ -141,6 +141,8 @@ fun SplashScreen(
         PreferenceManager.clearSaveChannel()
         sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
+       // MediaDrm(WIDEVINE_UUID).getPropertyByteArray("deviceUniqueId")
+
     }
 
     if (timeValid == false) {
@@ -183,13 +185,13 @@ fun SplashScreen(
         showExitDialog = false
 
 
-        //refresh Channel list
-        /*PreferenceManager.getUserPackageInfo()?.results?.map { it.serviceId }?.let {
-            sharedViewModel.customerChannelUpdates(it)
-        }*/
         if (PreferenceManager.getLoginResponse() != null) {
             navController.navigate(Destination.genreScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
+            }
+            //refresh pkg and channel list
+            PreferenceManager.getLoginResponse()?.customerNumber?.let {
+                sharedViewModel.userPackageUpdate(customerNumber = it, isChannelUpdateRequired = true)
             }
         } else {
             navController.navigate(Destination.loginScreen) {

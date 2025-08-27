@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,25 +30,27 @@ import com.android.panmetroiptv.extensions.generateTextFingerprint
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
 import com.android.panmetroiptv.model.data.sseresponse.Fingerprint
+import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import kotlinx.coroutines.delay
 
 @Composable
 fun GlobalFingerprintOverlay(
-    fingerprintRule: MutableState<Fingerprint>
+    fingerprintRule: Fingerprint,
+    onFinish:(String)-> Unit
 ) {
     val context = LocalContext.current
 
-    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.value.method?:"SHA2", obfuscationKey = fingerprintRule.value.obfuscationKey?:"12")
+    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.method?:"SHA2", obfuscationKey = fingerprintRule.obfuscationKey?:"12")
     val fontColor = runCatching {
-        Color(android.graphics.Color.parseColor(fingerprintRule.value.fontColorHex ?: "#000000"))
-            .copy(alpha = fingerprintRule.value.fontTransparency
+        Color(android.graphics.Color.parseColor(fingerprintRule.fontColorHex ?: "#000000"))
+            .copy(alpha = fingerprintRule.fontTransparency
                 ?.getFloatValue()
                 ?.let { 1f - it.coerceIn(0f, 1f) } ?: 0.25f)
     }.getOrDefault(Color.Black.copy(alpha = 0.25f))
 
     val bgColor = runCatching {
-        Color(android.graphics.Color.parseColor(fingerprintRule.value.backgroundColorHex ?: "#ffffff"))
-            .copy(alpha = fingerprintRule.value.backgroundTransparency
+        Color(android.graphics.Color.parseColor(fingerprintRule.backgroundColorHex ?: "#ffffff"))
+            .copy(alpha = fingerprintRule.backgroundTransparency
                 ?.getFloatValue()
                 ?.let { 1f - it.coerceIn(0f, 1f) } ?: 0.25f)
     }.getOrDefault(Color.White.copy(alpha = 0.25f))
@@ -66,8 +68,8 @@ fun GlobalFingerprintOverlay(
     val screenHeight = with(density) { (LocalConfiguration.current.screenHeightDp).dp.toPx() }
 
 
-    val posX = fingerprintRule.value.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
-    val posY = fingerprintRule.value.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
+    val posX = fingerprintRule.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
+    val posY = fingerprintRule.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
 
     var textWidth by remember { mutableStateOf(0) }
     var textHeight by remember { mutableStateOf(0) }
@@ -77,8 +79,8 @@ fun GlobalFingerprintOverlay(
     val paddingPx = with(density) { 16.dp.toPx() }
 
     val measurer = rememberTextMeasurer()
-    var fontSize = remember(fingerprintRule.value.fontSizeDp) {
-        fingerprintRule.value.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
+    var fontSize = remember(fingerprintRule.fontSizeDp) {
+        fingerprintRule.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
     }
 
     // Function to update position ensuring text stays within bounds
@@ -127,33 +129,46 @@ fun GlobalFingerprintOverlay(
             maxLines = 1
         )
         // Validate duration and interval
-        val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 0f) * 1000L
-        val intervalMs = (fingerprintRule.value.intervalSec?.toString()?.getFloatValue() ?: 0f) * 1000L
-        val repeatCount = fingerprintRule.value.repeatCount?.toString()?.getIntValue() ?: 1
-        isRandom = fingerprintRule.value.positionMode?.uppercase().equals("RANDOM",true)
+        val durationMs = (fingerprintRule.durationMs?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val intervalMs = (fingerprintRule.intervalSec?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val repeatCount = fingerprintRule.repeatCount?.toString()?.toInt() ?: 1
+        val repeatCountFingerprint = if(repeatCount>0) repeatCount else Int.MAX_VALUE
+
+        isRandom = fingerprintRule.positionMode?.uppercase().equals("RANDOM",true)
         textResult?.let {
             textWidth = textResult.size.width
             textHeight = textResult.size.height
         }
         updatePosition()
-        if (repeatCount > 0) {
-            repeat(repeatCount) {
+
+        // Track current repeat iteration
+        var currentRepeat = 0
+
+        while (currentRepeat < repeatCountFingerprint) {
+            // Wait for the interval (except before first iteration)
+            if (currentRepeat > 0) {
                 delay(intervalMs.toLong())
-                updatePosition()
-                visible = true
-                delay(durationMs.toLong())
-                visible = false
             }
-        }else {
-            // Infinite loop
-            while (true) {
-                delay(intervalMs.toLong())
-                updatePosition()
-                visible = true
-                delay(durationMs.toLong())
-                visible = false
+
+            updatePosition()
+            visible = true
+
+            // Show for duration
+            delay(durationMs.toLong())
+            visible = false
+
+            currentRepeat++
+
+            // Check if this was the last repeat
+            if (currentRepeat >= repeatCountFingerprint) {
+                // All repeats completed - call onFinish
+                fingerprintRule.updatedAt?.let { updatedAt ->
+                    onFinish(updatedAt)
+                }
+                break
             }
         }
+
     }
 
     if (visible) {
@@ -166,7 +181,7 @@ fun GlobalFingerprintOverlay(
         ) {
             Text(
                 text = displayMessage,
-                fontSize = fingerprintRule.value.fontSizeDp?.toString().getIntValue().sp,
+                fontSize = fingerprintRule.fontSizeDp?.toString().getIntValue().sp,
                 color = fontColor,
                 maxLines = 1,
                 overflow = TextOverflow.Visible,

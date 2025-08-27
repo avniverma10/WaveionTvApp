@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import com.android.panmetroiptv.extensions.generateTextFingerprint
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
-import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import kotlinx.coroutines.delay
 
 @Composable

@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -50,6 +52,8 @@ import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
 import com.android.panmetroiptv.extensions.toJSONObject
+import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
+import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.PlaybackErrorPreview
 import com.android.panmetroiptv.view.uicomponent.fingerprint.PrePlayerFingerprintOverlay
@@ -75,12 +79,15 @@ fun GenreMultiDRMPlayer(
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
-    val playerSSERules by sharedViewModel.prePlayerSSERules.collectAsState()
+    val appPkgChannels by sharedViewModel.appPkgChannels.collectAsStateWithLifecycle()
+    //val playerSSERules by sharedViewModel.prePlayerSSERules.collectAsState()
+    val visibleFingerprint = remember { mutableStateListOf<PlayerFingerprint>() }
 
     // Mutable state for UI updates
     var isAudio = remember { mutableStateOf(false) }
     var isYoutube = remember { mutableStateOf(false) }
     val youtubeId = remember { mutableStateOf<String?>(null) }
+    var isDRMUrl = remember { mutableStateOf(false) }
 
     // Mutable state for UI updates
     val isBuffering = rememberSaveable { mutableStateOf(false) }
@@ -178,10 +185,46 @@ fun GenreMultiDRMPlayer(
         }
     }
 
+
+
+    suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){
+        val mediaItem = if (isDRMUrl.value) {
+            context.provideCryptoGuardMediaSource(
+                contentUrl = videoUrl,
+                contentId = assetId
+            )
+        } else {
+            MediaItem.fromUri(videoUrl)
+        }
+
+        if(isDRMUrl.value && sharedViewModel.getUserEnableToPlayChannel(assetId.toString()) != true){
+            val (code, title, message) = playerErrorHandling(6200)
+            errorCodeState = code
+            errorMessageState = message
+            showErrorDialog = true
+            exoPlayer.clearMediaItems()
+        }else{
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+            //make fingerprint request
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+        }
+    }
+
+
+
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
         loge("selectedVideoUrl>","$selectedChannelIndex")
         selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)){
+                isDRMUrl.value = true
+            }else{
+                isDRMUrl.value = false
+            }
+
+
             if(selectedVideoUrl?.content?.contentType.equals("audio",true)){
                 isAudio.value = true
             }else if(selectedVideoUrl?.content?.contentType.equals("youtube",true)){
@@ -195,44 +238,19 @@ fun GenreMultiDRMPlayer(
             exoPlayer.clearMediaItems()
             showErrorDialog = false
             if(!isYoutube.value) {
-                val drmData = HashMap<String, String>()
-                drmData.put("DRMType", selectedVideoUrl.content?.drmType ?: "")
-                drmData.put("contentId", selectedVideoUrl.content?.assetId ?: "")
-                drmData.put("contentUrl", selectedVideoUrl.content?.videoUrl ?: "" ?: "")
-                val mediaItem = if (selectedVideoUrl.content?.drmType.equals(
-                        "cryptoguard",
-                        ignoreCase = true
-                    )
-                ) {
-                    context.provideCryptoGuardMediaSource(
-                        contentUrl = selectedVideoUrl.content?.videoUrl,
-                        contentId = selectedVideoUrl.content?.assetId,
-                        logData = drmData
-                    )
-                } else {
-                    MediaItem.fromUri(url)
-                }
-                loge("Requested Data>", drmData.toJSONObject().toString())
-                /*if(Constants.userChannelResult?.any{it.name.equals(selectedVideoUrl.content?.title,true)} == false){
-                    val (code, title, message) = playerErrorHandling(6200)
-                    errorCodeState = code
-                    errorMessageState = message
-                    showErrorDialog = true
-                    //context.showToastS("Channel ${selectedVideoUrl.content?.title} not subscribed yet.")
-                }*/
-                delay(300)
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
-                //make fingerprint request
-                sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
-
+                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedVideoUrl.content?.assetId )
             }
         }
-
     }
 
 
+    LaunchedEffect(appPkgChannels) {
+        if(!isYoutube.value) {
+            selectedVideoUrl.content?.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.content?.assetId )
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -371,22 +389,22 @@ fun GenreMultiDRMPlayer(
                 }
             }
         }
-        if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
+        /*if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
             playerSSERules?.fingerprints?.forEach {
                 PrePlayerFingerprintOverlay(
                     fingerprintRule = it
                 )
             }
-        }
+        }*/
 
-        if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
+        /*if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
             playerSSERules?.scrollMessages?.forEach {
                 ScrollingMessageOverlay(
                     player = playerView.value,
                     scrollMessageInfo = mutableStateOf(it)
                 )
             }
-        }
+        }*/
 
         // Show Loading Indicator if Buffering
         /*Column(
@@ -438,7 +456,7 @@ fun GenreMultiDRMPlayer(
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
                 exoPlayer.stop()
-                sharedViewModel.stopPrePlayerSSE()
+                //sharedViewModel.stopPrePlayerSSE()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }

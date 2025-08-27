@@ -9,7 +9,8 @@ import android.net.Uri
 import androidx.annotation.Keep
 
 @Keep
-class EPGContentProvider : ContentProvider() {
+class
+EPGContentProvider : ContentProvider() {
     private lateinit var dbHelper: EPGDbHelper
 
     override fun onCreate(): Boolean {

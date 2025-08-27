@@ -617,13 +617,15 @@ fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
         6006 -> Triple(611, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         2002 -> Triple(612, "Timeout Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         3003 -> Triple(613, "Video Source Error", "Please try again later.")
-        1002 -> Triple(614, "Device Not Supported", "Streaming failed due to hardware/network limitations.")
+        1002 -> Triple(614, "Stream Error", "Streaming failed due to hardware/network limitations.")
         4003 -> Triple(615, "Network error", "It appears that your device is not compatible with this stream. We apologize for the inconvenience. Please try again later or contact your service provider for further assistance.")
         410 -> Triple( 616, "Source Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         3002 -> Triple(617, "Video Unavailable", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         6001 -> Triple(618, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        5001 -> Triple( 619, "AudioTrack initialization failure", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         6200 -> Triple(620, "Not subscibed", "This channel is not subscribed. Contact your service provider.")
         1003 -> Triple(703, "Timeout", "We're experiencing high traffic at the moment, which may cause longer loading times. Please bear with us — we apologize for the inconvenience and appreciate your patience.")
+        503 -> Triple( 704, "Source Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
         else -> Triple(errorCode, "Unknown error", "An unknown error occurred")
     }
 

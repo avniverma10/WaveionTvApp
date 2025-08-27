@@ -36,21 +36,22 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun ChannelFingerprintOverlay(
-    fingerprintRule: MutableState<PlayerFingerprint>
+    fingerprintRule: PlayerFingerprint,
+    onFinish:(String)-> Unit
 ) {
     val context = LocalContext.current
-    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.value.method?:"SHA2", obfuscationKey = fingerprintRule.value.obfuscationKey?:"12")
+    val displayMessage = context.generateTextFingerprint(method = fingerprintRule.method?:"SHA2", obfuscationKey = fingerprintRule.obfuscationKey?:"12")
 
     val fontColor = runCatching {
-        Color(android.graphics.Color.parseColor(fingerprintRule.value.fontColorHex ?: "#000000"))
-            .copy(alpha = fingerprintRule.value.fontTransparency
+        Color(android.graphics.Color.parseColor(fingerprintRule.fontColorHex ?: "#000000"))
+            .copy(alpha = fingerprintRule.fontTransparency
                 ?.getFloatValue()
                 ?.let { 1f - it.coerceIn(0f, 1f) } ?: 0.25f)
     }.getOrDefault(Color.Black.copy(alpha = 0.25f))
 
     val bgColor = runCatching {
-        Color(android.graphics.Color.parseColor(fingerprintRule.value.backgroundColorHex ?: "#ffffff"))
-            .copy(alpha = fingerprintRule.value.backgroundTransparency
+        Color(android.graphics.Color.parseColor(fingerprintRule.backgroundColorHex ?: "#ffffff"))
+            .copy(alpha = fingerprintRule.backgroundTransparency
                 ?.getFloatValue()
                 ?.let { 1f - it.coerceIn(0f, 1f) } ?: 0.25f)
     }.getOrDefault(Color.White.copy(alpha = 0.25f))
@@ -68,8 +69,8 @@ fun ChannelFingerprintOverlay(
     val screenHeight = with(density) { (LocalConfiguration.current.screenHeightDp).dp.toPx() }
 
 
-    val posX = fingerprintRule.value.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
-    val posY = fingerprintRule.value.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
+    val posX = fingerprintRule.posXPercent?.coerceIn(0f, .9f) ?: 0.5f
+    val posY = fingerprintRule.posYPercent?.coerceIn(0f, .9f) ?: 0.5f
 
     var textWidth by remember { mutableStateOf(0) }
     var textHeight by remember { mutableStateOf(0) }
@@ -79,8 +80,8 @@ fun ChannelFingerprintOverlay(
     val paddingPx = with(density) { 16.dp.toPx() }
 
     val measurer = rememberTextMeasurer()
-    var fontSize = remember(fingerprintRule.value.fontSizeDp) {
-        fingerprintRule.value.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
+    var fontSize = remember(fingerprintRule.fontSizeDp) {
+        fingerprintRule.fontSizeDp?.toString()?.getFloatValue()?.sp ?: 16.sp
     }
 
     // Function to update position ensuring text stays within bounds
@@ -122,10 +123,10 @@ fun ChannelFingerprintOverlay(
 
     LaunchedEffect(fingerprintRule) {
         // Validate duration and interval
-        val durationMs = (fingerprintRule.value.durationMs?.toString()?.getFloatValue() ?: 0f) * 1000L
-        val intervalMs = (fingerprintRule.value.intervalSec?.toString()?.getFloatValue() ?: 0f) * 1000L
-        val repeatCount = fingerprintRule.value.repeatCount?.toString()?.toInt() ?: 1
-        val repeatCountMessage = if(repeatCount>0) repeatCount else Int.MAX_VALUE
+        val durationMs = (fingerprintRule.durationMs?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val intervalMs = (fingerprintRule.intervalSec?.toString()?.getFloatValue() ?: 0f) * 1000L
+        val repeatCount = fingerprintRule.repeatCount?.toString()?.toInt() ?: 1
+        val repeatCountFingerprint = if(repeatCount>0) repeatCount else Int.MAX_VALUE
         // Calculate font size safely
         val textResult = measurer.measure(
             text = buildAnnotatedString { append(displayMessage) },
@@ -133,19 +134,38 @@ fun ChannelFingerprintOverlay(
             softWrap = false,
             maxLines = 1
         )
-        isRandom = fingerprintRule.value.positionMode?.uppercase().equals("RANDOM",true)
+        isRandom = fingerprintRule.positionMode?.uppercase().equals("RANDOM",true)
         textResult?.let {
             textWidth = textResult.size.width
             textHeight = textResult.size.height
         }
         updatePosition()
-        //context.showToastS("repeatCountMessage>$repeatCountMessage")
-        repeat(repeatCountMessage) {
-            delay(intervalMs.toLong())
+        // Track current repeat iteration
+        var currentRepeat = 0
+
+        while (currentRepeat < repeatCountFingerprint) {
+            // Wait for the interval (except before first iteration)
+            if (currentRepeat > 0) {
+                delay(intervalMs.toLong())
+            }
+
             updatePosition()
             visible = true
+
+            // Show for duration
             delay(durationMs.toLong())
             visible = false
+
+            currentRepeat++
+
+            // Check if this was the last repeat
+            if (currentRepeat >= repeatCountFingerprint) {
+                // All repeats completed - call onFinish
+                fingerprintRule.updatedAt?.let { updatedAt ->
+                    onFinish(updatedAt)
+                }
+                break
+            }
         }
     }
 
@@ -161,7 +181,7 @@ fun ChannelFingerprintOverlay(
 
             Text(
                 text = displayMessage,
-                fontSize = fingerprintRule.value.fontSizeDp?.toString().getIntValue().sp,
+                fontSize = fingerprintRule.fontSizeDp?.toString().getIntValue().sp,
                 color = fontColor,
                 maxLines = 1,
                 overflow = TextOverflow.Visible,
@@ -173,13 +193,6 @@ fun ChannelFingerprintOverlay(
                         textHeight = size.height
                     }
             )
-        }
-    }
-
-    DisposableEffect(Unit) {
-        // onDispose runs when the composable leaves composition
-        onDispose {
-            fingerprintRule?.value?.updatedAt?.let { PreferenceManager.savePlayerFingerTime(it) }
         }
     }
 }
