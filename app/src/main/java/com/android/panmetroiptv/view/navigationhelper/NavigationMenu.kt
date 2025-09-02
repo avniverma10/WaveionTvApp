@@ -1,4 +1,4 @@
-package com.android.panmetroiptv.view.navigationhelper
+package com.tccl.tvapp.view.navigationhelper
 
 import android.view.KeyEvent
 import androidx.compose.foundation.background
@@ -63,15 +63,23 @@ fun CategoryMenu(
 
     val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
 
-
-    if (menuItems.isEmpty()) {
-        return
-    }
+    if (menuItems.isEmpty()) return
 
     LaunchedEffect(selectedIndex.value) {
-        coroutineScope.launch {
-            listState.animateScrollToItem(selectedIndex.value)
-            delay(50)
+        delay(50)
+        val visible = listState.layoutInfo.visibleItemsInfo
+        if (visible.isEmpty()) return@LaunchedEffect
+        val firstVisible = visible.first().index
+        val lastVisible = visible.last().index
+        val visibleCount = visible.size
+        when {
+            selectedIndex.value < firstVisible -> {
+                listState.animateScrollToItem(selectedIndex.value)
+            }
+            selectedIndex.value > lastVisible -> {
+                val newFirst = (selectedIndex.value - visibleCount + 1).coerceAtLeast(0)
+                listState.animateScrollToItem(newFirst)
+            }
         }
     }
 
@@ -128,10 +136,11 @@ fun CategoryMenu(
                                 ?.let { requester ->
                                     coroutineScope.launch {
                                         delay(50)
-                                        requester.requestFocus()
+                                        try {
+                                            requester.requestFocus()
+                                        } catch (e: IllegalStateException) { }
                                     }
                                 }
-                            // languageFocusRequesters[ languageSelectedIndex.value ].requestFocus()
                             true
                         } else false
                     }

@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.android.panmetroiptv.extensions.logReport
+import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.provideMacAddress
 import com.android.panmetroiptv.globalFingerprintService.OverlayPermissionDialog
 import com.android.panmetroiptv.globalFingerprintService.OverlayPermissionHelper
+import com.android.panmetroiptv.utils.network.ApiStatusObserver
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.WTVPlayerApp
 import com.android.panmetroiptv.viewmodels.SharedViewModel
@@ -22,9 +25,10 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @RequiresApi(Build.VERSION_CODES.M)
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(),ApiStatusObserver  {
     private lateinit var overlayHelper: OverlayPermissionHelper
     private val sharedViewModel: SharedViewModel by viewModels()
+
 
     private val isFireTv: Boolean
         get() = Build.MANUFACTURER.equals("Amazon", ignoreCase = true)
@@ -91,6 +95,19 @@ class MainActivity : ComponentActivity() {
     private fun WTVApp() {
         Box(modifier = Modifier.fillMaxSize()) {
             WTVPlayerApp(sharedViewModel = sharedViewModel)
+        }
+    }
+
+    override fun onApiStatusChanged(isApiWorking: Boolean) {
+        runOnUiThread {
+            if (!isApiWorking) {
+                loge("SSE isApiWorking", "Connection failed")
+                // API is back online, notify user
+                sharedViewModel.isGlobalSSEClosed.value = true
+            } else {
+                loge("SSE isApiWorking", "Connection Success")
+                sharedViewModel.isGlobalSSEClosed.value = false
+            }
         }
     }
 }

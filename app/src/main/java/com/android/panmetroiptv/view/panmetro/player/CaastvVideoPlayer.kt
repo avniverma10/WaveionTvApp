@@ -110,6 +110,7 @@ fun CaastvVideoPlayer(
     var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
     val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
     val visibleFingerprint = remember { mutableStateListOf<PlayerFingerprint>() }
+    val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
     }
@@ -148,7 +149,6 @@ fun CaastvVideoPlayer(
         currentChannelIndex.intValue = idx
         previewChannelIndex.intValue = idx
     }
-
 
 
     LaunchedEffect(playerSSERules) {
@@ -420,6 +420,20 @@ fun CaastvVideoPlayer(
     }
 
 
+    LaunchedEffect(globalSSERules) {
+        if(globalSSERules?.blockUser?.size == 0){
+            selectedChannel.content?.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.content?.assetId )
+            }
+            return@LaunchedEffect
+        }
+
+        globalSSERules?.blockUser?.forEach {
+            if(PreferenceManager.getUsername()?.equals(it.username) == true && it.isBlocked == 1){
+                exoPlayer.clearMediaItems()
+            }
+        }
+    }
 
     LaunchedEffect(appPkgChannels) {
         if(!isYoutube.value) {
@@ -802,22 +816,6 @@ fun CaastvVideoPlayer(
 
 
         // Display only visible messages
-        visibleFingerprint.forEach { fingerprint ->
-            key(fingerprint._id) { // Important for proper recomposition
-                ChannelFingerprintOverlay(fingerprintRule = fingerprint,
-                    onFinish = { updatedAt ->
-                        // Remove this message from the visible list
-                        visibleMessages.removeIf { it.updatedAt == updatedAt }
-
-                        // Also save to preferences
-                        fingerprint._id?.let { id ->
-                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
-                        }
-                    })
-            }
-        }
-
-        // Display only visible messages
         visibleMessages.forEach { message ->
             key(message._id) { // Important for proper recomposition
                 ScrollingMessageOverlay(
@@ -835,6 +833,22 @@ fun CaastvVideoPlayer(
             }
         }
 
+    }
+
+    // Display only visible messages
+    visibleFingerprint.forEach { fingerprint ->
+        key(fingerprint._id) { // Important for proper recomposition
+            ChannelFingerprintOverlay(fingerprintRule = fingerprint,
+                onFinish = { updatedAt ->
+                    // Remove this message from the visible list
+                    visibleMessages.removeIf { it.updatedAt == updatedAt }
+
+                    // Also save to preferences
+                    fingerprint._id?.let { id ->
+                        PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                    }
+                })
+        }
     }
 }
 

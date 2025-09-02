@@ -116,8 +116,8 @@ fun Context.provideCryptoGuardSourceFactory(defaultLicenseUrl:String="https://dr
 @OptIn(UnstableApi::class)
 suspend fun Context.provideCryptoGuardMediaSource(defaultLicenseUrl:String= Constants.DRM_LICENSE_BASE+"/", contentUrl:String?=null, contentId:String?=null, logData:HashMap<String,String>?=null): MediaItem {
     val dataS = dataStore?.data?.first()
-    val uNamme = PreferenceManager.getUsername()?:"" //dataS?.get(DataStoreKeys.USERNAME) ?: ""
-    val pwd = PreferenceManager.getPassword() //dataS?.get(DataStoreKeys.PASSWORD) ?: ""
+    val uNamme = PreferenceManager.getUsername()?:""
+    val pwd = PreferenceManager.getPassword()
 
     val macAddress = provideMacAddress()
     loge("loginInfo>>","${uNamme},${pwd},>${macAddress}")

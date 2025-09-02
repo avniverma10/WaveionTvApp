@@ -26,6 +26,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.android.panmetroiptv.extensions.generateTextFingerprint
 import com.android.panmetroiptv.extensions.getFloatValue
 import com.android.panmetroiptv.extensions.getIntValue
@@ -172,27 +174,36 @@ fun GlobalFingerprintOverlay(
     }
 
     if (visible) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize().padding(
-                    start = with(density) { currentOffset.x.toDp() },
-                    top = with(density) { currentOffset.y.toDp() }
-                )
-        ) {
-            Text(
-                text = displayMessage,
-                fontSize = fingerprintRule.fontSizeDp?.toString().getIntValue().sp,
-                color = fontColor,
-                maxLines = 1,
-                overflow = TextOverflow.Visible,
-                modifier = Modifier
-                    .background(bgColor, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .onSizeChanged { size ->
-                        textWidth = size.width
-                        textHeight = size.height
-                    }
+        Popup(
+            properties = PopupProperties(
+                focusable = false,
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false
             )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize().padding(
+                        start = with(density) { currentOffset.x.toDp() },
+                        top = with(density) { currentOffset.y.toDp() }
+                    )
+            ) {
+                Text(
+                    text = displayMessage,
+                    fontSize = fingerprintRule.fontSizeDp?.toString().getIntValue().sp,
+                    color = fontColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Visible,
+                    modifier = Modifier
+                        .background(bgColor, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .onSizeChanged { size ->
+                            textWidth = size.width
+                            textHeight = size.height
+                        }
+                )
+            }
         }
     }
 }

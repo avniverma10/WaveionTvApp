@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,9 +71,7 @@ import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.calculateProgramsWidth
-import com.android.panmetroiptv.extensions.formatTime
 import com.android.panmetroiptv.extensions.hideKeyboard
-import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.utils.theme.bg_card_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
@@ -116,11 +113,15 @@ fun EPGContent(
     LaunchedEffect(epgList) {
         if (isFirstComposition && epgList.isNotEmpty()) {
             delay(100)
-            channelFocusRequesters[0].requestFocus()
+            try {
+                channelFocusRequesters[0].requestFocus()
+            } catch (e: IllegalStateException) { }
             isFirstComposition = false
         } else if (!isFirstComposition && lastIndex in epgList.indices) {
             delay(100)
-            channelFocusRequesters[lastIndex].requestFocus()
+            try {
+                channelFocusRequesters[lastIndex].requestFocus()
+            } catch (e: IllegalStateException) { }
         }
     }
     val programFocusRequesters = remember(epgList) {
@@ -134,9 +135,11 @@ fun EPGContent(
         // only when *language* was just changed
         if (epgList.isEmpty()) {
             delay(100)    // wait for compose to settle
-            languageFocusRequesters
-                .getOrNull(languageSelectedIndex.value)
-                ?.requestFocus()
+            try {
+                languageFocusRequesters
+                    .getOrNull(languageSelectedIndex.value)
+                    ?.requestFocus()
+            } catch (e: IllegalStateException) { }
         }
     }
 
@@ -298,7 +301,9 @@ fun EPGContent(
                                                                     nextRowState.animateScrollToItem(0)
                                                                     // then give it a moment to bind
                                                                     delay(50)
-                                                                    nextRowFirst.requestFocus()
+                                                                    try {
+                                                                        nextRowFirst.requestFocus()
+                                                                    } catch (e: IllegalStateException) { }
                                                                 }
                                                             }
                                                             true
@@ -328,7 +333,10 @@ fun EPGContent(
                                                                             0
                                                                         )
                                                                         delay(50)
-                                                                        prevRowFirst.requestFocus()
+
+                                                                        try {
+                                                                            prevRowFirst.requestFocus()
+                                                                        } catch (e: IllegalStateException) { }
                                                                     }
                                                                 }
                                                             }

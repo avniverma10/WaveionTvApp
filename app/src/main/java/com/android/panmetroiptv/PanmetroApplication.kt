@@ -17,12 +17,6 @@ import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class PanmetroApplication : Application(), CoreComponentProvider, LifecycleObserver {
-    companion object {
-        /** True if any part of our app is visible in the foreground. */
-        @JvmStatic
-        var isInForeground: Boolean = false
-            private set
-    }
     private val wtvEGPLiveData: MutableLiveData<List<EPGDataItem>> = MutableLiveData()
     private val wtvAppManifest: MutableLiveData<WTVManifest> = MutableLiveData()
     private val isUserBlocked: MutableLiveData<Boolean> = MutableLiveData()
@@ -31,6 +25,12 @@ class PanmetroApplication : Application(), CoreComponentProvider, LifecycleObser
     private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
     private val macAddr: MutableLiveData<String> = MutableLiveData()
+    companion object {
+        /** True if any part of our app is visible in the foreground. */
+        @JvmStatic
+        var isInForeground: Boolean = false
+            private set
+    }
 
     override fun onCreate() {
         super.onCreate()

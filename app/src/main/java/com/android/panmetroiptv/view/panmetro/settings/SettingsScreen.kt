@@ -62,7 +62,9 @@ fun SettingsScreen(navController: NavController, sharedViewModel: SharedViewMode
 
     //hide keyboard forcefully
     LaunchedEffect(Unit) {
-        firstMenuItemFocusRequester.requestFocus()
+        try {
+            firstMenuItemFocusRequester.requestFocus()
+        } catch (e: IllegalStateException) { }
     }
 
     val focusManager = LocalFocusManager.current
@@ -89,7 +91,9 @@ fun SettingsScreen(navController: NavController, sharedViewModel: SharedViewMode
             modifier        = Modifier.align(Alignment.CenterStart),
             menuFocusRequester = menuFocusRequester,
             onBackPressed = {
-                menuFocusRequester.requestFocus()
+                try {
+                    menuFocusRequester.requestFocus()
+                } catch (e: IllegalStateException) { }
             }
         )
         if (showExitDialog) {

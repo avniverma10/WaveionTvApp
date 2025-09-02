@@ -45,7 +45,6 @@ import com.android.panmetroiptv.model.data.manifest.EPGCategory
 import com.android.panmetroiptv.model.data.manifest.TabInfo
 import com.android.panmetroiptv.utils.theme.screen_bg_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
-import com.android.panmetroiptv.view.navigationhelper.CategoryMenu
 import com.android.panmetroiptv.view.navigationhelper.ExpandableNavigationMenu
 import com.android.panmetroiptv.view.navigationhelper.LanguageMenu
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
@@ -53,6 +52,7 @@ import com.android.panmetroiptv.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.android.panmetroiptv.viewmodels.SharedViewModel
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.tccl.tvapp.view.navigationhelper.CategoryMenu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -207,7 +207,9 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
             },
             modifier = Modifier.align(Alignment.CenterStart),
             onBackPressed = {
-                menuFocusRequester.requestFocus()
+                try {
+                    menuFocusRequester.requestFocus()
+                } catch (e: IllegalStateException) { }
             }
         )
     }

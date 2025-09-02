@@ -26,6 +26,7 @@ import com.android.panmetroiptv.R
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.sseresponse.Fingerprint
 import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
+import com.android.panmetroiptv.utils.network.scheduler.ServerGSSECheckWorker
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.epg.EPGScreen
 import com.android.panmetroiptv.view.panmetro.genre.PanmetroGenreScreen
@@ -34,6 +35,7 @@ import com.android.panmetroiptv.view.panmetro.player.CaastvVideoPlayer
 import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.profile.ProfileScreen
 import com.android.panmetroiptv.view.splash.SplashScreen
+import com.android.panmetroiptv.view.uicomponent.error.BlockUserScreen
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
@@ -46,12 +48,24 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
+    val globalSSERequestEvent by sharedViewModel.isGlobalSSEClosed.collectAsState()
+
     //In your composable function or ViewModel
     var userInfo = remember { mutableStateOf<LoginInfo?>(null)}
     var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
     val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
     val visibleFingerprint = remember { mutableStateListOf<Fingerprint>() }
     val context = LocalContext.current
+
+    LaunchedEffect(globalSSERequestEvent) {
+        if (globalSSERequestEvent == true) {
+            // Server went offline - start sse checks
+            ServerGSSECheckWorker.schedule(context,sharedViewModel)
+        } else {
+            // Server is back online - cancel sse checks
+            ServerGSSECheckWorker.cancel(context)
+        }
+    }
 
 
     LaunchedEffect(globalSSERules) {
@@ -199,7 +213,7 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
         }
 
         globalSSERules?.userUpdates?.forEach {
-            if(userInfo?.value?.userId?.equals(it.userId) == true){
+            if(userInfo?.value?.userId.toString()?.equals(it.userId,true) == true){
                 userInfo?.value?.customerNumber?.let {
                     sharedViewModel.userPackageUpdate(customerNumber = it, isPkgUpdateOnly = true)
                     sharedViewModel.provideGlobalSSERequest()
@@ -210,20 +224,16 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
 
         globalSSERules?.blockUser?.forEach {
             if(PreferenceManager.getUsername()?.equals(it.username) == true && it.isBlocked == 1){
-                CommonDialog(
+                BlockUserScreen(
                     showDialog = true,
-                    message = null,
-                    painter = painterResource(id = R.drawable.media_error),
-                    errorCode = null,
-                    errorMessage = "Temporarily blocked. Please contact your provider to continue.",
+                    message = "Temporarily blocked. Please contact your provider to continue.",
                     confirmButtonText = "Exit",
                     onConfirm = {
                         (context as? Activity)?.finishAffinity()
                         android.os.Process.killProcess(android.os.Process.myPid())
                     },
                     dismissButtonText = null,
-                    onDismiss = {}
-                )
+                    onDismiss = {})
             }
         }
 
@@ -257,6 +267,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
            // PanMetroVideoPlayer(navController,sharedViewModel)
            CaastvVideoPlayer(navController,sharedViewModel)
         }
+
     }
 
 }

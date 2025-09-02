@@ -112,7 +112,11 @@ fun LanguageMenu(
                                 ?.let { requester ->
                                     coroutineScope.launch {
                                         delay(50)
-                                        runCatching { requester.requestFocus() }
+                                        runCatching {
+                                            try {
+                                                requester.requestFocus()
+                                            } catch (e: IllegalStateException) { }
+                                        }
                                             .onFailure {
                                                 loge("FocusError", "Category focus restore failed: ${it.message}")
                                             }
@@ -126,7 +130,12 @@ fun LanguageMenu(
                             coroutineScope.launch {
                                 delay(100)
                                 if (sharedViewModel.filteredEPGList.value.isNotEmpty()) {
-                                    runCatching { firstChannelFocusRequester.requestFocus() }
+                                    runCatching {
+                                        try {
+                                            firstChannelFocusRequester.requestFocus()
+                                        } catch (e: IllegalStateException) { }
+
+                                    }
                                         .onFailure {
                                             loge("FocusError", "First channel focus failed: ${it.message}")
                                         }

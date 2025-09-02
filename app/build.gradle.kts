@@ -16,8 +16,8 @@ android {
         applicationId = "com.android.panmetroiptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 59
-        versionName = "1.0.59"
+        versionCode = 65
+        versionName = "1.0.65"
     }
 
     buildTypes {
@@ -92,6 +92,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.bundles.coroutines)
+    implementation(libs.work.runtime)
     // Coil
     implementation(libs.bundles.coil)
     // Dagger - Hilt

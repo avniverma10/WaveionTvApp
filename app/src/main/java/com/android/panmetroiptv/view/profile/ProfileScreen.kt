@@ -113,7 +113,9 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
             modifier = Modifier.align(Alignment.CenterStart),
             menuFocusRequester = menuFocusRequester,
             onBackPressed = {
-                menuFocusRequester.requestFocus()
+                try {
+                    menuFocusRequester.requestFocus()
+                } catch (e: IllegalStateException) { }
             }
         )
     }

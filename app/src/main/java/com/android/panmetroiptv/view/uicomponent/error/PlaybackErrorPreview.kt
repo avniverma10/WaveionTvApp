@@ -30,6 +30,7 @@ import com.android.panmetroiptv.R
 @Composable
 fun PlaybackErrorPreview(
     errorCode: Int,
+    title: String?=null,
     errorMessage: String,
     modifier: Modifier = Modifier
 ) {
@@ -69,7 +70,7 @@ fun PlaybackErrorPreview(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Playback Error",
+                    text = title?:"Playback Error",
                     fontSize = 14.sp,
                     color = Color.White
                 )

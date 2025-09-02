@@ -31,6 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -69,12 +72,29 @@ fun PanMetroInfoScreen(
     //HideKeyboardOnEnter()
     LaunchedEffect(Unit) {
         context.hideKeyboard()
-        okButtonFocusRequester.requestFocus()
+        try {
+            okButtonFocusRequester.requestFocus()
+        } catch (e: IllegalStateException) { }
     }
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0x80BBB7B7)), // semi-transparent black
+            .background(Color(0x80BBB7B7))
+            .onKeyEvent { keyEvent ->
+            // Block all D-pad navigation keys (up, down, left, right)
+            when (keyEvent.key) {
+                Key.DirectionUp, Key.DirectionDown, Key.DirectionLeft, Key.DirectionRight -> {
+                    // Consume the event to prevent navigation
+                    true
+                }
+                Key.Enter -> {
+                    // Allow Enter key to trigger OK button
+                    onOkClick()
+                    true
+                }
+                else -> false
+            }
+        },
         contentAlignment = Alignment.Center
     ) {
         // Centered Card

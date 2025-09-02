@@ -46,7 +46,9 @@ fun NetworkUnstableScreen(
 
     LaunchedEffect(Unit) {
         if (initialFocusOnConfirm) {
-            networkSettingsRequester.requestFocus()
+            try {
+                networkSettingsRequester.requestFocus()
+            } catch (e: IllegalStateException) { }
         }else {
             exitAppRequester.requestFocus()
         }

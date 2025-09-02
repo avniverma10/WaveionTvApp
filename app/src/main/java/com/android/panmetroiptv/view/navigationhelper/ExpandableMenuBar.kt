@@ -103,7 +103,9 @@ fun ExpandableNavigationMenu(
             onDismiss = {
                 showExitDialog = false
                 if (selectedIndex <= 0) {
-                    profileFocusRequester.requestFocus()
+                    try {
+                        profileFocusRequester.requestFocus()
+                    } catch (e: IllegalStateException) { }
                 } else {
                     focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
                         try {
@@ -123,7 +125,9 @@ fun ExpandableNavigationMenu(
                 delay(200)
                 if (expanded) {
                     if(selectedIndex<=0){
-                        profileFocusRequester.requestFocus()
+                        try {
+                            profileFocusRequester.requestFocus()
+                        } catch (e: IllegalStateException) { }
                     }else {
                         focusRequesters.getOrNull(selectedIndex - 1)?.let { requester ->
                             try {
@@ -161,7 +165,10 @@ fun ExpandableNavigationMenu(
                                 showExitDialog = true
                                 backPressCount = 0
                             }
-                            menuFocusRequester.requestFocus()
+
+                            try {
+                                menuFocusRequester.requestFocus()
+                            } catch (e: IllegalStateException) { }
                             true
                         }
                         android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -317,11 +324,15 @@ fun FocusableRow(
                     }
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            nextFocusRequester?.requestFocus()
+                            try {
+                                nextFocusRequester?.requestFocus()
+                            } catch (e: IllegalStateException) { }
                             true
                         }
                         android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                            prevFocusRequester?.requestFocus()
+                            try {
+                                prevFocusRequester?.requestFocus()
+                            } catch (e: IllegalStateException) { }
                             true
                         }
                         else -> false

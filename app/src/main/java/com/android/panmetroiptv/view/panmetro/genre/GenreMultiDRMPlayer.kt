@@ -51,10 +51,13 @@ import com.android.panmetroiptv.extensions.extractYouTubeId
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
+import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.extensions.toJSONObject
 import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
 import com.android.panmetroiptv.utils.Constants
+import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
+import com.android.panmetroiptv.view.uicomponent.error.BlockUserScreen
 import com.android.panmetroiptv.view.uicomponent.error.PlaybackErrorPreview
 import com.android.panmetroiptv.view.uicomponent.fingerprint.PrePlayerFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
@@ -80,8 +83,10 @@ fun GenreMultiDRMPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     val selectedVideoUrl by sharedViewModel.selectedChannel.collectAsState()
     val appPkgChannels by sharedViewModel.appPkgChannels.collectAsStateWithLifecycle()
-    //val playerSSERules by sharedViewModel.prePlayerSSERules.collectAsState()
+    val availablePkg by sharedViewModel.availablePkg.collectAsStateWithLifecycle()
+    val prePlayerSSERules by sharedViewModel.prePlayerSSERules.collectAsState()
     val visibleFingerprint = remember { mutableStateListOf<PlayerFingerprint>() }
+    val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
 
     // Mutable state for UI updates
     var isAudio = remember { mutableStateOf(false) }
@@ -101,6 +106,7 @@ fun GenreMultiDRMPlayer(
 
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorCodeState by remember { mutableStateOf(0) }
+    var errorTitle by remember { mutableStateOf("") }
     var errorMessageState by remember { mutableStateOf("") }
 
     // Set FLAG_SECURE if desired.
@@ -187,6 +193,7 @@ fun GenreMultiDRMPlayer(
 
 
 
+
     suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){
         val mediaItem = if (isDRMUrl.value) {
             context.provideCryptoGuardMediaSource(
@@ -200,6 +207,7 @@ fun GenreMultiDRMPlayer(
         if(isDRMUrl.value && sharedViewModel.getUserEnableToPlayChannel(assetId.toString()) != true){
             val (code, title, message) = playerErrorHandling(6200)
             errorCodeState = code
+            errorTitle = title
             errorMessageState = message
             showErrorDialog = true
             exoPlayer.clearMediaItems()
@@ -208,11 +216,26 @@ fun GenreMultiDRMPlayer(
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
-            sharedViewModel.providePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+            sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
         }
     }
 
 
+
+
+    LaunchedEffect(globalSSERules) {
+        if(globalSSERules?.blockUser?.size == 0){
+            selectedVideoUrl.content?.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.content?.assetId )
+            }
+            return@LaunchedEffect
+        }
+        globalSSERules?.blockUser?.forEach {
+            if(PreferenceManager.getUsername()?.equals(it.username) == true && it.isBlocked == 1){
+                exoPlayer.clearMediaItems()
+            }
+        }
+    }
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
@@ -244,7 +267,7 @@ fun GenreMultiDRMPlayer(
     }
 
 
-    LaunchedEffect(appPkgChannels) {
+    LaunchedEffect(appPkgChannels,availablePkg) {
         if(!isYoutube.value) {
             selectedVideoUrl.content?.videoUrl?.let {
                 handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.content?.assetId )
@@ -389,13 +412,6 @@ fun GenreMultiDRMPlayer(
                 }
             }
         }
-        /*if ((playerSSERules?.fingerprints?.size ?: 0) > 0) {
-            playerSSERules?.fingerprints?.forEach {
-                PrePlayerFingerprintOverlay(
-                    fingerprintRule = it
-                )
-            }
-        }*/
 
         /*if ((playerSSERules?.scrollMessages?.size ?: 0) > 0) {
             playerSSERules?.scrollMessages?.forEach {
@@ -425,9 +441,20 @@ fun GenreMultiDRMPlayer(
         if (showErrorDialog) {
             PlaybackErrorPreview(
                 errorCode = errorCodeState,
+                title = errorTitle,
                 errorMessage = errorMessageState,
                 modifier = Modifier.align(Alignment.Center)
             )
+        }
+
+
+
+        if ((prePlayerSSERules?.fingerprints?.size ?: 0) > 0) {
+            prePlayerSSERules?.fingerprints?.forEach {
+                PrePlayerFingerprintOverlay(
+                    fingerprintRule = it
+                )
+            }
         }
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
@@ -456,7 +483,7 @@ fun GenreMultiDRMPlayer(
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose {
                 exoPlayer.stop()
-                //sharedViewModel.stopPrePlayerSSE()
+                sharedViewModel.stopPrePlayerSSE()
                 lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }

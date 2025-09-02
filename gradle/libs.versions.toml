@@ -37,6 +37,7 @@ threetenabp_v = "1.4.8"
 splash_v = "1.0.1"
 sdp_android_v = "1.1.0"
 runtimeLivedata = "1.7.8"
+work_version ="2.9.0"
 
 
 [libraries]
@@ -74,6 +75,8 @@ pager = { module = "com.google.accompanist:accompanist-pager", version.ref = "pa
 pager-indicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "pager" }
 
 constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout-compose" }
+
+work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work_version" }
 
 #room = { module = "androidx.room:room-runtime", version.ref = "room_version" }
 #room-ksp = { module = "androidx.room:room-compiler", version.ref = "room_version" }

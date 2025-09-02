@@ -1,11 +1,19 @@
 package com.android.panmetroiptv.model.data.login
 
+import android.annotation.SuppressLint
+import com.android.panmetroiptv.extensions.loge
 import com.google.gson.annotations.SerializedName
+import org.threeten.bp.LocalDate
+import org.threeten.bp.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 data class CustomerPackageInfo(
     val count: Int,
     val page: Int,
-    val results: List<Result>,
+    val results: List<Result>?,
     @SerializedName("results-per-page")
     val resultsPerPage: Int
 )
@@ -27,4 +35,23 @@ data class Result(
     val serviceId: Int,
     @SerializedName("service-name")
     val serviceName: String
-)
+){
+    @SuppressLint("SimpleDateFormat")
+    fun isExpired(): Boolean {
+        return try {
+            // Parse the provided date string
+            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            formatter.timeZone = TimeZone.getTimeZone("UTC") // Important for consistency
+
+            val expirationDate = formatter.parse(expireDate)
+            val currentDate = Date() // Current date
+
+            // Check if current date is after the expiration date
+            currentDate.after(expirationDate)
+        } catch (e: Exception) {
+            // Handle parsing errors (invalid date format)
+            // You might want to log this error or handle it differently
+            true // Or false, depending on your business logic for invalid dates
+        }
+    }
+}

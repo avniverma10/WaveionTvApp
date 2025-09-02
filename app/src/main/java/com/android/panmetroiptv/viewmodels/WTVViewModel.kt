@@ -17,16 +17,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.panmetroiptv.R
-import com.android.panmetroiptv.extensions.appPkgChannelsLiveData
 import com.android.panmetroiptv.extensions.applyAppManifest
 import com.android.panmetroiptv.extensions.applyEPGData
 import com.android.panmetroiptv.extensions.isNotNullOrEmpty
 import com.android.panmetroiptv.extensions.logd
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.provideMacAddress
-import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.extensions.toJSONObject
-import com.android.panmetroiptv.extensions.updatePkgChannels
 import com.android.panmetroiptv.model.data.appupdate.AppUpdateData
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
@@ -35,7 +32,6 @@ import com.android.panmetroiptv.model.data.language.WTVLanguage
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.sse.TabItem
-import com.android.panmetroiptv.model.data.sseresponse.GlobalSSEResponse
 import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
 import com.android.panmetroiptv.model.repository.login.LoginPrefsRepository
@@ -43,7 +39,6 @@ import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.sealed.WTVResponse
 import com.android.panmetroiptv.utils.sealed.firstOrNullSuccess
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
-import com.android.panmetroiptv.utils.uistate.PreferenceManager.getUserPackageInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -65,7 +60,6 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
-import kotlin.text.equals
 
 
 @HiltViewModel
@@ -655,7 +649,7 @@ open class WTVViewModel @Inject constructor(
                             userPackageUpdate(customerNumber = response.data.customerNumber, isChannelUpdateRequired = true)
                         }
                     }//_bannerList.value = response.data
-                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //logReport("_bannerList:${response.error.message}")
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //loge("_bannerList:${response.error.message}")
                 }
             }
         }
@@ -670,8 +664,7 @@ open class WTVViewModel @Inject constructor(
                         PreferenceManager.saveUserPackageInfo(response.data)
                         response.data?.provideAvailablePkgData()?.let {
                             _availablePkg.value = it
-                            //call when isPkgUpdateOnly true
-                            _availablePkg.value?.let { customerChannelUpdates(it) }
+                            customerChannelUpdates(it)
                         }
                     }
                     is WTVResponse.Failure -> {
@@ -683,11 +676,11 @@ open class WTVViewModel @Inject constructor(
     }
 
     fun CustomerPackageInfo.provideAvailablePkgData(): List<String>? {
-        return this?.results
-            ?.mapNotNull { it.serviceId.toString() }
+        return this.results
+            ?.filterNot { it.isExpired() }
+            ?.mapNotNull { it.serviceId?.toString() }
             ?.filter { it.isNotBlank() }
             ?.distinct()
-            ?.toList()
     }
 
 

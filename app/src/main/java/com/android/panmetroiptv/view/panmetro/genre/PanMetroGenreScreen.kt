@@ -1,6 +1,6 @@
 package com.android.panmetroiptv.view.panmetro.genre
 
-import android.util.Log
+import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
@@ -41,16 +40,13 @@ import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.isNotNullOrEmpty
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
-import com.android.panmetroiptv.model.data.manifest.TabInfo
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.panmetro.common.PermettoTopBar
 import com.android.panmetroiptv.view.panmetro.common.PoweredBy
 import com.android.panmetroiptv.view.uicomponent.ZoomInOutSwitcher
-import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.android.panmetroiptv.viewmodels.SharedViewModel
-import com.android.panmetroiptv.viewmodels.genre.GenreViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -218,7 +214,9 @@ fun PanmetroGenreScreen(
                                     genreListState.animateScrollToItem(idx)
                                     snapshotFlow { genreListState.layoutInfo.visibleItemsInfo.any { it.index == idx } }
                                         .first { it }
-                                    genreFocusRequesters.getOrNull(idx)?.requestFocus()
+                                    try {
+                                        genreFocusRequesters.getOrNull(idx)?.requestFocus()
+                                    } catch (e: IllegalStateException) { }
                                 }
                             },
                             onVideoChange =  onVideoChange,

@@ -33,6 +33,7 @@ import com.android.panmetroiptv.model.wtvdatabase.EPGContract
 import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.network.heper.ConnectivityObserver
 import com.android.panmetroiptv.utils.network.heper.NetworkStatus
+import com.android.panmetroiptv.utils.network.interceptors.ApiStatusInterceptor
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,6 +70,8 @@ open class SharedViewModel @Inject constructor(
     private val observer = ConnectivityObserver(application)
     var deviceMacAddr = MutableStateFlow<String>("")
     var isFromSplash = MutableStateFlow<Boolean>(false)
+
+    var isGlobalSSEClosed = MutableStateFlow<Boolean>(false)
 
     private var globalEventSource: EventSource? = null
     private val _globalSSERules = MutableStateFlow<GlobalSSEResponse?>(null)
@@ -115,8 +118,6 @@ open class SharedViewModel @Inject constructor(
     private val _currentPlaylist = MutableStateFlow<List<EPGDataItem>>(emptyList())
     val currentPlaylist: StateFlow<List<EPGDataItem>> = _currentPlaylist
 
-    private val _lastFocusedChannel = MutableStateFlow(0)
-    val lastFocusedChannel: StateFlow<Int> = _lastFocusedChannel
 
     private val _lastSelectedChannelIndex = MutableStateFlow<Int>(-1)
 
@@ -128,14 +129,6 @@ open class SharedViewModel @Inject constructor(
     private val _genreScreenLastChannelIndex = MutableStateFlow(0)
     val genreScreenLastChannelIndex: StateFlow<Int> = _genreScreenLastChannelIndex
 
-    // LiveData for package-channel blocking (from your existing code)
-    private val _packageChannelBlockData = MutableLiveData<HashMap<String, MutableSet<String>>>()
-    val packageChannelBlockData: LiveData<HashMap<String, MutableSet<String>>> = _packageChannelBlockData
-
-
-
-    private val _availableProgram = MutableStateFlow<List<Programme>>(emptyList())
-    val availableProgram: StateFlow<List<Programme>> = _availableProgram.asStateFlow()
     var lastFocusedChannelIndex = mutableStateOf(0)
         private set
 
@@ -164,28 +157,6 @@ open class SharedViewModel @Inject constructor(
             applyFilters()
         }
     }
-
-   /* fun initializeUserPkgChannelsData(customerNumber:String){
-        PreferenceManager.getLoginResponse()?.customerNumber?.let {
-            userPackageUpdate(customerNumber = it)
-        }
-
-    }
-
-    private fun observePackageChannelBlockData() {
-        packageChannelBlockData.observeForever { blockMap ->
-            updateBlockedChannels(blockMap)
-        }
-    }
-
-    private suspend fun isChannelEnableToPlay(assetId:String) {
-        // Implement actual player blocking logic here
-        // This could be through a MediaSession, ExoPlayer, or your player component
-        logd("PlayerBlock", "Blocking $channelIds in package $packageName")
-
-        // Example: Notify player service or manager
-        // playerManager.blockChannels(packageName, channelIds)
-    }*/
 
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -227,47 +198,7 @@ open class SharedViewModel @Inject constructor(
         lastFocusedChannelIndex.value = index
     }
 
-    suspend fun fetchEPGList(context: Context): List<EPGDataItem> {
-        return withContext(Dispatchers.IO) {
-            val cursor = context.contentResolver.query(
-                EPGContract.EPGEntry.CONTENT_URI, null, null, null, null
-            )
-            val list = mutableListOf<EPGDataItem>()
-            cursor?.use {
-                while (it.moveToNext()) {
-                    val dataJson = it.getString(it.getColumnIndexOrThrow(EPGContract.EPGEntry.COLUMN_DATA))
-                    Gson().fromJson(dataJson, EPGDataItem::class.java)?.let { item ->
-                        list.add(item)
-                    }
-                }
-            }
-            list
-        }
-    }
 
-   /* fun observeEPGChanges(context: Context): Flow<List<EPGDataItem>> = callbackFlow {
-        val observer = object : ContentObserver(null) {
-            override fun onChange(selfChange: Boolean) {
-                launch {
-                    val epgList = fetchEPGList(context)
-                    _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
-                    applyFilters()
-                    trySend(epgList)
-                }
-            }
-        }
-        context.contentResolver.registerContentObserver(
-            EPGContract.EPGEntry.CONTENT_URI, true, observer
-        )
-        val epgList = fetchEPGList(context)
-        _epgChannels.value = epgList.mapNotNull { it.tv?.channel }
-        applyFilters()
-        trySend(epgList)
-        //filterPanMetroChannelsByGenre()
-
-        awaitClose { context.contentResolver.unregisterContentObserver(observer) }
-    }.flowOn(Dispatchers.IO)
-*/
     fun updateGenre(genre: String?) {
         val newGenre = if (genre.equals("All",true) ) null else genre
         _filterState.value = _filterState.value.copy(genre = newGenre)
@@ -331,15 +262,11 @@ open class SharedViewModel @Inject constructor(
 
 
     fun provideGlobalSSERequest() {
-        val loginInfo = PreferenceManager.getLoginResponse()
-
-
         val queryBuilder = (Constants.BASE_URL + "app/combined-sse?")
             .toUri()
             .buildUpon()
 
         // Only append if values are not null or blank
-
         PreferenceManager.getUserPackageInfo()?.results?.joinToString(",") { it.serviceName }?.let {
             queryBuilder.appendQueryParameter("package", it)
         }
@@ -348,7 +275,7 @@ open class SharedViewModel @Inject constructor(
             queryBuilder.appendQueryParameter("user", "${PreferenceManager.getLoginResponse()?.userId}:${it}")
         }
 
-        loginInfo?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
+        PreferenceManager.getLoginResponse()?.provideUserRegionCode()?.takeIf { it.isNotBlank() }?.let {
             queryBuilder.appendQueryParameter("region", it)
         }?: run {
             queryBuilder.appendQueryParameter("region", "01")
@@ -366,13 +293,14 @@ open class SharedViewModel @Inject constructor(
         loge("finalUrl>",sseUrl)
 
         val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
+             .addInterceptor { chain ->
                 val original = chain.request()
                 val withHeaders = original.newBuilder()
                     .header("x-api-key", Constants.HEADER_TOKEN)
                     .build()
                 chain.proceed(withHeaders)
-            }
+             }
+            .addInterceptor(ApiStatusInterceptor.getInstance())
             .retryOnConnectionFailure(true)
             .readTimeout(0, TimeUnit.MILLISECONDS) // Required for SSE!
             .build()
@@ -383,7 +311,9 @@ open class SharedViewModel @Inject constructor(
 
         val listener = object : EventSourceListener() {
             override fun onOpen(eventSource: EventSource, response: Response) {
+                loge("SSE onOpen>",sseUrl)
                 // Log or perform actions on open
+                isGlobalSSEClosed.value = false
             }
 
             override fun onEvent(
@@ -405,8 +335,9 @@ open class SharedViewModel @Inject constructor(
             }
 
             override fun onClosed(eventSource: EventSource) {
+                isGlobalSSEClosed.value = true
                 // Optionally handle close events.
-                logReport("SSE>", "Connection closed")
+                loge("SSE>", "Connection closed")
             }
 
             override fun onFailure(
@@ -415,7 +346,8 @@ open class SharedViewModel @Inject constructor(
                 response: Response?
             ) {
                 // Handle failures (and consider restarting the connection).
-                logReport("SSE SSE", "Connection failed: ${t?.message}")
+                loge("SSE SSE", "Connection failed: ${t?.message}")
+                isGlobalSSEClosed.value = true
             }
         }
 
@@ -496,7 +428,7 @@ open class SharedViewModel @Inject constructor(
 
             override fun onClosed(eventSource: EventSource) {
                 // Optionally handle close events.
-                logReport("SSE", "Connection closed")
+                loge("SSE", "Connection closed")
             }
 
             override fun onFailure(
@@ -505,7 +437,7 @@ open class SharedViewModel @Inject constructor(
                 response: Response?
             ) {
                 // Handle failures (and consider restarting the connection).
-                logReport("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
+                loge("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
             }
         }
 
@@ -516,7 +448,6 @@ open class SharedViewModel @Inject constructor(
     fun providePrePlayerSSERequest(
         channel: String?=null,//"1003:RAAPCHIK"
     ) {
-       // _prePlayerSSERules.value = PlayerSSEResponse(fingerprints = mutableListOf(PlayerFingerprint()), scrollMessages =emptyList<ScrollMessage>(), forceMessages = emptyList<ForceMessage>() )
         prePlayerEventSource?.let {
             prePlayerEventSource?.cancel()
             prePlayerEventSource = null
@@ -587,7 +518,7 @@ open class SharedViewModel @Inject constructor(
 
             override fun onClosed(eventSource: EventSource) {
                 // Optionally handle close events.
-                logReport("SSE", "Connection closed")
+                loge("SSE", "Connection closed")
             }
 
             override fun onFailure(
@@ -596,7 +527,7 @@ open class SharedViewModel @Inject constructor(
                 response: Response?
             ) {
                 // Handle failures (and consider restarting the connection).
-                logReport("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
+                loge("PlayerFingerprint SSE", "Connection failed: ${t?.message}")
             }
         }
 
@@ -618,10 +549,11 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun getUserEnableToPlayChannel(assetId:String): Boolean{
-        val userPackages = availablePkg?.value ?: return false
+        val userPackages = PreferenceManager.getUserPackageInfo()?.provideAvailablePkgData()//availablePkg?.value ?: return false
         val appPkgChannels = appPkgChannels?.value ?: return false
         // Check if any user package contains the assetId
-        val canPlay = userPackages.any { pkg ->
+        val canPlay = userPackages?.any { pkg ->
+            // If package is not expired, then check if it contains the assetId
             appPkgChannels[pkg]?.contains(assetId) == true
         }
         // Create a set of all allowed channels for faster lookup
@@ -636,7 +568,7 @@ open class SharedViewModel @Inject constructor(
         val canPlay = assetId in allowedChannels
        */
         loge("getUserEnableToPlayChannel", "Asset: $assetId, Can play: $canPlay")
-        return canPlay
+        return canPlay?:false
     }
 
     fun stopGlobalSSE() {
@@ -657,6 +589,7 @@ open class SharedViewModel @Inject constructor(
         filterPreferences.clearFilter(viewModelScope)
         stopGlobalSSE()
         stopPlayerSSE()
+        stopPrePlayerSSE()
         super.onCleared()
     }
 }
