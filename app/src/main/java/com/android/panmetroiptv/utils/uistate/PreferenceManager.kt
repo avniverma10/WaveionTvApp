@@ -2,9 +2,19 @@ package com.android.panmetroiptv.utils.uistate
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.android.panmetroiptv.extensions.convertIntoList
+import com.android.panmetroiptv.extensions.convertIntoModel
+import com.android.panmetroiptv.extensions.convertIntoModels
+import com.android.panmetroiptv.extensions.loge
+import com.android.panmetroiptv.extensions.provideGsonWithCoreJsonString
+import com.android.panmetroiptv.extensions.toListOfString
+import com.android.panmetroiptv.model.data.favorite.Favorite
+import com.android.panmetroiptv.model.data.language.WTVLanguage
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import kotlin.math.log
 
 object PreferenceManager {
   private lateinit var prefs: SharedPreferences
@@ -69,6 +79,14 @@ object PreferenceManager {
     return Gson().fromJson(json, CustomerPackageInfo::class.java)
   }
 
+
+  /** Clear pkg only the*/
+  fun clearPkg(): Boolean {
+    val editor = prefs.edit()
+    editor.remove(KEY_USER_PKG_INFO)
+    return editor.commit()
+  }
+
   /** Save username & password atomically */
   fun saveUserInfo(userInfo: LoginInfo) {
     val json = Gson().toJson(userInfo)
@@ -80,6 +98,28 @@ object PreferenceManager {
     val json = prefs.getString(KEY_USER_INFO, null)
       ?: return null
     return Gson().fromJson(json, LoginInfo::class.java)
+  }
+
+
+  fun saveUserFav(userId: String, favList: Favorite) {
+    val json = Gson().toJson(favList)
+    val editor = prefs.edit()
+    editor.putString(userId, json)
+    editor.apply()
+  }
+
+
+  fun getUserFav(username: String): List<String>? {
+    val json = prefs.getString(username, null) ?: return null
+    val favorite =  json.convertIntoModel(Favorite::class.java)
+    return favorite?.channelIds
+  }
+
+  /** Clear fav only the*/
+  fun clearFav(userId:String): Boolean {
+    val editor = prefs.edit()
+    editor.remove(userId)
+    return editor.commit()
   }
 
   fun saveHash(hash:String) {

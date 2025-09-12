@@ -286,7 +286,7 @@ fun ChannelListItem(
     val titleColor = if (isFocused || isPreview) base_color else Color.White
     val scale by animateFloatAsState(targetValue = if (isFocused) 1.05f else if (isFocused && isPreview) 1f else .9f)
 
-    val stops = channel.content?.bgGradient
+    val stops = channel.bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
         ?.mapNotNull {
@@ -327,7 +327,7 @@ fun ChannelListItem(
         ) {
             // Channel logo
             AsyncImage(
-                model = channel.content?.thumbnailUrl,
+                model = channel.thumbnailUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .size(35.dp)
@@ -345,7 +345,7 @@ fun ChannelListItem(
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = channel.content?.channelNo?.toString() ?: "--",
+                    text = channel.channelNo?.toString() ?: "--",
                     color = Color.Black,
                     fontSize = 11.sp
                 )
@@ -355,7 +355,7 @@ fun ChannelListItem(
 
             // Channel title
             Text(
-                text = channel.content?.title ?: "",
+                text = channel.title ?: "",
                 color = titleColor,
                 fontSize = 15.sp,
                 fontFamily = FontFamily(Font(R.font.figtree_medium)),

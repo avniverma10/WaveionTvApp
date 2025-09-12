@@ -15,11 +15,14 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -30,6 +33,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.C.WIDEVINE_UUID
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
@@ -61,10 +66,12 @@ import com.android.panmetroiptv.view.navigationhelper.Destination
 import com.android.panmetroiptv.view.uicomponent.ErrorDialog
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.viewmodels.SharedViewModel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.time.delay
 import java.io.File
 import java.time.Duration
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SplashScreen(
     sharedViewModel: SharedViewModel,
@@ -72,6 +79,26 @@ fun SplashScreen(
 ) {
     val context = LocalContext.current
     val activity = (context as? Activity)
+
+    // Add progress state collection
+    var splashLoader by remember { mutableStateOf(false) }
+    // Add these state variables at the top of your composable function
+    var splashProgress by remember { mutableFloatStateOf(0f) }
+    val splashMaxProgress = 100f
+    val totalDuration = 60000L // 20 seconds in milliseconds
+
+// LaunchedEffect to handle the animation
+    LaunchedEffect(Unit) {
+        val startTime = System.currentTimeMillis()
+        val endTime = startTime + totalDuration
+
+        while (System.currentTimeMillis() < endTime) {
+            val elapsed = System.currentTimeMillis() - startTime
+            splashProgress = (elapsed.toFloat() / totalDuration.toFloat()) * splashMaxProgress
+            delay(Duration.ofMillis(10L)) // ~60 FPS update rate
+        }
+        splashProgress = splashMaxProgress // Ensure it reaches 100%
+    }
 
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsStateWithLifecycle()
     val isInitializeData by sharedViewModel.isInitializeData.collectAsStateWithLifecycle()
@@ -139,6 +166,10 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         PreferenceManager.clearSaveGenre()
         PreferenceManager.clearSaveChannel()
+        // Update progress
+        if(downloadId==null){
+            splashLoader = true
+        }
         sharedViewModel.checkDeviceDateTime()
         sharedViewModel.checkForAppUpdate()
        // MediaDrm(WIDEVINE_UUID).getPropertyByteArray("deviceUniqueId")
@@ -183,7 +214,8 @@ fun SplashScreen(
         }
 
         showExitDialog = false
-
+        splashProgress = splashMaxProgress // Ensure it reaches 100%
+        splashLoader = false
 
         if (PreferenceManager.getLoginResponse() != null) {
             navController.navigate(Destination.genreScreen) {
@@ -193,6 +225,11 @@ fun SplashScreen(
             PreferenceManager.getLoginResponse()?.customerNumber?.let {
                 sharedViewModel.userPackageUpdate(customerNumber = it, isChannelUpdateRequired = true)
             }
+            //set saved fav list
+            PreferenceManager.getUserFav(PreferenceManager.getUsername().toString())?.let {
+                sharedViewModel.setFavorites(it)
+            }
+
         } else {
             navController.navigate(Destination.loginScreen) {
                 popUpTo(Destination.splashScreen) { inclusive = true }
@@ -269,6 +306,7 @@ fun SplashScreen(
     LaunchedEffect(downloadId) {
         downloadProgress.value = 0f
         downloadId?.let { id ->
+            splashLoader = false
             var finished = false
             while (!finished) {
                 val q = DownloadManager.Query().setFilterById(id)
@@ -418,6 +456,28 @@ fun SplashScreen(
             error = painterResource(R.drawable.panmetro_logo_t),        // Error state
             placeholder = painterResource(R.drawable.panmetro_logo_t)   // Loading state
         )
+
+        // Progress bar UI
+        if (splashLoader) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 70.dp)
+                    .width(300.dp)
+                    .height(3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LinearProgressIndicator(
+                    progress = { splashProgress / splashMaxProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp),
+                    color = Color(0xFF00BFFF),
+                    trackColor = Color.LightGray.copy(alpha = 0.5f)
+                )
+            }
+        }
+
         if (downloadId != null) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

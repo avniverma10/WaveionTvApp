@@ -140,6 +140,9 @@ fun ScrollingMessageOverlay(
         }
     }*/
 
+
+
+
     LaunchedEffect(visible, scrollMessageInfo.durationSec) {
         if (!visible) return@LaunchedEffect
 

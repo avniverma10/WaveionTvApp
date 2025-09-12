@@ -16,13 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.android.panmetroiptv.NotificationBanner
-import com.android.panmetroiptv.R
+import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.model.data.login.LoginInfo
 import com.android.panmetroiptv.model.data.sseresponse.Fingerprint
 import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
@@ -35,8 +34,6 @@ import com.android.panmetroiptv.view.panmetro.player.CaastvVideoPlayer
 import com.android.panmetroiptv.view.panmetro.settings.SettingsScreen
 import com.android.panmetroiptv.view.profile.ProfileScreen
 import com.android.panmetroiptv.view.splash.SplashScreen
-import com.android.panmetroiptv.view.uicomponent.error.BlockUserScreen
-import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
 import com.android.panmetroiptv.view.uicomponent.fingerprint.GlobalFingerprintOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.view.uicomponent.fingerprint.state.ForceMessageDialogState
@@ -180,7 +177,7 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
 
                         // Also save to preferences
                         fingerprint._id?.let { id ->
-                            PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                            PreferenceManager.saveFingerUpdatedAt(id, updatedAt)
                         }
                     })
             }
@@ -212,9 +209,10 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
             }
         }
 
+
         globalSSERules?.userUpdates?.forEach {
-            if(userInfo?.value?.userId.toString()?.equals(it.userId,true) == true){
-                userInfo?.value?.customerNumber?.let {
+            if(PreferenceManager.getUsername()?.equals(it.username,true) == true){
+                userInfo.value?.customerNumber?.let {
                     sharedViewModel.userPackageUpdate(customerNumber = it, isPkgUpdateOnly = true)
                     sharedViewModel.provideGlobalSSERequest()
                     // sharedViewModel.packageUpdate()
@@ -224,7 +222,12 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
 
         globalSSERules?.blockUser?.forEach {
             if(PreferenceManager.getUsername()?.equals(it.username) == true && it.isBlocked == 1){
-                BlockUserScreen(
+                PreferenceManager.clearLogin()
+                PreferenceManager.clearSaveGenre()
+                PreferenceManager.clearSaveChannel()
+                context.hideKeyboard()
+                (context as? Activity)?.finishAffinity()
+                /*BlockUserScreen(
                     showDialog = true,
                     message = "Temporarily blocked. Please contact your provider to continue.",
                     confirmButtonText = "Exit",
@@ -233,7 +236,7 @@ fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
                         android.os.Process.killProcess(android.os.Process.myPid())
                     },
                     dismissButtonText = null,
-                    onDismiss = {})
+                    onDismiss = {})*/
             }
         }
 

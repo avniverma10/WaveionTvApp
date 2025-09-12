@@ -24,6 +24,7 @@ import com.android.panmetroiptv.model.data.banner.Banner
 import com.android.panmetroiptv.model.data.epgdata.Channel
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
+import com.android.panmetroiptv.model.data.favorite.Favorite
 import com.android.panmetroiptv.model.data.filter.PanMetroGenreFilter
 import com.android.panmetroiptv.model.data.sseresponse.GlobalSSEResponse
 import com.android.panmetroiptv.model.data.sseresponse.PlayerSSEResponse
@@ -46,6 +47,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -57,6 +59,9 @@ import okhttp3.sse.EventSources
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.log
+import kotlin.text.filter
+import kotlin.text.mapNotNull
+import kotlin.text.orEmpty
 
 @HiltViewModel
 open class SharedViewModel @Inject constructor(
@@ -111,6 +116,16 @@ open class SharedViewModel @Inject constructor(
 
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
+
+
+
+    // StateFlow for raw IDs
+    private val _favoriteChannelIds = MutableStateFlow<List<String>>(emptyList())
+    val favoriteChannelIds: StateFlow<List<String>> = _favoriteChannelIds.asStateFlow()
+
+    private val _favoriteChannels = MutableStateFlow<List<Channel>>(emptyList())
+    val favoriteChannels: StateFlow<List<Channel>> = _favoriteChannels.asStateFlow()
+
 
     private val _panMetroGenreState = MutableStateFlow(PanMetroGenreFilter())
     val panMetroGenreState: StateFlow<PanMetroGenreFilter> = _panMetroGenreState.asStateFlow()
@@ -231,8 +246,8 @@ open class SharedViewModel @Inject constructor(
         val filter = _filterState.value
 
         val filtered = fullList?.filter { epgItem ->
-            val genreList = epgItem.content?.genre?.map { it.name }.orEmpty()
-            val language = epgItem.content?.language?.name.orEmpty()
+            val genreList = epgItem.genre?.map { it.name }.orEmpty()
+            val language = epgItem.language?.name.orEmpty()
 
             val genreMatch = filter.genre == null || genreList.any { it.equals(filter.genre, true) }
             val languageMatch = filter.language == null || language.equals(filter.language, true)
@@ -244,7 +259,7 @@ open class SharedViewModel @Inject constructor(
     }
 
 
-    fun provideAvailableProgram(programs: List<Programme>): List<Programme> {
+    fun provideAvailableProgram(programs: List<Programme>): List<Programme?> {
         val now = System.currentTimeMillis()
         return programs
             .filter { program ->
@@ -537,13 +552,21 @@ open class SharedViewModel @Inject constructor(
 
     fun filterPanMetroChannelsByGenre(genre:String?=null) {
         val fullEPGList = provideApplicationContext().coreEPGLiveData().value?:wtvEPGList.value
-        genre?.let {
-            _filteredPanMetroChannels.value = fullEPGList?.filter { epgItem ->
-                val genreMatch = genre.equals("All", true) ||  (epgItem.content?.genre?.map { it.name }.orEmpty()?.any { it.equals(genre, true) } == true)
-                genreMatch
-            }?: arrayListOf()
-        }?:kotlin.run {
-            _filteredPanMetroChannels.value = fullEPGList?: arrayListOf()
+        if(genre.equals("Favorites",true)){
+            _filteredPanMetroChannels.value = fullEPGList
+                .filter { it.channelId in favoriteChannelIds.value }
+                .mapNotNull { it } ?: arrayListOf()
+        }else {
+            genre?.let {
+                _filteredPanMetroChannels.value = fullEPGList?.filter { epgItem ->
+                    val genreMatch =
+                        genre.equals("All", true) || (epgItem.genre?.map { it.name }.orEmpty()
+                            ?.any { it.equals(genre, true) } == true)
+                    genreMatch
+                } ?: arrayListOf()
+            } ?: kotlin.run {
+                _filteredPanMetroChannels.value = fullEPGList ?: arrayListOf()
+            }
         }
 
     }
@@ -570,6 +593,46 @@ open class SharedViewModel @Inject constructor(
         loge("getUserEnableToPlayChannel", "Asset: $assetId, Can play: $canPlay")
         return canPlay?:false
     }
+
+    // To update the favorites
+    fun addFavorite(channelId: String): Boolean {
+        _favoriteChannelIds.update { currentList ->
+            if (currentList.contains(channelId)) {
+                currentList // already exists
+            } else {
+                if(currentList.size == Constants.maxLimit){
+                    return false
+                }
+                currentList + channelId
+            }
+        }
+        // Save favorites after state update
+        val username = PreferenceManager.getUsername()
+        val favorites = favoriteChannelIds.value
+        if (username != null && favorites.isNotEmpty()) {
+            val favorite = Favorite(channelIds = favorites)
+            PreferenceManager.saveUserFav(username, favorite)
+        }
+        return true
+    }
+
+    fun removeFavorite(channelId: String) {
+        _favoriteChannelIds.update { currentList ->
+            currentList.filter { it != channelId }
+        }
+        // Save favorites after state update
+        val username = PreferenceManager.getUsername()
+        val favorites = favoriteChannelIds.value
+        if (username != null && favorites.isNotEmpty()) {
+            val favorite = Favorite(channelIds = favorites)
+            PreferenceManager.saveUserFav(username, favorite)
+        }
+    }
+
+    fun setFavorites(newFavorites: List<String>) {
+        _favoriteChannelIds.value = newFavorites
+    }
+
 
     fun stopGlobalSSE() {
         globalEventSource?.cancel()

@@ -44,7 +44,7 @@ fun TopOverlayInfo(playerViewModel: PlayerViewModel) {
     ) {
         // Channel Logo
         AsyncImage(
-            model = currentChannel?.content?.thumbnailUrl,
+            model = currentChannel?.thumbnailUrl,
             contentDescription = "Channel Logo",
             modifier = Modifier.size(70.dp)
         )
@@ -56,7 +56,7 @@ fun TopOverlayInfo(playerViewModel: PlayerViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = currentChannel?.content?.title ?: "No Information Available",
+                text = currentChannel?.title ?: "No Information Available",
                 style = TextStyle(
                     fontSize = 18.sp,
                     lineHeight = 28.01.sp,

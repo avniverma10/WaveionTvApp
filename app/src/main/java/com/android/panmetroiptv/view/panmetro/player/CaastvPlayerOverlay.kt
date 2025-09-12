@@ -1,7 +1,9 @@
 package com.android.panmetroiptv.view.panmetro.player
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,11 +37,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
+import coil3.size.Precision
+import coil3.size.Size
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.epgdata.Programme
@@ -60,13 +72,63 @@ fun CaastvPlayerOverlay(
             ?.let { playerViewModel.provideAvailablePrograms(it) }
             .orEmpty()
     }
+
+    // Create a default empty program for safety
+    val defaultProgram = remember {
+        Programme(
+            title = "No Information",
+            imageUrl = emptyList()
+        )
+    }
+
+    // Safe index calculations
+    val baseIndex = if (programmes.isNotEmpty()) {
+        programmes.indexOfLast { it.startTime?.let { start -> start <= nowMs } ?: false }.coerceAtLeast(0)
+    } else {
+        0
+    }
+
+    val maxIndex = if (programmes.isNotEmpty()) programmes.lastIndex else 0
+    val targetIndex = if (programmes.isNotEmpty()) {
+        (baseIndex + programmeIndex).coerceIn(0, maxIndex)
+    } else {
+        0
+    }
+
+    val nowProg = programmes.getOrNull(targetIndex) ?: defaultProgram
+    val nextProg = if (programmes.isNotEmpty() && targetIndex < maxIndex) {
+        programmes.getOrNull(targetIndex + 1)
+    } else {
+        null
+    }
+
+    val progFraction = remember(nowProg, nowMs) {
+        nowProg.startTime?.let { startTime ->
+            nowProg.endTime?.let { endTime ->
+                if (startTime > 0 && endTime > startTime) {
+                    val duration = (endTime - startTime).toFloat().coerceAtLeast(1f)
+                    ((nowMs - startTime) / duration).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            }
+        } ?: 0f
+    }
+
+    /*
+
     val baseIndex = programmes.indexOfLast { it.startTime!! <= nowMs }.coerceAtLeast(0)
     val targetIndex = (baseIndex + programmeIndex).coerceIn(0, programmes.lastIndex)
     val nowProg  = programmes.getOrNull(targetIndex)
-    val maxIndex = programmes.lastIndex
-    val safeTargetIndex = (baseIndex + programmeIndex).coerceIn(0, maxIndex)
+    val maxIndex = programmes.lastIndex.coerceAtLeast(0) // Ensure maxIndex is at least 0
+    val safeTargetIndex = if (programmes.isNotEmpty()) {
+        (baseIndex + programmeIndex).coerceIn(0, maxIndex)
+    } else {
+        0
+    }
     val nextProgActual = programmes.getOrNull(safeTargetIndex + 1)
     val nextProg = nextProgActual ?: programmes.lastOrNull()
+
 
 
     val progFraction = remember(nowProg, nowMs) {
@@ -74,10 +136,10 @@ fun CaastvPlayerOverlay(
             val duration = (prog.endTime!! - prog.startTime!!).toFloat().coerceAtLeast(1f)
             ((nowMs - prog.startTime) / duration).coerceIn(0f, 1f)
         } ?: 0f
-    }
+    }*/
 
-    val stops = channel.content
-        ?.bgGradient
+    val stops = channel
+        .bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
         ?.mapNotNull {
@@ -92,7 +154,7 @@ fun CaastvPlayerOverlay(
     val logoBrush = if (stops.size >= 2) {
         Brush.horizontalGradient(stops)
     } else {
-        SolidColor(Color(0xFF2A3139))  // fallback background
+        SolidColor(Color(0xFF2A3139))
     }
     Box(Modifier.fillMaxSize()) {
         Column(
@@ -125,10 +187,18 @@ fun CaastvPlayerOverlay(
                         .background(logoBrush)
                 ) {
                     //Channel thumbnail
+
                     AsyncImage(
-                        model           = channel.content?.thumbnailUrl,
-                        contentDescription = null,
-                        modifier        = Modifier
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(channel.thumbnailUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .precision(Precision.INEXACT) // Use lower precision for memory efficiency
+                            .allowHardware(true) // Use hardware bitmaps when possible
+                            .bitmapConfig(Bitmap.Config.RGB_565) // ✅ 16-bit color (50% memory reduction)
+                            .build(),
+                        contentDescription = "Image",
+                        modifier = Modifier
                             .width(80.dp)
                             .height(90.dp)
                             .padding(8.dp)
@@ -147,7 +217,7 @@ fun CaastvPlayerOverlay(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text     = "${channel.content?.channelNo ?: "--"} : ${channel.content?.title.orEmpty()}",
+                        text     = "${channel.channelNo ?: "--"} : ${channel.title.orEmpty()}",
                         fontSize = 15.sp,
                         color    = Color.White,
                         fontStyle = FontStyle(R.font.figtree_light),
@@ -162,67 +232,127 @@ fun CaastvPlayerOverlay(
                         maxLines = 1
                     )
                     Spacer(Modifier.height(11.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    nowProg?.startTime?.let {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text  = "${nowProg?.startTime?.formatTime()} – ${nowProg?.endTime?.formatTime()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.LightGray,
+                                fontStyle = FontStyle(R.font.figtree_light),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Box(
+                                Modifier
+                                    .width(1.dp)
+                                    .height(20.dp)
+                                    .background(Color.White.copy(alpha = 0.7f))
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text  = "${nowProg?.minutesLeft(nowMs)}m left",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            LinearProgressIndicator(
+                                progress       = progFraction,
+                                modifier       = Modifier
+                                    .width(100.dp)
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(2.dp)),
+                                color           = base_color,
+                                backgroundColor = Color(0xFF333333)
+                            )
+                        }
+                    }
+                }
+
+
+                Spacer(Modifier.width(12.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(end = 16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Press Up",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(Color.White.copy(alpha = 0.7f))
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        text = "Options :",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.width(3.dp))
+                    // Favourite
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clickable { /* onFavoriteClick() */ },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text  = "${nowProg?.startTime?.formatTime()} – ${nowProg?.endTime?.formatTime()}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.LightGray,
-                            fontStyle = FontStyle(R.font.figtree_light),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Box(
-                            Modifier
-                                .width(1.dp)
-                                .height(20.dp)
-                                .background(Color.White.copy(alpha = 0.7f))
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text  = "${nowProg?.minutesLeft(nowMs)}m left",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        LinearProgressIndicator(
-                            progress       = progFraction,
-                            modifier       = Modifier
-                                .width(100.dp)
-                                .height(4.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            color           = base_color,
-                            backgroundColor = Color(0xFF333333)
+                        Icon(
+                            imageVector     = Icons.Default.Favorite,
+                            contentDescription = "Favourite",
+                            tint            = Color.White,
+                            modifier        = Modifier.size(16.dp)
                         )
                     }
+
+                    Spacer(Modifier.width(3.dp))
                 }
 
                 Spacer(Modifier.width(16.dp))
 
                 //Breaking-News banner
+                Box(Modifier
+                    .width(200.dp)
+                    .height(130.dp)
+                    .padding(top = 25.dp)
+                    .clip(RoundedCornerShape(6.dp)))
+                {
 
-                nowProg?.imageUrl?.getOrNull(0)?.let {
-                    AsyncImage(
-                        model           = nowProg?.imageUrl?.getOrNull(0)?.name,
-                        contentDescription = null,
-                        contentScale    = ContentScale.FillBounds,
-                        modifier         = Modifier
-                            .width(200.dp)
-                            .height(130.dp)
-                            .padding(top = 25.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                    )
-                }?:run {
-                    Image(
-                        painter         = painterResource(id = R.drawable.alliance_logo),
-                        contentDescription = null,
-                        contentScale    = ContentScale.FillBounds,
-                        modifier         = Modifier
-                            .width(200.dp)
-                            .height(130.dp)
-                            .padding(top = 25.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                    )
+                    nowProg?.imageUrl?.getOrNull(0)?.let {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(nowProg?.imageUrl?.getOrNull(0)?.name)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .memoryCachePolicy(CachePolicy.ENABLED)
+                                .precision(Precision.INEXACT) // Use lower precision for memory efficiency
+                                .allowHardware(true) // Use hardware bitmaps when possible
+                                .bitmapConfig(Bitmap.Config.RGB_565) // 16-bit color (50% memory reduction)
+                                .build(),
+                            contentDescription = "Image",
+                            contentScale    = ContentScale.FillBounds,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(130.dp)
+                                .height(200.dp), // Constrain size
+                        )
+                    }?:run {
+                        Image(
+                            painter         = painterResource(id = R.drawable.panmetro_logo_new),//.alliance_logo),
+                            contentDescription = null,
+                            contentScale    = ContentScale.FillBounds,
+                            modifier         = Modifier
+                                .width(200.dp)
+                                .height(130.dp)
+                                .background(Color.White)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                    }
                 }
             }
 
@@ -242,7 +372,7 @@ fun CaastvPlayerOverlay(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text  = "Next : ${np.title}",
+                        text  = "Next : ${np.title?:"No Information"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White,
                         fontSize = 15.sp

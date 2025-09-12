@@ -24,7 +24,7 @@ import com.android.panmetroiptv.utils.uistate.PreferenceManager
  * Returns a MediaSourceFactory configured with a DRM session manager if needed.
  */
 fun Context.createWTVMediaSourceFactory(epgDataItem: EPGDataItem): DefaultMediaSourceFactory {
-    return when (epgDataItem.content?.drmType) {
+    return when (epgDataItem?.drmType) {
         "sigma" -> {
             // Replace with the actual SIGMA DRM UUID and callback implementation.
             this.provideSigmaSourceFactory()

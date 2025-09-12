@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -70,7 +71,9 @@ import com.android.panmetroiptv.extensions.showToastS
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
 import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
 import com.android.panmetroiptv.model.data.sseresponse.ScrollMessage
+import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
+import com.android.panmetroiptv.view.panmetro.player.fav.VideoPlayerWithTopOverlay
 import com.android.panmetroiptv.view.uicomponent.addWatermarkToPlayer
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
 import com.android.panmetroiptv.view.uicomponent.error.CommonDialog
@@ -90,7 +93,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.compareTo
 import kotlin.random.Random
+import kotlin.text.indexOfLast
+import kotlin.text.lastIndex
+import kotlin.text.orEmpty
 
 @OptIn(UnstableApi::class)
 @Composable
@@ -106,6 +113,7 @@ fun CaastvVideoPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val appPkgChannels by sharedViewModel.appPkgChannels.collectAsStateWithLifecycle()
+    val availablePkg by sharedViewModel.availablePkg.collectAsStateWithLifecycle()
     val playerSSERules by sharedViewModel.playerSSERules.collectAsState()
     var visibleForce = remember { mutableStateListOf<ForceMessageDialogState>()}
     val visibleMessages = remember { mutableStateListOf<ScrollMessage>() }
@@ -142,9 +150,26 @@ fun CaastvVideoPlayer(
     val DEBOUNCE_MS = 1_000L                                 // change if you want longer
 
     val currentProgrammeIndex = remember { mutableIntStateOf(0) }
+
+    // fav view state management
+    var isTopOverlayVisible by remember { mutableStateOf(false) }
+    var topOverlayHideJob by remember { mutableStateOf<Job?>(null) }
+    var favViewlastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    val topOverlayFocusRequester = remember { FocusRequester() }
+    val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
+    val channelId = selectedChannel?.channelId ?: ""
+
+    val isFav by remember(selectedChannel, favIds) {
+        derivedStateOf {
+            val id = selectedChannel?.channelId ?: ""
+            id in favIds
+        }
+    }
+
     LaunchedEffect(selectedChannel) {
         val idx = epgList.indexOfFirst {
-            it.content?.videoUrl == selectedChannel?.content?.videoUrl
+            it.videoUrl == selectedChannel?.videoUrl
         }.coerceAtLeast(0)
         currentChannelIndex.intValue = idx
         previewChannelIndex.intValue = idx
@@ -236,7 +261,7 @@ fun CaastvVideoPlayer(
 
 
 
-    val stops = selectedChannel.content?.bgGradient
+    val stops = selectedChannel.bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
         ?.mapNotNull {
@@ -272,6 +297,30 @@ fun CaastvVideoPlayer(
             }
         }
     }
+
+    // Function to handle overlay visibility
+    fun showFavOverlay(isHide: Boolean?=null) {
+        isHide?.let {
+            isTopOverlayVisible = false
+            // Cancel existing hide job if any
+            topOverlayHideJob?.cancel()
+        }?:run {
+            isTopOverlayVisible = true
+            favViewlastInteractionTime = System.currentTimeMillis()
+
+            // Cancel existing hide job if any
+            topOverlayHideJob?.cancel()
+
+            // Start new hide job
+            topOverlayHideJob = scope.launch {
+                delay(5000) // 10 seconds
+                if (System.currentTimeMillis() - lastInteractionTime >= 5000) {
+                    isTopOverlayVisible = false
+                }
+            }
+        }
+    }
+
     fun switchNow() {
         switchJob?.cancel()
         currentChannelIndex.intValue = previewChannelIndex.intValue
@@ -384,7 +433,7 @@ fun CaastvVideoPlayer(
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
-            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.channelNo}:${selectedChannel?.title}")
         }
     }
 
@@ -392,20 +441,20 @@ fun CaastvVideoPlayer(
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
         selectedChannelIndex.intValue = epgList.indexOfFirst {
-            it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
+            it.videoUrl == (selectedChannel?.videoUrl ?: "")
         }
-        selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-            if(selectedChannel.content?.drmType.equals("cryptoguard", ignoreCase = true)){
+        selectedChannel.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedChannel.drmType.equals("cryptoguard", ignoreCase = true)){
                 isDRMUrl.value = true
             }else{
                 isDRMUrl.value = false
             }
 
-            if(selectedChannel?.content?.contentType.equals("audio",true)){
+            if(selectedChannel?.contentType.equals("audio",true)){
                 isAudio.value = true
-            }else if(selectedChannel?.content?.contentType.equals("youtube",true)){
+            }else if(selectedChannel?.contentType.equals("youtube",true)){
                 isYoutube.value = true
-                youtubeId.value = selectedChannel?.content?.videoUrl?.extractYouTubeId()
+                youtubeId.value = selectedChannel?.videoUrl?.extractYouTubeId()
             }else{
                 isAudio.value = false
                 isYoutube.value = false
@@ -414,7 +463,7 @@ fun CaastvVideoPlayer(
             exoPlayer.clearMediaItems()
             showErrorDialog = false
             if(!isYoutube.value) {
-                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedChannel.content?.assetId )
+                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedChannel.assetId )
             }
         }
     }
@@ -422,8 +471,8 @@ fun CaastvVideoPlayer(
 
     LaunchedEffect(globalSSERules) {
         if(globalSSERules?.blockUser?.size == 0){
-            selectedChannel.content?.videoUrl?.let {
-                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.content?.assetId )
+            selectedChannel.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.assetId )
             }
             return@LaunchedEffect
         }
@@ -435,10 +484,10 @@ fun CaastvVideoPlayer(
         }
     }
 
-    LaunchedEffect(appPkgChannels) {
+    LaunchedEffect(appPkgChannels,availablePkg) {
         if(!isYoutube.value) {
-            selectedChannel.content?.videoUrl?.let {
-                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.content?.assetId )
+            selectedChannel.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedChannel.assetId )
             }
         }
     }
@@ -446,7 +495,7 @@ fun CaastvVideoPlayer(
 
     fun commitChannelSearch(numberStr: String) {
         val number = numberStr.toIntOrNull() ?: return
-        val idx = epgList.indexOfFirst { (it.content?.channelNo ?: 0) == number }
+        val idx = epgList.indexOfFirst { (it.channelNo ?: 0) == number }
         if (idx != -1) {
             sharedViewModel.updateSelectedChannel(epgList[idx])
         } else {
@@ -461,89 +510,8 @@ fun CaastvVideoPlayer(
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
                 val code = keyEvent.nativeKeyEvent.keyCode
-                showOverlay()
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
-                        KeyEvent.KEYCODE_CHANNEL_UP -> {
-                            if (previewChannelIndex.intValue < epgList.lastIndex) {
-                                previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_PAGE_UP -> {
-                            if (previewChannelIndex.intValue < epgList.lastIndex) {
-                                previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                            if (previewChannelIndex.intValue < epgList.lastIndex) {
-                                previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_F1 -> {
-                            if (previewChannelIndex.intValue < epgList.lastIndex) {
-                                previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_PLUS -> {
-                            if (previewChannelIndex.intValue < epgList.lastIndex) {
-                                previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                            if (previewChannelIndex.intValue > 0) {
-                                previewChannelIndex.intValue--
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_PAGE_DOWN -> {
-                            if (previewChannelIndex.intValue > 0) {
-                                previewChannelIndex.intValue--
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                            if (previewChannelIndex.intValue > 0) {
-                                previewChannelIndex.intValue--
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_F2 -> {
-                            if (previewChannelIndex.intValue > 0) {
-                                previewChannelIndex.intValue--
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
-                        KeyEvent.KEYCODE_MINUS -> {
-                            if (previewChannelIndex.intValue > 0) {
-                                previewChannelIndex.intValue--
-                                currentProgrammeIndex.intValue = 0 // reset
-                                startSwitchCountdown()
-                            }
-                            true
-                        }
                         in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
                             val digit = (code - KeyEvent.KEYCODE_0).toString()
                             if(typedDigits.length<=3) {
@@ -562,6 +530,10 @@ fun CaastvVideoPlayer(
                             return@onPreviewKeyEvent true        // we consumed the event
                         }
                         KeyEvent.KEYCODE_DPAD_LEFT -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             if (previewChannelIndex.intValue > 0) {
                                 previewChannelIndex.intValue--
                                 currentProgrammeIndex.intValue = 0 // reset
@@ -570,6 +542,29 @@ fun CaastvVideoPlayer(
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP-> {
+                            if (!isTopOverlayVisible && !isOverlayVisible) {
+                                showFavOverlay()
+                                scope.launch {
+                                    delay(50) // Give Compose time to recompose the overlay
+                                    topOverlayFocusRequester.requestFocus()
+                                }
+                                true // Consume the event
+                            } else if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            } else {
+                                val currentChannel = epgList.getOrNull(previewChannelIndex.intValue)
+                                val programmes = currentChannel?.tv?.programme?.let {
+                                    playerViewModel.provideAvailablePrograms(it)
+                                }.orEmpty()
+
+                                val baseIndex = programmes.indexOfLast { it.startTime!! <= System.currentTimeMillis() }.coerceAtLeast(0)
+                                val maxOffset = (programmes.lastIndex - baseIndex).coerceAtLeast(0)
+
+                                currentProgrammeIndex.intValue =
+                                    (currentProgrammeIndex.intValue - 1).coerceAtLeast(0)
+                                true
+                            }
+                            /*
                             if (!isOverlayVisible) {
                                 isOverlayVisible = true
                             } else {
@@ -582,10 +577,17 @@ fun CaastvVideoPlayer(
                                 val maxOffset = (programmes.lastIndex - baseIndex).coerceAtLeast(0)
 
                                 currentProgrammeIndex.intValue = (currentProgrammeIndex.intValue - 1).coerceAtLeast(0)
-                            }
+                            }*/
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (isTopOverlayVisible) {
+                                showFavOverlay(isHide = true)
+                                showOverlay()
+                                return@onPreviewKeyEvent true
+                            }
+                            showOverlay()
+
                             if (!isOverlayVisible) {
                                 isOverlayVisible = true
                             } else {
@@ -601,15 +603,30 @@ fun CaastvVideoPlayer(
                             }
                             true
                         }
+                        KeyEvent.KEYCODE_BACK -> {
+                            if (isTopOverlayVisible) {
+                                showFavOverlay(isHide = true)
+                                return@onPreviewKeyEvent true
+                            }
+                            false
+                        }
                         KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             if (previewChannelIndex.intValue < epgList.lastIndex) {
                                 previewChannelIndex.intValue++
-                                currentProgrammeIndex.intValue = 0 // reset
+                                currentProgrammeIndex.intValue = 0
                                 startSwitchCountdown()
                             }
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
                             switchNow()
                             true
                         }
@@ -619,7 +636,7 @@ fun CaastvVideoPlayer(
             }
     ) {
         if(isYoutube.value){
-            val videoId = selectedChannel.content?.videoUrl?:""
+            val videoId = selectedChannel.videoUrl?:""
 
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -711,18 +728,18 @@ fun CaastvVideoPlayer(
             val observer = LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_PAUSE-> {
-                        selectedChannel?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
+                        selectedChannel?.channelId?.let { PreferenceManager.saveChannel(it) }
                         exoPlayer.pause()
                     }
                     Lifecycle.Event.ON_STOP-> {
-                        selectedChannel?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
+                        selectedChannel?.channelId?.let { PreferenceManager.saveChannel(it) }
                         exoPlayer.pause()
                     }
                     Lifecycle.Event.ON_START-> {
                         // Launch coroutine in the lifecycle scope
                         lifecycleOwner.lifecycleScope.launch {
                             val selectedChannel = epgList.firstOrNull<EPGDataItem>() { channel ->
-                                (channel as? EPGDataItem)?.content?.ChannelID ==
+                                (channel as? EPGDataItem)?.channelId ==
                                         PreferenceManager.getSavedChannel()
                             }
                             selectedChannel?.let {
@@ -744,6 +761,9 @@ fun CaastvVideoPlayer(
                 overlayHideJob?.cancel()
                 lifecycleOwner.lifecycle.removeObserver(observer)
                 sharedViewModel.stopPlayerSSE()
+                if(isOverlayVisible){
+                    isOverlayVisible = false
+                }
             }
         }
 
@@ -845,10 +865,40 @@ fun CaastvVideoPlayer(
 
                     // Also save to preferences
                     fingerprint._id?.let { id ->
-                        PreferenceManager.saveScrollUpdatedAt(id, updatedAt)
+                        PreferenceManager.saveFingerUpdatedAt(id, updatedAt)
                     }
                 })
         }
+    }
+
+
+    if (isTopOverlayVisible) {
+        LaunchedEffect(Unit) {
+            delay(50)
+            topOverlayFocusRequester.requestFocus()
+        }
+    }
+
+    if (isTopOverlayVisible) {
+        VideoPlayerWithTopOverlay(
+            focusRequester   = topOverlayFocusRequester,
+            isFavorite       = isFav,               // ← pass it here
+            onFavoriteClick  = {
+                if(isFav){
+                    sharedViewModel.removeFavorite(channelId)
+                }else{
+                    val isAllowToAdd = sharedViewModel.addFavorite(channelId)
+                    if(!isAllowToAdd){
+                        context.showToastS("Favorite limit reached (${Constants.maxLimit}). Please remove some to add new ones.")//"Favorite limit reached up to $maxLimit. Please remove some favorites before adding new ones.")
+                    }
+                }
+                showFavOverlay(isHide = true)
+            },
+            onDismiss = {
+                showFavOverlay(isHide = true)
+            }
+
+        )
     }
 }
 

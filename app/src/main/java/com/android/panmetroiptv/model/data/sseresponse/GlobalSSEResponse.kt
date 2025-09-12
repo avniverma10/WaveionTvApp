@@ -16,6 +16,7 @@ data class GlobalSSEResponse(
     val blockUser: List<BlockUser>
 )
 
+
 @Keep
 data class Fingerprint(
     @SerializedName("__v")
@@ -103,6 +104,6 @@ data class ForceMessage(
 )
 
 
-data class PackageUpdate(val packageID:String?=null, val packageName: String?=null,val packageUpdate:Int=0, val updatedAt: String?=null)
-data class UserUpdate(val username:String?=null,val userUpdate:Int=0, val userId: String?=null, val updatedAt: String?=null)
+data class PackageUpdate(val packageID:String?=null, val packageUpdate:Int=0, val updatedAt: String?=null)
+data class UserUpdate(val username:String?=null,val userUpdate:Int=0,  val updatedAt: String?=null)
 data class BlockUser(val username:String?=null,val isBlocked:Int=0, val blockReason: String?=null, val updatedAt: String?=null)

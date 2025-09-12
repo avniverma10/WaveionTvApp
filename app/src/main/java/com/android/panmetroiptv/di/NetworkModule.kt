@@ -36,47 +36,6 @@ object NetworkModule {
     @Singleton
     @Provides
     fun okHttpClient(@ApplicationContext context: Context): OkHttpClient {
-        val cacheSize = 10L * 1024 * 1024
-        val cacheDir  = File(context.cacheDir, "http_cache")
-        val cache     = Cache(cacheDir, cacheSize)
-        //Network interceptor: tag fresh responses with max-age
-        val networkCacheInterceptor = Interceptor { chain ->
-            val response = chain.proceed(chain.request())
-            // If the server gave no caching headers, add one for 60s
-            response.newBuilder()
-                .header("Cache-Control", "public, max-age=60")
-                .build()
-        }
-        // Offline interceptor: on any IOException or 5xx, force only-if-cached
-        val offlineInterceptor = Interceptor { chain ->
-            var request = chain.request()
-            try {
-                val response = chain.proceed(request)
-                // If server error, drop that response and try cache instead
-                if (response.code in 500..599) {
-                    response.close()
-                    request = request.newBuilder()
-                        .header(
-                            "Cache-Control",
-                            "public, only-if-cached, max-stale=${7 * 24 * 60 * 60}"
-                        )
-                        .build()
-                    return@Interceptor chain.proceed(request)
-                }
-                return@Interceptor response
-            } catch (ioEx: IOException) {
-                // Network error or timeout => serve stale cache
-                request = request.newBuilder()
-                    .header(
-                        "Cache-Control",
-                        "public, only-if-cached, max-stale=${7 * 24 * 60 * 60}"
-                    )
-                    .build()
-                return@Interceptor chain.proceed(request)
-            }
-        }
-        // Create a TrustManager that does not validate certificate chains , only for testing and development purpose only
-        // TODO("Add trust manager that validate certificate chains")
         val trustAllCerts = arrayOf<TrustManager>(
             object : X509TrustManager {
                 override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
@@ -90,15 +49,6 @@ object NetworkModule {
             init(null, trustAllCerts, SecureRandom())
         }
         val sslSocketFactory = sslContext.socketFactory
-        // Interceptor that adds the API key header:
-        /*val headerInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            val builder = original.newBuilder()
-                .header("Accept", "application/json")
-                .header(API_KEY_HEADER, API_KEY_VALUE)
-            val requestWithHeaders = builder.build()
-            chain.proceed(requestWithHeaders)
-        }*/
         // Build and return the OkHttpClient
         return OkHttpClient.Builder()
             .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)

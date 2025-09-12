@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity(),ApiStatusObserver  {
         //Init macId
         sharedViewModel.deviceMacAddr.value = provideMacAddress().toString()
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         /*overlayHelper = OverlayPermissionHelper(this).apply {
             registerLauncher()
@@ -109,6 +110,11 @@ class MainActivity : ComponentActivity(),ApiStatusObserver  {
                 sharedViewModel.isGlobalSSEClosed.value = false
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 }
 

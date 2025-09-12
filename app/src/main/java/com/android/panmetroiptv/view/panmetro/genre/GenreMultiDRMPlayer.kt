@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -51,18 +50,12 @@ import com.android.panmetroiptv.extensions.extractYouTubeId
 import com.android.panmetroiptv.extensions.loge
 import com.android.panmetroiptv.extensions.playerErrorHandling
 import com.android.panmetroiptv.extensions.provideCryptoGuardMediaSource
-import com.android.panmetroiptv.extensions.showToastS
-import com.android.panmetroiptv.extensions.toJSONObject
 import com.android.panmetroiptv.model.data.sseresponse.PlayerFingerprint
-import com.android.panmetroiptv.utils.Constants
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.uicomponent.audio.AnimatedAudio
-import com.android.panmetroiptv.view.uicomponent.error.BlockUserScreen
 import com.android.panmetroiptv.view.uicomponent.error.PlaybackErrorPreview
 import com.android.panmetroiptv.view.uicomponent.fingerprint.PrePlayerFingerprintOverlay
-import com.android.panmetroiptv.view.uicomponent.fingerprint.ScrollingMessageOverlay
 import com.android.panmetroiptv.viewmodels.SharedViewModel
-import com.android.panmetroiptv.viewmodels.genre.GenreViewModel
 import com.techit.youtubelib.PlayerConstants
 import com.techit.youtubelib.interfaces.YouTubePlayer
 import com.techit.youtubelib.listeners.AbstractYouTubePlayerListener
@@ -216,7 +209,7 @@ fun GenreMultiDRMPlayer(
             exoPlayer.prepare()
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
-            sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.content?.channelNo}:${selectedVideoUrl?.content?.title}")
+            sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.channelNo}:${selectedVideoUrl?.title}")
         }
     }
 
@@ -225,8 +218,8 @@ fun GenreMultiDRMPlayer(
 
     LaunchedEffect(globalSSERules) {
         if(globalSSERules?.blockUser?.size == 0){
-            selectedVideoUrl.content?.videoUrl?.let {
-                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.content?.assetId )
+            selectedVideoUrl.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.assetId )
             }
             return@LaunchedEffect
         }
@@ -240,19 +233,19 @@ fun GenreMultiDRMPlayer(
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedVideoUrl) {
         loge("selectedVideoUrl>","$selectedChannelIndex")
-        selectedVideoUrl.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-            if(selectedVideoUrl.content?.drmType.equals("cryptoguard", ignoreCase = true)){
+        selectedVideoUrl.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedVideoUrl.drmType.equals("cryptoguard", ignoreCase = true)){
                 isDRMUrl.value = true
             }else{
                 isDRMUrl.value = false
             }
 
 
-            if(selectedVideoUrl?.content?.contentType.equals("audio",true)){
+            if(selectedVideoUrl?.contentType.equals("audio",true)){
                 isAudio.value = true
-            }else if(selectedVideoUrl?.content?.contentType.equals("youtube",true)){
+            }else if(selectedVideoUrl?.contentType.equals("youtube",true)){
                 isYoutube.value = true
-                youtubeId.value = selectedVideoUrl?.content?.videoUrl?.extractYouTubeId()
+                youtubeId.value = selectedVideoUrl?.videoUrl?.extractYouTubeId()
             }else{
                 isAudio.value = false
                 isYoutube.value = false
@@ -261,7 +254,7 @@ fun GenreMultiDRMPlayer(
             exoPlayer.clearMediaItems()
             showErrorDialog = false
             if(!isYoutube.value) {
-                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedVideoUrl.content?.assetId )
+                handleMediaUrlAllowToPlay(videoUrl = url, assetId = selectedVideoUrl.assetId )
             }
         }
     }
@@ -269,8 +262,8 @@ fun GenreMultiDRMPlayer(
 
     LaunchedEffect(appPkgChannels,availablePkg) {
         if(!isYoutube.value) {
-            selectedVideoUrl.content?.videoUrl?.let {
-                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.content?.assetId )
+            selectedVideoUrl.videoUrl?.let {
+                handleMediaUrlAllowToPlay(videoUrl = it, assetId = selectedVideoUrl.assetId )
             }
         }
     }
@@ -280,7 +273,7 @@ fun GenreMultiDRMPlayer(
             .fillMaxSize()
             .background(Color.Transparent)
     ) {
-        val hasVideo = selectedVideoUrl.content?.videoUrl?.isNotEmpty() == true
+        val hasVideo = selectedVideoUrl.videoUrl?.isNotEmpty() == true
         /*if (!hasVideo && isBuffering.value ) {
             Image(
                 painter = painterResource(id = R.drawable.panlogin),
@@ -371,7 +364,7 @@ fun GenreMultiDRMPlayer(
         }
 
 
-        val stops = selectedVideoUrl.content?.bgGradient
+        val stops = selectedVideoUrl.bgGradient
             ?.colors
             ?.sortedBy { it.percentage }
             ?.mapNotNull {

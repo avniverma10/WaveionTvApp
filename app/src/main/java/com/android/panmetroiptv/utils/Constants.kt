@@ -1,7 +1,7 @@
 package com.android.panmetroiptv.utils
 
 object Constants {
-    const val BUILD_TYPE = "release"//"debug"//
+    const val maxLimit = 10
     const val HEADER_TOKEN = "BUAA8JJkzfMI56y4BhEhU"
     const val DRM_HEADER_TOKEN = "wmo3iTxhwMxm37F7Sex3v"//"BUAA8JJkzfMI56y4BhEhU"//
     const val DRM_LICENSE_BASE = "https://drm.panmetroconvergence.com:4443"//"https://cryptoguard.waveiontechnologies.com:4443"////"https://10.22.254.46:4443"//

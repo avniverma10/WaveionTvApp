@@ -58,7 +58,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.android.panmetroiptv.BuildConfig
 import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.extensions.loge
@@ -81,6 +80,8 @@ fun PanmetroLoginScreen(
     val context = LocalContext.current
     var usernameError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
+    var usernameErrorMessage by remember { mutableStateOf("") }
+    var pwdErrorMessage by remember { mutableStateOf("") }
     val usernameFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
     val loginFocusRequester = remember { FocusRequester() }
@@ -199,8 +200,21 @@ fun PanmetroLoginScreen(
                                 OutlinedTextField(
                                     value = username,
                                     onValueChange = {
-                                        username = it
-                                        usernameError = it.isBlank()
+                                        // Filter out quotes and apostrophes, and limit length
+                                        val filteredText = it.filterNot { char -> char == '"' || char == '\'' }
+                                        if (filteredText.length <= 13) {
+                                            username = filteredText
+                                            usernameError = filteredText.isBlank() || filteredText.length < 3
+                                            usernameErrorMessage = if (filteredText.isNotBlank() && filteredText.length < 3) {
+                                                "Username must be at least 3 characters"
+                                            } else {
+                                                ""
+                                            }
+                                        } else {
+                                            // If input exceeds max length, keep the current value but show error
+                                            usernameError = it.isBlank()
+                                            usernameErrorMessage = "Username cannot exceed 13 characters"
+                                        }
                                     },
                                     label = { Text("UserName") },
                                     leadingIcon = {
@@ -211,6 +225,7 @@ fun PanmetroLoginScreen(
                                         )
                                     },
                                     singleLine = true,
+                                    isError = usernameError,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .background(
@@ -243,13 +258,25 @@ fun PanmetroLoginScreen(
                                         unfocusedLabelColor = Color.White,
                                         textColor = Color.White, // hides from D-pad navigation and disables focus highlighting
                                     ),
-                                )
+
+                                    )
                                 Spacer(modifier = Modifier.height(5.dp))
                                 OutlinedTextField(
                                     value = password,
                                     onValueChange = {
                                         password = it
-                                        passwordError = it.isBlank()
+                                        if (it.length < 3) {
+                                            passwordError = it.isBlank() || it.length < 3
+                                            pwdErrorMessage = if (it.isNotBlank() && it.length < 3) {
+                                                "Password must be at least 3 characters"
+                                            } else {
+                                                ""
+                                            }
+                                        } else {
+                                            // If input exceeds max length, keep the current value but show error
+                                            passwordError = it.isBlank()
+                                            pwdErrorMessage = ""
+                                        }
                                     },
                                     label = { Text("Password") },
                                     singleLine = true,
@@ -340,12 +367,12 @@ fun PanmetroLoginScreen(
                                         onClick = {
                                             var isValid = true
                                             var msg = ""
-                                            if (username.isEmpty()) {
+                                            if (usernameError) {
                                                 isValid = false
-                                                msg = "username should not be blank"
-                                            } else if (password.isEmpty()) {
+                                                msg = usernameErrorMessage
+                                            } else if (passwordError) {
                                                 isValid = false
-                                                msg = "password should not be blank"
+                                                msg = pwdErrorMessage
                                             }
                                             if (isValid) {
                                                 context.hideKeyboard()

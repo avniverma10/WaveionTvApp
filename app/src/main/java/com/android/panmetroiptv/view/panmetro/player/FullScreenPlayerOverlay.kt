@@ -83,7 +83,7 @@ fun FullScreenPlayerOverlay(
 
     LaunchedEffect(selectedChannel) {
         val idx = epgList.indexOfFirst {
-            it.content?.videoUrl == selectedChannel.content?.videoUrl
+            it.videoUrl == selectedChannel.videoUrl
         }.coerceAtLeast(0)
         selectedIndex.value = idx
         lazyListState.scrollToItem(idx)
@@ -260,7 +260,7 @@ private fun ChannelCard(
                         .align(Alignment.CenterVertically)
                 ) {
                     Text(
-                        text = epgDataItem.content?.channelNo?.toString() ?: "--",
+                        text = epgDataItem.channelNo?.toString() ?: "--",
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.Black
                     )
@@ -278,7 +278,7 @@ private fun ChannelCard(
                     )
                 }?:run {
                     AsyncImage(
-                        model           = epgDataItem.content?.thumbnailUrl,
+                        model           = epgDataItem.thumbnailUrl,
                         contentDescription = "Channel Logo",
                         modifier = Modifier
                             .background(Color.Transparent, RoundedCornerShape(4.dp))
@@ -288,7 +288,7 @@ private fun ChannelCard(
                     )
                 }
                 /*Text(
-                    text = epgDataItem.content?.title
+                    text = epgDataItem.title
                         ?: epgDataItem.displayName
                         ?: "Unknown Channel",
                     style = MaterialTheme.typography.titleMedium,

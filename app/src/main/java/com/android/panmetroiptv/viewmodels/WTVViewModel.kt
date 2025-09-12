@@ -31,6 +31,7 @@ import com.android.panmetroiptv.model.data.genre.WTVGenre
 import com.android.panmetroiptv.model.data.language.WTVLanguage
 import com.android.panmetroiptv.model.data.login.CustomerPackageInfo
 import com.android.panmetroiptv.model.data.login.LoginInfo
+import com.android.panmetroiptv.model.data.manifest.WTVManifest
 import com.android.panmetroiptv.model.data.sse.TabItem
 import com.android.panmetroiptv.model.notification.NotificationItem
 import com.android.panmetroiptv.model.repository.common.WTVNetworkRepositoryImpl
@@ -42,6 +43,7 @@ import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,6 +51,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -71,6 +74,10 @@ open class WTVViewModel @Inject constructor(
 ) : AndroidViewModel(application) {
     fun provideApplicationContext() = application.applicationContext
     private val _userIdeal = MutableStateFlow<Boolean>(false)
+    private val _splashMaxProgress = MutableStateFlow<Float>(0f)
+    val splashMaxProgress: StateFlow<Float> = _splashMaxProgress
+    private val _splashProgress = MutableStateFlow<Float>(0f)
+    val splashProgress: StateFlow<Float> = _splashProgress
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
     val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
@@ -208,79 +215,92 @@ open class WTVViewModel @Inject constructor(
 
     fun initializeAppRequiredData() {
         viewModelScope.launch {
-            //First call health check API
-            /*val healthCheckSuccess = async {
-                networkApiCallInterfaceImpl
-                    .provideServerTimeStamp("https://api-panmetro.caastv.com/api/app/health")
-                    .firstOrNullSuccess()
-            }.await()
-
-            if (healthCheckSuccess == null) {
-                Constants.applyBaseUrl(false)
-                provideApplicationContext().showToastS("Switching the Server now..")
-            }else{
-                provideApplicationContext().showToastS("Server is working now..")
-            }*/
-            // This scope will suspend until ALL async children complete
+            // Launch both API calls concurrently
             val manifestDeferred = async {
-                networkApiCallInterfaceImpl
-                    .provideWTVManifest(Constants.BASE_URL+"manifest")
-                    .firstOrNullSuccess()
-                    ?.let {
-                        val manifest = it
-                        val genre = arrayListOf<WTVGenre>()
-                        it.genre?.let { c ->
-                            genre.add(WTVGenre(name = "All"))
-                            genre.addAll(c)
-                        }
-                        val language = arrayListOf<WTVLanguage>()
-                        it.language?.let { c ->
-                            language.add(WTVLanguage(name = "All"))
-                            language.addAll(c)
-                        }
-                        manifest.copy(genre = genre, language = language)
-                    }
-            }.await()
+                fetchManifest()
+            }
+
             val epgDeferred = async {
-                networkApiCallInterfaceImpl
-                    .provideWTVEPGData(Constants.BASE_URL+"epg-files/join-epg-content")
-                    .firstOrNullSuccess()
-                    ?.let { epgData ->
-                        epgData
-                    }
-            }.await()
+                fetchEPG()
+            }
+
+            try {
+                // Wait for both to complete without timeout
+                val manifest = manifestDeferred.await()
+                val epgData = epgDeferred.await()
+
+                // Check if both responses are available
+                if (manifest != null && epgData != null) {
+                    handleSuccessResponse(manifest, epgData)
+                } else {
+                    handlePartialFailure(manifest, epgData)
+                }
+            } catch (e: Exception) {
+                handleFailure(e)
+            }
+    }
+}
 
 
-            // Wait for all to complete (success or failure)
-            if (manifestDeferred != null && epgDeferred != null) {
-                // **This line runs only after all of the above finish.**
-                loge("manifestDeferred",manifestDeferred.toJSONObject().toString())
-                application.applyAppManifest(manifestDeferred)
-                val epgData = removeDuplicateEPG(epgDeferred)
-                _wtvEPGList.value = epgData
-                application.applyEPGData(epgData)
-                epgData.find { it.channelId == manifestDeferred.landingChannel?.channelId }
-                    ?.let(::updateSelectedChannel) ?: kotlin.run {
-                    epgData?.getOrNull(0)?.let {
-                        _selectedChannel.value = it
-                    } ?: run {
-                        _selectedChannel.value = EPGDataItem()
-                    }
+    private suspend fun fetchManifest(): WTVManifest? {
+        return networkApiCallInterfaceImpl
+            .provideWTVManifest("${Constants.BASE_URL}manifest")
+            .firstOrNullSuccess()
+            ?.let { manifest ->
+                val genre = arrayListOf<WTVGenre>().apply {
+                    add(WTVGenre(name = "All"))
+                    manifest.genre?.let { addAll(it) }
                 }
-                _isInitializeData.value = true
-            } else {
-                var errorMsg = ""
-                // **This line runs only after all of the above finish.**
-                if (manifestDeferred == null) {
-                    errorMsg = "manifest api"
-                } else if (epgDeferred == null) {
-                    errorMsg = "epg api"
+                val language = arrayListOf<WTVLanguage>().apply {
+                    add(WTVLanguage(name = "All"))
+                    manifest.language?.let { addAll(it) }
                 }
-                _errorLoadingData.value = "Server api ${errorMsg} not responding yet!"
-                _isInitializeData.value = false
-                loge("_errorLoadingData", "${_errorLoadingData}")
+                manifest.copy(genre = genre, language = language)
+            }
+    }
+
+    private suspend fun fetchEPG(): List<EPGDataItem>? {
+        return networkApiCallInterfaceImpl
+            .provideWTVEPGData("${Constants.BASE_URL}epg-files/all-publish-content")
+            .firstOrNullSuccess()
+    }
+
+
+    private fun handleSuccessResponse(manifest: WTVManifest, epgData: List<EPGDataItem>) {
+        loge("manifestDeferred", manifest.toJSONObject().toString())
+        application.applyAppManifest(manifest)
+
+        val processedEpgData = removeDuplicateEPG(epgData)
+        _wtvEPGList.value = processedEpgData
+        application.applyEPGData(processedEpgData)
+
+        val targetChannel = processedEpgData.find { it.channelId == manifest.landingChannel?.channelId }
+        if (targetChannel != null) {
+            updateSelectedChannel(targetChannel)
+        } else {
+            _selectedChannel.value = processedEpgData.firstOrNull() ?: EPGDataItem()
+        }
+        _isInitializeData.value = true
+    }
+
+    private fun handlePartialFailure(manifest: WTVManifest?, epgData: List<EPGDataItem>?) {
+        val errorMsg = buildString {
+            if (manifest == null) append("manifest api")
+            if (epgData == null) {
+                if (isNotEmpty()) append(" and ")
+                append("epg api")
             }
         }
+
+        _errorLoadingData.value = "Server $errorMsg not responding!"
+        _isInitializeData.value = false
+        loge("_errorLoadingData", _errorLoadingData.value ?: "")
+    }
+
+    private fun handleFailure(exception: Exception) {
+        _errorLoadingData.value = "Network error: ${exception.message}"
+        _isInitializeData.value = false
+        loge("initializeAppRequiredData", "Failed to load data: ${exception.message}")
     }
 
 
@@ -668,6 +688,8 @@ open class WTVViewModel @Inject constructor(
                         }
                     }
                     is WTVResponse.Failure -> {
+                        PreferenceManager.clearPkg()
+                        _availablePkg.value = null
                         loge("customer-services>","User customer number not found.")
                     }
                 }
@@ -724,6 +746,8 @@ open class WTVViewModel @Inject constructor(
             }
         }
     }
+
+
 
 }
 fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {

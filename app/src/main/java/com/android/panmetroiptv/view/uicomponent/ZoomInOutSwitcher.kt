@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.with
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -36,10 +38,11 @@ fun ZoomInOutSwitcher(
     val pages: List<@Composable () -> Unit> = listOf(
         {
             Image(
-                painter = painterResource(id = R.drawable.alliance_logo),
+                painter = painterResource(id = R.drawable.panmetro_logo_new),//alliance_logo),
                 contentDescription = "Panmetro Logo",
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier
+                    .background(Color.White)
                     .fillMaxSize() // Stretch the image to fill the inner Box.
                     .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
             )
@@ -51,6 +54,7 @@ fun ZoomInOutSwitcher(
                 contentDescription = "Panmetro Logo",
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier
+                    .background(Color.White)
                     .fillMaxSize() // Stretch the image to fill the inner Box.
                     .clip(RoundedCornerShape(16.dp)) // Adjust the corner radius as needed.
             )
@@ -85,7 +89,8 @@ fun ZoomInOutSwitcher(
         }
     ) { target ->
         // Render the current page
-        Box(Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
+            .background(Color.White)) {
             pages[target]()
         }
     }

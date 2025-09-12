@@ -42,11 +42,11 @@ class HomeViewModel @Inject constructor(private val application: Application, pr
         try {
             val epgHomeItems = application.coreEPGLiveData().value?.map { epgDataItem ->
                 HomeContent(
-                    title = epgDataItem.content?.title ?: "",
-                    thumbnailUrl = epgDataItem.content?.thumbnailUrl ?: "",
-                    videoUrl = epgDataItem.content?.videoUrl ?: "",
-                    genreId = epgDataItem.content?.genreId ?: "",
-                    _id = epgDataItem.content?._id?:"",
+                    title = epgDataItem.title ?: "",
+                    thumbnailUrl = epgDataItem.thumbnailUrl ?: "",
+                    videoUrl = epgDataItem.videoUrl ?: "",
+                    genreId = epgDataItem.genreId ?: "",
+                    _id = epgDataItem._id?:"",
                     description = TODO(),
                     contentType = TODO(),
                     categoryId = TODO(),

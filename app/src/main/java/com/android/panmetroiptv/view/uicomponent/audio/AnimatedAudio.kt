@@ -69,7 +69,7 @@ fun AnimatedAudio(isSongPlaying: Boolean = true, channel: EPGDataItem) {
 @Composable
 fun Animation(channel: EPGDataItem, rotationDegrees: Float = 0f
 ) {
-    val stops = channel.content?.bgGradient
+    val stops = channel.bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
         ?.map { Color(android.graphics.Color.parseColor(it.color)) }
@@ -101,7 +101,7 @@ fun Animation(channel: EPGDataItem, rotationDegrees: Float = 0f
 
         // WTV song cover
         AsyncImage(
-            model = channel.content?.thumbnailUrl,
+            model = channel.thumbnailUrl,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize(0.5f)

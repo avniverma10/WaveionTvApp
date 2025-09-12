@@ -8,18 +8,47 @@ import com.google.gson.annotations.SerializedName
 
 @Keep
 data class EPGDataItem(
-    val _id: String?="67d27a11140c8a5c710993d6",
+    @SerializedName("ChannelID")
     val channelId: String?="ZEE_SALAAM_RS-0.10",
-    val content: Content?=null,
+    @SerializedName("__v")
+    val version: Int?=0,
+    val _id: String?="67a6ff5b72bb0101dcc82ad4",
+    val channelNo: Int?=98,
+    val contentType: String?="4",
+    val description: String?="ET",
+    val duration: Int?=567,
+    val epgDisplayName: String?=null,
+    val published: Boolean?=true,
+    val releaseDate: String?="3545-05-31T00:00:00.000Z",
+    val thumbnailName: String?=null,
+    val thumbnailUrl: String?="https://nextwave.waveiontechnologies.com:5000/uploads/thumbnails/1738997579816.jpg",
+    val title: String?="005 News 18 UP",
+    val videoUrl: String?=null,
+    val genreId: String?="music",
+    val genre: List<WTVGenre>? = emptyList(),
+    val language: WTVLanguage?= null,
+    @SerializedName("DRM")
+    val drmType: String?=null,
+    val assetId: String?=null,
+    val streamType: String?=null,
+    @SerializedName("bgGradient")
+    val bgGradient: BgGradient? = null,
+    // val content: Content?=null,
     val displayName: String?="ZEE SALAAM RS-0.10",
     val epgFileId: String?="67d27a11140c8a5c710993d6",
+    @SerializedName("epgFilename")
     val filename: String?="ZEE SALAAM RS-0.10.XML",
+    @SerializedName("epgLastUpdated")
     val lastUpdated: String?="2025-03-13T06:24:17.848Z",
     val tv: Tv?=null,
+    @SerializedName("epgUrl")
     val url: String?=null,
     val channelHash: String?=null,
     val currentPrograms: List<Programme>?=null
 )
+
+
+
 
 @Keep
 data class Tv(
@@ -30,7 +59,7 @@ data class Tv(
 @Keep
 data class Programme(
     @SerializedName("_channel")
-    val channelId: String?="ZEE_SALAAM_RS-0.10",
+    val channelId: String?=null,
     @SerializedName("_clumpidx")
     val clumpIdx: String?="0/1",
     @SerializedName("_start")
@@ -39,9 +68,9 @@ data class Programme(
     @SerializedName("_stop")
     @JsonAdapter(ProgramTimestampAdapter::class)
     val endTime: Long? = null,
-    val date: String?="20250212",
-    val desc: String?="Covering the top highlight of day from across the globe.",
-    val title: String?="News Panorama",
+    val date: String?=null,
+    val desc: String?="No Information",
+    val title: String?="No Information",
     @SerializedName("ImageUrl")
     val imageUrl: List<ImageUrl>?=null,
     val director: String?=null,
@@ -52,7 +81,7 @@ data class Programme(
     val programmeid: String?=null,
     val releaseyear: String?=null,
     val starcast: String?=null,
-    @SerializedName("sub-genr")
+    @SerializedName("sub-genre")
     val subGenr: SubGenre?=null,
     val writer: String?=null,
     var watchedAt: Long? = null, // Add timestamp to track when watched
@@ -62,6 +91,8 @@ data class Programme(
     @Volatile
     var endFormatedTime:String?=null
 )
+
+
 
 
 @Keep
@@ -91,6 +122,8 @@ data class Content(
     @SerializedName("bgGradient")
     val bgGradient: BgGradient? = null
 )
+
+
 @Keep
 data class Channel(
     val _id: String?="ZEE_SALAAM_RS-0.10",
@@ -136,11 +169,16 @@ data class BgGradient(
     val angle: Int,
     val colors: List<GradientColor>
 )
+
+
 @Keep
 data class GradientColor(
+    @SerializedName("_id")
+    val id: String,
     val color: String,
     val percentage: Int
 )
+
 @Keep
 data class SubGenre(
     @SerializedName("_")
@@ -159,6 +197,6 @@ data class Genre(
 data class ImageUrl(
     @SerializedName("_")
     val name: String,
-    @SerializedName("_lang")
-    val lang: String
+    @SerializedName("_size")
+    val size: String
 )

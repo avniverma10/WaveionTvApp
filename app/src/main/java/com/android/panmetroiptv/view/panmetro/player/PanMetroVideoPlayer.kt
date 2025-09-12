@@ -127,7 +127,7 @@ fun PanMetroVideoPlayer(
     }
 
 
-    val stops = selectedChannel.content?.bgGradient
+    val stops = selectedChannel.bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
         ?.map { Color(android.graphics.Color.parseColor(it.color)) }
@@ -338,14 +338,14 @@ fun PanMetroVideoPlayer(
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
         selectedChannelIndex.intValue = epgList.indexOfFirst {
-            it.content?.videoUrl == (selectedChannel?.content?.videoUrl ?: "")
+            it.videoUrl == (selectedChannel?.videoUrl ?: "")
         }
-        selectedChannel.content?.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
-            if(selectedChannel?.content?.contentType.equals("audio",true)){
+        selectedChannel.videoUrl?.takeIf { it.isNotEmpty() }?.let { url ->
+            if(selectedChannel?.contentType.equals("audio",true)){
                 isAudio.value = true
-            }else if(selectedChannel?.content?.contentType.equals("youtube",true)){
+            }else if(selectedChannel?.contentType.equals("youtube",true)){
                 isYoutube.value = true
-                youtubeId.value = selectedChannel?.content?.videoUrl?.extractYouTubeId()
+                youtubeId.value = selectedChannel?.videoUrl?.extractYouTubeId()
             }else{
                 isAudio.value = false
                 isYoutube.value = false
@@ -356,17 +356,17 @@ fun PanMetroVideoPlayer(
 
             if(!isYoutube.value) {
                 val drmData = HashMap<String, String>()
-                drmData.put("DRMType", selectedChannel?.content?.drmType ?: "")
-                drmData.put("contentId", selectedChannel?.content?.assetId ?: "")
-                drmData.put("contentUrl", selectedChannel?.content?.videoUrl ?: "" ?: "")
-                val mediaItem = if (selectedChannel?.content?.drmType.equals(
+                drmData.put("DRMType", selectedChannel?.drmType ?: "")
+                drmData.put("contentId", selectedChannel?.assetId ?: "")
+                drmData.put("contentUrl", selectedChannel?.videoUrl ?: "" ?: "")
+                val mediaItem = if (selectedChannel?.drmType.equals(
                         "cryptoguard",
                         ignoreCase = true
                     )
                 ) {
                     context.provideCryptoGuardMediaSource(
-                        contentUrl = selectedChannel?.content?.videoUrl,
-                        contentId = selectedChannel?.content?.assetId,
+                        contentUrl = selectedChannel?.videoUrl,
+                        contentId = selectedChannel?.assetId,
                         logData = drmData
                     )
                 } else {
@@ -378,7 +378,7 @@ fun PanMetroVideoPlayer(
                 exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             }
             //make fingerprint request
-            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.content?.channelNo}:${selectedChannel?.content?.title}")
+            sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.channelNo}:${selectedChannel?.title}")
         }
     }
 
@@ -392,7 +392,7 @@ fun PanMetroVideoPlayer(
 
     fun commitChannelSearch(numberStr: String) {
         val number = numberStr.toIntOrNull() ?: return
-        val idx = epgList.indexOfFirst { it.content?.channelNo == number }
+        val idx = epgList.indexOfFirst { it.channelNo == number }
         if (idx != -1) {
             selectedChannelIndex.intValue = idx
             sharedViewModel.updateSelectedChannel(epgList[idx])
@@ -682,18 +682,18 @@ fun PanMetroVideoPlayer(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE-> {
-                    selectedChannel?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
+                    selectedChannel?.channelId?.let { PreferenceManager.saveChannel(it) }
                     exoPlayer.pause()
                 }
                 Lifecycle.Event.ON_STOP-> {
-                    selectedChannel?.content?.ChannelID?.let { PreferenceManager.saveChannel(it) }
+                    selectedChannel?.channelId?.let { PreferenceManager.saveChannel(it) }
                     exoPlayer.pause()
                 }
                 Lifecycle.Event.ON_START-> {
                     // Launch coroutine in the lifecycle scope
                     lifecycleOwner.lifecycleScope.launch {
                         val selectedChannel = epgList.firstOrNull<EPGDataItem>() { channel ->
-                            (channel as? EPGDataItem)?.content?.ChannelID ==
+                            (channel as? EPGDataItem)?.channelId ==
                                     PreferenceManager.getSavedChannel()
                         }
                         selectedChannel?.let {

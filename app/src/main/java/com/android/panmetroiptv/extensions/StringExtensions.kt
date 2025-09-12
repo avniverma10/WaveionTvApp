@@ -402,6 +402,28 @@ fun String.convertIntoLoginResponse(
     return gson.fromJson(this, type)
 }
 
+// Create a dedicated extension function for lists
+fun String?.toListOfString(): List<String>? {
+    return try {
+        this?.let { jsonString ->
+            Gson().fromJson(jsonString, object : TypeToken<List<String>>() {}.type)
+        }
+    } catch (ex: Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+// Add this extension function for easier usage
+inline fun <reified T> String.convertIntoList(): T? {
+    return try {
+        val typeToken = object : TypeToken<T>() {}
+        this.convertIntoModels(typeToken)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 fun <T> String?.convertIntoModel(classRef: Class<T>): T? {
     return try {
         convertIntoModel(classRef = classRef, gson = this!!.provideGsonWithCoreJsonString())

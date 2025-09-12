@@ -227,9 +227,23 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                 response.body()?.toJSONObject()?.toString().convertIntoModel(CustomerPackageInfo::class.java)?.let {
                     emit(WTVResponse.Success(it))
                 }
+            }else{
+                val errorBody = response.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    try {
+                        val jsonObject = JSONObject(errorBody)
+                        val message = jsonObject.getString("message")
+                        // Use the message: "Password incorrect"
+
+                        emit(WTVResponse.Failure(Throwable(message)))
+                    } catch (e: JSONException) {
+                        // Handle JSON parsing error
+                        loge("Error", "Failed to parse error JSON: $errorBody")
+                    }
+                }
             }
         } catch (e: Exception) {
-            emit(WTVResponse.Failure(e))
+            emit(WTVResponse.Failure(Throwable(e.message)))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -253,15 +267,24 @@ class WTVNetworkRepositoryImpl @Inject constructor(private val networkApiCallInt
                 } ?: emptySet()
 
                 emit(WTVResponse.Success(channels))
-            } else {
-                val errorMessage = "Failed to fetch channels for package $pkgName: HTTP ${response.code()} - ${response.message()}"
-                loge("ChannelFetch", errorMessage)
-                emit(WTVResponse.Failure(HttpException(response)))
+            }else{
+                val errorBody = response.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    try {
+                        val jsonObject = JSONObject(errorBody)
+                        val message = jsonObject.getString("message")
+                        loge("message", message)
+                        emit(WTVResponse.Failure(Throwable(message)))
+                    } catch (e: JSONException) {
+                        // Handle JSON parsing error
+                        loge("Error", "Failed to parse error JSON: $errorBody")
+                    }
+                }
             }
         } catch (e: Exception) {
             val errorMessage = "Network error fetching channels for package $pkgName: ${e.message}"
             loge("ChannelFetch", errorMessage)
-            emit(WTVResponse.Failure(e))
+            emit(WTVResponse.Failure(Throwable(e.message)))
         }
     }.flowOn(Dispatchers.IO)
 

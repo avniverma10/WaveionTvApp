@@ -73,6 +73,7 @@ import com.android.panmetroiptv.R
 import com.android.panmetroiptv.extensions.calculateProgramsWidth
 import com.android.panmetroiptv.extensions.hideKeyboard
 import com.android.panmetroiptv.model.data.epgdata.EPGDataItem
+import com.android.panmetroiptv.model.data.epgdata.Programme
 import com.android.panmetroiptv.utils.theme.bg_card_color
 import com.android.panmetroiptv.utils.uistate.PreferenceManager
 import com.android.panmetroiptv.view.navigationhelper.Destination
@@ -224,7 +225,7 @@ fun EPGContent(
                                 isLastChannel = isLastChannel,
                                 onPlayClicked = { videoUrl ->
                                     sharedViewModel.updateLastFocusedChannel(channelIndex)
-                                    epgList.find { it.content?.videoUrl == channelData.content?.videoUrl }?.let {channelItem->
+                                    epgList.find { it.videoUrl == channelData.videoUrl }?.let {channelItem->
                                         sharedViewModel.updateSelectedChannel(channelItem)
                                         sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
                                         sharedViewModel.updateSelectedChannel(channelData)
@@ -249,9 +250,29 @@ fun EPGContent(
                                         start = maxOf(0, -((currentTimeMillis.value / 60000) % 2).toInt()).dp
                                     )
                             ) {
-                                val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?: arrayListOf())
+                                val availableProgram = sharedViewModel.provideAvailableProgram(channelData.tv?.programme?:emptyList())
+                                // Early return if no programs available
+                                if (availableProgram.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(200.dp) // Default width for empty state
+                                                .height(105.dp)
+                                                .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "No information available",
+                                                color = Color.White.copy(alpha = 0.7f),
+                                                fontSize = 15.sp,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                    return@LazyRow
+                                }
                                 itemsIndexed(availableProgram) { programIndex, program ->
-                                    val programWidth = calculateProgramsWidth(program.startTime?:0, program.endTime?:0)
+                                    val programWidth = calculateProgramsWidth(program?.startTime?:0, program?.endTime?:0)
                                     val focusRequester = programFocusRequesters[channelIndex][programIndex]
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == availableProgram.lastIndex)
@@ -281,7 +302,7 @@ fun EPGContent(
                                                         KeyEvent.KEYCODE_DPAD_CENTER -> {
                                                             sharedViewModel.updateLastSelectedChannelIndex(channelIndex)
                                                             epgList
-                                                                .firstOrNull { it.content?.videoUrl == channelData.content?.videoUrl }
+                                                                .firstOrNull { it.videoUrl == channelData.videoUrl }
                                                                 ?.let { channelItem ->
                                                                     sharedViewModel.updateSelectedChannel(channelItem)
                                                                     navController.navigate(Destination.panMetroScreen) {
@@ -349,7 +370,7 @@ fun EPGContent(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            text = program.title.orEmpty(),
+                                            text = program?.title?.orEmpty()?:"No Information",
                                             color = Color.White,
                                             fontSize = 15.sp,
                                             maxLines = 1,
@@ -510,7 +531,7 @@ fun ChannelInfo(
     categorySelectedIndex: MutableState<Int>
 ) {
     val actualFocusRequester = focusRequester ?: remember { FocusRequester() }
-    val gradientColors = channel.content
+    val gradientColors = channel
         ?.bgGradient
         ?.colors
         ?.sortedBy { it.percentage }
@@ -538,7 +559,7 @@ fun ChannelInfo(
                 if (keyEvent.type == KeyEventType.KeyDown) {
                     when (keyEvent.nativeKeyEvent.keyCode) {
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                            onPlayClicked(channel.content?.videoUrl)
+                            onPlayClicked(channel.videoUrl)
                             true
                         }
                         KeyEvent.KEYCODE_DPAD_UP -> {
@@ -568,7 +589,7 @@ fun ChannelInfo(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = channel.content?.channelNo?.toString() ?: "",
+                text = channel.channelNo?.toString() ?: "",
                 color = Color.White,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -588,7 +609,7 @@ fun ChannelInfo(
                 .focusRequester(focusRequester)
                 .focusable()
                 .clip(RoundedCornerShape(4.dp))
-                .clickable { onPlayClicked(channel.content?.videoUrl) }
+                .clickable { onPlayClicked(channel.videoUrl) }
         ) {
 //            if (channelIndex == 0 && !hasInitiallyFocused.value) {
 //                LaunchedEffect(Unit) {
@@ -597,7 +618,7 @@ fun ChannelInfo(
 //                }
 //            }
             AsyncImage(
-                model = channel.content?.thumbnailUrl,
+                model = channel.thumbnailUrl,
                 contentDescription = "Channel Logo",
                 modifier = Modifier
                     .fillMaxSize()
