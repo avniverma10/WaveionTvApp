@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "com.android.panmetroiptv"
+    namespace = "com.panmetro.iptv"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.android.panmetroiptv"
+        applicationId = "com.panmetro.iptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 71
-        versionName = "1.0.71"
+        versionCode = 72
+        versionName = "1.0.72"
     }
 
     buildTypes {
@@ -115,7 +115,7 @@ dependencies {
     //viewmodel compose
     implementation (libs.lifecycle.viewmodel)
     //message central
-    implementation (libs.zxing.embedded)
+    //implementation (libs.zxing.embedded)
 
     implementation (libs.jakewharton.threetenab)
     //security

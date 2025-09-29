@@ -1,6 +1,6 @@
 <resources>
     <!-- themes.xml -->
-    <style name="Theme.TVApp" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.Leanback" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowBackground">@android:color/black</item>
     </style>

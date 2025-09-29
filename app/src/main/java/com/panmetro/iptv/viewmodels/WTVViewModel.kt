@@ -1,0 +1,864 @@
+package com.panmetro.iptv.viewmodels
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Application
+import android.app.DownloadManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.panmetro.iptv.R
+import com.panmetro.iptv.extensions.applyAppManifest
+import com.panmetro.iptv.extensions.applyEPGData
+import com.panmetro.iptv.extensions.isNotNullOrEmpty
+import com.panmetro.iptv.extensions.logd
+import com.panmetro.iptv.extensions.loge
+import com.panmetro.iptv.extensions.provideMacAddress
+import com.panmetro.iptv.extensions.toJSONObject
+import com.panmetro.iptv.model.data.ServerEPGState
+import com.panmetro.iptv.model.data.appupdate.AppUpdateData
+import com.panmetro.iptv.model.data.epgdata.EPGContentInfo
+import com.panmetro.iptv.model.data.epgdata.EPGDataItem
+import com.panmetro.iptv.model.data.epgdata.Programme
+import com.panmetro.iptv.model.data.genre.WTVGenre
+import com.panmetro.iptv.model.data.language.WTVLanguage
+import com.panmetro.iptv.model.data.login.CustomerPackageInfo
+import com.panmetro.iptv.model.data.login.LoginInfo
+import com.panmetro.iptv.model.data.manifest.WTVManifest
+import com.panmetro.iptv.model.data.sse.TabItem
+import com.panmetro.iptv.model.notification.NotificationItem
+import com.panmetro.iptv.model.repository.common.WTVNetworkRepositoryImpl
+import com.panmetro.iptv.model.repository.login.LoginPrefsRepository
+import com.panmetro.iptv.utils.Constants
+import com.panmetro.iptv.utils.sealed.WTVResponse
+import com.panmetro.iptv.utils.sealed.firstOrNullSuccess
+import com.panmetro.iptv.utils.uistate.PreferenceManager
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.io.File
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import kotlin.math.abs
+import kotlin.math.ceil
+
+
+@HiltViewModel
+open class WTVViewModel @Inject constructor(
+    private val application: Application,
+    private val networkApiCallInterfaceImpl: WTVNetworkRepositoryImpl,
+    private val loginPrefsRepository: LoginPrefsRepository?=null,
+    private val okHttpClient: OkHttpClient
+) : AndroidViewModel(application) {
+    fun provideApplicationContext() = application.applicationContext
+    private val _userIdeal = MutableStateFlow<Boolean>(false)
+    private val _splashMaxProgress = MutableStateFlow<Float>(0f)
+    val splashMaxProgress: StateFlow<Float> = _splashMaxProgress
+    private val _splashProgress = MutableStateFlow<Float>(0f)
+    val splashProgress: StateFlow<Float> = _splashProgress
+
+    private var _isInitializeData = MutableStateFlow<Boolean>(false)
+    val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
+    private var _isProgress = MutableStateFlow<Boolean>(false)
+    val provideIsProgress: StateFlow<Boolean> get() = _isProgress
+
+    private var _refreshFilter = MutableStateFlow<Boolean>(false)
+    val refreshFilter: StateFlow<Boolean> get() = _refreshFilter
+
+    var _selectedGenre = MutableStateFlow<String>("All")
+    val selectedGenre: StateFlow<String> = _selectedGenre.asStateFlow()
+
+    var _wtvEPGList = MutableStateFlow<ArrayList<EPGDataItem>>(ArrayList())
+    val wtvEPGList: StateFlow<ArrayList<EPGDataItem>> = _wtvEPGList.asStateFlow()
+    private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
+    val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
+
+    private var _filterAvailablePrograms = MutableStateFlow<List<Programme>>(arrayListOf())
+    val filterAvailablePrograms: StateFlow<List<Programme>> = _filterAvailablePrograms.asStateFlow()
+    //for genre screen
+    protected val _filteredPanMetroChannels = MutableStateFlow<List<EPGDataItem>>(emptyList())
+    val filteredPanMetroChannels: StateFlow<List<EPGDataItem>> = _filteredPanMetroChannels.asStateFlow()
+
+    //
+
+    protected val _availablePkg = MutableStateFlow<List<String>?>(null)
+    val availablePkg: StateFlow<List<String>?> = _availablePkg
+
+    private val _appPkgChannels = MutableStateFlow<HashMap<String, MutableSet<String>>>(hashMapOf())
+    val appPkgChannels: StateFlow<HashMap<String, MutableSet<String>>> = _appPkgChannels.asStateFlow()
+
+
+
+    // ─── Date and time state ───
+    private val _isTimeValid = MutableStateFlow<Boolean?>(null)
+    val isTimeValid: StateFlow<Boolean?> = _isTimeValid.asStateFlow()
+    private val _isServerAvailable = MutableStateFlow<Boolean>(false)
+    val isServerAvailable: StateFlow<Boolean> = _isServerAvailable.asStateFlow()
+
+    // ─── App‑Update state ───
+    private val _appUpdateData = MutableStateFlow<AppUpdateData?>(null)
+    val appUpdateData: StateFlow<AppUpdateData?> = _appUpdateData.asStateFlow()
+
+    private val _showUpdateDialog = MutableStateFlow(false)
+    val showUpdateDialog: StateFlow<Boolean> = _showUpdateDialog.asStateFlow()
+
+    private val _downloadId = MutableStateFlow<Long?>(null)
+    val downloadId: StateFlow<Long?> = _downloadId.asStateFlow()
+
+    private val _tabItemsFlow = MutableStateFlow<List<TabItem>>(emptyList())
+    val tabItemsFlow: StateFlow<List<TabItem>> = _tabItemsFlow
+    private val _bannerMessage = MutableStateFlow<String?>(null)
+    val bannerMessage: StateFlow<String?> = _bannerMessage.asStateFlow()
+
+    // Flag to ensure we start the SSE connection only once.
+    private var startedSSE = false
+
+    // prevent double‐connecting
+    private var startedNotifSSE = false
+    private var skipFirst = true
+
+    private val TAG = "TimeCheck"
+
+    companion object {
+        private const val NOTIF_CHANNEL_ID = "tv_app_notifications"
+        private const val NOTIF_CHANNEL_NAME = "TV App Updates"
+    }
+
+    fun clearLogin() {
+        viewModelScope.launch {
+            loginPrefsRepository?.clearLoginInfo()
+        }
+    }
+
+
+    /*fun updateEPGData(epgList: List<EPGDataItem>) {
+        viewModelScope.launch {
+            saveEPGList(application, epgList)
+        }
+    }*/
+
+    var _errorLoadingData = MutableStateFlow<String?>(null)
+    val errorLoadingData: StateFlow<String?> = _errorLoadingData
+
+    init {
+        observeServerAndEPG()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //startNotificationSSE()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startNotificationSSE() {
+        if (startedNotifSSE) return
+        startedNotifSSE = true
+
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl
+                .provideNotificationSSE(Constants.BASE_URL+"app/getNotification-sse")
+                .catch { loge("WTVViewModel", "SSE failed $it") }
+                .collect { item ->
+                    if (skipFirst) {
+                        skipFirst = false
+                    } else {
+                        showPushNotification(item)
+                    }
+                }
+        }
+    }
+
+    /**Build and issue a local notification */
+    @SuppressLint("MissingPermission")
+    private fun showPushNotification(item: NotificationItem) {
+        _bannerMessage.value = item.message
+        // 1) Post the Toast on the main thread
+//        Handler(Looper.getMainLooper()).post {
+//            Toast.makeText(application, " ${item.message}", Toast.LENGTH_LONG).show()
+//        }
+        // (optional) clear after a delay so banner goes away
+        viewModelScope.launch {
+            delay(TimeUnit.MINUTES.toMillis(1))
+            _bannerMessage.value = null
+        }
+        loge("WTVViewModel", " showPushNotification: ${item.message}")
+
+        // 2) Check POST_NOTIFICATIONS permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(application, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("WTVViewModel", "Missing POST_NOTIFICATIONS permission!")
+            return
+        }
+        val builder = NotificationCompat.Builder(application, NOTIF_CHANNEL_ID)
+            .setSmallIcon(R.drawable.panlogin)
+            .setContentTitle("New message")
+            .setContentText(item.message)
+            .setAutoCancel(true)
+
+        NotificationManagerCompat.from(application)
+            .notify(item.id.hashCode(), builder.build())
+    }
+
+    fun initializeAppRequiredData() {
+        viewModelScope.launch {
+            // Launch both API calls concurrently
+            val manifestDeferred = async {
+                fetchManifest()
+            }
+            val epgDeferred = async {
+                fetchEPG()
+            }
+            try {
+                // Wait for both to complete without timeout
+                val manifest = manifestDeferred.await()
+                val epgData = epgDeferred.await()
+                if (manifest != null && epgData != null) {
+                    epgData.data?.let {
+                        handleSuccessResponse(manifest,it)
+                        val nextAPIRequiredCount = epgData.isNextPageDataRequired()
+                        if(nextAPIRequiredCount>0){
+                            fetchRemainingEPGParallel(remainingTotalCount= nextAPIRequiredCount)
+                        }
+                    }
+                } else {
+                    handlePartialFailure(manifest, epgData?.data)
+                }
+            } catch (e: Exception) {
+                handleFailure(e)
+            }
+        }
+    }
+
+
+    private suspend fun fetchManifest(): WTVManifest? {
+        return networkApiCallInterfaceImpl
+            .provideWTVManifest("${Constants.BASE_URL}manifest")
+            .firstOrNullSuccess()
+            ?.let { manifest ->
+                val genre = arrayListOf<WTVGenre>().apply {
+                    add(WTVGenre(name = "All"))
+                    manifest.genre?.let { addAll(it) }
+                }
+                val language = arrayListOf<WTVLanguage>().apply {
+                    add(WTVLanguage(name = "All"))
+                    manifest.language?.let { addAll(it) }
+                }
+                manifest.copy(genre = genre, language = language)
+            }
+    }
+
+
+
+    private suspend fun fetchEPG(): EPGContentInfo? {
+        return networkApiCallInterfaceImpl
+            .provideWTVEPGData("${Constants.BASE_URL}epg-files/all-publish-content"+"?offset=0&limit=50")
+            .firstOrNullSuccess()
+    }
+    private suspend fun fetchEPG(offset:Int?=null,limit:Int?=null): EPGContentInfo? {
+        val limitData = limit?.let { "&limit=${limit}" }?:run { "" }
+        return networkApiCallInterfaceImpl
+            .provideWTVEPGData("${Constants.BASE_URL}epg-files/all-publish-content"+"?offset=$offset"+limitData)
+            .firstOrNullSuccess()
+    }
+
+    suspend fun fetchRemainingEPGParallel(
+        remainingTotalCount: Int,
+        startOffset: Int = 50,
+        pageLimit: Int = 100
+    )= supervisorScope {
+        if (remainingTotalCount <= 0) return@supervisorScope
+
+        try {
+            val offsets = calculateOffsets(remainingTotalCount, startOffset, pageLimit)
+            // Create async request list
+            val asyncRequests = offsets.map { off ->
+                async {
+                    fetchEPG(off, pageLimit)?.data.orEmpty()
+                }
+            }
+
+            // Wait for all requests to complete
+            val results = asyncRequests.awaitAll()
+
+            // Merge all results into a single list
+            val epgRequestList = results.flatten().toMutableList()
+            // Use the final merged list
+            updateEPGData(epgRequestList, true)
+            _refreshFilter.value = true
+
+        } catch (e: Exception) {
+            loge("EPG", "Parallel fetch failed: ${e.message}")
+        }
+    }
+
+
+    fun updateEPGData(epgDataList: List<EPGDataItem>,isAddedRequired: Boolean=false){
+        if(isAddedRequired) {
+            var data = _wtvEPGList.value
+            data?.addAll(epgDataList)
+            _wtvEPGList.value = data
+        }else if(_wtvEPGList.value.size >0){
+            var data = _wtvEPGList.value
+            data?.addAll(epgDataList)
+            _wtvEPGList.value = data
+        }
+    }
+
+
+    private suspend fun handleSuccessResponse(manifest: WTVManifest, epgData: List<EPGDataItem>) {
+        loge("manifestDeferred", manifest.toJSONObject().toString())
+        application.applyAppManifest(manifest)
+
+        //val processedEpgData = removeDuplicateEPG(epgData)
+        _wtvEPGList.value?.addAll(epgData)
+        application.applyEPGData(epgData)
+
+        val targetChannel = epgData.find { it.channelId == manifest.landingChannel?.channelId }
+        if (targetChannel != null) {
+            updateSelectedChannel(targetChannel)
+        } else {
+            _selectedChannel.value = epgData.firstOrNull() ?: EPGDataItem()
+        }
+        _isInitializeData.value = true
+    }
+
+    private fun handlePartialFailure(manifest: WTVManifest?, epgData: List<EPGDataItem>?) {
+        val errorMsg = buildString {
+            if (manifest == null) append("manifest api")
+            if (epgData == null) {
+                if (isNotEmpty()) append(" and ")
+                append("epg api")
+            }
+        }
+
+        _errorLoadingData.value = "Server $errorMsg not responding!"
+        _isInitializeData.value = false
+        loge("_errorLoadingData", _errorLoadingData.value ?: "")
+    }
+
+    private fun handleFailure(exception: Exception) {
+        _errorLoadingData.value = "Network error: ${exception.message}"
+        _isInitializeData.value = false
+        loge("initializeAppRequiredData", "Failed to load data: ${exception.message}")
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun fetchServerTimeMillis(): Long? {
+        return try {
+            val healthAPI = Constants.BASE_URL + "app/health"
+            val req = Request.Builder()
+                .url(healthAPI)
+                .get()
+                .build()
+
+            loge(TAG, healthAPI)
+
+            val resp = okHttpClient.newCall(req).execute()
+
+            if (!resp.isSuccessful) {
+                loge(TAG, "Health endpoint error: HTTP ${resp.code}")
+                // Instead of throwing, return null and let the caller handle it
+                return null
+            }
+
+            loge("API:","Url:${healthAPI}>${resp.body}")
+            val bodyStr = resp.body?.string() ?: run {
+                loge(TAG, "Empty response body")
+                return null
+            }
+
+            try {
+                val timestampStr = JSONObject(bodyStr).getString("timestamp")
+                val serverInst = Instant.parse(timestampStr)
+                val serverMs = serverInst.toEpochMilli()
+                loge(TAG, "Server epoch ms: $serverMs")
+                serverMs
+            } catch (e: Exception) {
+                loge(TAG, "JSON parsing failed: ${e.message}")
+                null
+            }
+        } catch (e: Exception) {
+            loge(TAG, "Network error: ${e.message}")
+            null
+        }
+    }
+
+
+    /**
+     * Checks that:
+     *  • server date == device date, AND
+     *  • |deviceTime – serverTime| ≤ thresholdMs
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
+        viewModelScope.launch {
+            try {
+                val valid = withContext(Dispatchers.IO) {
+                    val serverMs = fetchServerTimeMillis() ?: run {
+                        _isServerAvailable.value = false
+                        // If we can't get server time, assume invalid (or adjust logic as needed)
+                        return@withContext false
+                    }
+                    _isServerAvailable.value = true
+                    val deviceMs = System.currentTimeMillis()
+                    val drift = abs(deviceMs - serverMs)
+
+                    // calendar-date check
+                    val zone = ZoneId.systemDefault()
+                    val serverDate = Instant.ofEpochMilli(serverMs).atZone(zone).toLocalDate()
+                    val deviceDate = Instant.ofEpochMilli(deviceMs).atZone(zone).toLocalDate()
+
+                    (serverDate == deviceDate) && (drift <= thresholdMs)
+                }
+                _isTimeValid.value = valid
+            } catch (e: Exception) {
+                loge(TAG, "Error in time validation: ${e.message}")
+                _isTimeValid.value = false
+            }
+        }
+    }
+
+    fun updateSelectedChannel(selectedChannel: EPGDataItem) {
+        _selectedChannel.value = selectedChannel
+        selectedChannel.tv?.programme?.let { providePlayableProgramData(it) }
+    }
+
+    //is user ideal since 10 sec
+    fun updateUserIdeal(isUserIdeal: Boolean) {
+        _userIdeal.value = isUserIdeal
+    }
+
+
+    //check for updates
+
+    fun clearDownloadId() {
+        _downloadId.value = null
+    }
+
+    fun checkForAppUpdate() = viewModelScope.launch {
+        _isProgress.value = true
+        val resp = networkApiCallInterfaceImpl
+            .provideAppUpdateInfo(Constants.BASE_URL+"app/appupdate")
+            .firstOrNullSuccess()
+        _isProgress.value = false
+
+        resp?.data?.let { update ->
+            // grab the currently installed version
+            val current = application.packageManager
+                .getPackageInfo(application.packageName, 0)
+                .versionName
+                .orEmpty()
+
+            // only if the server’s version is higher do we prompt or download
+                if (shouldUpdateRequired(update.appVersion, current) && update.checkRegionUpdate(PreferenceManager.getLoginResponse()?.provideUserRegionCode()) == true) {
+                _appUpdateData.value = update
+                handleAppUpdate(update)
+            } else {
+                // 3. otherwise clear any stale state so we never re‐show
+                _appUpdateData.value = null
+                _showUpdateDialog.value = false
+            }
+        }
+    }
+
+
+    private fun handleAppUpdate(update: AppUpdateData) {
+        val current = application.packageManager
+            .getPackageInfo(application.packageName, 0)
+            .versionName
+            .orEmpty()
+        loge(
+            "App version",
+            "current version: $current, new version: ${update.appVersion} and isVersionHigher:>${
+                shouldUpdateRequired(
+                    update.appVersion,
+                    current
+                )
+            }"
+        )
+
+        val needsUpdate = shouldUpdateRequired(update.appVersion, current)
+        _showUpdateDialog.value = needsUpdate
+    }
+
+    private fun isVersionHigher(newVer: String, oldVer: String): Boolean {
+        val n = newVer.split(".").map { it.toIntOrNull() ?: 0 }
+        val o = oldVer.split(".").map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(n.size, o.size)) {
+            val ni = n.getOrNull(i) ?: 0
+            val oi = o.getOrNull(i) ?: 0
+            if (ni > oi) return true
+            if (ni < oi) return false
+        }
+        return false
+    }
+
+    private fun shouldUpdateRequired(newVer: String, oldVer: String): Boolean {
+        try {
+            val new = newVer.replace(".", "").trim().toInt()
+            val old = oldVer.replace(".", "").trim().toInt()
+            return new > old
+        } catch (ex: Exception) {
+            return false
+        }
+    }
+    @SuppressLint("MissingPermission")
+    fun downloadApk(apkUrl: String): Long {
+        // getApplication<T>() gives you your Application instance in an AndroidViewModel
+        val ctx = getApplication<Application>()
+        val dm  = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+
+
+        // construct a file in YOUR app’s external-files/Download directory
+
+        val destDir  = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)!!
+        // Clean up any previous APK files
+        cleanUpOldApks(destDir)
+
+        val fileName = "tvapp_${_appUpdateData.value?.appVersion}.apk"
+        val file     = File(destDir, fileName)
+        val destUri  = Uri.fromFile(file)
+
+        val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
+            setTitle("Downloading v${_appUpdateData.value?.appVersion}")
+            // write into your app’s own folder (no storage permission needed)
+            setDestinationUri(destUri)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        }
+
+        val id = dm.enqueue(req)
+        _downloadId.value = id
+        return id
+    }
+
+    /*fun downloadApk(apkUrl: String): Long {
+        val ctx = getApplication<Application>()
+        val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val version = _appUpdateData.value?.appVersion ?: "unknown"
+
+        // Create downloads directory if it doesn't exist
+        val destDir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.apply {
+            if (!exists()) mkdirs()
+        } ?: run {
+            // Fallback to cache directory if downloads directory isn't available
+            ctx.cacheDir.apply {
+                if (!exists()) mkdirs()
+            }.also {
+                Log.w("ApkDownload", "Using cache directory as fallback for APK download")
+            }
+        }
+        // Clean up any previous APK files
+        cleanUpOldApks(destDir)
+
+        // Generate version-specific filename
+        val fileName = "tvapp_v${version}.apk"
+        val file = File(destDir, fileName)
+        val destUri = Uri.fromFile(file)
+
+        // Create download request
+        val req = DownloadManager.Request(Uri.parse(apkUrl)).apply {
+            setTitle("TVApp v$version")
+            setDescription("Downloading update")
+            setDestinationUri(destUri)
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // Optional: set network requirements
+            setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE )
+            setAllowedOverRoaming(false)
+        }
+
+        // Enqueue download and store ID
+        val downloadId = dm.enqueue(req)
+        _downloadId.value = downloadId
+        return downloadId
+    }*/
+
+    private fun cleanUpOldApks(directory: File) {
+        try {
+            directory.listFiles()?.forEach { file ->
+                if (file.isFile && file.name.startsWith("tvapp_") && file.name.endsWith(".apk")) {
+                    file.delete()
+                    Log.d("ApkDownload", "Deleted old APK: ${file.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ApkDownload", "Error cleaning up old APKs", e)
+        }
+    }
+
+    /** Called from “Yes” button on dialog */
+    fun onUserAcceptedUpdate() {
+        _showUpdateDialog.value = false
+        _appUpdateData.value?.apkUrl?.let(::downloadApk)
+    }
+
+    /** Called from “No” button on dialog */
+    fun onUserDeclinedUpdate() {
+        _showUpdateDialog.value = false
+    }
+
+
+    fun providePlayableProgramData(programs: List<Programme>) {
+        val now = System.currentTimeMillis()
+        val formatter = SimpleDateFormat("hh:mm a", Locale.US)
+        _filterAvailablePrograms.value = programs
+            .asSequence()
+            .filter { program ->
+                val start = program.startTime
+                val end = program.endTime
+                if (start == null || end == null) return@filter false
+                (start <= now && now < end) || (now < start)
+            }
+            .distinctBy { it.startTime to it.endTime }
+            .sortedBy { it.startTime }
+            .take(3)
+            .map { program ->
+                program.copy(
+                    startFormatedTime = program.startTime
+                        ?.let { formatter.format(it) }
+                        ?: "--",
+                    endFormatedTime = program.endTime
+                        ?.let { formatter.format(it) }
+                        ?: "--"
+                )
+            }.toList()
+    }
+
+    fun provideUserHash(){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.provideUserHash(Constants.BASE_URL+"userData?username="+ PreferenceManager.getUsername()).collect { response ->
+                val macId = application.provideMacAddress()?:""
+                when (response) {
+                    is WTVResponse.Success -> {
+                        if(response.data.hash.isNotNullOrEmpty()) {
+                            PreferenceManager.saveHash(response.data.hash)
+                        }else{
+                            val requestBody = hashMapOf<String, String>().apply {
+                                PreferenceManager.getUsername()?.let { put("username", it) }
+                                macId?.let { put("macId", it) }
+                            }
+
+                            networkApiCallInterfaceImpl.registerUserHash(
+                                hashUrl = Constants.BASE_URL+"userData",
+                                requestBody = requestBody).collect { response ->
+                                when (response) {
+                                    is WTVResponse.Success -> {
+                                        if(response.data.hash.isNotNullOrEmpty()) {
+                                            PreferenceManager.saveHash(response.data.hash)
+                                        }
+                                    }
+
+                                    is WTVResponse.Failure -> {
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    is WTVResponse.Failure -> {
+                        val requestBody = hashMapOf<String, String>().apply {
+                            PreferenceManager.getUsername()?.let { put("username", it) }
+                            macId?.let { put("macId", it) }
+                        }
+
+                        networkApiCallInterfaceImpl.registerUserHash(
+                            hashUrl = Constants.BASE_URL+"userData",
+                            requestBody = requestBody).collect { response ->
+                            when (response) {
+                                is WTVResponse.Success -> {
+                                   // provideApplicationContext().showToastS(response.data.toString())
+                                    if(response.data.hash.isNotNullOrEmpty()) {
+                                        PreferenceManager.saveHash(response.data.hash)
+                                    }
+                                }
+
+                                is WTVResponse.Failure -> {
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    fun validateUserLogin(uName:String,paswrd:String,macId:String,onLoginResponse:(LoginInfo?,String?)->Unit){
+        viewModelScope.launch {
+            //Prepare headers and body
+            val headers = mapOf(
+                "Authorization" to "56fdsr237df325fv454v3v4532drferh",
+                "Content-Type"  to "application/json"
+            )
+            val requestBody = hashMapOf(
+                "uname" to (uName),
+                "paswrd" to (paswrd ),
+                "macaddr" to (macId)
+            )
+            networkApiCallInterfaceImpl.provideUserLogin(
+                loginUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/logincheck",//"osmsapi/cryptodrm/logincheck",
+                requestBody = requestBody).collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> {
+                        //update userId
+                        //userProfileAPI(uName=uName)
+                        onLoginResponse(response.data,null)
+                        if(response.data.customerNumber?.isNotEmpty() == true){
+                            userPackageUpdate(customerNumber = response.data.customerNumber, isChannelUpdateRequired = true)
+                        }
+                    }//_bannerList.value = response.data
+                    is WTVResponse.Failure -> onLoginResponse(null,response.error.message) //loge("_bannerList:${response.error.message}")
+                }
+            }
+        }
+    }
+
+    fun userPackageUpdate(customerNumber:String,isPkgUpdateOnly: Boolean?=false,isChannelUpdateRequired: Boolean?=false){
+        viewModelScope.launch {
+            networkApiCallInterfaceImpl.getCustomerPackageInfo(
+                requestUrl = Constants.LOGIN_SMS_BASE+"src/api/v1/customer-services/${customerNumber}?page=1&limit=20").collect { response ->
+                when (response) {
+                    is WTVResponse.Success -> {
+                        PreferenceManager.saveUserPackageInfo(response.data)
+                        response.data?.provideAvailablePkgData()?.let {
+                            _availablePkg.value = it
+                            customerChannelUpdates(it)
+                        }
+                    }
+                    is WTVResponse.Failure -> {
+                        PreferenceManager.clearPkg()
+                        _availablePkg.value = null
+                        loge("customer-services>","User customer number not found.")
+                    }
+                }
+            }
+        }
+    }
+
+    fun CustomerPackageInfo.provideAvailablePkgData(): List<String>? {
+        return this.results
+            ?.filterNot { it.isExpired() }
+            ?.mapNotNull { it.serviceId?.toString() }
+            ?.filter { it.isNotBlank() }
+            ?.distinct()
+    }
+
+
+    fun customerChannelUpdates(pkgName: List<String>){
+        viewModelScope.launch {
+            pkgName.forEach { pkg ->
+                try {
+                    val channels = networkApiCallInterfaceImpl.getCustomerChannelInfo(pkg)
+                        .firstOrNullSuccess()
+                    // Only update if we got successful channels data
+                    channels?.let { successfulChannels ->
+                       // _appPkgChannels.value.put(pkg, successfulChannels.toMutableSet())
+                        val currentMap = _appPkgChannels.value.toMutableMap()
+                        currentMap[pkg] = successfulChannels.toMutableSet()
+                        _appPkgChannels.value = HashMap(currentMap) // Create new instance
+                        //provideApplicationContext().updatePkgChannels(pkg.toString(), successfulChannels.toMutableSet())
+
+                        //observeAppPkgChannels()
+                        logd("ChannelUpdate", "Successfully updated $pkg with ${successfulChannels.size} channels")
+                    } ?: run {
+                        loge("ChannelUpdate", "Skipping update for $pkg - no successful response")
+                    }
+                } catch (e: Exception) {
+                    loge("ChannelUpdate", "Error processing package $pkg: ${e.message}")
+                    // Continue with next package even if this one fails
+                }
+            }
+        }
+    }
+
+    private fun observeServerAndEPG() {
+        viewModelScope.launch {
+            // Combine both flows to react to changes in either
+            combine(
+                isServerAvailable,
+                wtvEPGList
+            ) {  serverAvailable, epgList ->
+                ServerEPGState(serverAvailable, epgList)
+            }.collect { state ->
+                handleServerEPGState(state)
+            }
+        }
+    }
+
+    private fun handleServerEPGState(state: ServerEPGState) {
+        viewModelScope.launch {
+            when {
+                // Server is available but EPG list is empty -> fetch data
+                state.isServerAvailable && state.epgList.isEmpty() -> {
+                    fetchEPG()
+                }
+
+                // Server is not available -> show error
+                !state.isServerAvailable -> {
+
+                }
+
+                // Server available and has data -> clear any previous errors
+                state.isServerAvailable && state.epgList.isNotEmpty() -> {
+                }
+            }
+        }
+    }
+
+    fun packageUpdate(){
+        viewModelScope.launch {
+            val requestBody = hashMapOf<String, Any>(
+                "username" to (PreferenceManager.getUsername() ?: ""),
+                "packageUpdate" to 0
+            )
+            networkApiCallInterfaceImpl.provideUserProfileCMS(
+                requestBody = requestBody).collect { response ->
+            }
+        }
+    }
+
+
+
+}
+fun removeDuplicateEPG(items: List<EPGDataItem>): List<EPGDataItem> {
+    return items
+        .filter { it.channelId != null }       // optional: drop null IDs
+        .distinctBy { it.channelId }            // keep first of each channelId
+}
+
+
+
+// Helper functions
+private fun calculateOffsets(remainingCount: Int, startOffset: Int, pageLimit: Int): List<Int> {
+    val numberOfRequests = ceil(remainingCount.toDouble() / pageLimit).toInt()
+    return List(numberOfRequests) { index ->
+        startOffset + (index * pageLimit)
+    }
+}

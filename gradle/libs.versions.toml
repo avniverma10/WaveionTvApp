@@ -105,7 +105,7 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinx-coroutines" }
-zxing-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing_embedded_version" }
+#zxing-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing_embedded_version" }
 jakewharton-threetenab = { module = "com.jakewharton.threetenabp:threetenabp", version.ref = "threetenabp_v" }
 sdp-intuit = { module = "com.intuit.sdp:sdp-android", version.ref = "sdp_android_v" }
 ssp-intuit = { module = "com.intuit.ssp:ssp-android", version.ref = "sdp_android_v" }

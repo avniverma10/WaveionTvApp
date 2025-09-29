@@ -15,10 +15,10 @@
       </SelectionState>
       <SelectionState runConfigName="Panmetro.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-08-13T14:14:26.779371Z">
+        <DropdownSelection timestamp="2025-09-08T12:13:37.336335Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.1.16:5555;connection=7f00d57d" />
+              <DeviceId pluginId="Default" identifier="serial=192.168.1.18:5555;connection=da01ab38" />
             </handle>
           </Target>
         </DropdownSelection>

@@ -1,0 +1,777 @@
+package com.panmetro.iptv.extensions
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Build
+import android.util.Base64
+import android.util.Log
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.panmetro.iptv.model.data.login.LoginInfo
+import com.panmetro.iptv.model.data.login.PkgDataDeserializer
+import com.panmetro.iptv.model.data.login.Pkgdata
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
+import org.json.JSONObject
+import org.threeten.bp.Duration
+import org.threeten.bp.ZonedDateTime
+import org.threeten.bp.format.DateTimeFormatter
+import java.io.File
+import java.io.IOException
+import java.io.UnsupportedEncodingException
+import java.lang.reflect.Type
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.net.NetworkInterface
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.regex.Pattern
+
+
+fun String?.isNotNullOrEmpty(): Boolean = this != null && this.trim().isNotEmpty()
+
+fun String?.getColor(): Int {
+    if (this == "#00000000" || this.isNullOrEmpty() || this.startsWith("#") && this.length > 9) {
+        return Color.TRANSPARENT
+    }
+    return try {
+        val color = this?.let {
+            if (this.isEmpty()) -1 else this.getOctColor()
+        } ?: kotlin.run {
+            -1
+        }
+        color
+    } catch (e: Exception) {
+        -1
+    }
+}
+
+private fun String.getOctColor(): Int {
+    if (this.contains("rgba")) {
+        var tempstr = this.split("rgba\\(".toRegex()).dropLastWhile { it.isEmpty() }
+            .toTypedArray()//.split(",");
+        tempstr = tempstr[1].split("\\)".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+        tempstr = tempstr[0].split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+
+
+        if (!this.equals("rgba(255,255,255,0)", ignoreCase = true)) {
+            return Color.parseColor(
+                String.format(
+                    "#%02x%02x%02x%02x",
+                    Math.round(java.lang.Float.parseFloat(tempstr[3].trim()) * 255),
+                    Integer.parseInt(tempstr[0].trim()),
+                    Integer.parseInt(tempstr[1].trim()),
+                    Integer.parseInt(tempstr[2].trim())
+                )
+            )
+        }
+        return Color.parseColor("#00000000")
+    } else {
+        return this.getObjColor()
+    }
+
+}
+
+
+private fun String.getObjColor(): Int {
+
+    try {
+        if (this.contains("rgb")) {
+            var tempstr = this.split("rgb\\(".toRegex()).dropLastWhile { it.isEmpty() }
+                .toTypedArray()//.split(",");
+            tempstr =
+                tempstr[1].split("\\)".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            tempstr = tempstr[0].split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            return Color.rgb(
+                Integer.parseInt(tempstr[0].trim { it <= ' ' }),
+                Integer.parseInt(tempstr[1].trim { it <= ' ' }),
+                Integer.parseInt(tempstr[2].trim { it <= ' ' })
+            )
+
+        } else if (this.contains("#")) {
+            if (this.length < 5) {
+                val color = this.replace("#", "")
+                var tempColor = ""
+                for (i in 0..2) tempColor = color[i].toString() + color[i].toString() + tempColor
+                //logReport("AppCompactView", "received color #$tempColor")
+                return Color.parseColor("#$tempColor")
+
+            } else return Color.parseColor(this)
+        }
+    } catch (e: Exception) {
+        return Color.parseColor("#000000")
+    }
+
+    return Color.parseColor("#000000")
+}
+
+fun String?.getToolBarTextSize(): Float {
+    return if (this.equals("largeHeaderBar", ignoreCase = true)) 26f
+    else if (this.equals("mediumHeaderBar", ignoreCase = true)) 20f
+    else if (this.equals("smallHeaderBar", ignoreCase = true)) 14f
+    else if (this.equals("xlargeHeaderBar", ignoreCase = true)) 36f
+    else 20f
+}
+
+fun String?.getFloatValue(defaultValue: Float = 0f): Float {
+    return try {
+        this?.toFloatOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        0f
+    }
+}
+
+fun String?.getDoubleValue(): Double {
+    return try {
+        this?.toDoubleOrNull() ?: 0.toDouble()
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        0.toDouble()
+    }
+}
+
+
+fun String?.getIntValue(defaultValue: Int = 0): Int {
+    return try {
+        this?.trim()?.toIntOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getLongValue(defaultValue: Long = 0): Long {
+    return try {
+        this?.toLongOrNull() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getBigDecimalValue(defaultValue: BigDecimal = BigDecimal(0)): BigDecimal {
+    return try {
+        this?.toBigDecimal() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun BigDecimal?.getIntWithBigDecimal(defaultValue: Int = 0): Int {
+    return try {
+        this?.toInt() ?: defaultValue
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        defaultValue
+    }
+}
+
+fun String?.getBooleanValue(): Boolean {
+    return try {
+        return this?.trim() == "true" || this?.trim() == "True" || this?.trim() == "TRUE" || this?.trim() == "1" || this?.trim() == "Yes" || this?.trim() == "YES" || this?.trim() == "yes"
+    } catch (e: java.lang.Exception) {
+        // logReport(e.message)
+        false
+    }
+}
+
+
+fun String?.validateEmail(): Boolean = this?.let {
+    Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE)
+        .matcher(this).find()
+} ?: kotlin.run { false }
+
+
+fun String?.isPhoneInput(): Boolean {
+    this?.let {
+        val doubleValue: Double = this.trim().toDoubleOrNull() ?: 0.toDouble()
+        return (doubleValue > 0.toDouble())
+    } ?: kotlin.run {
+        return false
+    }
+}
+
+
+fun String?.isMobileInput(): Boolean {
+    this?.let {
+        val doubleValue: Double = this.trim().toDoubleOrNull() ?: 0.toDouble()
+        return (doubleValue > 0.toDouble()) && this.trim().length >= 10
+    } ?: kotlin.run {
+        return false
+    }
+}
+
+
+fun String?.stableId() = this?.hashCode()?.toLong() ?: 0L
+
+
+fun String.toJsonObject(): JsonObject? {
+    return try {
+        Gson().fromJson(this, JsonObject::class.java)
+    } catch (e: Throwable) {
+        loge("","${e.message}")
+        null
+    }
+}
+
+fun String.toJSONObject(): JSONObject? {
+    return try {
+        JSONObject(this)
+    } catch (e: Throwable) {
+        loge("","${e.message}")
+        null
+    }
+}
+
+fun String.toJsonArray(): JsonArray? {
+    return try {
+        Gson().fromJson(this, JsonArray::class.java)
+    } catch (e: Throwable) {
+        loge("","${e.message}")
+        null
+    }
+}
+
+fun String.getSharableIntent(): Intent {
+    val intent = Intent("android.intent.action.SEND")
+    intent.type = "text/plain"
+    intent.putExtra("android.intent.extra.TEXT", this)
+    return intent
+}
+
+
+fun getDateInInputPattern(pattern: String): String {
+    val calendar = Calendar.getInstance()
+    val time = calendar.time
+    val outputFmt = SimpleDateFormat(pattern, Locale.US)
+    return outputFmt.format(time)
+}
+
+
+fun String.encodeURIComponent(): String {
+    val result: String? = try {
+        URLEncoder.encode(this, "UTF-8").replace("\\+".toRegex(), "%20")
+            .replace("\\%21".toRegex(), "!").replace("\\%27".toRegex(), "'")
+            .replace("\\%28".toRegex(), "(").replace("\\%29".toRegex(), ")")
+            .replace("\\%7E".toRegex(), "~")
+    } catch (e: UnsupportedEncodingException) {
+        this
+    }
+    return result ?: ""
+}
+
+
+
+fun String.convertStringToDateDDMMMYYYY(): String {
+    val date = SimpleDateFormat("dd-MM-yyyy").parse(this)
+    val format = SimpleDateFormat("dd-MMM-yyyy")
+    return format.format(date)
+}
+
+fun String.convertSimpleDateFormat(): String {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        android.icu.text.SimpleDateFormat(this, Locale.getDefault()).format(Date())
+    } else {
+        SimpleDateFormat(this, Locale.getDefault()).format(Date())
+    }
+}
+
+fun String.toUrlUtf(): String {
+    return try {
+        URLEncoder.encode(this, "UTF-8")
+    } catch (e: Throwable) {
+        loge("","${e.message}")
+        ""
+    }
+}
+
+fun String.decodeUrlUTF(): String {
+    return try {
+        URLDecoder.decode(this, "UTF-8")
+    } catch (e: Throwable) {
+        loge("","${e.message}")
+        ""
+    }
+}
+
+
+fun String.getMD5(): String {
+    return try {
+        val md = MessageDigest.getInstance("MD5")
+        val messageDigest = md.digest(this.toByteArray())
+        val number = BigInteger(1, messageDigest)
+        var hashtext = number.toString(16)
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while (hashtext.length < 32) {
+            hashtext = "0$hashtext"
+        }
+        hashtext
+    } catch (e: NoSuchAlgorithmException) {
+        this
+    }
+
+}
+
+fun String.getSHA1(): String {
+    return try {
+        val md = MessageDigest.getInstance("SHA-1")
+        val messageDigest = md.digest(this.toByteArray())
+        val number = BigInteger(1, messageDigest)
+        var hashtext = number.toString(16)
+        // Now we need to zero pad it if you actually want the full 32 chars.
+        while (hashtext.length < 32) {
+            hashtext = "0$hashtext"
+        }
+        hashtext
+    } catch (e: NoSuchAlgorithmException) {
+        this
+    }
+}
+
+@SuppressLint("SimpleDateFormat")
+fun String?.getDate(format: String, locale: Locale? = null): Date? {
+    return try {
+        val date = this ?: return null
+        val dateFormat: SimpleDateFormat =
+            locale?.let { SimpleDateFormat(format, locale) } ?: SimpleDateFormat(format)
+        dateFormat.parse(date)
+    } catch (e: Exception) {
+        this?.loge("","${e.message}")
+        null
+    }
+}
+
+@SuppressLint("SimpleDateFormat")
+fun convertDateYYYYMMDDtoMMDDYYYY(time: String): String? {
+    val inputPattern = "yyyy-MM-dd"
+    val outputPattern = "MM-dd-yyyy"
+    val inputFormat = SimpleDateFormat(inputPattern)
+    val outputFormat = SimpleDateFormat(outputPattern)
+    try {
+        val date = inputFormat.parse(time) ?: return null
+        return outputFormat.format(date)
+    } catch (e: ParseException) {
+        e.printStackTrace()
+    }
+    return null
+}
+
+fun String?.getQueryParamFromUrl(key: String): String? {
+    this?.let {
+        try {
+            val videoUri = Uri.parse(it)
+            return videoUri.getQueryParameter(key)
+        } catch (e: java.lang.Exception) {
+            loge("","${e.message}")
+        }
+    }
+    return null
+}
+
+/**
+ * Deserialize this JSON `String` into a LoginInfo, while registering
+ * a custom JsonDeserializer<T> for the given `type`.
+ *
+ * @param T           the nested type you’re providing a custom deserializer for (e.g. PkgData)
+ * @param type        the Java Type (e.g. PkgData::class.java or a TypeToken.getParameterized(...) type)
+ * @param typeAdapter your JsonDeserializer<T> instance
+ *
+ * @return a LoginInfo object parsed from this JSON.
+ */
+fun String.convertIntoLoginResponse(
+    type: Type
+): LoginInfo {
+    val gson = GsonBuilder()
+        .registerTypeAdapter(Pkgdata::class.java, PkgDataDeserializer())
+        .create()
+
+    return gson.fromJson(this, type)
+}
+
+// Create a dedicated extension function for lists
+fun String?.toListOfString(): List<String>? {
+    return try {
+        this?.let { jsonString ->
+            Gson().fromJson(jsonString, object : TypeToken<List<String>>() {}.type)
+        }
+    } catch (ex: Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+// Add this extension function for easier usage
+inline fun <reified T> String.convertIntoList(): T? {
+    return try {
+        val typeToken = object : TypeToken<T>() {}
+        this.convertIntoModels(typeToken)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun <T> String?.convertIntoModel(classRef: Class<T>): T? {
+    return try {
+        convertIntoModel(classRef = classRef, gson = this!!.provideGsonWithCoreJsonString())
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+fun <T> String?.convertIntoModels(type: TypeToken<T>): T? {
+    return try {
+        this?.provideGsonWithCoreJsonString()?.fromJson(this, type.type)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+
+fun <T> String?.convertIntoModel(classRef: Class<T>, gson: Gson): T? {
+    return try {
+        gson.fromJson(this, classRef)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+}
+
+
+fun <T> String?.convertIntoModels(type: TypeToken<T>, gson: Gson): T? {
+    return try {
+        gson.fromJson(this, type.type)
+    } catch (ex: java.lang.Exception) {
+        ex.printStackTrace()
+        null
+    }
+
+}
+fun String?.getContactNo(): String = this?.replace("[^0-9]".toRegex(), "") ?: this ?: "qwerty"
+
+fun String.isValidPassword(): Boolean {
+    val password = this.trim()
+    val hasUpperCase = password.any { it.isUpperCase() }
+    val hasLowerCase = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecialChar = password.any { !it.isLetterOrDigit() }
+    return hasUpperCase && hasLowerCase && hasDigit && hasSpecialChar
+}
+
+// Helper function to convert program time string to milliseconds.
+fun String.provideTimeInMillis(): Long {
+    return try {
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+        val zdt = ZonedDateTime.parse(this, formatter)
+        zdt.toInstant().toEpochMilli()
+    } catch (e: Exception) {
+        try {
+            val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+            val zdt = ZonedDateTime.parse("$this+0000", DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z"))
+            zdt.toInstant().toEpochMilli()
+        } catch (ex: Exception) {
+            System.currentTimeMillis()
+        }
+    }
+}
+fun String.toTimestamp(): Long {
+    // Define the formatter according to the input pattern.
+    // "yyyyMMddHHmmss Z" expects a space before the timezone offset.
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    // Parse the string into a ZonedDateTime and convert to epoch milliseconds.
+    return ZonedDateTime.parse(this.trim(), formatter)
+        .toInstant().toEpochMilli()
+}
+
+
+fun calculateProgramWidth(startTime:String, endTime:String,widthPerBlock: Dp = 50.dp): Dp {
+    val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    val startDateTime = ZonedDateTime.parse(startTime, formatter)
+    val endDateTime = ZonedDateTime.parse(endTime, formatter)
+
+    val durationInMinutes = Duration.between(startDateTime, endDateTime).toMinutes()
+    val blocks = durationInMinutes / 30.0
+
+    return (blocks.toFloat() * widthPerBlock.value).dp
+}
+
+fun calculateProgramsWidth(startTime:Long, endTime:Long,widthPerBlock: Dp = 50.dp): Dp {
+    val durationMillis = endTime - startTime
+    // Convert milliseconds to minutes
+    val durationInMinutes = durationMillis / 60000.0
+    // Calculate the number of 30-minute blocks (each block represents 30 minutes)
+    val blocks = durationInMinutes / 30.0
+    // Calculate and return the width based on the number of blocks
+    return (blocks.toFloat() * widthPerBlock.value).dp
+}
+
+
+fun provideProgramWidth(startTime: String, endTime: String, widthPerBlock: Dp = 50.dp): Dp {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val start = format.parse(startTime)
+    val end = format.parse(endTime)
+
+    val durationInMinutes = (end.time - start.time) / (1000 * 60)
+    val blocks = durationInMinutes / 30.0f
+
+    return (blocks * widthPerBlock.value).dp
+}
+
+
+fun String.provideProgramTime(): Date {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    return format.parse(this)
+}
+
+fun String.decodeJwtToken(): String? {
+    return try {
+        val parts = this.split(".") // JWT consists of header, payload, signature
+        if (parts.size < 2) return null // Ensure it's a valid token
+
+        val payload = String(Base64.decode(parts[1], Base64.URL_SAFE)) // Decode payload
+        val jsonObject = JSONObject(payload)
+
+        // Log full JWT payload for debugging
+        Log.d("HASH", "Decoded Payload: $payload")
+
+
+        // Extract phone number (fallback to `sub` if no phone field exists)
+        jsonObject.optString("phone", jsonObject.optString("sub", null.toString())) //  Now extracts `sub`
+
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+// Convert a date/time string to a formatted time "HH:mm:ss"
+fun String.toFormattedTime(): String {
+    val inputFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss Z")
+    val outputFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+    // Parse and then format the date/time
+    return ZonedDateTime.parse(this.trim(), inputFormatter)
+        .format(outputFormatter)
+}
+
+// Extension function to produce "HH:mm:ss-HH:mm:ss" from a start and an end time string.
+fun String.formatStartEndTime(endTime: String): String {
+    val startFormatted = this.toFormattedTime()
+    val endFormatted = endTime.toFormattedTime()
+    return "$startFormatted-$endFormatted"
+}
+
+fun Date.formatToCustom(): String {
+    val formatter = SimpleDateFormat("hh:mma | dd MMM", Locale.ENGLISH)
+    return formatter.format(this)
+}
+
+fun String.toBase64Encoded(): String {
+    return Base64.encodeToString(this.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+}
+
+fun String.toBase64UrlSafe(): String =
+    Base64.encodeToString(
+        this.toByteArray(Charsets.UTF_8),
+        Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
+    )
+
+
+/**
+ * Maps common API status codes to user‐friendly messages.
+ */
+fun String.toResponseMessage(): String = when (this) {
+    "0"   -> "Login Successfully"
+    "405" -> "Method Not Allowed"
+    "401" -> "Unauthorized Data"
+    "103" -> "Missing mandatory fields"
+    "102" -> "Operation failed: Account is locked by Admin"
+    "101" -> "Invalid Password"
+    "100" -> "User Not Present on System"
+    "404" -> "User Not Present on System"
+    else -> "Unknown response code: $this"
+}
+
+/*
+fun playerErrorHandling(errorCode: Int): Pair<Int, String> =
+    when (errorCode) {
+        400 -> 601 to "Bad request - Bad input to server"
+        403 -> 602 to "Forbidden - user does not have permission, or invalid login data"
+        404 -> 603 to "This channel is temporarily unavailable.We apologize for the inconvenience.Please check back later or contact your service provider for assistance."
+        429 -> 604 to "Too many request– max concurrent streams reached"
+        451 -> 605 to "Unavailable for legal reasons– geo blocking"
+        500 -> 606 to "Internal error"
+        2001 -> 607 to "Source error"
+        6004 -> 608 to "You are not authorized to view this content.\nPlease contact your service provider for assistance."
+        4001 -> 609 to "This channel is temporarily unavailable.\nWe apologize for the inconvenience.Please check back later or contact your service provider for assistance."
+        2000 -> 610 to "This channel is temporarily unavailable.We apologize for the inconvenience. Please check back later or contact your service provider for assistance."
+        else -> errorCode to "An unknown error occurred"
+    }*/
+
+
+// from Pair<Int,String> to Triple<Int,String,String>
+fun playerErrorHandling(errorCode: Int): Triple<Int, String, String> =
+    when (errorCode) {
+        400  -> Triple(601, "Bad request", "Bad input to server")
+        403  -> Triple(602, "Forbidden", "User does not have permission, or invalid login data")
+        404  -> Triple(603, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        429  -> Triple(604, "Too many requests", "Max concurrent streams reached")
+        451  -> Triple(605, "Unavailable for legal reasons", "Geo-blocking")
+        500  -> Triple(606, "Internal error", "An internal server error occurred")
+        2001 -> Triple(607, "Source error", "The media source could not be loaded")
+        6004 -> Triple(608, "DRM licence server request failed", "Please try again later.")
+        4001 -> Triple(609, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2000 -> Triple(610, "This channel is temporarily unavailable.", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        6006 -> Triple(611, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        2002 -> Triple(612, "Timeout Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        3003 -> Triple(613, "Video Source Error", "Please try again later.")
+        1002 -> Triple(614, "Stream Error", "Streaming failed due to hardware/network limitations.")
+        4003 -> Triple(615, "Network error", "It appears that your device is not compatible with this stream. We apologize for the inconvenience. Please try again later or contact your service provider for further assistance.")
+        410 -> Triple( 616, "Source Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        3002 -> Triple(617, "Video Unavailable", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        6001 -> Triple(618, "License Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        5001 -> Triple( 619, "AudioTrack initialization failure", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        6200 -> Triple(620, "Not Subscribed", "This channel is not subscribed. Contact your service provider.")
+        1003 -> Triple(703, "Timeout", "We're experiencing high traffic at the moment, which may cause longer loading times. Please bear with us — we apologize for the inconvenience and appreciate your patience.")
+        503 -> Triple( 704, "Source Error", "We apologize for the inconvenience. Please check back later or contact your service provider for assistance.")
+        else -> Triple(errorCode, "Unknown error", "An unknown error occurred")
+    }
+
+
+
+// Usage:
+val wifiMac = "wlan0".getMacAddress()      // Wi‑Fi
+val ethMac  = "eth0".getMacAddress()       // Ethernet
+fun String.getMacAddress(): String? {
+    return try {
+        val nif = NetworkInterface.getByName(this) ?: return null
+        val macBytes = nif.hardwareAddress ?: return null
+        macBytes.joinToString(separator = ":") { byte ->
+            String.format("%02X", byte)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+//provide interfaceName like "wlan0"/"eth0" to get specific macAddress
+fun String.readMacFromSysfs(): String? {
+    return try {
+        val path = "/sys/class/net/$this/address"
+        val mac = File(path).readText().toUpperCase(Locale.ROOT).substring(0, 17)
+        mac.ifEmpty { null }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+
+/*
+private fun getMacAddress(): String? {
+    try {
+        return loadFileAsString("/sys/class/net/eth0/address").toUpperCase().substring(0, 17)
+    } catch (e: IOException) {
+        e.printStackTrace()
+        return null
+    }
+}*/
+
+
+
+/**
+ * Reads the entire contents of this String (treated as a file path) into a String,
+ * or throws IOException if it fails.
+ */
+@Throws(IOException::class)
+private fun String.readFile(): String =
+    File(this).bufferedReader().use { it.readText() }
+
+/**
+ * Attempts to read the MAC address from the given interface path,
+ * e.g. "/sys/class/net/eth0/address" or "/sys/class/net/wlan0/address".
+ *
+ * @receiver the interface path to read
+ * @return the MAC address in upper‑case "XX:XX:XX:XX:XX:XX" format, or null if it fails
+ */
+fun String.macAddress(): String? = try {
+    this
+        .readFile()
+        .trim()                    // remove newline
+        .uppercase()               // upper‑case
+        .takeIf { it.length >= 17 }
+        ?.substring(0, 17)         // "XX:XX:XX:XX:XX:XX"
+} catch (e: IOException) {
+    e.printStackTrace()
+    null
+}
+
+
+fun String.isCurrentTimeAfter(): Boolean {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val now = Calendar.getInstance()
+    val target = Calendar.getInstance()
+
+    // Parse "16:20" and set to today
+    val parsed = format.parse(this)
+    target.time = parsed ?: return false
+
+    // Set target to today's date + parsed time
+    target.set(Calendar.YEAR, now.get(Calendar.YEAR))
+    target.set(Calendar.MONTH, now.get(Calendar.MONTH))
+    target.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
+
+    return now.after(target) || now.before(target)
+}
+fun currentProgramFilter(start:String?,end:String?): Boolean {
+    val format = SimpleDateFormat("HH:mm", Locale.US)
+    val now = Calendar.getInstance()
+    val target = Calendar.getInstance()
+
+    // Parse "16:20" and set to today
+    val parsed = format.parse(start)
+    target.time = parsed ?: return false
+
+    // Set target to today's date + parsed time
+    target.set(Calendar.YEAR, now.get(Calendar.YEAR))
+    target.set(Calendar.MONTH, now.get(Calendar.MONTH))
+    target.set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
+
+    return target.before(now)
+
+   // (start <= now && now < end) || (now < start)
+}
+
+/**
+ * Capitalizes the very first character of this string, lower-cases all the rest.
+ * If the string is empty, returns it unchanged.
+ */
+fun String.capitalizeFirstLetter(): String =
+    this.lowercase(Locale.getDefault())
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+
+
+
+fun String.extractYouTubeId(): String {
+    // Implement URL parsing to extract video ID
+    val pattern = "(?<=watch\\?v=|/videos/|embed\\/|youtu.be\\/|\\/v\\/|\\/e\\/|watch\\?v%3D|watch\\?feature=player_embedded&v=|%2Fvideos%2F|embed%\u200C\u200B2F|youtu.be%2F|%2Fv%2F)[^#\\&\\?\\n]*"
+    val compiledPattern = java.util.regex.Pattern.compile(pattern)
+    val matcher = compiledPattern.matcher(this)
+    return if (matcher.find()) {
+        matcher.group() ?: ""
+    } else {
+        this // fallback to assuming it's already an ID
+    }
+}

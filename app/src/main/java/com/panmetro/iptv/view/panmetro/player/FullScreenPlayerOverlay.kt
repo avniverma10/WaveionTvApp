@@ -1,0 +1,343 @@
+package com.panmetro.iptv.view.panmetro.player
+
+import android.annotation.SuppressLint
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.panmetro.iptv.extensions.formatTime
+import com.panmetro.iptv.model.data.epgdata.EPGDataItem
+import com.panmetro.iptv.view.panmetro.common.TopOverlayInfo
+import com.panmetro.iptv.view.uicomponent.keyboard.HideKeyboardOnEnter
+import com.panmetro.iptv.viewmodels.SharedViewModel
+import com.panmetro.iptv.viewmodels.player.PlayerViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.math.abs
+
+@SuppressLint("UnrememberedMutableState")
+@Composable
+fun FullScreenPlayerOverlay(
+    selectedIndex: MutableState<Int>,
+    lazyListState: LazyListState,
+    sharedViewModel: SharedViewModel,
+    playerViewModel: PlayerViewModel,
+    channelFocusRequesters: List<FocusRequester>,
+    onChannelFocused: (EPGDataItem) -> Unit
+) {
+
+    val context = LocalContext.current
+    HideKeyboardOnEnter()
+    val epgList = playerViewModel.provideAvailableEPG()
+    val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    val timestamp by playerViewModel.timestampFlow()
+        .collectAsState(initial = System.currentTimeMillis())
+
+    val currentTimeStamp: MutableState<Long> = remember { mutableLongStateOf( timestamp) }
+    val isSelectedChannel = remember { mutableStateOf( false) }
+
+
+    // Constants for animations
+    val scaleDownBy = 0.85f
+    val maxScale = 1f
+    val minScale = 0.7f
+
+    LaunchedEffect(selectedChannel) {
+        val idx = epgList.indexOfFirst {
+            it.videoUrl == selectedChannel.videoUrl
+        }.coerceAtLeast(0)
+        selectedIndex.value = idx
+        lazyListState.scrollToItem(idx)
+        isSelectedChannel.value = true
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Top gradient overlay
+        val topBarGradient = Brush.verticalGradient(
+            colors = listOf(
+                Color.Black.copy(alpha = 0.6f),
+                Color.Transparent
+            )
+        )
+
+        // Bottom gradient overlay
+        val bottomBarGradient = Brush.verticalGradient(
+            colors = listOf(
+                Color.Transparent,
+                Color.Black.copy(alpha = 0.8f)
+            )
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .background(topBarGradient)
+                .padding(horizontal = 24.dp, vertical = 13.dp)
+        ) {
+            TopOverlayInfo(playerViewModel=playerViewModel)
+        }
+
+        // Channel carousel at bottom
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(10.dp, 10.dp)
+                .focusTarget()   // enable focus movement inside
+
+        ) {
+            LazyRow(
+                state = lazyListState,
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                itemsIndexed(
+                    items = epgList,
+                    key = { index, item -> item.channelId ?: index }
+                ) { index, item ->
+                    val isFocused = remember { mutableStateOf(false) }
+                    val isSelected = selectedIndex.value == index
+                    if (isSelected && isSelectedChannel.value){
+                        playerViewModel.updateSelectedProgramInfo(true)
+                        isSelectedChannel.value = false
+                    }
+                    // Calculate distance from center for scaling
+                    val itemOffset = index - selectedIndex.value
+                    val scale = when {
+                        isSelected -> maxScale
+                        else -> {
+                            val scaleFactor = 1f - (abs(itemOffset) * 0.15f)
+                            scaleFactor.coerceIn(minScale, maxScale)
+                        }
+                    }
+
+                    val animatedScale by animateFloatAsState(
+                        targetValue = scale,
+                        label = "scale"
+                    )
+
+                    ChannelCard(
+                        playerViewModel = playerViewModel,
+                        epgDataItem =item,
+                        timestamp =  currentTimeStamp,
+                        isFocused = isSelected,
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = animatedScale
+                                scaleY = animatedScale
+                                alpha = scale
+                            }
+                            .onFocusChanged {
+                                isFocused.value = it.isFocused
+                                if (it.isFocused) {
+                                    selectedIndex.value = index
+                                    onChannelFocused(item)
+                                }
+                            }
+                            .focusRequester(channelFocusRequesters[index])
+                            .focusable()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChannelCard(
+    playerViewModel: PlayerViewModel,
+    epgDataItem: EPGDataItem,
+    timestamp: MutableState<Long>,
+    isFocused: Boolean,
+    modifier: Modifier
+) {
+    val now = System.currentTimeMillis()
+    val programList = epgDataItem.tv?.programme?.let {
+        playerViewModel.provideAvailablePrograms(
+            it
+        )
+    }
+
+    var programIndex = remember { mutableIntStateOf(0) }
+
+    var currentProgram = remember(programIndex) {
+        var program = programList?.getOrNull(programIndex.intValue)
+        program
+    }
+
+    var nextProgram = remember(programIndex) {
+        val nextIndex = programIndex.intValue+1
+        var program = programList?.getOrNull(nextIndex)
+        program
+    }
+
+    //Format it once per emission
+    val timeLeft = remember(timestamp) {
+        val diff = programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value) ?: 0
+        if( diff > 0){
+            val timeLeft = diff.div(60000).toInt()
+            if(timeLeft == 0){
+                1
+            }else{
+                timeLeft
+            }
+        }else{
+            ++programIndex.intValue
+            (programList?.getOrNull(programIndex.intValue)?.endTime?.minus(timestamp.value)?.div(60000))?.toInt()?:0
+        }
+    }
+
+
+    Box(
+        modifier = modifier
+            .width(260.dp)
+            .height(160.dp)
+            .background(
+                color = if (isFocused) Color(0xFF2C2C2E) else Color(0xFF1C1C1E),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .then(
+                if (isFocused) {
+                    playerViewModel.updateProgramInfo(selectedChannel = epgDataItem,currentProgram,timeLeft)
+                    Modifier.border(
+                        width = 2.dp,
+                        color = Color(0xFF49FEDD),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                } else Modifier
+            )
+            .padding(10.dp)
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF49FEDD), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .align(Alignment.CenterVertically)
+                ) {
+                    Text(
+                        text = epgDataItem.channelNo?.toString() ?: "--",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.Black
+                    )
+                }
+                // Channel Logo
+                currentProgram?.imageUrl?.getOrNull(0)?.let {
+                    AsyncImage(
+                        model           = it .name,
+                        contentDescription = "Channel Logo",
+                        modifier = Modifier
+                            .background(Color.Transparent, RoundedCornerShape(4.dp))
+                            .width(50.dp)
+                            .height(50.dp)
+                            .padding(start = 5.dp)
+                    )
+                }?:run {
+                    AsyncImage(
+                        model           = epgDataItem.thumbnailUrl,
+                        contentDescription = "Channel Logo",
+                        modifier = Modifier
+                            .background(Color.Transparent, RoundedCornerShape(4.dp))
+                            .width(50.dp)
+                            .height(50.dp)
+                            .padding(start = 5.dp)
+                    )
+                }
+                /*Text(
+                    text = epgDataItem.title
+                        ?: epgDataItem.displayName
+                        ?: "Unknown Channel",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFF49FEDD)
+                )*/
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = currentProgram?.title ?: "No Info",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                maxLines = 1
+            )
+
+            Text(
+                text = buildString {
+                    append(currentProgram?.startTime?.formatTime())
+                    append(" - ")
+                    append(currentProgram?.endTime?.formatTime())
+                    append(" • ")
+                    append(timeLeft)
+                    append(" MIN LEFT")
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.LightGray
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Next at ${nextProgram?.startTime?.formatTime()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+
+            Text(
+                text = nextProgram?.title ?: "N/A",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+private fun formatTime(timeMillis: Long?): String {
+    return timeMillis?.let {
+        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(it)
+    } ?: "--"
+}
