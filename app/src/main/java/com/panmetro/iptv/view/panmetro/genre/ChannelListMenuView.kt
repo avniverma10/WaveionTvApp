@@ -116,7 +116,7 @@ fun ChannelMenuDesign(
             } else {
                 // Item is visible, ensure smooth animation
                 coroutineScope.launch {
-                    listState.animateScrollToItem(target)
+                    listState.scrollToItem(target)
                 }
             }
         } catch (e: Exception) {
@@ -176,91 +176,59 @@ fun ChannelMenuDesign(
                         .focusable()
                         .onPreviewKeyEvent { keyEvent ->
                             if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+
                             val repeat = keyEvent.nativeKeyEvent.repeatCount
                             val now = System.currentTimeMillis()
                             val gap = if (repeat == 0) NAV_TAP_GAP_MS else NAV_HOLD_STEP_MS
                             if (now - lastNavTime < gap) return@onPreviewKeyEvent true
                             lastNavTime = now
 
+                            if (filteredChannels.isEmpty()) return@onPreviewKeyEvent true
+
                             val total = filteredChannels.size
                             val lastIndex = total - 1
-                            val (f, l, count) = listState.visiblePage()
 
-                            fun applyFocus(newIdx: Int) {
+                            // Unified function to update focus and scroll smoothly
+                            fun navigateToIndex(newIdx: Int, shouldAnimate: Boolean = true) {
                                 val idx = newIdx.coerceIn(0, lastIndex)
                                 focusedIndex = idx
                                 previewIndex = idx
                                 selectedChannelIndex.value = idx
                                 onVideoChange(filteredChannels[idx], idx)
-                            }
 
+                                coroutineScope.launch {
+                                    try {
+                                        /*if (shouldAnimate) {
+                                            listState.animateScrollToItem(idx)
+                                        } else {
+                                        }*/
+                                        listState.scrollToItem(idx)
+                                    } catch (e: Exception) {
+                                        // Fallback to non-animated scroll
+                                        listState.scrollToItem(idx)
+                                    }
+                                }
+                            }
 
                             val keyCode = keyEvent.nativeKeyEvent.keyCode
                             val scanCode = keyEvent.nativeKeyEvent.scanCode
 
                             when  {
-                                // Handle by ScanCode for custom remote buttons
-                                scanCode == 402 -> { // Channel UP
-                                    loge("ChannelKeys", "CHANNEL UP detected via scan code 402")
-                                    if (total == 0) return@onPreviewKeyEvent true
-
-                                    when {
-                                        focusedIndex <= 0 -> {
-                                            // Stay on first index (0), don't reset scroll to end
-                                            applyFocus(0)
-                                            // No scrollToItem call - maintain current scroll position
-                                        }
-                                        focusedIndex == f && count > 0 -> {
-                                            val targetFirst = (f - count).coerceAtLeast(0)
-                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
-                                            applyFocus(bottomIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
-                                            applyFocus(newIdx)
-
-                                            if (newIdx < f && count > 0) {
-                                                val targetFirst = (f - count).coerceAtLeast(0)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
+                                scanCode == 402 || keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_CHANNEL_UP -> {
+                                    // Navigate up
+                                    if (focusedIndex > 0) {
+                                        navigateToIndex(focusedIndex - 1)
                                     }
                                     true
                                 }
 
-                                scanCode == 403 -> { // Channel DOWN
-                                    loge("ChannelKeys", "CHANNEL DOWN detected via scan code 403")
-                                    if (total == 0) return@onPreviewKeyEvent true
-
-                                    when {
-                                        focusedIndex >= lastIndex -> {
-                                            // Stay on last index, don't reset scroll
-                                            applyFocus(lastIndex)
-                                            // No scrollToItem call - maintain current scroll position
-                                        }
-                                        focusedIndex == l && count > 0 -> {
-                                            val maxFirst = (total - count).coerceAtLeast(0)
-                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                            val newIdx = targetFirst // top of next page
-                                            applyFocus(newIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
-                                            applyFocus(newIdx)
-
-                                            // Safety: if we somehow crossed viewport, anchor next page
-                                            if (newIdx > l && count > 0) {
-                                                val maxFirst = (total - count).coerceAtLeast(0)
-                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
+                                scanCode == 403 || keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                                    // Navigate down
+                                    if (focusedIndex < lastIndex) {
+                                        navigateToIndex(focusedIndex + 1)
                                     }
                                     true
                                 }
-
                                 keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     channelToGenreFocus.value = true
                                     sharedViewModel._currentFocusedGenreSelection.value = true
@@ -272,119 +240,20 @@ fun ChannelMenuDesign(
                                     true
                                 }
                                 keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> true
-                                keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                                    if (total == 0) return@onPreviewKeyEvent true
-                                    when {
-                                        focusedIndex >= lastIndex -> {
-                                            // Stay on last index, don't reset scroll
-                                            applyFocus(lastIndex)
-                                            // No scrollToItem call - maintain current scroll position
-                                        }
-                                        focusedIndex == l && count > 0 -> {
-                                            val maxFirst = (total - count).coerceAtLeast(0)
-                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                            val newIdx = targetFirst // top of next page
-                                            applyFocus(newIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
-                                            applyFocus(newIdx)
-
-                                            // Safety: if we somehow crossed viewport, anchor next page
-                                            if (newIdx > l && count > 0) {
-                                                val maxFirst = (total - count).coerceAtLeast(0)
-                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
-                                    }
-                                    true
-                                }
-
-
-                                keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_CHANNEL_UP -> {
-                                    if (total == 0) return@onPreviewKeyEvent true
-
-                                    when {
-                                        focusedIndex <= 0 -> {
-                                            // Stay on first index (0), don't reset scroll to end
-                                            applyFocus(0)
-                                            // No scrollToItem call - maintain current scroll position
-                                        }
-                                        focusedIndex == f && count > 0 -> {
-                                            val targetFirst = (f - count).coerceAtLeast(0)
-                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
-                                            applyFocus(bottomIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
-                                            applyFocus(newIdx)
-
-                                            if (newIdx < f && count > 0) {
-                                                val targetFirst = (f - count).coerceAtLeast(0)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
-                                    }
-                                    true
-                                }
-
                                 keyCode == KeyEvent.KEYCODE_PAGE_DOWN -> {
-                                    if (total == 0) return@onPreviewKeyEvent true
-                                    when {
-                                        focusedIndex >= lastIndex -> {
-                                            applyFocus(0)
-                                            coroutineScope.launch { listState.scrollToItem(0) }
-                                        }
-                                        focusedIndex == l && count > 0 -> {
-                                            val maxFirst = (total - count).coerceAtLeast(0)
-                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                            val newIdx = targetFirst // top of next page
-                                            applyFocus(newIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
-                                            applyFocus(newIdx)
-
-                                            // Safety: if we somehow crossed viewport, anchor next page
-                                            if (newIdx > l && count > 0) {
-                                                val maxFirst = (total - count).coerceAtLeast(0)
-                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
-                                    }
+                                    // Jump down by visible page count
+                                    val (_, _, count) = listState.visiblePage()
+                                    val pageSize = count.coerceAtLeast(5)
+                                    val newIdx = (focusedIndex + pageSize).coerceAtMost(lastIndex)
+                                    navigateToIndex(newIdx, shouldAnimate = false)
                                     true
                                 }
                                 keyCode == KeyEvent.KEYCODE_PAGE_UP -> {
-                                    if (total == 0) return@onPreviewKeyEvent true
-
-                                    when {
-                                        focusedIndex <= 0 -> {
-                                            val countEff = if (count > 0) count else 1
-                                            val lastPageFirst = (total - countEff).coerceAtLeast(0)
-                                            applyFocus(lastIndex)
-                                            coroutineScope.launch { listState.scrollToItem(lastPageFirst) }
-                                        }
-                                        focusedIndex == f && count > 0 -> {
-                                            val targetFirst = (f - count).coerceAtLeast(0)
-                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
-                                            applyFocus(bottomIdx)
-                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                        }
-                                        else -> {
-                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
-                                            applyFocus(newIdx)
-
-                                            if (newIdx < f && count > 0) {
-                                                val targetFirst = (f - count).coerceAtLeast(0)
-                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
-                                            }
-                                        }
-                                    }
+                                    // Jump up by visible page count
+                                    val (_, _, count) = listState.visiblePage()
+                                    val pageSize = count.coerceAtLeast(5)
+                                    val newIdx = (focusedIndex - pageSize).coerceAtLeast(0)
+                                    navigateToIndex(newIdx, shouldAnimate = false)
                                     true
                                 }
                                 else -> false
