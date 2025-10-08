@@ -64,7 +64,7 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
     val context = LocalContext.current
 
 
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val appManifestData = sharedViewModel.providePanmetroAppInstance().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val tabItems by remember { mutableStateOf<List<TabInfo>>(appManifestData.value?.tab ?: emptyList()) }
     val menuFocusRequester = remember { FocusRequester() }
@@ -163,12 +163,6 @@ fun EPGScreen(navController: NavController, sharedViewModel: SharedViewModel) {
                 .padding(start = 70.dp)
                 .zIndex(1f)
         ) {
-            /*if (appManifestData.value?.tab?.find { it.name =="epg" }?.components?.get(0)?.isVisible == true || (tabItemsData.find{it.name == "home"}?.components?.get(0)?.isVisible == true)) {
-                AdvertisementBanner(bannerList = bannerList)
-            } else {
-                logReport("EPGScreen", "Advertisement banner is not displayed due to visibility settings or missing data.")
-            }*/
-
             Column(modifier = Modifier.fillMaxSize()) {
                 CategoryMenu(
                     sharedViewModel = sharedViewModel,

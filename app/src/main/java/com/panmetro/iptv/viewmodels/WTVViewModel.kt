@@ -16,6 +16,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.panmetro.iptv.PanmetroApplication
 import com.panmetro.iptv.R
 import com.panmetro.iptv.extensions.applyAppManifest
 import com.panmetro.iptv.extensions.applyEPGData
@@ -76,12 +77,13 @@ open class WTVViewModel @Inject constructor(
     private val loginPrefsRepository: LoginPrefsRepository?=null,
     private val okHttpClient: OkHttpClient
 ) : AndroidViewModel(application) {
-    fun provideApplicationContext() = application.applicationContext
+    fun providePanmetroAppInstance() = application.applicationContext as PanmetroApplication
+    fun provideEPGDataManager() = providePanmetroAppInstance().epgDataManager
+    //focus genre screen
+    val _currentFocusedGenreSelection = MutableStateFlow<Boolean>(false)
+    val currentFocusedGenreSelection: StateFlow<Boolean> = _currentFocusedGenreSelection.asStateFlow()
+
     private val _userIdeal = MutableStateFlow<Boolean>(false)
-    private val _splashMaxProgress = MutableStateFlow<Float>(0f)
-    val splashMaxProgress: StateFlow<Float> = _splashMaxProgress
-    private val _splashProgress = MutableStateFlow<Float>(0f)
-    val splashProgress: StateFlow<Float> = _splashProgress
 
     private var _isInitializeData = MutableStateFlow<Boolean>(false)
     val isInitializeData: StateFlow<Boolean> get() = _isInitializeData
@@ -94,8 +96,6 @@ open class WTVViewModel @Inject constructor(
     var _selectedGenre = MutableStateFlow<String>("All")
     val selectedGenre: StateFlow<String> = _selectedGenre.asStateFlow()
 
-    var _wtvEPGList = MutableStateFlow<ArrayList<EPGDataItem>>(ArrayList())
-    val wtvEPGList: StateFlow<ArrayList<EPGDataItem>> = _wtvEPGList.asStateFlow()
     private var _selectedChannel = MutableStateFlow<EPGDataItem>(EPGDataItem())
     val selectedChannel: StateFlow<EPGDataItem> = _selectedChannel.asStateFlow()
 
@@ -157,21 +157,9 @@ open class WTVViewModel @Inject constructor(
     }
 
 
-    /*fun updateEPGData(epgList: List<EPGDataItem>) {
-        viewModelScope.launch {
-            saveEPGList(application, epgList)
-        }
-    }*/
-
     var _errorLoadingData = MutableStateFlow<String?>(null)
     val errorLoadingData: StateFlow<String?> = _errorLoadingData
 
-    init {
-        observeServerAndEPG()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            //startNotificationSSE()
-        }
-    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun startNotificationSSE() {
@@ -274,7 +262,6 @@ open class WTVViewModel @Inject constructor(
     }
 
 
-
     private suspend fun fetchEPG(): EPGContentInfo? {
         return networkApiCallInterfaceImpl
             .provideWTVEPGData("${Constants.BASE_URL}epg-files/all-publish-content"+"?offset=0&limit=50")
@@ -290,10 +277,9 @@ open class WTVViewModel @Inject constructor(
     suspend fun fetchRemainingEPGParallel(
         remainingTotalCount: Int,
         startOffset: Int = 50,
-        pageLimit: Int = 100
+        pageLimit: Int = 50
     )= supervisorScope {
         if (remainingTotalCount <= 0) return@supervisorScope
-
         try {
             val offsets = calculateOffsets(remainingTotalCount, startOffset, pageLimit)
             // Create async request list
@@ -302,42 +288,27 @@ open class WTVViewModel @Inject constructor(
                     fetchEPG(off, pageLimit)?.data.orEmpty()
                 }
             }
-
             // Wait for all requests to complete
             val results = asyncRequests.awaitAll()
-
             // Merge all results into a single list
             val epgRequestList = results.flatten().toMutableList()
             // Use the final merged list
-            updateEPGData(epgRequestList, true)
-            _refreshFilter.value = true
-
+            updateEPGData(epgRequestList)
         } catch (e: Exception) {
             loge("EPG", "Parallel fetch failed: ${e.message}")
         }
     }
 
 
-    fun updateEPGData(epgDataList: List<EPGDataItem>,isAddedRequired: Boolean=false){
-        if(isAddedRequired) {
-            var data = _wtvEPGList.value
-            data?.addAll(epgDataList)
-            _wtvEPGList.value = data
-        }else if(_wtvEPGList.value.size >0){
-            var data = _wtvEPGList.value
-            data?.addAll(epgDataList)
-            _wtvEPGList.value = data
-        }
+    fun updateEPGData(epgDataList: List<EPGDataItem>){
+        provideEPGDataManager().addEPGItems(epgDataList,isAddAll = true)
+        _refreshFilter.value = true
     }
-
 
     private suspend fun handleSuccessResponse(manifest: WTVManifest, epgData: List<EPGDataItem>) {
         loge("manifestDeferred", manifest.toJSONObject().toString())
         application.applyAppManifest(manifest)
-
-        //val processedEpgData = removeDuplicateEPG(epgData)
-        _wtvEPGList.value?.addAll(epgData)
-        application.applyEPGData(epgData)
+        provideEPGDataManager().addEPGItems(epgData,isAddAll = false)
 
         val targetChannel = epgData.find { it.channelId == manifest.landingChannel?.channelId }
         if (targetChannel != null) {
@@ -357,13 +328,10 @@ open class WTVViewModel @Inject constructor(
             }
         }
 
-        _errorLoadingData.value = "Server $errorMsg not responding!"
         _isInitializeData.value = false
-        loge("_errorLoadingData", _errorLoadingData.value ?: "")
     }
 
     private fun handleFailure(exception: Exception) {
-        _errorLoadingData.value = "Network error: ${exception.message}"
         _isInitializeData.value = false
         loge("initializeAppRequiredData", "Failed to load data: ${exception.message}")
     }
@@ -411,11 +379,6 @@ open class WTVViewModel @Inject constructor(
     }
 
 
-    /**
-     * Checks that:
-     *  • server date == device date, AND
-     *  • |deviceTime – serverTime| ≤ thresholdMs
-     */
     @RequiresApi(Build.VERSION_CODES.O)
     fun checkDeviceDateTime(thresholdMs: Long = TimeUnit.HOURS.toMillis(24)) {
         viewModelScope.launch {
@@ -794,20 +757,6 @@ open class WTVViewModel @Inject constructor(
                     loge("ChannelUpdate", "Error processing package $pkg: ${e.message}")
                     // Continue with next package even if this one fails
                 }
-            }
-        }
-    }
-
-    private fun observeServerAndEPG() {
-        viewModelScope.launch {
-            // Combine both flows to react to changes in either
-            combine(
-                isServerAvailable,
-                wtvEPGList
-            ) {  serverAvailable, epgList ->
-                ServerEPGState(serverAvailable, epgList)
-            }.collect { state ->
-                handleServerEPGState(state)
             }
         }
     }

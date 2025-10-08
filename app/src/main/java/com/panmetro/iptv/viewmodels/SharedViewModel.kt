@@ -119,10 +119,6 @@ open class SharedViewModel @Inject constructor(
     private val _panMetroGenreState = MutableStateFlow(PanMetroGenreFilter())
     val panMetroGenreState: StateFlow<PanMetroGenreFilter> = _panMetroGenreState.asStateFlow()
 
-    private val _currentPlaylist = MutableStateFlow<List<EPGDataItem>>(emptyList())
-    val currentPlaylist: StateFlow<List<EPGDataItem>> = _currentPlaylist
-
-
     private val _lastSelectedChannelIndex = MutableStateFlow<Int>(-1)
 
     val lastSelectedChannelIndex: StateFlow<Int> = _lastSelectedChannelIndex
@@ -231,7 +227,7 @@ open class SharedViewModel @Inject constructor(
 
 
     fun applyFilters() {
-        val fullList = wtvEPGList.value
+        val fullList = provideEPGDataManager().epgDataState.value
         val filter = _filterState.value
 
         val filtered = fullList?.filter { epgItem ->
@@ -549,7 +545,7 @@ open class SharedViewModel @Inject constructor(
     }
 
     fun filterPanMetroChannelsByGenre(genre:String?=selectedGenre.value) {
-        val fullEPGList = provideApplicationContext().coreEPGLiveData().value?:wtvEPGList.value
+        val fullEPGList = provideEPGDataManager().epgDataState.value
         if(genre.equals("Favorites",true)){
             _filteredPanMetroChannels.value = fullEPGList
                 .filter { it.channelId in favoriteChannelIds.value }
@@ -629,6 +625,12 @@ open class SharedViewModel @Inject constructor(
 
     fun setFavorites(newFavorites: List<String>) {
         _favoriteChannelIds.value = newFavorites
+    }
+
+    fun checkFavorites(username: String) {
+        PreferenceManager.getUserFav(username)?.let {
+            _favoriteChannelIds.value = it
+        }
     }
 
 

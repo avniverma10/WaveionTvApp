@@ -51,7 +51,7 @@ fun ExpandableNavigationMenu(
     onNavMenuIntent: (tabInfo: TabInfo, selectedIndex: Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tabs = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile") }
+    val tabs = sharedViewModel.providePanmetroAppInstance().appManifestLiveData().value?.tab?.filter { it.name in arrayOf("epg","settings","channels","profile") }
     var expanded by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var selectedIndex by remember { mutableStateOf(-1) }

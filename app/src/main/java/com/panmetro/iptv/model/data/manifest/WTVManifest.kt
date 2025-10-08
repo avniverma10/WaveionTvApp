@@ -156,19 +156,5 @@ fun provideTabInfo():List<TabInfo>{
             sequence= 6)
     )
 
-    /*
-fun provideEPGCategory():List<EPGCategory>{
-    return arrayListOf<EPGCategory>(
-        EPGCategory("all", "ALL"), //R.drawable.all,
-        EPGCategory("recent", "Recently Watched"),//R.drawable.recent
-        EPGCategory("news", "News"),//R.drawable.news
-        EPGCategory("face", "Entertainment"),//R.drawable.face
-        EPGCategory("music", "Music"),//R.drawable.music
-        EPGCategory("kid", "Kids"),//R.drawable.kid
-        EPGCategory("spirit", "Spiritual"),//R.drawable.spirit
-        EPGCategory("movie", "Movies"),//R.drawable.movie
-        EPGCategory("star", "Lifestyle")//R.drawable.star
-    )
-}*/
 
 }

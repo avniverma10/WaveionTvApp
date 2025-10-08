@@ -102,7 +102,7 @@ fun PanMetroVideoPlayer(
 ) {
 
     val context = LocalContext.current
-    val epgList = playerViewModel.provideAvailableEPG()
+    val epgList  by sharedViewModel.provideEPGDataManager().epgDataState.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()

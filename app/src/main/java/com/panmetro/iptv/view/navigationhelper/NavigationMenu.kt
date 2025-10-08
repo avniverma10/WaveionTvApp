@@ -59,9 +59,9 @@ fun CategoryMenu(
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val menuItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.genre?: arrayListOf()
+    val menuItems = sharedViewModel.providePanmetroAppInstance().appManifestLiveData().value?.genre?: arrayListOf()
 
-    val languageItems = sharedViewModel.provideApplicationContext().appManifestLiveData().value?.language?: arrayListOf()
+    val languageItems = sharedViewModel.providePanmetroAppInstance().appManifestLiveData().value?.language?: arrayListOf()
 
     if (menuItems.isEmpty()) return
 

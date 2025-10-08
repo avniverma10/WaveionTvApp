@@ -74,24 +74,48 @@ fun SplashScreen(
     val context = LocalContext.current
     val activity = (context as? Activity)
 
-    // Add progress state collection
-    var splashLoader by remember { mutableStateOf(false) }
-    // Add these state variables at the top of your composable function
+
+    // Progress state variables
+    var splashLoader by remember { mutableStateOf(true) }
     var splashProgress by remember { mutableFloatStateOf(0f) }
     val splashMaxProgress = 100f
-    val totalDuration = 30000 // 20 seconds in milliseconds
+    val totalDuration = 15000L // 15 seconds in milliseconds
+    val progressInterval = 1000L // 1 second interval
+
 
 // LaunchedEffect to handle the animation
     LaunchedEffect(Unit) {
+        PreferenceManager.clearSaveGenre()
+        PreferenceManager.clearSaveChannel()
+        sharedViewModel.checkDeviceDateTime()
+        sharedViewModel.checkForAppUpdate()
+
         val startTime = System.currentTimeMillis()
         val endTime = startTime + totalDuration
+        val totalSteps = totalDuration / progressInterval
 
-        while (System.currentTimeMillis() < endTime) {
-            val elapsed = System.currentTimeMillis() - startTime
-            splashProgress = (elapsed.toFloat() / totalDuration.toFloat()) * splashMaxProgress
-            delay(Duration.ofMillis(10)) // ~60 FPS update rate
+        // Increment progress every second
+        for (step in 0..totalSteps.toInt()) {
+            val targetProgress = (step.toFloat() / totalSteps) * splashMaxProgress
+            val stepDuration = if (step == 0) 0L else progressInterval
+
+            // Smoothly animate to the target progress
+            animateProgressTo(
+                currentProgress = splashProgress,
+                targetProgress = targetProgress,
+                duration = stepDuration
+            ) { progress ->
+                splashProgress = progress
+            }
+
+            delay(Duration.ofMillis(progressInterval))
+
+            // Check if we've reached the end time
+            if (System.currentTimeMillis() >= endTime) {
+                splashProgress = splashMaxProgress
+                break
+            }
         }
-        splashProgress = splashMaxProgress // Ensure it reaches 100%
     }
 
     val errorLoadingData by sharedViewModel.errorLoadingData.collectAsStateWithLifecycle()
@@ -157,18 +181,6 @@ fun SplashScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        PreferenceManager.clearSaveGenre()
-        PreferenceManager.clearSaveChannel()
-        // Update progress
-        if(downloadId==null){
-            splashLoader = true
-        }
-        sharedViewModel.checkDeviceDateTime()
-        sharedViewModel.checkForAppUpdate()
-       // MediaDrm(WIDEVINE_UUID).getPropertyByteArray("deviceUniqueId")
-
-    }
 
     if (timeValid == false) {
         CommonDialog(
@@ -500,4 +512,39 @@ fun SplashScreen(
             }
         }
     }
+}
+
+
+// Helper function for smooth progress animation
+@RequiresApi(Build.VERSION_CODES.O)
+private suspend fun animateProgressTo(
+    currentProgress: Float,
+    targetProgress: Float,
+    duration: Long,
+    onProgressUpdate: (Float) -> Unit
+) {
+    try {
+        if (duration <= 0L) {
+            onProgressUpdate(targetProgress)
+            return
+        }
+
+        val startTime = System.currentTimeMillis()
+        val endTime = startTime + duration
+
+        while (System.currentTimeMillis() < endTime) {
+            val elapsed = System.currentTimeMillis() - startTime
+            val fraction = elapsed.toFloat() / duration.toFloat()
+            val progress = currentProgress + (targetProgress - currentProgress) * fraction
+
+            if (currentProgress < targetProgress) {
+                onProgressUpdate(progress.coerceIn(currentProgress, targetProgress))
+            } else {
+                onProgressUpdate(progress.coerceIn(targetProgress, currentProgress))
+            }
+            delay(Duration.ofMillis(16L)) // ~60 FPS
+        }
+
+        onProgressUpdate(targetProgress)
+    }catch (ex: Exception){}
 }

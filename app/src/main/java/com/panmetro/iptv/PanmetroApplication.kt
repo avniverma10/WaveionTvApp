@@ -9,6 +9,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.panmetro.iptv.di.CoreComponentProvider
 import com.panmetro.iptv.model.data.epgdata.EPGDataItem
+import com.panmetro.iptv.model.data.epgdata.EPGDataManager
 import com.panmetro.iptv.model.data.genre.WTVGenre
 import com.panmetro.iptv.model.data.language.WTVLanguage
 import com.panmetro.iptv.model.data.manifest.WTVManifest
@@ -25,6 +26,9 @@ class PanmetroApplication : Application(), CoreComponentProvider, LifecycleObser
     private val wtvLanguage: MutableLiveData<List<WTVLanguage>> = MutableLiveData()
     private val wtvHome: MutableLiveData<List<WTVHomeCategory>> = MutableLiveData()
     private val macAddr: MutableLiveData<String> = MutableLiveData()
+    val epgDataManager: EPGDataManager by lazy {
+        EPGDataManager()
+    }
     companion object {
         /** True if any part of our app is visible in the foreground. */
         @JvmStatic

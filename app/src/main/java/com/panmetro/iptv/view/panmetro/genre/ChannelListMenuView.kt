@@ -57,15 +57,19 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.panmetro.iptv.R
+import com.panmetro.iptv.extensions.loge
+import com.panmetro.iptv.extensions.visiblePage
 import com.panmetro.iptv.model.data.epgdata.EPGDataItem
 import com.panmetro.iptv.utils.theme.base_color
 import com.panmetro.iptv.viewmodels.SharedViewModel
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
-private const val NAV_THROTTLE_MS = 50L
+private const val NAV_TAP_GAP_MS = 80L
+private const val NAV_HOLD_STEP_MS = 120L
 
 @Composable
-fun ChannelListMenuScreen(
+fun ChannelMenuDesign(
     sharedViewModel: SharedViewModel,
     selectedChannelIndex: MutableState<Int>,
     channelListFocusRequester: FocusRequester,
@@ -74,42 +78,49 @@ fun ChannelListMenuScreen(
     onVideoChange: (EPGDataItem, Int) -> Unit,
     onPlayerScreenIntent: (EPGDataItem) -> Unit,
 ) {
-    var focusedIndex by remember { mutableStateOf(0) }
-    var previewChannelIndex by remember { mutableStateOf(0) }
+    val currentFocusedGenreSelection by sharedViewModel.currentFocusedGenreSelection.collectAsState()
     val filteredChannels by sharedViewModel.filteredPanMetroChannels.collectAsState()
-
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    var focusedIndex by remember { mutableStateOf(0) }
+    var previewIndex by remember { mutableStateOf(0) }
     var lastNavTime by remember { mutableStateOf(0L) }
 
-    // Sync indices with selectedChannelIndex
-    LaunchedEffect(selectedChannelIndex.value) {
-        focusedIndex = selectedChannelIndex.value.coerceAtLeast(0)
-        previewChannelIndex = focusedIndex
-        listState.scrollToItem(focusedIndex)
-        //previewChannelIndex = selectedChannelIndex.value.coerceAtLeast(0)
-    }
-
-    // Handle initial focus and scroll
-    LaunchedEffect(filteredChannels) {
-        if (filteredChannels.isNotEmpty()) {
-            try {
-                channelListFocusRequester.requestFocus()
-                coroutineScope.launch {
-                    listState.animateScrollToItem(focusedIndex)
-                }
-            } catch (e: Exception) {
-                Log.e("ChannelList", "Focus error: ${e.message}")
-            }
+    LaunchedEffect(selectedChannelIndex.value, filteredChannels) {
+        if (filteredChannels.isEmpty()) {
+            channelToGenreFocus.value = true
+            sharedViewModel._currentFocusedGenreSelection.value = true
+            return@LaunchedEffect
         }
-    }
 
-    // Auto-scroll when focused item changes
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex != -1 && focusedIndex !in listState.layoutInfo.visibleItemsInfo.map { it.index }) {
-            coroutineScope.launch {
-                listState.animateScrollToItem(focusedIndex)
+        val last = filteredChannels.lastIndex
+        val target = selectedChannelIndex.value.coerceIn(0, last)
+        focusedIndex = target
+        previewIndex = target
+
+        // Handle scrolling and focus
+        try {
+            // Request focus first
+            channelListFocusRequester.requestFocus()
+            channelToGenreFocus.value = false
+            sharedViewModel._currentFocusedGenreSelection.value = false
+
+            // Then handle scrolling
+            val (firstVis, lastVis, count) = listState.visiblePage()
+
+            if (count > 0 && (target < firstVis || target > lastVis)) {
+                // Item not visible, scroll to it
+                val maxFirst = (filteredChannels.size - count).coerceAtLeast(0)
+                val targetFirst = (target - count / 2).coerceIn(0, maxFirst)
+                listState.scrollToItem(targetFirst)
+            } else {
+                // Item is visible, ensure smooth animation
+                coroutineScope.launch {
+                    listState.animateScrollToItem(target)
+                }
             }
+        } catch (e: Exception) {
+            Log.e("ChannelList", "Focus/scroll error: ${e.message}")
         }
     }
 
@@ -119,11 +130,10 @@ fun ChannelListMenuScreen(
             .fillMaxHeight()
             .background(Color(0xFF151414), shape = RoundedCornerShape(8.dp))
     ) {
-        // Top arrow (fixed height)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp) // Fixed height
+                .height(40.dp)
                 .padding(5.dp)
                 .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp)),
             verticalAlignment = Alignment.CenterVertically
@@ -136,7 +146,6 @@ fun ChannelListMenuScreen(
             )
         }
 
-        // Main content area with weight
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -166,93 +175,241 @@ fun ChannelListMenuScreen(
                         .focusRequester(channelListFocusRequester)
                         .focusable()
                         .onPreviewKeyEvent { keyEvent ->
-                            if (keyEvent.type != KeyEventType.KeyDown)
-                                if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                                val now = System.currentTimeMillis()
-                                if (now - lastNavTime < NAV_THROTTLE_MS) return@onPreviewKeyEvent true
-                                lastNavTime = now
-                            when (keyEvent.nativeKeyEvent.keyCode) {
-                                KeyEvent.KEYCODE_DPAD_LEFT -> {
+                            if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            val repeat = keyEvent.nativeKeyEvent.repeatCount
+                            val now = System.currentTimeMillis()
+                            val gap = if (repeat == 0) NAV_TAP_GAP_MS else NAV_HOLD_STEP_MS
+                            if (now - lastNavTime < gap) return@onPreviewKeyEvent true
+                            lastNavTime = now
+
+                            val total = filteredChannels.size
+                            val lastIndex = total - 1
+                            val (f, l, count) = listState.visiblePage()
+
+                            fun applyFocus(newIdx: Int) {
+                                val idx = newIdx.coerceIn(0, lastIndex)
+                                focusedIndex = idx
+                                previewIndex = idx
+                                selectedChannelIndex.value = idx
+                                onVideoChange(filteredChannels[idx], idx)
+                            }
+
+
+                            val keyCode = keyEvent.nativeKeyEvent.keyCode
+                            val scanCode = keyEvent.nativeKeyEvent.scanCode
+
+                            when  {
+                                // Handle by ScanCode for custom remote buttons
+                                scanCode == 402 -> { // Channel UP
+                                    loge("ChannelKeys", "CHANNEL UP detected via scan code 402")
+                                    if (total == 0) return@onPreviewKeyEvent true
+
+                                    when {
+                                        focusedIndex <= 0 -> {
+                                            // Stay on first index (0), don't reset scroll to end
+                                            applyFocus(0)
+                                            // No scrollToItem call - maintain current scroll position
+                                        }
+                                        focusedIndex == f && count > 0 -> {
+                                            val targetFirst = (f - count).coerceAtLeast(0)
+                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
+                                            applyFocus(bottomIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
+                                            applyFocus(newIdx)
+
+                                            if (newIdx < f && count > 0) {
+                                                val targetFirst = (f - count).coerceAtLeast(0)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
+                                    }
+                                    true
+                                }
+
+                                scanCode == 403 -> { // Channel DOWN
+                                    loge("ChannelKeys", "CHANNEL DOWN detected via scan code 403")
+                                    if (total == 0) return@onPreviewKeyEvent true
+
+                                    when {
+                                        focusedIndex >= lastIndex -> {
+                                            // Stay on last index, don't reset scroll
+                                            applyFocus(lastIndex)
+                                            // No scrollToItem call - maintain current scroll position
+                                        }
+                                        focusedIndex == l && count > 0 -> {
+                                            val maxFirst = (total - count).coerceAtLeast(0)
+                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                            val newIdx = targetFirst // top of next page
+                                            applyFocus(newIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
+                                            applyFocus(newIdx)
+
+                                            // Safety: if we somehow crossed viewport, anchor next page
+                                            if (newIdx > l && count > 0) {
+                                                val maxFirst = (total - count).coerceAtLeast(0)
+                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
+                                    }
+                                    true
+                                }
+
+                                keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
                                     channelToGenreFocus.value = true
-                                    onNavigateToGenre(); true
+                                    sharedViewModel._currentFocusedGenreSelection.value = true
+                                    onNavigateToGenre()
+                                    true
                                 }
+                                keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
+                                    onPlayerScreenIntent(filteredChannels[focusedIndex])
+                                    true
+                                }
+                                keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> true
+                                keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                                    if (total == 0) return@onPreviewKeyEvent true
+                                    when {
+                                        focusedIndex >= lastIndex -> {
+                                            // Stay on last index, don't reset scroll
+                                            applyFocus(lastIndex)
+                                            // No scrollToItem call - maintain current scroll position
+                                        }
+                                        focusedIndex == l && count > 0 -> {
+                                            val maxFirst = (total - count).coerceAtLeast(0)
+                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                            val newIdx = targetFirst // top of next page
+                                            applyFocus(newIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
+                                            applyFocus(newIdx)
 
-                                KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                                    if (focusedIndex < filteredChannels.lastIndex) {
-                                        val newIdx = focusedIndex + 1
-                                        focusedIndex = newIdx
-                                        previewChannelIndex = newIdx
-                                        selectedChannelIndex.value = newIdx
-                                        onVideoChange(filteredChannels[newIdx], newIdx)
-                                        coroutineScope.launch { listState.scrollToItem(newIdx) } // SNAP
+                                            // Safety: if we somehow crossed viewport, anchor next page
+                                            if (newIdx > l && count > 0) {
+                                                val maxFirst = (total - count).coerceAtLeast(0)
+                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
                                     }
                                     true
                                 }
 
-                                KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                                    if (focusedIndex > 0) {
-                                        val newIdx = focusedIndex - 1
-                                        focusedIndex = newIdx
-                                        previewChannelIndex = newIdx
-                                        selectedChannelIndex.value = newIdx
-                                        onVideoChange(filteredChannels[newIdx], newIdx)
-                                        coroutineScope.launch { listState.scrollToItem(newIdx) } // SNAP
+
+                                keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_CHANNEL_UP -> {
+                                    if (total == 0) return@onPreviewKeyEvent true
+
+                                    when {
+                                        focusedIndex <= 0 -> {
+                                            // Stay on first index (0), don't reset scroll to end
+                                            applyFocus(0)
+                                            // No scrollToItem call - maintain current scroll position
+                                        }
+                                        focusedIndex == f && count > 0 -> {
+                                            val targetFirst = (f - count).coerceAtLeast(0)
+                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
+                                            applyFocus(bottomIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
+                                            applyFocus(newIdx)
+
+                                            if (newIdx < f && count > 0) {
+                                                val targetFirst = (f - count).coerceAtLeast(0)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
                                     }
                                     true
                                 }
 
-                                KeyEvent.KEYCODE_PAGE_DOWN -> {
-                                    val newIdx =
-                                        (focusedIndex + 8).coerceAtMost(filteredChannels.lastIndex)
-                                    focusedIndex = newIdx; previewChannelIndex = newIdx
-                                    selectedChannelIndex.value = newIdx
-                                    onVideoChange(filteredChannels[newIdx], newIdx)
-                                    coroutineScope.launch { listState.animateScrollToItem(newIdx) } // animate only here
+                                keyCode == KeyEvent.KEYCODE_PAGE_DOWN -> {
+                                    if (total == 0) return@onPreviewKeyEvent true
+                                    when {
+                                        focusedIndex >= lastIndex -> {
+                                            applyFocus(0)
+                                            coroutineScope.launch { listState.scrollToItem(0) }
+                                        }
+                                        focusedIndex == l && count > 0 -> {
+                                            val maxFirst = (total - count).coerceAtLeast(0)
+                                            val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                            val newIdx = targetFirst // top of next page
+                                            applyFocus(newIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex + 1).coerceAtMost(lastIndex)
+                                            applyFocus(newIdx)
+
+                                            // Safety: if we somehow crossed viewport, anchor next page
+                                            if (newIdx > l && count > 0) {
+                                                val maxFirst = (total - count).coerceAtLeast(0)
+                                                val targetFirst = (f + count).coerceIn(0, maxFirst)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
+                                    }
                                     true
                                 }
+                                keyCode == KeyEvent.KEYCODE_PAGE_UP -> {
+                                    if (total == 0) return@onPreviewKeyEvent true
 
-                                KeyEvent.KEYCODE_PAGE_UP -> {
-                                    val newIdx = (focusedIndex - 8).coerceAtLeast(0)
-                                    focusedIndex = newIdx; previewChannelIndex = newIdx
-                                    selectedChannelIndex.value = newIdx
-                                    onVideoChange(filteredChannels[newIdx], newIdx)
-                                    coroutineScope.launch { listState.animateScrollToItem(newIdx) }
+                                    when {
+                                        focusedIndex <= 0 -> {
+                                            val countEff = if (count > 0) count else 1
+                                            val lastPageFirst = (total - countEff).coerceAtLeast(0)
+                                            applyFocus(lastIndex)
+                                            coroutineScope.launch { listState.scrollToItem(lastPageFirst) }
+                                        }
+                                        focusedIndex == f && count > 0 -> {
+                                            val targetFirst = (f - count).coerceAtLeast(0)
+                                            val bottomIdx = min(targetFirst + count - 1, lastIndex)
+                                            applyFocus(bottomIdx)
+                                            coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                        }
+                                        else -> {
+                                            val newIdx = (focusedIndex - 1).coerceAtLeast(0)
+                                            applyFocus(newIdx)
+
+                                            if (newIdx < f && count > 0) {
+                                                val targetFirst = (f - count).coerceAtLeast(0)
+                                                coroutineScope.launch { listState.scrollToItem(targetFirst) }
+                                            }
+                                        }
+                                    }
                                     true
                                 }
-
-                                KeyEvent.KEYCODE_DPAD_CENTER -> {
-                                    onPlayerScreenIntent(filteredChannels[focusedIndex]);
-                                    true
-                                }
-
-                                KeyEvent.KEYCODE_DPAD_RIGHT ->
-                                    true
-
                                 else -> false
                             }
                         }
                 ) {
-                    itemsIndexed(filteredChannels) { index, channel ->
-                        ChannelListItem(
+                    itemsIndexed(
+                        items = filteredChannels,
+                        key = { _, ch -> ch.channelId ?: ch.videoUrl ?: ch.title ?: "" }
+                    ) { index, channel ->
+                        ChannelMenuItemDesign(
                             channel = channel,
                             isFocused = index == focusedIndex,
-                            isPreview = index == previewChannelIndex,
-                            onFocus = {
-                                focusedIndex = index
-                                previewChannelIndex = index
-                                onVideoChange(channel, index)
-                            }
+                            isPreview = index == previewIndex,
+                            currentFocusedGenreSelection = currentFocusedGenreSelection
                         )
                     }
                 }
             }
         }
 
-        // Bottom arrow (fixed height)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp) // Fixed height
+                .height(40.dp)
                 .padding(5.dp)
                 .background(Color(0xFF2F2A2A), shape = RoundedCornerShape(8.dp)),
             verticalAlignment = Alignment.CenterVertically
@@ -267,116 +424,41 @@ fun ChannelListMenuScreen(
     }
 }
 
-private fun handleKeyEvents(
-    keyEvent: androidx.compose.ui.input.key.KeyEvent,
-    filteredChannels: List<EPGDataItem>,
-    focusedIndex: Int,
-    onNavigateToGenre: () -> Unit,
-    onIndexChange: (Int) -> Unit,
-    onSelectChannel: () -> Unit
-): Boolean {
-    if (keyEvent.type != KeyEventType.KeyDown) return false
-
-    return when (keyEvent.nativeKeyEvent.keyCode) {
-        KeyEvent.KEYCODE_CHANNEL_UP -> {
-            if (focusedIndex > 0) {
-                onIndexChange(focusedIndex - 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_PAGE_UP -> {
-            if (focusedIndex > 0) {
-                onIndexChange(focusedIndex - 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-            if (focusedIndex < filteredChannels.lastIndex) {
-                onIndexChange(focusedIndex + 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_PAGE_DOWN -> {
-            if (focusedIndex < filteredChannels.lastIndex) {
-                onIndexChange(focusedIndex + 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_DPAD_LEFT -> {
-            onNavigateToGenre()
-            true
-        }
-        KeyEvent.KEYCODE_DPAD_DOWN -> {
-            if (focusedIndex < filteredChannels.lastIndex) {
-                onIndexChange(focusedIndex + 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_DPAD_UP -> {
-            if (focusedIndex > 0) {
-                onIndexChange(focusedIndex - 1)
-            }
-            true
-        }
-        KeyEvent.KEYCODE_DPAD_CENTER -> {
-            onSelectChannel()
-            true
-        }
-        KeyEvent.KEYCODE_DPAD_RIGHT -> true
-        else -> false
-    }
-}
-
 @Composable
-fun ChannelListItem(
+fun ChannelMenuItemDesign(
     channel: EPGDataItem,
     isFocused: Boolean,
     isPreview: Boolean,
-    onFocus: () -> Unit
+    currentFocusedGenreSelection: Boolean,
 ) {
     val titleColor = if (isFocused || isPreview) base_color else Color.White
-    val scale by animateFloatAsState(targetValue = if (isFocused) 1.05f else if (isFocused && isPreview) 1f else .9f)
+    val scale by animateFloatAsState(targetValue = if (isFocused) 1f else 0.90f, label = "rowScale")
 
-    val stops = channel.bgGradient
-        ?.colors
-        ?.sortedBy { it.percentage }
-        ?.mapNotNull {
-            try {
-                Color(android.graphics.Color.parseColor(it.color))
-            } catch (e: IllegalArgumentException) {
-                null
-            }
-        }
-        .orEmpty()
+    val stops = channel.bgGradient?.colors?.sortedBy { it.percentage }?.mapNotNull {
+        runCatching { Color(android.graphics.Color.parseColor(it.color)) }.getOrNull()
+    }.orEmpty()
 
     val brush = if (stops.size >= 2) {
         Brush.horizontalGradient(stops)
     } else {
-        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020))) // fallback
+        Brush.verticalGradient(listOf(Color(0xFF232020), Color(0xFF232020)))
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .padding(8.dp)
-            .focusable()
+            .padding(horizontal = 8.dp, vertical = 5.dp)
             .scale(scale)
-            .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(
-                    width = if (isFocused) 1.dp else 0.dp,
-                    color = if (isFocused) base_color else Color.Transparent,
-                    shape = RoundedCornerShape(5.dp)
-                )
+                .border(width = if ( isFocused && !currentFocusedGenreSelection) 1.dp else 0.dp, color = if (isFocused && !currentFocusedGenreSelection) base_color else Color.Transparent, shape = RoundedCornerShape(5.dp))
                 .background(Color(0xFF232020), shape = RoundedCornerShape(6.dp))
-                .padding(8.dp),
+                .padding(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Channel logo
             AsyncImage(
                 model = channel.thumbnailUrl,
                 contentDescription = null,
@@ -389,7 +471,6 @@ fun ChannelListItem(
 
             Spacer(Modifier.width(12.dp))
 
-            // Channel number
             Box(
                 modifier = Modifier
                     .background(Color.White, RoundedCornerShape(4.dp))
@@ -404,7 +485,6 @@ fun ChannelListItem(
 
             Spacer(Modifier.width(8.dp))
 
-            // Channel title
             Text(
                 text = channel.title ?: "",
                 color = titleColor,
@@ -413,13 +493,7 @@ fun ChannelListItem(
                 fontWeight = FontWeight.Normal,
                 maxLines = 1,
                 overflow = if (isFocused) TextOverflow.Clip else TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f)
-                    .then(
-                        if (isFocused) Modifier.basicMarquee(
-                            iterations = Int.MAX_VALUE
-                        ) else Modifier
-                    )
+                modifier = Modifier.weight(1f)
             )
         }
     }

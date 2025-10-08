@@ -264,20 +264,22 @@ fun EPGContent(
                                                 text = "No information available",
                                                 color = Color.White.copy(alpha = 0.7f),
                                                 fontSize = 15.sp,
-                                                textAlign = TextAlign.Center
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.
+                                                padding(start = 5.dp, end = 5.dp)
                                             )
                                         }
                                     }
                                     return@LazyRow
                                 }
                                 itemsIndexed(availableProgram) { programIndex, program ->
-                                    val programWidth = calculateProgramsWidth(program?.startTime?:0, program?.endTime?:0)
+                                    val programWidth = (program?.provideExactProgramWidth()?:150).toInt()//calculateProgramsWidth(program?.startTime?:0, program?.endTime?:0)
                                     val focusRequester = programFocusRequesters[channelIndex][programIndex]
                                     val isFocused = remember { mutableStateOf(false) }
                                     val isLastProgram = (programIndex == availableProgram.lastIndex)
                                     Box(
                                         modifier = Modifier
-                                            .width(programWidth)
+                                            .width(programWidth.dp)
                                             .height(105.dp)
                                             .background(Color(0xFF2A3139), shape = RoundedCornerShape(4.dp))
                                             .then(
@@ -378,6 +380,7 @@ fun EPGContent(
                                             textAlign = TextAlign.Center,
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .padding(start = 5.dp, end = 5.dp)
                                                 .let { base ->
                                                     if (isFocused.value) {
                                                         // only when DPAD-focus lands here…

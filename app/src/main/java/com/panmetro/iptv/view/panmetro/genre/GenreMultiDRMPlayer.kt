@@ -69,7 +69,7 @@ import kotlin.random.Random
 @Composable
 fun GenreMultiDRMPlayer(
     selectedChannelIndex : MutableState<Int>,
-                        sharedViewModel: SharedViewModel
+    sharedViewModel: SharedViewModel
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -212,8 +212,6 @@ fun GenreMultiDRMPlayer(
             sharedViewModel.providePrePlayerSSERequest(channel = "${selectedVideoUrl?.channelNo}:${selectedVideoUrl?.title}")
         }
     }
-
-
 
 
     LaunchedEffect(globalSSERules) {

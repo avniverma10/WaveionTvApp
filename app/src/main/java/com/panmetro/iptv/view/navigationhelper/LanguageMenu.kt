@@ -50,7 +50,7 @@ fun LanguageMenu(
     val coroutineScope = rememberCoroutineScope()
 
     val languageItems = sharedViewModel
-        .provideApplicationContext()
+        .providePanmetroAppInstance()
         .appManifestLiveData()
         .value?.language ?: arrayListOf()
     if (languageItems.isEmpty()) return

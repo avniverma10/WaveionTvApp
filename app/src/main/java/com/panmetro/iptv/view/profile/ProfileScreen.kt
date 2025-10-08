@@ -49,7 +49,7 @@ fun ProfileScreen(navController: NavController, sharedViewModel: SharedViewModel
     val context = LocalContext.current
     var showExitDialog by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    val appManifestData = sharedViewModel.provideApplicationContext().appManifestLiveData()
+    val appManifestData = sharedViewModel.providePanmetroAppInstance().appManifestLiveData()
     var menuItems by remember { mutableStateOf<List<EPGCategory>>(appManifestData.value?.tab?.get(0)?.categories ?: emptyList()) }
     val menuFocusRequester = remember { FocusRequester() }
 

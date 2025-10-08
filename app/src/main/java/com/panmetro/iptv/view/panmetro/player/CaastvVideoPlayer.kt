@@ -104,7 +104,7 @@ fun CaastvVideoPlayer(
 ) {
 
     val context = LocalContext.current
-    val playlist by sharedViewModel.currentPlaylist.collectAsState()
+    val epgList  by sharedViewModel.provideEPGDataManager().epgDataState.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -117,11 +117,6 @@ fun CaastvVideoPlayer(
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
     val playerView = remember {
         mutableStateOf<PlayerView?>(null)
-    }
-    val epgList = if (playlist.isNotEmpty()) {
-        playlist
-    } else {
-        playerViewModel.provideAvailableEPG()
     }
     val channelRequesters = remember(epgList.size) {
         List(epgList.size) { FocusRequester() }
@@ -143,7 +138,7 @@ fun CaastvVideoPlayer(
     // --- Channel‑number search state -------------------------------
     var typedDigits     by remember { mutableStateOf("") }   // the running “123”
     var inputJob        by remember { mutableStateOf<Job?>(null) }
-    val DEBOUNCE_MS = 2_000L                                 // change if you want longer
+    val DEBOUNCE_MS = 2_000L // change if you want longer
 
     val currentProgrammeIndex = remember { mutableIntStateOf(0) }
 
@@ -505,11 +500,38 @@ fun CaastvVideoPlayer(
             .background(Color.Black)
             .focusable()
             .onPreviewKeyEvent { keyEvent ->
-                val code = keyEvent.nativeKeyEvent.keyCode
+                val keyCode = keyEvent.nativeKeyEvent.keyCode
+                val scanCode = keyEvent.nativeKeyEvent.scanCode
                 if (keyEvent.type == KeyEventType.KeyDown) {
-                    when (keyEvent.nativeKeyEvent.keyCode) {
-                        in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
-                            val digit = (code - KeyEvent.KEYCODE_0).toString()
+                    when {
+                        // Handle by ScanCode for custom remote buttons
+                        scanCode == 402 -> { // Channel UP
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
+                            if (previewChannelIndex.intValue < epgList.lastIndex) {
+                                previewChannelIndex.intValue++
+                                currentProgrammeIndex.intValue = 0
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+
+                        scanCode == 403 -> { // Channel DOWN
+                            if (isTopOverlayVisible) {
+                                return@onPreviewKeyEvent false
+                            }
+                            showOverlay()
+                            if (previewChannelIndex.intValue > 0) {
+                                previewChannelIndex.intValue--
+                                currentProgrammeIndex.intValue = 0 // reset
+                                startSwitchCountdown()
+                            }
+                            true
+                        }
+                        keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9->  {
+                            val digit = (keyCode - KeyEvent.KEYCODE_0).toString()
                             if(typedDigits.length<=3) {
                                 typedDigits += digit
                             }
@@ -525,7 +547,7 @@ fun CaastvVideoPlayer(
                             }
                             return@onPreviewKeyEvent true        // we consumed the event
                         }
-                        KeyEvent.KEYCODE_DPAD_LEFT -> {
+                        keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> {
                             if (isTopOverlayVisible) {
                                 return@onPreviewKeyEvent false
                             }
@@ -537,7 +559,7 @@ fun CaastvVideoPlayer(
                             }
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_UP-> {
+                        keyCode ==  KeyEvent.KEYCODE_DPAD_UP-> {
                             if (!isTopOverlayVisible && !isOverlayVisible) {
                                 showFavOverlay()
                                 scope.launch {
@@ -576,7 +598,7 @@ fun CaastvVideoPlayer(
                             }*/
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                        keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (isTopOverlayVisible) {
                                 showFavOverlay(isHide = true)
                                 showOverlay()
@@ -599,14 +621,14 @@ fun CaastvVideoPlayer(
                             }
                             true
                         }
-                        KeyEvent.KEYCODE_BACK -> {
+                        keyCode == KeyEvent.KEYCODE_BACK -> {
                             if (isTopOverlayVisible) {
                                 showFavOverlay(isHide = true)
                                 return@onPreviewKeyEvent true
                             }
                             false
                         }
-                        KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> {
                             if (isTopOverlayVisible) {
                                 return@onPreviewKeyEvent false
                             }
@@ -618,7 +640,7 @@ fun CaastvVideoPlayer(
                             }
                             true
                         }
-                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                        keyCode == KeyEvent.KEYCODE_DPAD_CENTER -> {
                             if (isTopOverlayVisible) {
                                 return@onPreviewKeyEvent false
                             }
@@ -653,7 +675,7 @@ fun CaastvVideoPlayer(
                                     Log.e("loadYoutubeVideo","$youtubeId")
                                     player.loadVideo(it, 0f)
                                 }
-                               // lastVideoId.value = videoId
+                                // lastVideoId.value = videoId
                             }
 
                             override fun onError(
@@ -667,12 +689,12 @@ fun CaastvVideoPlayer(
                 },
                 update = { view ->
                     // If the composable is still alive but the videoId changed, load the new video
-                   /* if (lastVideoId.value != videoId) {
-                        view.getYouTubePlayerWhenReady { youTubePlayer ->
-                            youTubePlayer.loadVideo(videoId, 0f)
-                            lastVideoId.value = videoId
-                        }
-                    }*/
+                    /* if (lastVideoId.value != videoId) {
+                         view.getYouTubePlayerWhenReady { youTubePlayer ->
+                             youTubePlayer.loadVideo(videoId, 0f)
+                             lastVideoId.value = videoId
+                         }
+                     }*/
                 },
                 onRelease = { view -> view.release() }    // called when the composable leaves the tree
             )

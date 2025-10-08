@@ -43,8 +43,6 @@ import com.panmetro.iptv.viewmodels.SharedViewModel
 @Composable
 fun WTVPlayerApp(sharedViewModel: SharedViewModel) {
     val refreshFilter by sharedViewModel.refreshFilter.collectAsState()
-    val epgList by sharedViewModel.wtvEPGList.collectAsState()
-    val isServerAvailable by sharedViewModel.isServerAvailable.collectAsState()
     val navController = rememberNavController() // This is the one you'll use everywhere.
     val bannerMsg by sharedViewModel.bannerMessage.collectAsState()
     val globalSSERules by sharedViewModel.globalSSERules.collectAsState()
@@ -274,6 +272,7 @@ fun WTVPlayerNavHost(navController: NavHostController, sharedViewModel: SharedVi
         }
         composable(Destination.genreScreen) {
             PanmetroGenreScreen(navController,sharedViewModel)
+          //  GenreScreenView(navController,sharedViewModel)
         }
         composable(Destination.settings) {
             SettingsScreen(navController,sharedViewModel)

@@ -1,10 +1,11 @@
 package com.panmetro.iptv.model.data.epgdata
 
 import androidx.annotation.Keep
-import com.panmetro.iptv.model.data.genre.WTVGenre
-import com.panmetro.iptv.model.data.language.WTVLanguage
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import com.panmetro.iptv.model.data.genre.WTVGenre
+import com.panmetro.iptv.model.data.language.WTVLanguage
+import kotlin.math.max
 
 @Keep
 data class EPGDataItem(
@@ -64,10 +65,10 @@ data class Programme(
     val clumpIdx: String?="0/1",
     @SerializedName("_start")
     @JsonAdapter(ProgramTimestampAdapter::class)
-    val startTime: Long? = null,
+    var startTime: Long? =  null ,//strtTime.toProgramFormattedTime(),
     @SerializedName("_stop")
     @JsonAdapter(ProgramTimestampAdapter::class)
-    val endTime: Long? = null,
+    var endTime: Long? = null ,//stopTime.toProgramFormattedTime(),
     val date: String?=null,
     val desc: String?="No Information",
     val title: String?="No Information",
@@ -90,7 +91,31 @@ data class Programme(
     var startFormatedTime:String?=null,
     @Volatile
     var endFormatedTime:String?=null
-)
+){
+    // Extension functions for Long? timestamps
+    fun Long?.calculateDurationInMinutes(endTime: Long?): Long {
+        if (this == null || endTime == null) return 0L
+        return max(0, (endTime - this) / (60 * 1000)) // Convert milliseconds to minutes
+    }
+
+    fun Long?.calculateDurationInHours(endTime: Long?): Double {
+        if (this == null || endTime == null) return 0.0
+        return max(0.0, (endTime - this) / (60.0 * 60 * 1000)) // Convert milliseconds to hours
+    }
+
+    fun Long?.calculateDurationInSeconds(endTime: Long?): Long {
+        if (this == null || endTime == null) return 0L
+        return max(0, (endTime - this) / 1000) // Convert milliseconds to seconds
+    }
+    /* init {
+         startTime = strtTime.toProgramFormattedTime()
+         endTime = stopTime.toProgramFormattedTime()
+     }*/
+
+    fun provideExactProgramWidth(): Long{
+        return (startTime.calculateDurationInMinutes(endTime)*5)?:150L
+    }
+}
 
 
 

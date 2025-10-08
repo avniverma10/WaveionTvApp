@@ -65,7 +65,7 @@ fun FullScreenPlayerOverlay(
 
     val context = LocalContext.current
     HideKeyboardOnEnter()
-    val epgList = playerViewModel.provideAvailableEPG()
+    val epgList  by sharedViewModel.provideEPGDataManager().epgDataState.collectAsState()
     val selectedChannel by sharedViewModel.selectedChannel.collectAsState()
     val scope = rememberCoroutineScope()
 
