@@ -31,6 +31,8 @@ fun VideoPlayerWithTopOverlay(
     focusRequester: FocusRequester,
     isFavorite: Boolean,
     onFavoriteClick: () -> Unit,
+    onAudioClick: () -> Unit = {},
+    audioButtonFocusRequester: FocusRequester,
     onDismiss: () -> Unit
 
 ) {
@@ -44,6 +46,7 @@ fun VideoPlayerWithTopOverlay(
             .wrapContentWidth()
             .focusRequester(focusRequester)
             .animateContentSize()
+            .background(Color.Black.copy(alpha = 0.8f))
             .padding(vertical = 8.dp, horizontal = 16.dp)
     ) {
         Row(
@@ -59,6 +62,14 @@ fun VideoPlayerWithTopOverlay(
                     onFavoriteClick()
                 },
                 focusRequester = focusRequester
+            )
+            Spacer(Modifier.width(24.dp))
+
+            OverlayButton(
+                iconRes = R.drawable.audio,
+                label = "Audio",
+                onClick = onAudioClick,
+                focusRequester = audioButtonFocusRequester
             )
         }
     }

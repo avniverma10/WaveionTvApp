@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.KeyEventType
@@ -52,13 +53,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
 import com.panmetro.iptv.R
@@ -74,6 +78,7 @@ import com.panmetro.iptv.model.data.sseresponse.ScrollMessage
 import com.panmetro.iptv.utils.Constants
 import com.panmetro.iptv.utils.uistate.PreferenceManager
 import com.panmetro.iptv.view.panmetro.player.fav.VideoPlayerWithTopOverlay
+import com.panmetro.iptv.view.panmetro.player.optionutil.SelectionOverlay
 import com.panmetro.iptv.view.uicomponent.addWatermarkToPlayer
 import com.panmetro.iptv.view.uicomponent.audio.AnimatedAudio
 import com.panmetro.iptv.view.uicomponent.error.CommonDialog
@@ -142,12 +147,18 @@ fun CaastvVideoPlayer(
 
     val currentProgrammeIndex = remember { mutableIntStateOf(0) }
 
+    val selectedAudio = remember { mutableStateOf<String?>(null) }
+    val showAudioOverlay = remember { mutableStateOf(false) }
+    val audioTracks = remember { mutableStateListOf<String>() }
     // fav view state management
     var isTopOverlayVisible by remember { mutableStateOf(false) }
     var topOverlayHideJob by remember { mutableStateOf<Job?>(null) }
     var favViewlastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
+    val audioButtonFocusRequester = remember { FocusRequester() }
+    val lastTopOverlayButtonFocus = remember { mutableStateOf<FocusRequester?>(null) }
     val topOverlayFocusRequester = remember { FocusRequester() }
+    val overlayFocusRequester = remember { FocusRequester() }
     val favIds by sharedViewModel.favoriteChannelIds.collectAsState()
     val channelId = selectedChannel?.channelId ?: ""
 
@@ -327,14 +338,27 @@ fun CaastvVideoPlayer(
     LaunchedEffect(Unit) {
         showOverlay()
     }
-// Remember the player and recreate it when the DRM type changes
+
+    val trackSelector = remember {
+        DefaultTrackSelector(context).apply {
+            setParameters(buildUponParameters().setPreferredTextLanguage(null))
+        }
+    }
+    // Remember the player and recreate it when the DRM type changes
     val exoPlayer = remember {
         ExoPlayer.Builder(context)
+            .setTrackSelector(trackSelector)
             .build()
             .apply {
-                // optional: any static setup
                 playWhenReady = true
             }
+    }
+
+    fun applyAudio(lang: String?) {
+        if (lang == null) return  // optionally do nothing if null
+        trackSelector.parameters = trackSelector.buildUponParameters()
+            .setPreferredAudioLanguage(lang)
+            .build()
     }
 
     DisposableEffect(exoPlayer) {
@@ -383,6 +407,36 @@ fun CaastvVideoPlayer(
                     }
                 }
             }
+
+            override fun onTracksChanged(tracks: Tracks) {
+               // subtitleTracks.clear()
+                audioTracks.clear()
+                //videoTracks.clear()
+                for (group in tracks.groups) {
+                    if (group.type == C.TRACK_TYPE_TEXT) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val lang = format.language ?: format.label ?: "Unknown"
+                           // subtitleTracks.add(lang)
+                        }
+                    }
+                    if (group.type == C.TRACK_TYPE_AUDIO) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val lang = format.language ?: format.label ?: "Unknown"
+                            audioTracks.add(lang)
+                        }
+                    }
+                    if (group.type == C.TRACK_TYPE_VIDEO) {
+                        for (i in 0 until group.mediaTrackGroup.length) {
+                            val format = group.mediaTrackGroup.getFormat(i)
+                            val resolution = "${format.width}x${format.height}" // fallback if no label
+                            val label = format.label ?: resolution
+                           // videoTracks.add(label)
+                        }
+                    }
+                }
+            }
         }
         if(!isYoutube.value) {
             // Attach them
@@ -404,7 +458,8 @@ fun CaastvVideoPlayer(
 
 
     suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){
-        val mediaItem = if (isDRMUrl.value) {
+        val mediaItem = MediaItem.fromUri("https://media.axprod.net/TestVectors/v7-Clear/Manifest_1080p.mpd")
+        /*if (isDRMUrl.value) {
             context.provideCryptoGuardMediaSource(
                 contentUrl = videoUrl,
                 contentId = assetId
@@ -425,7 +480,11 @@ fun CaastvVideoPlayer(
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.channelNo}:${selectedChannel?.title}")
-        }
+        }*/
+        exoPlayer.setMediaItem(mediaItem)
+        exoPlayer.prepare()
+        exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
+
     }
 
 
@@ -912,12 +971,43 @@ fun CaastvVideoPlayer(
                 }
                 showFavOverlay(isHide = true)
             },
+            onAudioClick = {
+                lastTopOverlayButtonFocus.value = audioButtonFocusRequester
+                showAudioOverlay.value = true
+            },
+            audioButtonFocusRequester = audioButtonFocusRequester,
             onDismiss = {
                 showFavOverlay(isHide = true)
             }
 
         )
     }
+
+
+    // AUDIO
+    if (showAudioOverlay.value) {
+        SelectionOverlay(
+            modifier       = Modifier.focusRequester(overlayFocusRequester).focusable(),
+            focusRequester = overlayFocusRequester,
+            title          = "Audio",
+            options        = if (audioTracks.isNotEmpty())
+                audioTracks
+            else listOf("Audio unavailable"),
+            selected       = selectedAudio.value,
+            onSelect       = { lang ->
+                // only apply if real
+                if (audioTracks.isNotEmpty()) {
+                    //PreferenceManager.preferredAudio = lang
+                    selectedAudio.value = lang
+                    applyAudio(lang)
+                }
+                showAudioOverlay.value = false
+            },
+            onDismiss      = { showAudioOverlay.value = false }
+        )
+    }
+
+
 }
 
 

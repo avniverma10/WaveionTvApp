@@ -1,6 +1,5 @@
 package com.panmetro.iptv.utils.network
 
-//import com.android.tvapp.model.crash.LogEntry
 import com.panmetro.iptv.model.data.login.CustomerChannelsInfo
 import com.panmetro.iptv.model.data.login.CustomerPackageInfo
 import com.panmetro.iptv.model.data.validation.SendOTPRequest
@@ -8,6 +7,8 @@ import com.panmetro.iptv.model.data.validation.ValidateOtpRequest
 import com.panmetro.iptv.model.timestamp.ServerTimeStamp
 import com.panmetro.iptv.utils.Constants
 import com.google.gson.JsonObject
+import com.panmetro.iptv.model.jwt.JWTRefreshResponse
+import com.panmetro.iptv.model.jwt.RefreshBody
 import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Response
@@ -21,6 +22,15 @@ import retrofit2.http.Url
 
 
 interface NetworkApiCallInterface {
+
+    @POST
+    suspend fun refresh(
+        @Url url: String,
+        @Header("x-api-key") apiKey: String = Constants.HEADER_TOKEN,
+        @Body body: RefreshBody
+    ): JWTRefreshResponse
+
+
     @GET
     suspend fun makeHttpSingleDataRequest( @Url url: String): String
 
