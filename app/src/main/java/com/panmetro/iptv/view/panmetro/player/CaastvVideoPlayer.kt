@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,6 +97,7 @@ import com.techit.youtubelib.view.YouTubePlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
@@ -230,6 +232,21 @@ fun CaastvVideoPlayer(
             if (shouldShow) {
                 visibleFingerprint.add(item)
             }
+        }
+    }
+
+    LaunchedEffect(showAudioOverlay.value) {
+        if (showAudioOverlay.value) {
+            try {
+                overlayFocusRequester.requestFocus()
+            }catch (ex: Exception){}
+        }
+        if (!showAudioOverlay.value) {
+            snapshotFlow { lastTopOverlayButtonFocus.value }
+                .first()
+            try {
+                lastTopOverlayButtonFocus.value?.requestFocus()
+            }catch (ex: Exception){}
         }
     }
 
@@ -457,9 +474,8 @@ fun CaastvVideoPlayer(
     }
 
 
-    suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){
-        val mediaItem = MediaItem.fromUri("https://media.axprod.net/TestVectors/v7-Clear/Manifest_1080p.mpd")
-        /*if (isDRMUrl.value) {
+    suspend fun handleMediaUrlAllowToPlay(videoUrl: String, assetId:String?=null){//MediaItem.fromUri("https://media.axprod.net/TestVectors/v7-Clear/Manifest_1080p.mpd")
+        val mediaItem =  if (isDRMUrl.value) {
             context.provideCryptoGuardMediaSource(
                 contentUrl = videoUrl,
                 contentId = assetId
@@ -480,13 +496,12 @@ fun CaastvVideoPlayer(
             exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
             //make fingerprint request
             sharedViewModel.providePlayerSSERequest(channel = "${selectedChannel?.channelNo}:${selectedChannel?.title}")
-        }*/
+        }
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.playWhenReady = true  //  Ensure playback starts automatically
 
     }
-
 
     // Whenever the selected channel changes, load its media
     LaunchedEffect(selectedChannel) {
@@ -620,7 +635,8 @@ fun CaastvVideoPlayer(
                         }
                         keyCode ==  KeyEvent.KEYCODE_DPAD_UP-> {
                             if (!isTopOverlayVisible && !isOverlayVisible) {
-                                showFavOverlay()
+                                isTopOverlayVisible = true
+                               // showFavOverlay()
                                 scope.launch {
                                     delay(50) // Give Compose time to recompose the overlay
                                     topOverlayFocusRequester.requestFocus()
@@ -659,7 +675,8 @@ fun CaastvVideoPlayer(
                         }
                         keyCode == KeyEvent.KEYCODE_DPAD_DOWN -> {
                             if (isTopOverlayVisible) {
-                                showFavOverlay(isHide = true)
+                                isTopOverlayVisible = false
+                               // showFavOverlay(isHide = true)
                                 showOverlay()
                                 return@onPreviewKeyEvent true
                             }
@@ -682,7 +699,8 @@ fun CaastvVideoPlayer(
                         }
                         keyCode == KeyEvent.KEYCODE_BACK -> {
                             if (isTopOverlayVisible) {
-                                showFavOverlay(isHide = true)
+                                isTopOverlayVisible = false
+                               // showFavOverlay(isHide = true)
                                 return@onPreviewKeyEvent true
                             }
                             false
@@ -969,7 +987,9 @@ fun CaastvVideoPlayer(
                         context.showToastS("Favorite limit reached (${Constants.maxLimit}). Please remove some to add new ones.")//"Favorite limit reached up to $maxLimit. Please remove some favorites before adding new ones.")
                     }
                 }
-                showFavOverlay(isHide = true)
+
+                isTopOverlayVisible = false
+               // showFavOverlay(isHide = true)
             },
             onAudioClick = {
                 lastTopOverlayButtonFocus.value = audioButtonFocusRequester
@@ -977,7 +997,8 @@ fun CaastvVideoPlayer(
             },
             audioButtonFocusRequester = audioButtonFocusRequester,
             onDismiss = {
-                showFavOverlay(isHide = true)
+                isTopOverlayVisible = false
+                //showFavOverlay(isHide = true)
             }
 
         )

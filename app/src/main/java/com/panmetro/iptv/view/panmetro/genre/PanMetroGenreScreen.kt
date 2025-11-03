@@ -1,6 +1,21 @@
 package com.panmetro.iptv.view.panmetro.genre
 
+import android.graphics.Bitmap
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,39 +38,45 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
+import coil3.size.Precision
+import coil3.size.Scale
+import com.panmetro.iptv.R
 import com.panmetro.iptv.extensions.appManifestLiveData
-import com.panmetro.iptv.extensions.coreEPGLiveData
 import com.panmetro.iptv.extensions.hideKeyboard
 import com.panmetro.iptv.extensions.isNotNullOrEmpty
 import com.panmetro.iptv.extensions.loge
 import com.panmetro.iptv.extensions.requestFocusSafely
-import com.panmetro.iptv.extensions.showToastS
 import com.panmetro.iptv.model.data.epgdata.EPGDataItem
 import com.panmetro.iptv.model.data.genre.WTVGenre
 import com.panmetro.iptv.utils.uistate.PreferenceManager
 import com.panmetro.iptv.view.navigationhelper.Destination
 import com.panmetro.iptv.view.panmetro.common.PermettoTopBar
 import com.panmetro.iptv.view.panmetro.common.PoweredBy
-import com.panmetro.iptv.view.panmetro.genre.GenreMultiDRMPlayer
-import com.panmetro.iptv.view.uicomponent.ZoomInOutSwitcher
 import com.panmetro.iptv.view.uicomponent.keyboard.HideKeyboardOnEnter
 import com.panmetro.iptv.viewmodels.SharedViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.LinkedList
 
 @Composable
 fun PanmetroGenreScreen(
@@ -338,7 +359,12 @@ fun PanmetroGenreScreen(
                                     .fillMaxSize() // Force the inner Box to fill the outer Box.
                                     .background(Color.Transparent, shape = RoundedCornerShape(10.dp))
                             ) {
-                                ZoomInOutSwitcher()
+                                SafeZoomInOutSwitcher(
+                                    models = listOf(R.drawable.panmetro_logo_new, R.drawable.panmetro_brand),
+                                    modifier = Modifier.fillMaxSize(),
+                                    cornerRadius = 10.dp
+                                )
+
                             }
                         }
 
@@ -387,3 +413,110 @@ fun PanmetroGenreScreen(
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun SafeZoomInOutSwitcher(
+    models: List<Any?> = listOf(
+        R.drawable.panmetro_logo_new,
+        R.drawable.panmetro_brand
+    ),
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 10.dp,
+    switchMillis: Int = 5_000,      // same behavior as “normal” switcher
+    fadeMillis: Int = 1200,
+    zoomMin: Float = 1.0f,          // subtle Ken-Burns zoom
+    zoomMax: Float = 1.06f,
+    backgroundColor: Color = Color.White
+) {
+    // Current page index
+    var page by remember { mutableStateOf(0) }
+
+    // Auto-advance like your old one
+    LaunchedEffect(models) {
+        if (models.isEmpty()) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(switchMillis.toLong())
+            page = (page + 1) % models.size
+        }
+    }
+
+    // Gentle continuous zoom
+    val zoom by rememberInfiniteTransition(label = "kb").animateFloat(
+        initialValue = zoomMin,
+        targetValue = zoomMax,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "zoom"
+    )
+
+    AnimatedContent(
+        targetState = page,
+        transitionSpec = {
+            (scaleIn(initialScale = 0.92f, animationSpec = tween(fadeMillis)) +
+                    fadeIn(tween(fadeMillis))) with
+                    (scaleOut(targetScale = 0.92f, animationSpec = tween(fadeMillis)) +
+                            fadeOut(tween(fadeMillis)))
+        },
+        modifier = modifier
+            .clip(RoundedCornerShape(cornerRadius))
+            .background(backgroundColor)
+            .graphicsLayer {
+                // prevent huge offscreen layers on N/O
+                clip = true
+                transformOrigin = TransformOrigin(0.5f, 0.5f)
+            }
+    ) { idx ->
+        val model = models.getOrNull(idx)
+        SafeFillImage(
+            model = model,
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // per-page Ken-Burns zoom
+                    scaleX = zoom
+                    scaleY = zoom
+                },
+            backgroundColor = backgroundColor
+        )
+    }
+}
+/** Decodes strictly to the container size to avoid gigantic bitmaps. */
+@Composable
+private fun SafeFillImage(
+    model: Any?,
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Color.White
+) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    Box(
+        modifier = modifier.onSizeChanged { size = it }
+    ) {
+        if (size.width <= 0 || size.height <= 0) {
+            // first frame placeholder
+            Box(Modifier.fillMaxSize().background(backgroundColor))
+            return@Box
+        }
+
+
+        val request = ImageRequest.Builder(LocalContext.current)
+            .data(model ?: R.drawable.panmetro_logo_new)     // fallback small asset if needed
+            .size(size.width, size.height)                   // bound decode to view
+            .precision(Precision.INEXACT)
+            .scale(Scale.FILL)
+            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            .bitmapConfig(Bitmap.Config.RGB_565)             // memory-friendly
+            .build()
+
+        SubcomposeAsyncImage(
+            model = request,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds,                // never FillBounds
+            loading = { Box(Modifier.fillMaxSize().background(backgroundColor)) },
+            error   = { Box(Modifier.fillMaxSize().background(backgroundColor)) }
+        )
+    }
+}

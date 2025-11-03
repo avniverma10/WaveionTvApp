@@ -16,8 +16,8 @@ android {
         applicationId = "com.panmetro.iptv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 73
-        versionName = "1.0.73"
+        versionCode = 74
+        versionName = "1.0.74"
     }
 
     buildTypes {
@@ -53,7 +53,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-//        isCoreLibraryDesugaringEnabled = true
+        isCoreLibraryDesugaringEnabled = true   // Enable core library desugaring to support java.time on API 21+
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -130,7 +130,7 @@ dependencies {
     //implementation(libs.core.splashscreen)
     //dimens
     implementation(libs.bundles.dimens)
-
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
 
     // Add this to your app/build.gradle dependencies
     implementation("com.google.errorprone:error_prone_annotations:2.23.0")

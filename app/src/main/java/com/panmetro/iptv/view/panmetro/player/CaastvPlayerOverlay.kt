@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -304,6 +305,23 @@ fun CaastvPlayerOverlay(
                         Icon(
                             imageVector     = Icons.Default.Favorite,
                             contentDescription = "Favourite",
+                            tint            = Color.White,
+                            modifier        = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.width(3.dp))
+
+                    // Audio
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clickable { /* onAudioClick() */ },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector     = Icons.Default.Menu,
+                            contentDescription = "Audio",
                             tint            = Color.White,
                             modifier        = Modifier.size(16.dp)
                         )
